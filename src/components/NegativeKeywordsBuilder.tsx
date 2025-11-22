@@ -79,12 +79,23 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
 
             if (response.keywords && Array.isArray(response.keywords)) {
                 console.log('AI generation successful:', response.keywords.length, 'keywords');
-                const formattedKeywords = response.keywords.map((item: any, index: number) => ({
-                    id: index + 1,
-                    keyword: item.keyword.startsWith('[') ? item.keyword : `[${item.keyword}]`, // Ensure exact match format
-                    reason: item.reason || 'AI suggested',
-                    category: item.category || 'General'
-                }));
+                const formattedKeywords = response.keywords.map((item: any, index: number) => {
+                    // Clean keyword: remove any existing brackets (single or double) and add single brackets
+                    let cleanKeyword = item.keyword || '';
+                    // Remove double brackets [[keyword]] -> keyword
+                    cleanKeyword = cleanKeyword.replace(/^\[\[|\]\]$/g, '');
+                    // Remove single brackets [keyword] -> keyword
+                    cleanKeyword = cleanKeyword.replace(/^\[|\]$/g, '');
+                    // Add single brackets for exact match
+                    cleanKeyword = `[${cleanKeyword}]`;
+                    
+                    return {
+                        id: index + 1,
+                        keyword: cleanKeyword,
+                        reason: item.reason || 'AI suggested',
+                        category: item.category || 'General'
+                    };
+                });
                 setGeneratedKeywords(formattedKeywords);
             } else {
                 throw new Error('Invalid response format');
@@ -364,7 +375,8 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         let csvContent = "Keyword,Match Type,Reason,Category\n";
 
         generatedKeywords.forEach(item => {
-            csvContent += `[${item.keyword}],Exact,${item.reason},${item.category}\n`;
+            // Keyword already has brackets, use as-is
+            csvContent += `${item.keyword},Exact,${item.reason},${item.category}\n`;
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -538,7 +550,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                         {generatedKeywords.map((item) => (
                                             <TableRow key={item.id} className="hover:bg-slate-50/50">
                                                 <TableCell className="font-medium text-slate-700">
-                                                    [{item.keyword}]
+                                                    {item.keyword}
                                                 </TableCell>
                                                 <TableCell className="text-slate-500">{item.reason}</TableCell>
                                                 <TableCell>

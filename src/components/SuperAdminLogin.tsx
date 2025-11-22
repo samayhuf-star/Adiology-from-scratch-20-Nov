@@ -21,8 +21,7 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     setTimeout(() => {
       // Valid super admin credentials
       const validAdmins = [
-        { email: 'admin@adbuilder.com', password: 'SuperAdmin123!' },
-        { email: 'sam@sam.com', password: 'sam123' },
+        { email: 'sam@sam.com', password: 'sam@sam.com' },
       ];
 
       // Trim and compare (case-insensitive for email)

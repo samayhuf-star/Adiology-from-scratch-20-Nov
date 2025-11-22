@@ -23,11 +23,13 @@ import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
+import { HomePage } from './components/HomePage';
+import { Auth } from './components/Auth';
 
-type AppView = 'user' | 'admin-login' | 'admin-landing' | 'admin-panel';
+type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel';
 
 const App = () => {
-  const [appView, setAppView] = useState<AppView>('user');
+  const [appView, setAppView] = useState<AppView>('home');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [historyData, setHistoryData] = useState<any>(null);
@@ -52,7 +54,8 @@ const App = () => {
 
   const handleLogout = () => {
     if (confirm('Are you sure you want to logout?')) {
-      setAppView('admin-login');
+      localStorage.removeItem('auth_user');
+      setAppView('home');
       setActiveTab('dashboard');
     }
   };
@@ -111,6 +114,26 @@ const App = () => {
     }
   }, []);
 
+  // Check authentication on mount
+  useEffect(() => {
+    const authUser = localStorage.getItem('auth_user');
+    if (authUser) {
+      try {
+        const user = JSON.parse(authUser);
+        if (user.role === 'superadmin') {
+          setAppView('admin-landing');
+        } else {
+          setAppView('user');
+        }
+      } catch (e) {
+        // Invalid auth data, show homepage
+        setAppView('home');
+      }
+    } else {
+      setAppView('home');
+    }
+  }, []);
+
   // Check for super admin access key (Ctrl/Cmd + Shift + A)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -125,6 +148,36 @@ const App = () => {
   }, []);
 
   // Render based on app view
+  if (appView === 'home') {
+    return (
+      <HomePage
+        onGetStarted={() => setAppView('auth')}
+        onLogin={() => setAppView('auth')}
+      />
+    );
+  }
+
+  if (appView === 'auth') {
+    return (
+      <Auth
+        onLoginSuccess={() => {
+          const authUser = localStorage.getItem('auth_user');
+          if (authUser) {
+            const user = JSON.parse(authUser);
+            if (user.role === 'superadmin') {
+              setAppView('admin-landing');
+            } else {
+              setAppView('user');
+            }
+          } else {
+            setAppView('user');
+          }
+        }}
+        onBackToHome={() => setAppView('home')}
+      />
+    );
+  }
+
   if (appView === 'admin-login') {
     return (
       <SuperAdminLogin
@@ -139,7 +192,8 @@ const App = () => {
         onSelectUserView={() => setAppView('user')}
         onSelectAdminPanel={() => setAppView('admin-panel')}
         onLogout={() => {
-          setAppView('user');
+          localStorage.removeItem('auth_user');
+          setAppView('home');
           setActiveTab('dashboard');
         }}
       />
@@ -154,7 +208,19 @@ const App = () => {
     );
   }
 
-  // Default: User view
+  // Protect user view - require authentication
+  const authUser = localStorage.getItem('auth_user');
+  if (!authUser && appView === 'user') {
+    // Redirect to auth if not authenticated
+    return (
+      <HomePage
+        onGetStarted={() => setAppView('auth')}
+        onLogin={() => setAppView('auth')}
+      />
+    );
+  }
+
+  // Default: User view (protected)
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },

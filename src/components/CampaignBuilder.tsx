@@ -803,6 +803,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
 
     const handleNextStep = () => {
+        if (step < 6) {
+            setStep(step + 1);
+        }
+        
         if (step === 2) {
             // Log selected keywords for campaign creation
             console.log(`✅ Proceeding to Ad Creation with ${selectedKeywords.length} selected keywords:`, selectedKeywords);
@@ -1460,6 +1464,18 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const dynamicAdGroups = getDynamicAdGroups();
     
     const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout') => {
+        // Check total ads limit (25 max, excluding snippets and callouts)
+        const regularAds = generatedAds.filter(ad => 
+            ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
+        );
+        
+        if (type === 'rsa' || type === 'dki' || type === 'callonly') {
+            if (regularAds.length >= 25) {
+                alert('Maximum limit reached: You can create up to 25 ads total (combining RSA, DKI, and Call Only ads). Please delete some ads before creating new ones.');
+                return;
+            }
+        }
+        
         const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
         const mainKeyword = currentGroup?.keywords[0] || 'your service';
         
@@ -1603,24 +1619,37 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     
                     {/* Create Ad Buttons */}
                     <div className="space-y-3">
+                        {/* Total Ads Counter */}
+                        <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-slate-700">Total Ads:</span>
+                                <span className={`text-lg font-bold ${generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25 ? 'text-red-600' : 'text-indigo-600'}`}>
+                                    {generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length} / 25
+                                </span>
+                            </div>
+                            {generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25 && (
+                                <p className="text-xs text-red-600 mt-1">Maximum limit reached. Delete ads to create new ones.</p>
+                            )}
+                        </div>
+                        
                         <Button 
                             onClick={() => createNewAd('rsa')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6"
+                            disabled={selectedKeywords.length === 0 || generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
                         </Button>
                         <Button 
                             onClick={() => createNewAd('dki')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6"
+                            disabled={selectedKeywords.length === 0 || generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
                         </Button>
                         <Button 
                             onClick={() => createNewAd('callonly')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6"
+                            disabled={selectedKeywords.length === 0 || generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
                         </Button>
@@ -2162,20 +2191,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [tempKeywords, setTempKeywords] = useState('');
     const [tempNegatives, setTempNegatives] = useState('');
 
-    // Step 5: Detailed Review - shows all ad groups with editable content
-    const renderStep5 = () => {
-        // Use dynamicAdGroups to get proper ad groups based on structure
-        const reviewAdGroups = getDynamicAdGroups();
-        
-        // Calculate stats based on actual data
-        const totalAdGroups = reviewAdGroups.length;
-        const totalKeywords = selectedKeywords.length;
-        const totalAds = generatedAds.length;
-        const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
-        
-        // Ensure we have ads for all ad groups - create default ads if missing
-        useEffect(() => {
-            if (step === 5 && reviewAdGroups.length > 0) {
+    // Ensure we have ads for all ad groups when entering Step 5
+    useEffect(() => {
+        if (step === 5) {
+            const reviewAdGroups = getDynamicAdGroups();
+            if (reviewAdGroups.length > 0) {
                 const missingGroups = reviewAdGroups.filter(group => 
                     !generatedAds.some(ad => ad.adGroup === group.name)
                 );
@@ -2205,8 +2225,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     }
                 }
             }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [step, reviewAdGroups.length]);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step]);
+
+    // Step 5: Detailed Review - shows all ad groups with editable content
+    const renderStep5 = () => {
+        // Use dynamicAdGroups to get proper ad groups based on structure
+        const reviewAdGroups = getDynamicAdGroups();
+        
+        // Calculate stats based on actual data
+        const totalAdGroups = reviewAdGroups.length;
+        const totalKeywords = selectedKeywords.length;
+        const totalAds = generatedAds.length;
+        const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
 
         // Helper to format keyword display (keywords already have match type formatting)
         const formatKeywordDisplay = (keyword: string) => {

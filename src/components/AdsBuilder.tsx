@@ -87,6 +87,17 @@ export const AdsBuilder = () => {
                 return;
             }
 
+            // Calculate total ads that will be generated
+            const totalAdsPerGroup = adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount;
+            const totalAdsToGenerate = totalAdsPerGroup * groupsToProcess.length;
+
+            // Limit total ads to 25
+            if (totalAdsToGenerate > 25) {
+                alert(`Total ads cannot exceed 25. You're trying to generate ${totalAdsToGenerate} ads (${groupsToProcess.length} groups × ${totalAdsPerGroup} ads per group). Please reduce the quantities or number of groups.`);
+                setIsGenerating(false);
+                return;
+            }
+
             const allGeneratedAds: GeneratedAd[] = [];
 
             for (const group of groupsToProcess) {
@@ -483,9 +494,17 @@ export const AdsBuilder = () => {
                                 <Input
                                     type="number"
                                     min="0"
-                                    max="20"
+                                    max="25"
                                     value={adConfig.rsaCount}
-                                    onChange={(e) => setAdConfig({...adConfig, rsaCount: parseInt(e.target.value) || 0})}
+                                    onChange={(e) => {
+                                        const value = parseInt(e.target.value) || 0;
+                                        const total = value + adConfig.dkiCount + adConfig.callOnlyCount;
+                                        if (total <= 25) {
+                                            setAdConfig({...adConfig, rsaCount: value});
+                                        } else {
+                                            alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
+                                        }
+                                    }}
                                     className="max-w-[120px]"
                                 />
                                 <p className="text-xs text-slate-500 mt-1">
@@ -501,9 +520,17 @@ export const AdsBuilder = () => {
                                 <Input
                                     type="number"
                                     min="0"
-                                    max="20"
+                                    max="25"
                                     value={adConfig.dkiCount}
-                                    onChange={(e) => setAdConfig({...adConfig, dkiCount: parseInt(e.target.value) || 0})}
+                                    onChange={(e) => {
+                                        const value = parseInt(e.target.value) || 0;
+                                        const total = adConfig.rsaCount + value + adConfig.callOnlyCount;
+                                        if (total <= 25) {
+                                            setAdConfig({...adConfig, dkiCount: value});
+                                        } else {
+                                            alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
+                                        }
+                                    }}
                                     className="max-w-[120px]"
                                 />
                                 <p className="text-xs text-slate-500 mt-1">
@@ -519,14 +546,35 @@ export const AdsBuilder = () => {
                                 <Input
                                     type="number"
                                     min="0"
-                                    max="20"
+                                    max="25"
                                     value={adConfig.callOnlyCount}
-                                    onChange={(e) => setAdConfig({...adConfig, callOnlyCount: parseInt(e.target.value) || 0})}
+                                    onChange={(e) => {
+                                        const value = parseInt(e.target.value) || 0;
+                                        const total = adConfig.rsaCount + adConfig.dkiCount + value;
+                                        if (total <= 25) {
+                                            setAdConfig({...adConfig, callOnlyCount: value});
+                                        } else {
+                                            alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
+                                        }
+                                    }}
                                     className="max-w-[120px]"
                                 />
                                 <p className="text-xs text-slate-500 mt-1">
                                     Mobile-only ads with click-to-call functionality
                                 </p>
+                            </div>
+                            
+                            {/* Total Ads Counter */}
+                            <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-semibold text-slate-700">Total Ads:</span>
+                                    <span className={`text-lg font-bold ${(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 ? 'text-red-600' : 'text-indigo-600'}`}>
+                                        {adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount} / 25
+                                    </span>
+                                </div>
+                                {(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 && (
+                                    <p className="text-xs text-red-600 mt-1">Maximum limit exceeded. Please reduce quantities.</p>
+                                )}
                             </div>
                         </div>
                     </Card>
@@ -534,8 +582,8 @@ export const AdsBuilder = () => {
                     {/* Generate Button */}
                     <Button
                         onClick={generateAds}
-                        disabled={isGenerating}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-6"
+                        disabled={isGenerating || (adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isGenerating ? (
                             <>
