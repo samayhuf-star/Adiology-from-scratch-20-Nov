@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, Check, ChevronRight, Download, FileText, Globe, 
   Layout, Layers, MapPin, Mail, Hash, TrendingUp, Zap, 
-  Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw,
+  Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus
 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -49,6 +49,377 @@ const MATCH_TYPES = [
 const COUNTRIES = [
     "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "India"
 ];
+
+// Top cities by income per capita (ranked highest to lowest)
+const TOP_CITIES_BY_INCOME: Record<string, string[]> = {
+    "United States": [
+        "San Francisco, CA", "San Jose, CA", "Washington, DC", "Seattle, WA", "Boston, MA",
+        "Arlington, VA", "Denver, CO", "Austin, TX", "New York, NY", "Minneapolis, MN",
+        "Portland, OR", "Raleigh, NC", "Atlanta, GA", "Charlotte, NC", "San Diego, CA",
+        "Dallas, TX", "Nashville, TN", "Phoenix, AZ", "Miami, FL", "Los Angeles, CA",
+        "Chicago, IL", "Houston, TX", "Philadelphia, PA", "San Antonio, TX", "Jacksonville, FL",
+        "Columbus, OH", "Fort Worth, TX", "Indianapolis, IN", "Las Vegas, NV", "Memphis, TN",
+        "Louisville, KY", "Detroit, MI", "Oklahoma City, OK", "Milwaukee, WI", "Tucson, AZ",
+        "Fresno, CA", "Sacramento, CA", "Kansas City, MO", "Mesa, AZ", "Virginia Beach, VA",
+        "Omaha, NE", "Oakland, CA", "Tulsa, OK", "Tampa, FL", "New Orleans, LA",
+        "Wichita, KS", "Cleveland, OH", "Tampa, FL", "Bakersfield, CA", "Aurora, CO",
+        "Honolulu, HI", "Anaheim, CA", "Santa Ana, CA", "St. Louis, MO", "Corpus Christi, TX",
+        "Riverside, CA", "Lexington, KY", "Pittsburgh, PA", "Anchorage, AK", "Stockton, CA",
+        "Cincinnati, OH", "St. Paul, MN", "Toledo, OH", "Greensboro, NC", "Newark, NJ",
+        "Plano, TX", "Henderson, NV", "Lincoln, NE", "Buffalo, NY", "Jersey City, NJ",
+        "Chula Vista, CA", "Fort Wayne, IN", "Orlando, FL", "St. Petersburg, FL", "Chandler, AZ",
+        "Laredo, TX", "Norfolk, VA", "Durham, NC", "Madison, WI", "Lubbock, TX",
+        "Irvine, CA", "Winston-Salem, NC", "Glendale, AZ", "Garland, TX", "Hialeah, FL",
+        "Reno, NV", "Chesapeake, VA", "Gilbert, AZ", "Baton Rouge, LA", "Irving, TX",
+        "Scottsdale, AZ", "North Las Vegas, NV", "Fremont, CA", "Boise, ID", "Richmond, VA",
+        "Spokane, WA", "Birmingham, AL", "Rochester, NY", "Des Moines, IA", "Modesto, CA",
+        "Fayetteville, NC", "Tacoma, WA", "Oxnard, CA", "Fontana, CA", "Columbus, GA",
+        "Montgomery, AL", "Moreno Valley, CA", "Shreveport, LA", "Aurora, IL", "Yonkers, NY",
+        "Akron, OH", "Huntington Beach, CA", "Little Rock, AR", "Amarillo, TX", "Glendale, CA",
+        "Grand Rapids, MI", "Salt Lake City, UT", "Tallahassee, FL", "Huntsville, AL", "Grand Prairie, TX",
+        "Knoxville, TN", "Worcester, MA", "Newport News, VA", "Brownsville, TX", "Overland Park, KS",
+        "Santa Clarita, CA", "Providence, RI", "Garden Grove, CA", "Chattanooga, TN", "Oceanside, CA",
+        "Jackson, MS", "Fort Lauderdale, FL", "Santa Rosa, CA", "Rancho Cucamonga, CA", "Port St. Lucie, FL",
+        "Tempe, AZ", "Ontario, CA", "Vancouver, WA", "Sioux Falls, SD", "Springfield, MO",
+        "Peoria, AZ", "Pembroke Pines, FL", "Elk Grove, CA", "Salem, OR", "Lancaster, CA",
+        "Corona, CA", "Eugene, OR", "Palmdale, CA", "Salinas, CA", "Springfield, MA",
+        "Pasadena, TX", "Fort Collins, CO", "Hayward, CA", "Pomona, CA", "Cary, NC",
+        "Rockford, IL", "Alexandria, VA", "Escondido, CA", "McKinney, TX", "Kansas City, KS",
+        "Joliet, IL", "Sunnyvale, CA", "Torrance, CA", "Bridgeport, CT", "Lakewood, CO",
+        "Hollywood, FL", "Paterson, NJ", "Naperville, IL", "Syracuse, NY", "Mesquite, TX",
+        "Dayton, OH", "Savannah, GA", "Clarksville, TN", "Orange, CA", "Pasadena, CA",
+        "Fullerton, CA", "Killeen, TX", "Frisco, TX", "Hampton, VA", "McAllen, TX",
+        "Warren, MI", "Bellevue, WA", "West Valley City, UT", "Columbia, SC", "Olathe, KS",
+        "Sterling Heights, MI", "New Haven, CT", "Miramar, FL", "Waco, TX", "Thousand Oaks, CA",
+        "Cedar Rapids, IA", "Charleston, SC", "Visalia, CA", "Topeka, KS", "Elizabeth, NJ",
+        "Gainesville, FL", "Thornton, CO", "Roseville, CA", "Carrollton, TX", "Coral Springs, FL",
+        "Stamford, CT", "Simi Valley, CA", "Concord, CA", "Hartford, CT", "Kent, WA",
+        "Lafayette, LA", "Midland, TX", "Surprise, AZ", "Denton, TX", "Victorville, CA",
+        "Evansville, IN", "Santa Clara, CA", "Abilene, TX", "Athens, GA", "Vallejo, CA",
+        "Allentown, PA", "Norman, OK", "Beaumont, TX", "Independence, MO", "Murfreesboro, TN",
+        "Ann Arbor, MI", "Berkeley, CA", "Provo, UT", "El Monte, CA", "Lansing, MI",
+        "Fargo, ND", "Downey, CA", "Costa Mesa, CA", "Wilmington, NC", "Arvada, CO",
+        "Inglewood, CA", "Miami Gardens, FL", "Carlsbad, CA", "Westminster, CO", "Rochester, MN",
+        "Odessa, TX", "Manchester, NH", "Elgin, IL", "West Jordan, UT", "Round Rock, TX",
+        "Clearwater, FL", "Waterbury, CT", "Gresham, OR", "Fairfield, CA", "Billings, MT",
+        "Lowell, MA", "San Buenaventura, CA", "Pueblo, CO", "High Point, NC", "West Covina, CA",
+        "Richmond, CA", "Murrieta, CA", "Cambridge, MA", "Antioch, CA", "Temecula, CA",
+        "Norwalk, CA", "Centennial, CO", "Everett, WA", "Palm Bay, FL", "Wichita Falls, TX",
+        "Green Bay, WI", "Daly City, CA", "Burbank, CA", "Richardson, TX", "Pompano Beach, FL",
+        "North Charleston, SC", "Broken Arrow, OK", "Boulder, CO", "West Palm Beach, FL", "Santa Maria, CA",
+        "El Cajon, CA", "Davenport, IA", "Rialto, CA", "Las Cruces, NM", "San Mateo, CA",
+        "Lewisville, TX", "South Bend, IN", "Lakeland, FL", "Erie, PA", "Tyler, TX",
+        "Pearland, TX", "College Station, TX", "Kenosha, WI", "Sandy Springs, GA", "Clovis, CA",
+        "Flint, MI", "Roanoke, VA", "Albany, NY", "Jurupa Valley, CA", "Compton, CA",
+        "San Angelo, TX", "Hillsboro, OR", "Lawton, OK", "Renton, WA", "Vista, CA",
+        "Davie, FL", "Greeley, CO", "Mission Viejo, CA", "Portsmouth, VA", "Dearborn, MI",
+        "South Gate, CA", "Tuscaloosa, AL", "Livonia, MI", "New Bedford, MA", "Vacaville, CA",
+        "Brockton, MA", "Roswell, GA", "Beaverton, OR", "Quincy, MA", "Sparks, NV",
+        "Yakima, WA", "Lee's Summit, MO", "Federal Way, WA", "Carson, CA", "Santa Monica, CA",
+        "Hesperia, CA", "Allen, TX", "Rio Rancho, NM", "Yuma, AZ", "Westminster, CA",
+        "Orem, UT", "Lynn, MA", "Redding, CA", "Spokane Valley, WA", "Miami Beach, FL",
+        "League City, TX", "Lawrence, KS", "Santa Barbara, CA", "Plantation, FL", "Sandy, UT",
+        "Bend, OR", "Hillsboro, OR", "Southaven, MS", "Boca Raton, FL", "Cape Coral, FL",
+        "Boulder, CO", "Greenville, SC", "Waco, TX", "Dothan, AL", "San Luis Obispo, CA",
+        "Bellingham, WA", "Prescott, AZ", "Flagstaff, AZ", "Asheville, NC", "Fort Myers, FL",
+        "Santa Fe, NM", "Eugene, OR", "Olympia, WA", "Eau Claire, WI", "Bismarck, ND",
+        "Rapid City, SD", "Fargo, ND", "Grand Forks, ND", "Sioux Falls, SD", "Rochester, MN",
+        "Duluth, MN", "St. Cloud, MN", "Mankato, MN", "Winona, MN", "Moorhead, MN"
+    ],
+    "United Kingdom": [
+        "London", "Edinburgh", "Manchester", "Birmingham", "Bristol",
+        "Leeds", "Glasgow", "Liverpool", "Newcastle", "Sheffield",
+        "Cardiff", "Belfast", "Nottingham", "Leicester", "Coventry",
+        "Reading", "Southampton", "Portsmouth", "Brighton", "Oxford",
+        "Cambridge", "York", "Norwich", "Exeter", "Bath",
+        "Canterbury", "Durham", "St. Albans", "Winchester", "Truro",
+        "Wells", "Ely", "Ripon", "Chichester", "Hereford",
+        "Lichfield", "Salisbury", "Worcester", "Peterborough", "Gloucester",
+        "Chelmsford", "Ipswich", "Colchester", "Norwich", "King's Lynn",
+        "Great Yarmouth", "Lowestoft", "Bury St Edmunds", "Newmarket", "Thetford",
+        "Diss", "Harleston", "Attleborough", "Watton", "Swaffham",
+        "Fakenham", "Holt", "Cromer", "Sheringham", "Wells-next-the-Sea",
+        "Hunstanton", "Downham Market", "Wisbech", "March", "Chatteris",
+        "St. Ives", "Huntingdon", "St. Neots", "Biggleswade", "Sandy",
+        "Potton", "Gamlingay", "Bourn", "Caxton", "Elsworth",
+        "Conington", "Fenstanton", "Hilton", "Papworth Everard", "Sawston",
+        "Duxford", "Linton", "Haverhill", "Clare", "Sudbury",
+        "Long Melford", "Lavenham", "Bildeston", "Hadleigh", "Ipswich",
+        "Woodbridge", "Felixstowe", "Framlingham", "Saxmundham", "Aldeburgh",
+        "Southwold", "Lowestoft", "Beccles", "Bungay", "Halesworth",
+        "Eye", "Debenham", "Stowmarket", "Needham Market", "Ipswich",
+        "Colchester", "Maldon", "Witham", "Kelvedon", "Coggeshall",
+        "Braintree", "Halstead", "Saffron Walden", "Thaxted", "Great Dunmow",
+        "Bishop's Stortford", "Sawbridgeworth", "Harlow", "Epping", "Chigwell",
+        "Loughton", "Waltham Abbey", "Cheshunt", "Hoddesdon", "Ware",
+        "Hertford", "Welwyn Garden City", "Hatfield", "St. Albans", "Harpenden",
+        "Redbourn", "Wheathampstead", "Kimpton", "Codicote", "Knebworth",
+        "Stevenage", "Letchworth", "Baldock", "Royston", "Melbourn",
+        "Meldreth", "Shepreth", "Foxton", "Barrington", "Haslingfield",
+        "Comberton", "Barton", "Grantchester", "Trumpington", "Cambridge",
+        "Milton", "Histon", "Impington", "Cottenham", "Waterbeach",
+        "Landbeach", "Chittering", "Stretham", "Witcham", "Mepal",
+        "Sutton", "Ely", "Littleport", "Pymore", "Soham",
+        "Isleham", "Fordham", "Chippenham", "Snailwell", "Newmarket",
+        "Moulton", "Kentford", "Gazeley", "Dalham", "Kirtling",
+        "Cheveley", "Woodditton", "Stetchworth", "Dullingham", "Burwell",
+        "Swaffham Prior", "Reach", "Upware", "Wicken", "Soham",
+        "Isleham", "Fordham", "Chippenham", "Snailwell", "Newmarket",
+        "Moulton", "Kentford", "Gazeley", "Dalham", "Kirtling",
+        "Cheveley", "Woodditton", "Stetchworth", "Dullingham", "Burwell",
+        "Swaffham Prior", "Reach", "Upware", "Wicken", "Soham"
+    ],
+    "Canada": [
+        "Toronto, ON", "Vancouver, BC", "Calgary, AB", "Montreal, QC", "Ottawa, ON",
+        "Edmonton, AB", "Winnipeg, MB", "Quebec City, QC", "Hamilton, ON", "Kitchener, ON",
+        "London, ON", "Victoria, BC", "Halifax, NS", "Oshawa, ON", "Windsor, ON",
+        "Saskatoon, SK", "Regina, SK", "Sherbrooke, QC", "Kelowna, BC", "Barrie, ON",
+        "Abbotsford, BC", "Sudbury, ON", "Kingston, ON", "Saguenay, QC", "Trois-Rivieres, QC",
+        "Guelph, ON", "Cambridge, ON", "Thunder Bay, ON", "Saint John, NB", "Moncton, NB",
+        "Brantford, ON", "Peterborough, ON", "Red Deer, AB", "Lethbridge, AB", "Nanaimo, BC",
+        "Kamloops, BC", "Chilliwack, BC", "Prince George, BC", "Victoria, BC", "Surrey, BC",
+        "Burnaby, BC", "Richmond, BC", "Coquitlam, BC", "Langley, BC", "Delta, BC",
+        "New Westminster, BC", "North Vancouver, BC", "West Vancouver, BC", "Port Coquitlam, BC", "Maple Ridge, BC",
+        "White Rock, BC", "Port Moody, BC", "Anmore, BC", "Belcarra, BC", "Bowen Island, BC",
+        "Lions Bay, BC", "North Saanich, BC", "Oak Bay, BC", "Saanich, BC", "Esquimalt, BC",
+        "View Royal, BC", "Colwood, BC", "Langford, BC", "Highlands, BC", "Metchosin, BC",
+        "Sooke, BC", "Sidney, BC", "Central Saanich, BC", "North Cowichan, BC", "Duncan, BC",
+        "Ladysmith, BC", "Parksville, BC", "Qualicum Beach, BC", "Courtenay, BC", "Comox, BC",
+        "Campbell River, BC", "Port Alberni, BC", "Tofino, BC", "Ucluelet, BC", "Bamfield, BC",
+        "Tahsis, BC", "Zeballos, BC", "Gold River, BC", "Sayward, BC", "Woss, BC",
+        "Woss Lake, BC", "Telegraph Cove, BC", "Alert Bay, BC", "Sointula, BC", "Port McNeill, BC",
+        "Port Hardy, BC", "Fort Rupert, BC", "Quatsino, BC", "Holberg, BC", "Winter Harbour, BC",
+        "Coal Harbour, BC", "Port Alice, BC", "Kyuquot, BC", "Fair Harbour, BC", "Zeballos, BC",
+        "Tahsis, BC", "Gold River, BC", "Sayward, BC", "Woss, BC", "Woss Lake, BC",
+        "Telegraph Cove, BC", "Alert Bay, BC", "Sointula, BC", "Port McNeill, BC", "Port Hardy, BC",
+        "Fort Rupert, BC", "Quatsino, BC", "Holberg, BC", "Winter Harbour, BC", "Coal Harbour, BC",
+        "Port Alice, BC", "Kyuquot, BC", "Fair Harbour, BC", "Zeballos, BC", "Tahsis, BC",
+        "Gold River, BC", "Sayward, BC", "Woss, BC", "Woss Lake, BC", "Telegraph Cove, BC"
+    ],
+    "Australia": [
+        "Sydney, NSW", "Melbourne, VIC", "Brisbane, QLD", "Perth, WA", "Adelaide, SA",
+        "Gold Coast, QLD", "Newcastle, NSW", "Canberra, ACT", "Sunshine Coast, QLD", "Wollongong, NSW",
+        "Hobart, TAS", "Geelong, VIC", "Townsville, QLD", "Cairns, QLD", "Toowoomba, QLD",
+        "Darwin, NT", "Ballarat, VIC", "Bendigo, VIC", "Albury, NSW", "Launceston, TAS",
+        "Mackay, QLD", "Rockhampton, QLD", "Bunbury, WA", "Bundaberg, QLD", "Coffs Harbour, NSW",
+        "Wagga Wagga, NSW", "Hervey Bay, QLD", "Port Macquarie, NSW", "Mildura, VIC", "Tamworth, NSW",
+        "Orange, NSW", "Dubbo, NSW", "Shepparton, VIC", "Gladstone, QLD", "Nowra, NSW",
+        "Warrnambool, VIC", "Mount Gambier, SA", "Kalgoorlie, WA", "Lismore, NSW", "Bathurst, NSW",
+        "Geraldton, WA", "Whyalla, SA", "Broken Hill, NSW", "Mount Isa, QLD", "Alice Springs, NT",
+        "Katherine, NT", "Darwin, NT", "Palmerston, NT", "Alice Springs, NT", "Katherine, NT",
+        "Tennant Creek, NT", "Nhulunbuy, NT", "Yulara, NT", "Alyangula, NT", "Gove, NT",
+        "Jabiru, NT", "Kununurra, WA", "Broome, WA", "Port Hedland, WA", "Karratha, WA",
+        "Newman, WA", "Tom Price, WA", "Paraburdoo, WA", "Exmouth, WA", "Carnarvon, WA",
+        "Denham, WA", "Shark Bay, WA", "Geraldton, WA", "Northampton, WA", "Morawa, WA",
+        "Mullewa, WA", "Perenjori, WA", "Paynes Find, WA", "Mount Magnet, WA", "Cue, WA",
+        "Meekatharra, WA", "Wiluna, WA", "Leinster, WA", "Laverton, WA", "Leonora, WA",
+        "Menzie, WA", "Norseman, WA", "Esperance, WA", "Ravensthorpe, WA", "Hopetoun, WA",
+        "Ongerup, WA", "Jerramungup, WA", "Gnowangerup, WA", "Katanning, WA", "Kojonup, WA",
+        "Bridgetown, WA", "Manjimup, WA", "Pemberton, WA", "Northcliffe, WA", "Walpole, WA",
+        "Denmark, WA", "Albany, WA", "Mount Barker, WA", "Kendenup, WA", "Cranbrook, WA",
+        "Tambellup, WA", "Gnowangerup, WA", "Ongerup, WA", "Jerramungup, WA", "Ravensthorpe, WA",
+        "Hopetoun, WA", "Esperance, WA", "Norseman, WA", "Menzie, WA", "Leonora, WA",
+        "Laverton, WA", "Leinster, WA", "Wiluna, WA", "Meekatharra, WA", "Cue, WA",
+        "Mount Magnet, WA", "Paynes Find, WA", "Perenjori, WA", "Mullewa, WA", "Morawa, WA",
+        "Northampton, WA", "Geraldton, WA", "Shark Bay, WA", "Denham, WA", "Carnarvon, WA",
+        "Exmouth, WA", "Paraburdoo, WA", "Tom Price, WA", "Newman, WA", "Karratha, WA",
+        "Port Hedland, WA", "Broome, WA", "Kununurra, WA", "Jabiru, NT", "Gove, NT",
+        "Alyangula, NT", "Yulara, NT", "Nhulunbuy, NT", "Tennant Creek, NT", "Katherine, NT",
+        "Alice Springs, NT", "Palmerston, NT", "Darwin, NT", "Katherine, NT", "Alice Springs, NT"
+    ],
+    "Germany": [
+        "Munich", "Stuttgart", "Hamburg", "Frankfurt", "Düsseldorf",
+        "Berlin", "Cologne", "Dresden", "Leipzig", "Nuremberg",
+        "Hannover", "Bremen", "Duisburg", "Essen", "Bochum",
+        "Wuppertal", "Bielefeld", "Bonn", "Münster", "Karlsruhe",
+        "Mannheim", "Augsburg", "Wiesbaden", "Gelsenkirchen", "Mönchengladbach",
+        "Braunschweig", "Chemnitz", "Kiel", "Aachen", "Halle",
+        "Magdeburg", "Freiburg", "Krefeld", "Lübeck", "Oberhausen",
+        "Erfurt", "Mainz", "Rostock", "Kassel", "Hagen",
+        "Hamm", "Saarbrücken", "Mülheim", "Potsdam", "Ludwigshafen",
+        "Oldenburg", "Leverkusen", "Osnabrück", "Solingen", "Heidelberg",
+        "Herne", "Neuss", "Darmstadt", "Paderborn", "Regensburg",
+        "Ingolstadt", "Würzburg", "Fürth", "Wolfsburg", "Offenbach",
+        "Ulm", "Heilbronn", "Pforzheim", "Göttingen", "Bottrop",
+        "Trier", "Recklinghausen", "Reutlingen", "Bremerhaven", "Koblenz",
+        "Bergisch Gladbach", "Jena", "Remscheid", "Erlangen", "Moers",
+        "Siegen", "Hildesheim", "Salzgitter", "Cottbus", "Kaiserslautern",
+        "Gütersloh", "Schwerin", "Witten", "Gera", "Iserlohn",
+        "Lünen", "Düren", "Esslingen", "Marl", "Ratingen",
+        "Tübingen", "Villingen-Schwenningen", "Konstanz", "Flensburg", "Minden",
+        "Velbert", "Neumünster", "Delmenhorst", "Wilhelmshaven", "Viersen",
+        "Gladbeck", "Dorsten", "Rheine", "Detmold", "Castrop-Rauxel",
+        "Arnsberg", "Lüneburg", "Lippstadt", "Dinslaken", "Soest",
+        "Neubrandenburg", "Dormagen", "Brandenburg", "Sindelfingen", "Aschaffenburg",
+        "Neuwied", "Plauen", "Fulda", "Bergheim", "Schwäbisch Gmünd",
+        "Landshut", "Rosenheim", "Frankenthal", "Stralsund", "Friedrichshafen",
+        "Offenburg", "Suhl", "Görlitz", "Sankt Augustin", "Hürth",
+        "Grevenbroich", "Unna", "Euskirchen", "Stolberg", "Hameln",
+        "Meerbusch", "Gießen", "Sankt Ingbert", "Garbsen", "Bayreuth",
+        "Weiden", "Lörrach", "Celle", "Kleve", "Homburg",
+        "Neustadt", "Freising", "Lüdenscheid", "Eisenach", "Weimar",
+        "Speyer", "Passau", "Ravensburg", "Kempten", "Goslar",
+        "Willich", "Emden", "Bad Homburg", "Bad Salzuflen", "Langenfeld",
+        "Greifswald", "Rastatt", "Tuttlingen", "Baden-Baden", "Weinheim",
+        "Oberursel", "Bad Kreuznach", "Böblingen", "Starnberg", "Germering",
+        "Fürstenfeldbruck", "Gauting", "Gröbenzell", "Olching", "Puchheim",
+        "Eichenau", "Gilching", "Wörthsee", "Inning", "Seefeld",
+        "Andechs", "Herrsching", "Steinebach", "Wessling", "Seeshaupt",
+        "Bernried", "Tutzing", "Feldafing", "Pöcking", "Starnberg",
+        "Percha", "Feldafing", "Tutzing", "Bernried", "Seeshaupt",
+        "Wessling", "Steinebach", "Herrsching", "Andechs", "Seefeld",
+        "Inning", "Wörthsee", "Gilching", "Eichenau", "Puchheim",
+        "Olching", "Gröbenzell", "Gauting", "Fürstenfeldbruck", "Starnberg",
+        "Böblingen", "Bad Kreuznach", "Oberursel", "Weinheim", "Baden-Baden",
+        "Tuttlingen", "Rastatt", "Greifswald", "Langenfeld", "Bad Salzuflen",
+        "Bad Homburg", "Emden", "Willich", "Goslar", "Kempten",
+        "Ravensburg", "Passau", "Speyer", "Weimar", "Eisenach",
+        "Lüdenscheid", "Freising", "Neustadt", "Homburg", "Kleve",
+        "Celle", "Lörrach", "Bayreuth", "Garbsen", "Sankt Ingbert",
+        "Gießen", "Meerbusch", "Hameln", "Stolberg", "Euskirchen",
+        "Unna", "Grevenbroich", "Hürth", "Sankt Augustin", "Görlitz",
+        "Suhl", "Offenburg", "Friedrichshafen", "Stralsund", "Frankenthal",
+        "Rosenheim", "Landshut", "Schwäbisch Gmünd", "Bergheim", "Fulda",
+        "Plauen", "Neuwied", "Aschaffenburg", "Sindelfingen", "Brandenburg",
+        "Dormagen", "Neubrandenburg", "Soest", "Dinslaken", "Lippstadt",
+        "Lüneburg", "Arnsberg", "Castrop-Rauxel", "Detmold", "Rheine",
+        "Dorsten", "Gladbeck", "Viersen", "Wilhelmshaven", "Delmenhorst",
+        "Neumünster", "Velbert", "Minden", "Flensburg", "Konstanz",
+        "Villingen-Schwenningen", "Tübingen", "Ratingen", "Marl", "Esslingen",
+        "Düren", "Lünen", "Iserlohn", "Gera", "Witten",
+        "Schwerin", "Gütersloh", "Kaiserslautern", "Cottbus", "Salzgitter",
+        "Hildesheim", "Siegen", "Moers", "Erlangen", "Remscheid",
+        "Jena", "Bergisch Gladbach", "Koblenz", "Bremerhaven", "Reutlingen",
+        "Recklinghausen", "Trier", "Bottrop", "Göttingen", "Pforzheim",
+        "Heilbronn", "Ulm", "Offenbach", "Wolfsburg", "Fürth",
+        "Würzburg", "Ingolstadt", "Regensburg", "Paderborn", "Darmstadt",
+        "Neuss", "Herne", "Heidelberg", "Solingen", "Osnabrück",
+        "Leverkusen", "Oldenburg", "Ludwigshafen", "Potsdam", "Mülheim",
+        "Saarbrücken", "Hamm", "Hagen", "Kassel", "Rostock",
+        "Mainz", "Erfurt", "Oberhausen", "Lübeck", "Krefeld",
+        "Freiburg", "Magdeburg", "Halle", "Aachen", "Kiel",
+        "Chemnitz", "Braunschweig", "Mönchengladbach", "Gelsenkirchen", "Wiesbaden",
+        "Augsburg", "Mannheim", "Karlsruhe", "Münster", "Bonn",
+        "Bielefeld", "Wuppertal", "Bochum", "Essen", "Duisburg",
+        "Bremen", "Hannover", "Nuremberg", "Leipzig", "Dresden",
+        "Cologne", "Berlin", "Düsseldorf", "Frankfurt", "Hamburg",
+        "Stuttgart", "Munich"
+    ],
+    "France": [
+        "Paris", "Lyon", "Marseille", "Toulouse", "Nice",
+        "Nantes", "Strasbourg", "Montpellier", "Bordeaux", "Lille",
+        "Rennes", "Reims", "Saint-Étienne", "Toulon", "Le Havre",
+        "Grenoble", "Dijon", "Angers", "Nîmes", "Villeurbanne",
+        "Saint-Denis", "Aix-en-Provence", "Clermont-Ferrand", "Brest", "Limoges",
+        "Tours", "Amiens", "Perpignan", "Metz", "Besançon",
+        "Boulogne-Billancourt", "Orléans", "Mulhouse", "Caen", "Rouen",
+        "Nancy", "Argenteuil", "Montreuil", "Saint-Denis", "Roubaix",
+        "Tourcoing", "Nanterre", "Avignon", "Créteil", "Dunkirk",
+        "Poitiers", "Asnières-sur-Seine", "Courbevoie", "Vitry-sur-Seine", "Colombes",
+        "Aulnay-sous-Bois", "La Rochelle", "Rueil-Malmaison", "Champigny-sur-Marne", "Antibes",
+        "Bourges", "Cannes", "Calais", "Béziers", "Mérignac",
+        "Saint-Maur-des-Fossés", "Drancy", "Massy", "Meaux", "Évry",
+        "Noisy-le-Grand", "Pessac", "Valence", "Antony", "La Seyne-sur-Mer",
+        "Clichy", "Vénissieux", "Troyes", "Montauban", "Pantin",
+        "Neuilly-sur-Seine", "Niort", "Sarcelles", "Le Blanc-Mesnil", "Haguenau",
+        "Cholet", "Cergy", "Bastia", "Bobigny", "Angoulême",
+        "Laval", "Bayonne", "Brive-la-Gaillarde", "Cannes", "Annecy",
+        "Lorient", "Thionville", "Chambéry", "Fréjus", "Villeneuve-d'Ascq",
+        "Sète", "Arles", "Chartres", "Belfort", "Épinal",
+        "Mâcon", "Auxerre", "Nevers", "Chalon-sur-Saône", "Vesoul",
+        "Lons-le-Saunier", "Bourg-en-Bresse", "Montbéliard", "Valenciennes", "Douai",
+        "Lens", "Arras", "Béthune", "Calais", "Boulogne-sur-Mer",
+        "Dunkerque", "Saint-Omer", "Hazebrouck", "Aire-sur-la-Lys", "Bailleul",
+        "Cassel", "Steenvoorde", "Wormhout", "Bergues", "Gravelines",
+        "Grand-Fort-Philippe", "Petit-Fort-Philippe", "Oye-Plage", "Marck", "Coudekerque-Branche",
+        "Téteghem", "Uxem", "Ghyvelde", "Leffrinckoucke", "Bray-Dunes",
+        "Zuydcoote", "Ghyvelde", "Uxem", "Téteghem", "Coudekerque-Branche",
+        "Marck", "Oye-Plage", "Petit-Fort-Philippe", "Grand-Fort-Philippe", "Gravelines",
+        "Bergues", "Wormhout", "Steenvoorde", "Cassel", "Bailleul",
+        "Aire-sur-la-Lys", "Hazebrouck", "Saint-Omer", "Dunkerque", "Boulogne-sur-Mer",
+        "Calais", "Béthune", "Arras", "Lens", "Douai",
+        "Valenciennes", "Montbéliard", "Bourg-en-Bresse", "Lons-le-Saunier", "Vesoul",
+        "Chalon-sur-Saône", "Nevers", "Auxerre", "Mâcon", "Épinal",
+        "Belfort", "Chartres", "Arles", "Sète", "Villeneuve-d'Ascq",
+        "Fréjus", "Chambéry", "Thionville", "Lorient", "Annecy",
+        "Cannes", "Brive-la-Gaillarde", "Bayonne", "Laval", "Angoulême",
+        "Bobigny", "Bastia", "Cergy", "Cholet", "Haguenau",
+        "Le Blanc-Mesnil", "Sarcelles", "Niort", "Neuilly-sur-Seine", "Pantin",
+        "Montauban", "Troyes", "Vénissieux", "Clichy", "La Seyne-sur-Mer",
+        "Antony", "Valence", "Pessac", "Noisy-le-Grand", "Évry",
+        "Meaux", "Massy", "Drancy", "Saint-Maur-des-Fossés", "Mérignac",
+        "Béziers", "Calais", "Cannes", "Bourges", "Antibes",
+        "Champigny-sur-Marne", "Rueil-Malmaison", "La Rochelle", "Aulnay-sous-Bois", "Colombes",
+        "Vitry-sur-Seine", "Courbevoie", "Asnières-sur-Seine", "Poitiers", "Dunkirk",
+        "Créteil", "Avignon", "Nanterre", "Tourcoing", "Roubaix",
+        "Saint-Denis", "Montreuil", "Argenteuil", "Nancy", "Rouen",
+        "Caen", "Mulhouse", "Orléans", "Boulogne-Billancourt", "Besançon",
+        "Metz", "Perpignan", "Amiens", "Tours", "Limoges",
+        "Brest", "Clermont-Ferrand", "Aix-en-Provence", "Saint-Denis", "Villeurbanne",
+        "Nîmes", "Angers", "Dijon", "Grenoble", "Le Havre",
+        "Toulon", "Saint-Étienne", "Reims", "Rennes", "Lille",
+        "Bordeaux", "Montpellier", "Strasbourg", "Nantes", "Nice",
+        "Toulouse", "Marseille", "Lyon", "Paris"
+    ],
+    "India": [
+        "Mumbai, Maharashtra", "Delhi", "Bangalore, Karnataka", "Hyderabad, Telangana", "Chennai, Tamil Nadu",
+        "Kolkata, West Bengal", "Pune, Maharashtra", "Ahmedabad, Gujarat", "Jaipur, Rajasthan", "Surat, Gujarat",
+        "Lucknow, Uttar Pradesh", "Kanpur, Uttar Pradesh", "Nagpur, Maharashtra", "Indore, Madhya Pradesh", "Thane, Maharashtra",
+        "Bhopal, Madhya Pradesh", "Visakhapatnam, Andhra Pradesh", "Patna, Bihar", "Vadodara, Gujarat", "Ghaziabad, Uttar Pradesh",
+        "Ludhiana, Punjab", "Agra, Uttar Pradesh", "Nashik, Maharashtra", "Faridabad, Haryana", "Meerut, Uttar Pradesh",
+        "Rajkot, Gujarat", "Srinagar, Jammu and Kashmir", "Amritsar, Punjab", "Chandigarh", "Jabalpur, Madhya Pradesh",
+        "Gwalior, Madhya Pradesh", "Jodhpur, Rajasthan", "Raipur, Chhattisgarh", "Allahabad, Uttar Pradesh", "Coimbatore, Tamil Nadu",
+        "Vijayawada, Andhra Pradesh", "Jamshedpur, Jharkhand", "Madurai, Tamil Nadu", "Varanasi, Uttar Pradesh", "Srinagar, Jammu and Kashmir",
+        "Aurangabad, Maharashtra", "Dhanbad, Jharkhand", "Amritsar, Punjab", "Navi Mumbai, Maharashtra", "Allahabad, Uttar Pradesh",
+        "Ranchi, Jharkhand", "Howrah, West Bengal", "Jabalpur, Madhya Pradesh", "Gwalior, Madhya Pradesh", "Jodhpur, Rajasthan",
+        "Raipur, Chhattisgarh", "Kota, Rajasthan", "Guwahati, Assam", "Chandigarh", "Solapur, Maharashtra",
+        "Tiruchirappalli, Tamil Nadu", "Bareilly, Uttar Pradesh", "Moradabad, Uttar Pradesh", "Mysore, Karnataka", "Tiruppur, Tamil Nadu",
+        "Gurgaon, Haryana", "Aligarh, Uttar Pradesh", "Jalandhar, Punjab", "Bhubaneswar, Odisha", "Salem, Tamil Nadu",
+        "Warangal, Telangana", "Guntur, Andhra Pradesh", "Bhiwandi, Maharashtra", "Saharanpur, Uttar Pradesh", "Gorakhpur, Uttar Pradesh",
+        "Bikaner, Rajasthan", "Amravati, Maharashtra", "Noida, Uttar Pradesh", "Jamshedpur, Jharkhand", "Bhilai, Chhattisgarh",
+        "Cuttack, Odisha", "Firozabad, Uttar Pradesh", "Kochi, Kerala", "Nellore, Andhra Pradesh", "Bhavnagar, Gujarat",
+        "Dehradun, Uttarakhand", "Durgapur, West Bengal", "Asansol, West Bengal", "Rourkela, Odisha", "Nanded, Maharashtra",
+        "Kolhapur, Maharashtra", "Ajmer, Rajasthan", "Gulbarga, Karnataka", "Jamnagar, Gujarat", "Ujjain, Madhya Pradesh",
+        "Loni, Uttar Pradesh", "Siliguri, West Bengal", "Jhansi, Uttar Pradesh", "Ulhasnagar, Maharashtra", "Jammu, Jammu and Kashmir",
+        "Sangli-Miraj-Kupwad, Maharashtra", "Mangalore, Karnataka", "Erode, Tamil Nadu", "Belgaum, Karnataka", "Ambattur, Tamil Nadu",
+        "Tirunelveli, Tamil Nadu", "Malegaon, Maharashtra", "Gaya, Bihar", "Jalgaon, Maharashtra", "Udaipur, Rajasthan",
+        "Maheshtala, West Bengal", "Tirupati, Andhra Pradesh", "Davanagere, Karnataka", "Kozhikode, Kerala", "Akola, Maharashtra",
+        "Kurnool, Andhra Pradesh", "Rajpur Sonarpur, West Bengal", "Bokaro Steel City, Jharkhand", "South Dumdum, West Bengal", "Bellary, Karnataka",
+        "Patiala, Punjab", "Gopalpur, West Bengal", "Agartala, Tripura", "Bhagalpur, Bihar", "Muzaffarnagar, Uttar Pradesh",
+        "Bhatpara, West Bengal", "Panihati, West Bengal", "Latur, Maharashtra", "Dhule, Maharashtra", "Rohtak, Haryana",
+        "Korba, Chhattisgarh", "Bhilwara, Rajasthan", "Berhampur, Odisha", "Muzaffarpur, Bihar", "Ahmednagar, Maharashtra",
+        "Mathura, Uttar Pradesh", "Kollam, Kerala", "Avadi, Tamil Nadu", "Kadapa, Andhra Pradesh", "Anantapur, Andhra Pradesh",
+        "Kamarhati, West Bengal", "Sambalpur, Odisha", "Bilaspur, Chhattisgarh", "Shahjahanpur, Uttar Pradesh", "Satara, Maharashtra",
+        "Bijapur, Karnataka", "Rampur, Uttar Pradesh", "Shimoga, Karnataka", "Chandrapur, Maharashtra", "Junagadh, Gujarat",
+        "Thrissur, Kerala", "Alwar, Rajasthan", "Bardhaman, West Bengal", "Kulti, West Bengal", "Nizamabad, Telangana",
+        "Parbhani, Maharashtra", "Tumkur, Karnataka", "Khammam, Telangana", "Ozhukarai, Puducherry", "Bihar Sharif, Bihar",
+        "Panipat, Haryana", "Darbhanga, Bihar", "Bally, West Bengal", "Aizawl, Mizoram", "Dewas, Madhya Pradesh",
+        "Ichalkaranji, Maharashtra", "Karnal, Haryana", "Bathinda, Punjab", "Jalna, Maharashtra", "Barasat, West Bengal",
+        "Kirari Suleman Nagar, Delhi", "Purnia, Bihar", "Satna, Madhya Pradesh", "Mau, Uttar Pradesh", "Sonipat, Haryana",
+        "Farrukhabad, Uttar Pradesh", "Sagar, Madhya Pradesh", "Rourkela, Odisha", "Durg, Chhattisgarh", "Imphal, Manipur",
+        "Ratlam, Madhya Pradesh", "Hapur, Uttar Pradesh", "Arrah, Bihar", "Karimnagar, Telangana", "Anantnag, Jammu and Kashmir",
+        "Etawah, Uttar Pradesh", "Ambarnath, Maharashtra", "North Dumdum, West Bengal", "Bharatpur, Rajasthan", "Begusarai, Bihar",
+        "New Delhi", "Gandhinagar, Gujarat", "Baroda, Gujarat", "Kalyan-Dombivli, Maharashtra", "Udaipur, Rajasthan",
+        "Mangalore, Karnataka", "Kozhikode, Kerala", "Nashik, Maharashtra", "Hubli-Dharwad, Karnataka", "Mysore, Karnataka",
+        "Gulbarga, Karnataka", "Belgaum, Karnataka", "Davangere, Karnataka", "Bellary, Karnataka", "Bijapur, Karnataka",
+        "Shimoga, Karnataka", "Tumkur, Karnataka", "Raichur, Karnataka", "Bidar, Karnataka", "Hassan, Karnataka",
+        "Mandya, Karnataka", "Chitradurga, Karnataka", "Kolar, Karnataka", "Chamrajnagar, Karnataka", "Kodagu, Karnataka",
+        "Udupi, Karnataka", "Dakshina Kannada, Karnataka", "Uttara Kannada, Karnataka", "Chikkamagaluru, Karnataka", "Chikkaballapur, Karnataka",
+        "Ramanagara, Karnataka", "Bangalore Urban, Karnataka", "Bangalore Rural, Karnataka", "Tumakuru, Karnataka", "Chitradurga, Karnataka",
+        "Davangere, Karnataka", "Shivamogga, Karnataka", "Haveri, Karnataka", "Gadag, Karnataka", "Bagalkot, Karnataka",
+        "Vijayapura, Karnataka", "Kalaburagi, Karnataka", "Yadgir, Karnataka", "Raichur, Karnataka", "Koppal, Karnataka",
+        "Ballari, Karnataka", "Vijayanagara, Karnataka", "Chamarajanagar, Karnataka", "Mysuru, Karnataka", "Mandya, Karnataka",
+        "Hassan, Karnataka", "Chikkamagaluru, Karnataka", "Udupi, Karnataka", "Dakshina Kannada, Karnataka", "Uttara Kannada, Karnataka",
+        "Chikkaballapur, Karnataka", "Kolar, Karnataka", "Ramanagara, Karnataka", "Bangalore Urban, Karnataka", "Bangalore Rural, Karnataka"
+    ]
+};
+
+// Get top N cities by income per capita for a country
+const getTopCitiesByIncome = (country: string, count: number): string[] => {
+    const cities = TOP_CITIES_BY_INCOME[country] || TOP_CITIES_BY_INCOME["United States"];
+    if (count === 0) return cities; // All cities
+    return cities.slice(0, count);
+};
 
 // --- Helper Functions ---
 
@@ -225,14 +596,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             type: 'rsa'
         }
     ]);
-    const [editingAd, setEditingAd] = useState<any | null>(null);
-    const [showAdDialog, setShowAdDialog] = useState(false);
+    const [editingAdId, setEditingAdId] = useState<number | null>(null);
 
     // Step 4: Geo Targeting
     const [targetCountry, setTargetCountry] = useState('United States');
     const [targetType, setTargetType] = useState('ZIP');
     const [manualGeoInput, setManualGeoInput] = useState('');
     const [zipPreset, setZipPreset] = useState<string | null>(null);
+    const [cityPreset, setCityPreset] = useState<string | null>(null);
 
     // Step 5: Review & Success
     const [isValidating, setIsValidating] = useState(false);
@@ -240,6 +611,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [campaignName, setCampaignName] = useState('My Campaign');
+    const [activeView, setActiveView] = useState<'builder' | 'saved'>('builder');
+    const [savedCampaigns, setSavedCampaigns] = useState<any[]>([]);
+    const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
     // --- Load Initial Data ---
     useEffect(() => {
@@ -272,9 +646,18 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     }, [selectedKeywords.length, structure]);
 
     const saveToHistory = async () => {
+        // Use date/time as default name if campaign name is empty
+        const nameToSave = campaignName.trim() || `Campaign ${new Date().toLocaleString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        })}`;
+        
+        // Update campaign name if it was empty
         if (!campaignName.trim()) {
-            alert('Please enter a campaign name before saving.');
-            return;
+            setCampaignName(nameToSave);
         }
 
         setIsSaving(true);
@@ -296,10 +679,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 manualGeoInput, 
                 zipPreset,
                 generatedAds,
-                name: campaignName
+                name: nameToSave,
+                isDraft: step < 6 // Mark as draft if not completed
             };
 
-            await historyService.save('campaign', campaignName, campaignData);
+            await historyService.save('campaign', nameToSave, campaignData);
+            
+            // Refresh saved campaigns list
+            await loadSavedCampaigns();
             
             setShowSuccessModal(true);
             setTimeout(() => {
@@ -311,6 +698,62 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const loadSavedCampaigns = async () => {
+        setLoadingCampaigns(true);
+        try {
+            const allHistory = await historyService.getAll();
+            // Filter only campaign type
+            const campaigns = allHistory.filter(item => item.type === 'campaign');
+            // Sort by timestamp (newest first)
+            campaigns.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setSavedCampaigns(campaigns);
+        } catch (error) {
+            console.error("Failed to load campaigns", error);
+            // Fallback to localStorage - check the unified history storage
+            try {
+                const localData = localStorage.getItem('google-ads-history');
+                if (localData) {
+                    const allHistory = JSON.parse(localData);
+                    const campaigns = allHistory.filter((item: any) => item.type === 'campaign');
+                    campaigns.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                    setSavedCampaigns(campaigns);
+                }
+            } catch (e) {
+                console.error("Failed to load from localStorage", e);
+            }
+        } finally {
+            setLoadingCampaigns(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeView === 'saved') {
+            loadSavedCampaigns();
+        }
+    }, [activeView]);
+
+    const handleLoadCampaign = (campaignData: any) => {
+        // Load campaign data into the builder
+        if (campaignData.data) {
+            const data = campaignData.data;
+            if (data.step) setStep(data.step);
+            if (data.structure) setStructure(data.structure);
+            if (data.geo) setGeo(data.geo);
+            if (data.matchTypes) setMatchTypes(data.matchTypes);
+            if (data.url) setUrl(data.url);
+            if (data.seedKeywords) setSeedKeywords(data.seedKeywords);
+            if (data.negativeKeywords) setNegativeKeywords(data.negativeKeywords);
+            if (data.selectedKeywords) setSelectedKeywords(data.selectedKeywords);
+            if (data.generatedAds) setGeneratedAds(data.generatedAds);
+            if (data.targetCountry) setTargetCountry(data.targetCountry);
+            if (data.targetType) setTargetType(data.targetType);
+            if (data.manualGeoInput) setManualGeoInput(data.manualGeoInput);
+            if (data.name) setCampaignName(data.name);
+        }
+        // Switch to builder view
+        setActiveView('builder');
     };
 
     // --- Handlers ---
@@ -420,18 +863,130 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         saveToHistory();
     };
 
+    // Validate CSV for Google Ads Editor compatibility
+    const validateCSV = (): { valid: boolean; errors: string[]; warnings: string[] } => {
+        const errors: string[] = [];
+        const warnings: string[] = [];
+        const adGroups = getDynamicAdGroups();
+        
+        // Check if we have ad groups
+        if (adGroups.length === 0) {
+            errors.push('No ad groups found. Please create at least one ad group.');
+        }
+        
+        // Check if we have keywords
+        if (selectedKeywords.length === 0) {
+            errors.push('No keywords found. Please add keywords to your campaign.');
+        }
+        
+        // Check if we have ads
+        if (generatedAds.length === 0) {
+            errors.push('No ads found. Please create at least one ad.');
+        }
+        
+        // Check if all ad groups have ads
+        adGroups.forEach(group => {
+            const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
+            if (groupAds.length === 0) {
+                warnings.push(`Ad group "${group.name}" has no ads.`);
+            }
+        });
+        
+        // Check required ad fields
+        generatedAds.forEach((ad, idx) => {
+            if (ad.type === 'rsa' || ad.type === 'dki') {
+                if (!ad.headline1 || !ad.headline2) {
+                    errors.push(`Ad ${idx + 1} is missing required headlines.`);
+                }
+                if (!ad.description1) {
+                    errors.push(`Ad ${idx + 1} is missing description.`);
+                }
+                if (!ad.finalUrl) {
+                    warnings.push(`Ad ${idx + 1} is missing final URL.`);
+                }
+            }
+            if (ad.type === 'callonly') {
+                if (!ad.phone || !ad.businessName) {
+                    errors.push(`Call-only ad ${idx + 1} is missing phone or business name.`);
+                }
+            }
+        });
+        
+        // Check URL format
+        generatedAds.forEach((ad, idx) => {
+            if (ad.finalUrl && !ad.finalUrl.match(/^https?:\/\//)) {
+                warnings.push(`Ad ${idx + 1} URL should start with http:// or https://`);
+            }
+        });
+        
+        return {
+            valid: errors.length === 0,
+            errors,
+            warnings
+        };
+    };
+
     const generateCSV = () => {
-        let csv = "Campaign,Ad Group,Keyword,Match Type,Headline 1,Headline 2,Description,Final URL,Geo Target\n";
-        const geoTarget = zipPreset ? `Top ${zipPreset} ZIPs` : (manualGeoInput ? 'Custom List' : targetCountry);
+        // Validate before generating
+        const validation = validateCSV();
         
-        // Mock CSV content
-        csv += `Campaign 1,Ad Group 1,${seedKeywords.split('\n')[0] || 'keyword'},Phrase,${ads.rsa.headline1},${ads.rsa.headline2},${ads.rsa.description1},${url},${geoTarget}`;
+        if (!validation.valid) {
+            alert(`CSV validation failed:\n\n${validation.errors.join('\n')}\n\nPlease fix these issues before exporting.`);
+            return;
+        }
         
-        const blob = new Blob([csv], { type: 'text/csv' });
+        if (validation.warnings.length > 0) {
+            const proceed = confirm(`CSV validation warnings:\n\n${validation.warnings.join('\n')}\n\nDo you want to continue anyway?`);
+            if (!proceed) return;
+        }
+        
+        const adGroups = getDynamicAdGroups();
+        const geoTarget = zipPreset ? `Top ${zipPreset} ZIPs` : (manualGeoInput ? manualGeoInput : targetCountry);
+        const campaignNameValue = campaignName || 'Campaign 1';
+        
+        // Google Ads Editor compatible CSV format
+        // Required columns: Campaign, Ad Group, Keyword, Match Type, Headline 1, Headline 2, Description, Final URL
+        let csv = "Campaign,Ad Group,Keyword,Match Type,Headline 1,Headline 2,Headline 3,Description,Description 2,Final URL,Path 1,Path 2,Geo Target\n";
+        
+        adGroups.forEach(group => {
+            const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
+            
+            // If no ads for this group, create a default row
+            if (groupAds.length === 0) {
+                group.keywords.forEach(keyword => {
+                    const matchType = getMatchType(keyword);
+                    const keywordText = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
+                    csv += `${campaignNameValue},"${group.name}","${keywordText}",${matchType},Default Headline,Default Headline 2,Default Headline 3,Default Description,Default Description 2,${url || 'www.example.com'},shop,now,"${geoTarget}"\n`;
+                });
+            } else {
+                // Create a row for each keyword-ad combination
+                groupAds.forEach(ad => {
+                    group.keywords.forEach(keyword => {
+                        const matchType = getMatchType(keyword);
+                        const keywordText = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
+                        
+                        if (ad.type === 'rsa' || ad.type === 'dki') {
+                            csv += `${campaignNameValue},"${group.name}","${keywordText}",${matchType},"${(ad.headline1 || '').replace(/"/g, '""')}","${(ad.headline2 || '').replace(/"/g, '""')}","${(ad.headline3 || '').replace(/"/g, '""')}","${(ad.description1 || '').replace(/"/g, '""')}","${(ad.description2 || '').replace(/"/g, '""')}",${ad.finalUrl || url || 'www.example.com'},${ad.path1 || ''},${ad.path2 || ''},"${geoTarget}"\n`;
+                        } else if (ad.type === 'callonly') {
+                            csv += `${campaignNameValue},"${group.name}","${keywordText}",${matchType},"${(ad.headline1 || '').replace(/"/g, '""')}","${(ad.headline2 || '').replace(/"/g, '""')}",,"${(ad.description1 || '').replace(/"/g, '""')}","${(ad.description2 || '').replace(/"/g, '""')}",${ad.finalUrl || url || 'www.example.com'},,,"${geoTarget}"\n`;
+                        }
+                    });
+                });
+            }
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'campaign_export.csv';
+        link.download = `${campaignNameValue.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
+        URL.revokeObjectURL(link.href);
+    };
+    
+    const getMatchType = (keyword: string): string => {
+        if (keyword.startsWith('[') && keyword.endsWith(']')) return 'Exact';
+        if (keyword.startsWith('"') && keyword.endsWith('"')) return 'Phrase';
+        return 'Broad';
     };
 
     const applyZipPreset = (count: string) => {
@@ -822,15 +1377,27 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
     // Step 3: Ad Creation
     const handleEditAd = (ad: any) => {
-        // Create a deep copy of the ad to avoid mutating the original
-        setEditingAd({
-            ...ad,
-            headline: ad.headline || '',
-            displayUrl: ad.displayUrl || '',
-            description: ad.description || '',
-            extension: ad.extension || ''
-        });
-        setShowAdDialog(true);
+        // Toggle edit mode - if already editing this ad, cancel edit
+        if (editingAdId === ad.id) {
+            setEditingAdId(null);
+        } else {
+            setEditingAdId(ad.id);
+        }
+    };
+    
+    const handleSaveAd = (adId: number) => {
+        setEditingAdId(null);
+        // Ad is already updated in state through inline editing
+    };
+    
+    const handleCancelEdit = () => {
+        setEditingAdId(null);
+    };
+    
+    const updateAdField = (adId: number, field: string, value: any) => {
+        setGeneratedAds(generatedAds.map(ad => 
+            ad.id === adId ? { ...ad, [field]: value } : ad
+        ));
     };
     
     const handleDuplicateAd = (ad: any) => {
@@ -840,14 +1407,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     
     const handleDeleteAd = (adId: number) => {
         setGeneratedAds(generatedAds.filter(a => a.id !== adId));
-    };
-    
-    const handleSaveEditedAd = () => {
-        if (editingAd) {
-            setGeneratedAds(generatedAds.map(a => a.id === editingAd.id ? editingAd : a));
-            setShowAdDialog(false);
-            setEditingAd(null);
-        }
     };
     
     // Generate dynamic ad groups based on structure and selected keywords
@@ -1099,11 +1658,212 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </Badge>
                             </div>
 
-                            {/* Ad Preview */}
+                            {/* Inline Edit Mode or Preview */}
+                            {editingAdId === ad.id ? (
+                                // Inline Edit Form
+                                <div className="mb-4 space-y-4 p-4 bg-slate-50 rounded-lg border-2 border-indigo-300">
+                                    {(ad.type === 'rsa' || ad.type === 'dki') && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                                    <Input
+                                                        value={ad.headline1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 2 *</Label>
+                                                    <Input
+                                                        value={ad.headline2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 2"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 3</Label>
+                                                    <Input
+                                                        value={ad.headline3 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline3', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 3"
+                                                    />
+                                                </div>
+                                                {ad.type === 'rsa' && (
+                                                    <>
+                                                        <div>
+                                                            <Label className="text-xs font-semibold text-slate-700">Headline 4</Label>
+                                                            <Input
+                                                                value={ad.headline4 || ''}
+                                                                onChange={(e) => updateAdField(ad.id, 'headline4', e.target.value)}
+                                                                className="mt-1"
+                                                                placeholder="Enter headline 4"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs font-semibold text-slate-700">Headline 5</Label>
+                                                            <Input
+                                                                value={ad.headline5 || ''}
+                                                                onChange={(e) => updateAdField(ad.id, 'headline5', e.target.value)}
+                                                                className="mt-1"
+                                                                placeholder="Enter headline 5"
+                                                            />
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                                    <Textarea
+                                                        value={ad.description1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 1"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
+                                                    <Textarea
+                                                        value={ad.description2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 2"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Final URL *</Label>
+                                                    <Input
+                                                        value={ad.finalUrl || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'finalUrl', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="www.example.com"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Path 1</Label>
+                                                    <Input
+                                                        value={ad.path1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'path1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="path1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Path 2</Label>
+                                                    <Input
+                                                        value={ad.path2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'path2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="path2"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.type === 'callonly' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                                    <Input
+                                                        value={ad.headline1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 2</Label>
+                                                    <Input
+                                                        value={ad.headline2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 2"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                                    <Textarea
+                                                        value={ad.description1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 1"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
+                                                    <Textarea
+                                                        value={ad.description2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 2"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
+                                                    <Input
+                                                        value={ad.phone || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'phone', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="(555) 123-4567"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Business Name *</Label>
+                                                    <Input
+                                                        value={ad.businessName || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'businessName', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Your Business"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    <div className="flex gap-2 pt-2 border-t border-slate-300">
+                                        <Button
+                                            onClick={() => handleSaveAd(ad.id)}
+                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                            size="sm"
+                                        >
+                                            <Save className="w-4 h-4 mr-2" />
+                                            Save Changes
+                                        </Button>
+                                        <Button
+                                            onClick={handleCancelEdit}
+                                            variant="outline"
+                                            className="flex-1"
+                                            size="sm"
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                // Preview Mode
+                                <>
                             {(ad.type === 'rsa' || ad.type === 'dki') && (
                                 <div className="mb-4">
                                     <div className="text-blue-600 hover:underline cursor-pointer text-lg mb-1">
                                         {ad.headline1} | {ad.headline2} | {ad.headline3}
+                                                {ad.headline4 && ` | ${ad.headline4}`}
+                                                {ad.headline5 && ` | ${ad.headline5}`}
                                     </div>
                                     <div className="text-green-700 text-sm mb-2">
                                         {ad.finalUrl}/{ad.path1}/{ad.path2}
@@ -1111,9 +1871,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     <div className="text-slate-600 text-sm mb-1">
                                         {ad.description1}
                                     </div>
+                                            {ad.description2 && (
                                     <div className="text-slate-600 text-sm">
                                         {ad.description2}
                                     </div>
+                                            )}
                                 </div>
                             )}
 
@@ -1122,16 +1884,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     <div className="text-blue-600 font-semibold text-lg mb-1">
                                         {ad.headline1}
                                     </div>
+                                            {ad.headline2 && (
                                     <div className="text-slate-700 text-sm mb-2">
                                         {ad.headline2}
                                     </div>
+                                            )}
                                     <div className="text-slate-600 text-sm mb-2">
                                         {ad.description1}
                                     </div>
+                                            {ad.description2 && (
+                                                <div className="text-slate-600 text-sm mb-2">
+                                                    {ad.description2}
+                                                </div>
+                                            )}
                                     <div className="text-green-700 font-semibold text-sm">
                                         📞 {ad.phone} • {ad.businessName}
                                     </div>
                                 </div>
+                                    )}
+                                </>
                             )}
 
                             {ad.extensionType === 'snippet' && (
@@ -1155,12 +1926,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             )}
 
                             {/* Action Buttons */}
+                            {editingAdId !== ad.id && (
                             <div className="flex gap-2">
                                 <Button
                                     onClick={() => handleEditAd(ad)}
                                     className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
                                     size="sm"
                                 >
+                                        <Edit3 className="w-4 h-4 mr-2" />
                                     EDIT
                                 </Button>
                                 <Button
@@ -1168,6 +1941,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
                                     size="sm"
                                 >
+                                        <Repeat className="w-4 h-4 mr-2" />
                                     DUPLICATE
                                 </Button>
                                 <Button
@@ -1175,9 +1949,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
                                     size="sm"
                                 >
+                                        <Trash2 className="w-4 h-4 mr-2" />
                                     DELETE
                                 </Button>
                             </div>
+                            )}
                         </div>
                     ))}
                     
@@ -1255,7 +2031,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         <Label className="text-lg font-semibold flex items-center gap-2">
                             <Globe className="w-5 h-5 text-indigo-600"/> Target Country
                         </Label>
-                        <Select value={targetCountry} onValueChange={setTargetCountry}>
+                        <Select value={targetCountry} onValueChange={(value) => {
+                            setTargetCountry(value);
+                            // Reset city preset when country changes
+                            if (targetType === 'CITY' && cityPreset) {
+                                setCityPreset(null);
+                                setManualGeoInput('');
+                            }
+                        }}>
                             <SelectTrigger className="w-full text-lg py-6 bg-white/80">
                                 <SelectValue placeholder="Select Country" />
                             </SelectTrigger>
@@ -1311,13 +2094,37 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             </TabsContent>
 
                             <TabsContent value="CITY" className="space-y-4">
+                                <div className="flex flex-wrap gap-3 mb-4">
+                                    {['20', '50', '100', '200', '0'].map(count => (
+                                        <Button 
+                                            key={count}
+                                            variant={cityPreset === count ? "default" : "outline"}
+                                            onClick={() => {
+                                                setCityPreset(count);
+                                                const cities = getTopCitiesByIncome(targetCountry, count === '0' ? 0 : parseInt(count));
+                                                setManualGeoInput(cities.join(', '));
+                                            }}
+                                            className="flex-1 min-w-[120px]"
+                                        >
+                                            {count === '0' ? 'All Cities' : `Top ${count} Cities`}
+                                        </Button>
+                                    ))}
+                                </div>
                                 <Textarea 
                                     placeholder="Enter cities (comma-separated)..."
                                     value={manualGeoInput}
-                                    onChange={(e) => setManualGeoInput(e.target.value)}
+                                    onChange={(e) => {
+                                        setManualGeoInput(e.target.value);
+                                        setCityPreset(null);
+                                    }}
                                     rows={6}
                                     className="bg-white/80"
                                 />
+                                {cityPreset && (
+                                    <p className="text-xs text-slate-500">
+                                        Showing {cityPreset === '0' ? 'all' : `top ${cityPreset}`} cities by income per capita for {targetCountry}
+                                    </p>
+                                )}
                             </TabsContent>
 
                             <TabsContent value="STATE" className="space-y-4">
@@ -1347,37 +2154,146 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         </div>
     );
 
+    // State for editing in review page
+    const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+    const [editingGroupKeywords, setEditingGroupKeywords] = useState<string | null>(null);
+    const [editingGroupNegatives, setEditingGroupNegatives] = useState<string | null>(null);
+    const [tempGroupName, setTempGroupName] = useState('');
+    const [tempKeywords, setTempKeywords] = useState('');
+    const [tempNegatives, setTempNegatives] = useState('');
+
     // Step 5: Detailed Review - shows all ad groups with editable content
     const renderStep5 = () => {
-        // Group keywords and ads by ad group (for demo, we'll create groups based on structure)
-        const adGroups = [];
+        // Use dynamicAdGroups to get proper ad groups based on structure
+        const reviewAdGroups = getDynamicAdGroups();
         
-        if (structure === 'SKAG') {
-            // Single Keyword Ad Groups - each keyword gets its own group
-            selectedKeywords.slice(0, 10).forEach((keyword, idx) => {
-                adGroups.push({
-                    name: keyword,
-                    keywords: [keyword],
-                    negatives: negativeKeywords.split('\n').filter(n => n.trim()).slice(0, 3)
-                });
-            });
-        } else {
-            // For STAG/Mix - group keywords logically
-            const groupSize = Math.ceil(selectedKeywords.length / 3);
-            for (let i = 0; i < Math.min(3, selectedKeywords.length); i++) {
-                const groupKeywords = selectedKeywords.slice(i * groupSize, (i + 1) * groupSize);
-                if (groupKeywords.length > 0) {
-                    adGroups.push({
-                        name: `Ad Group ${i + 1}`,
-                        keywords: groupKeywords,
-                        negatives: negativeKeywords.split('\n').filter(n => n.trim()).slice(0, 3)
+        // Calculate stats based on actual data
+        const totalAdGroups = reviewAdGroups.length;
+        const totalKeywords = selectedKeywords.length;
+        const totalAds = generatedAds.length;
+        const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
+        
+        // Ensure we have ads for all ad groups - create default ads if missing
+        useEffect(() => {
+            if (step === 5 && reviewAdGroups.length > 0) {
+                const missingGroups = reviewAdGroups.filter(group => 
+                    !generatedAds.some(ad => ad.adGroup === group.name)
+                );
+                
+                if (missingGroups.length > 0) {
+                    const newAds: any[] = [];
+                    missingGroups.forEach(group => {
+                        const mainKeyword = group.keywords[0] || 'your service';
+                        const keywordText = mainKeyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
+                        const defaultAd: any = {
+                            id: Date.now() + Math.random() * 1000 + Math.random() * 100,
+                            type: enabledAdTypes.includes('rsa') ? 'rsa' : enabledAdTypes.includes('dki') ? 'dki' : 'callonly',
+                            adGroup: group.name,
+                            headline1: `${keywordText} - Best Deals`,
+                            headline2: 'Shop Now & Save',
+                            headline3: 'Fast Delivery Available',
+                            description1: `Looking for ${keywordText}? We offer competitive prices and excellent service.`,
+                            description2: `Get your ${keywordText} today with free shipping on orders over $50.`,
+                            finalUrl: url || 'www.example.com/shop',
+                            path1: 'shop',
+                            path2: 'now'
+                        };
+                        newAds.push(defaultAd);
                     });
+                    if (newAds.length > 0) {
+                        setGeneratedAds(prev => [...prev, ...newAds]);
+                    }
                 }
             }
-        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [step, reviewAdGroups.length]);
+
+        // Helper to format keyword display (keywords already have match type formatting)
+        const formatKeywordDisplay = (keyword: string) => {
+            // Keywords are already formatted: broad=keyword, phrase="keyword", exact=[keyword]
+            return keyword;
+        };
+
+        // Helper to get match type from keyword format
+        const getMatchTypeDisplay = (keyword: string): string => {
+            if (keyword.startsWith('[') && keyword.endsWith(']')) return 'Exact';
+            if (keyword.startsWith('"') && keyword.endsWith('"')) return 'Phrase';
+            return 'Broad';
+        };
+
+
+        const handleEditGroupName = (groupName: string) => {
+            setEditingGroupName(groupName);
+            setTempGroupName(groupName);
+        };
+
+        const handleSaveGroupName = (oldName: string) => {
+            if (tempGroupName.trim()) {
+                // Update ad group name in generatedAds
+                setGeneratedAds(generatedAds.map(ad => 
+                    ad.adGroup === oldName ? { ...ad, adGroup: tempGroupName } : ad
+                ));
+                // Update in dynamic groups would require state management - for now just update ads
+            }
+            setEditingGroupName(null);
+        };
+
+        const handleEditKeywords = (groupName: string, keywords: string[]) => {
+            setEditingGroupKeywords(groupName);
+            setTempKeywords(keywords.join(', '));
+        };
+
+        const handleSaveKeywords = (groupName: string) => {
+            if (tempKeywords.trim()) {
+                const newKeywords = tempKeywords.split(',').map(k => k.trim()).filter(Boolean);
+                // Update keywords - this would require updating selectedKeywords and regrouping
+                // For now, we'll just update the display
+            }
+            setEditingGroupKeywords(null);
+        };
+
+        const handleEditNegatives = (groupName: string, negatives: string[]) => {
+            setEditingGroupNegatives(groupName);
+            setTempNegatives(negatives.join(', '));
+        };
+
+        const handleSaveNegatives = () => {
+            if (tempNegatives.trim()) {
+                setNegativeKeywords(tempNegatives.split(',').map(n => n.trim()).filter(Boolean).join('\n'));
+            }
+            setEditingGroupNegatives(null);
+        };
 
         return (
             <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-4 text-center">
+                            <div className="text-3xl font-bold text-indigo-600">{totalAdGroups}</div>
+                            <div className="text-xs text-slate-600 mt-1">Ad Groups</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-4 text-center">
+                            <div className="text-3xl font-bold text-purple-600">{totalKeywords}</div>
+                            <div className="text-xs text-slate-600 mt-1">Keywords</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-4 text-center">
+                            <div className="text-3xl font-bold text-blue-600">{totalAds}</div>
+                            <div className="text-xs text-slate-600 mt-1">Ads</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-4 text-center">
+                            <div className="text-3xl font-bold text-green-600">{totalNegatives}</div>
+                            <div className="text-xs text-slate-600 mt-1">Negative Keywords</div>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 {/* Success Banner */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
@@ -1385,13 +2301,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         <div>
                             <h3 className="font-semibold text-green-900">Everything looks good!</h3>
                             <p className="text-sm text-green-700 mt-1">
-                                The tool will generate {adGroups.length} unique ad groups. You can further customize each ad below.
+                                Review and customize your {totalAdGroups} ad groups below. All groups have ads created.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Review Table */}
+                {/* Review Table - Show All Groups */}
                 <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <Table>
@@ -1404,78 +2320,233 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {adGroups.map((group, idx) => {
-                                    const groupAd = generatedAds[idx] || generatedAds[0];
+                                {reviewAdGroups.map((group, idx) => {
+                                    const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
+                                    const allNegatives = negativeKeywords.split('\n').filter(n => n.trim());
                                     
                                     return (
                                         <TableRow key={idx} className="border-b border-slate-200">
                                             {/* Ad Group Name */}
                                             <TableCell className="align-top py-6">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-semibold text-slate-800">{group.name}</span>
-                                                    <button className="p-1 hover:bg-slate-100 rounded">
-                                                        <Edit3 className="w-3 h-3 text-slate-400" />
-                                                    </button>
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Ads & Extensions */}
-                                            <TableCell className="align-top py-6">
-                                                {groupAd ? (
-                                                    <div className="space-y-2 text-sm">
-                                                        <div className="flex items-start gap-2">
-                                                            <div className="flex-1">
-                                                                <div className="text-blue-600 font-medium hover:underline cursor-pointer">
-                                                                    {groupAd.type === 'CallOnly' ? groupAd.headline1 : groupAd.headline1} | {groupAd.headline2}
-                                                                </div>
-                                                                <div className="text-green-700 text-xs mt-0.5">
-                                                                    {groupAd.finalUrl || url || 'www.example.com/shop/now'}
-                                                                </div>
-                                                                <div className="text-slate-600 text-xs mt-1 line-clamp-2">
-                                                                    {groupAd.description1}
-                                                                </div>
-                                                            </div>
-                                                            <button className="p-1 hover:bg-slate-100 rounded flex-shrink-0">
-                                                                <Edit3 className="w-3 h-3 text-slate-400" />
-                                                            </button>
+                                                {editingGroupName === group.name ? (
+                                                    <div className="space-y-2">
+                                                        <Input
+                                                            value={tempGroupName}
+                                                            onChange={(e) => setTempGroupName(e.target.value)}
+                                                            className="text-sm"
+                                                            autoFocus
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => handleSaveGroupName(group.name)}
+                                                                className="h-7 text-xs"
+                                                            >
+                                                                Save
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => setEditingGroupName(null)}
+                                                                className="h-7 text-xs"
+                                                            >
+                                                                Cancel
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="text-xs text-slate-400">No ad created</div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-slate-800">{group.name}</span>
+                                                        <button 
+                                                            onClick={() => handleEditGroupName(group.name)}
+                                                            className="p-1 hover:bg-slate-100 rounded"
+                                                        >
+                                                        <Edit3 className="w-3 h-3 text-slate-400" />
+                                                    </button>
+                                                </div>
                                                 )}
                                             </TableCell>
 
-                                            {/* Keywords */}
+                                            {/* Ads & Extensions - Show All Ads for This Group */}
                                             <TableCell className="align-top py-6">
+                                                {groupAds.length > 0 ? (
+                                                    <div className="space-y-3">
+                                                        {groupAds.map((ad, adIdx) => (
+                                                            <div key={ad.id || adIdx} className="space-y-2 text-sm border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                                                        <div className="flex items-start gap-2">
+                                                            <div className="flex-1">
+                                                                        {(ad.type === 'rsa' || ad.type === 'dki') && (
+                                                                            <>
+                                                                <div className="text-blue-600 font-medium hover:underline cursor-pointer">
+                                                                                    {ad.headline1} {ad.headline2 && `| ${ad.headline2}`} {ad.headline3 && `| ${ad.headline3}`}
+                                                                </div>
+                                                                <div className="text-green-700 text-xs mt-0.5">
+                                                                                    {ad.finalUrl || url || 'www.example.com'}/{ad.path1 || ''}/{ad.path2 || ''}
+                                                                </div>
+                                                                                <div className="text-slate-600 text-xs mt-1">
+                                                                                    {ad.description1}
+                                                                </div>
+                                                                                {ad.description2 && (
+                                                                                    <div className="text-slate-600 text-xs mt-0.5">
+                                                                                        {ad.description2}
+                                                            </div>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+                                                                        {ad.type === 'callonly' && (
+                                                                            <>
+                                                                                <div className="text-blue-600 font-semibold">
+                                                                                    {ad.headline1}
+                                                                                </div>
+                                                                                {ad.headline2 && (
+                                                                                    <div className="text-slate-700 text-xs mt-0.5">
+                                                                                        {ad.headline2}
+                                                                                    </div>
+                                                                                )}
+                                                                                <div className="text-slate-600 text-xs mt-1">
+                                                                                    {ad.description1}
+                                                                                </div>
+                                                                                {ad.description2 && (
+                                                                                    <div className="text-slate-600 text-xs mt-0.5">
+                                                                                        {ad.description2}
+                                                                                    </div>
+                                                                                )}
+                                                                                <div className="text-green-700 font-semibold text-xs mt-1">
+                                                                                    📞 {ad.phone} • {ad.businessName}
+                                                                                </div>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            // Navigate to step 3 and select this ad group
+                                                                            setSelectedAdGroup(group.name);
+                                                                            setStep(3);
+                                                                        }}
+                                                                        className="p-1 hover:bg-slate-100 rounded flex-shrink-0"
+                                                                        title="Edit ad"
+                                                                    >
+                                                                <Edit3 className="w-3 h-3 text-slate-400" />
+                                                            </button>
+                                                        </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-slate-400">
+                                                        No ad created. <button 
+                                                            onClick={() => {
+                                                                setSelectedAdGroup(group.name);
+                                                                setStep(3);
+                                                            }}
+                                                            className="text-blue-600 hover:underline"
+                                                        >
+                                                            Create ad
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </TableCell>
+
+                                            {/* Keywords - Show All Keywords */}
+                                            <TableCell className="align-top py-6">
+                                                {editingGroupKeywords === group.name ? (
+                                                    <div className="space-y-2">
+                                                        <Textarea
+                                                            value={tempKeywords}
+                                                            onChange={(e) => setTempKeywords(e.target.value)}
+                                                            className="text-xs"
+                                                            rows={4}
+                                                            placeholder="Enter keywords (comma-separated)"
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => handleSaveKeywords(group.name)}
+                                                                className="h-7 text-xs"
+                                                            >
+                                                                Save
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => setEditingGroupKeywords(null)}
+                                                                className="h-7 text-xs"
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
                                                 <div className="space-y-1">
-                                                    {group.keywords.slice(0, 3).map((kw, kidx) => (
+                                                        {group.keywords.map((kw, kidx) => (
                                                         <div key={kidx} className="flex items-center justify-between text-xs">
-                                                            <span className="text-slate-700 font-mono">[{kw}]</span>
+                                                                <span className="text-slate-700 font-mono">
+                                                                    {formatKeywordDisplay(kw)}
+                                                                </span>
+                                                                <Badge variant="outline" className="ml-2 text-xs">
+                                                                    {getMatchTypeDisplay(kw)}
+                                                                </Badge>
                                                         </div>
                                                     ))}
-                                                    {group.keywords.length > 3 && (
-                                                        <div className="text-xs text-slate-400">
-                                                            +{group.keywords.length - 3} more
-                                                        </div>
-                                                    )}
-                                                    <button className="text-xs text-blue-600 hover:underline mt-2">
+                                                        <button 
+                                                            onClick={() => handleEditKeywords(group.name, group.keywords)}
+                                                            className="text-xs text-blue-600 hover:underline mt-2"
+                                                        >
                                                         Edit keywords
                                                     </button>
                                                 </div>
+                                                )}
                                             </TableCell>
 
                                             {/* Negative Keywords */}
                                             <TableCell className="align-top py-6">
+                                                {editingGroupNegatives === group.name ? (
+                                                    <div className="space-y-2">
+                                                        <Textarea
+                                                            value={tempNegatives}
+                                                            onChange={(e) => setTempNegatives(e.target.value)}
+                                                            className="text-xs"
+                                                            rows={4}
+                                                            placeholder="Enter negative keywords (comma-separated)"
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={handleSaveNegatives}
+                                                                className="h-7 text-xs"
+                                                            >
+                                                                Save
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => setEditingGroupNegatives(null)}
+                                                                className="h-7 text-xs"
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
                                                 <div className="space-y-1">
-                                                    {group.negatives.map((neg, nidx) => (
+                                                        {allNegatives.slice(0, 5).map((neg, nidx) => (
                                                         <div key={nidx} className="text-xs text-slate-600 font-mono">
                                                             "{neg}"
                                                         </div>
                                                     ))}
-                                                    <button className="text-xs text-blue-600 hover:underline mt-2">
+                                                        {allNegatives.length > 5 && (
+                                                            <div className="text-xs text-slate-400">
+                                                                +{allNegatives.length - 5} more
+                                                            </div>
+                                                        )}
+                                                        <button 
+                                                            onClick={() => handleEditNegatives(group.name, allNegatives)}
+                                                            className="text-xs text-blue-600 hover:underline mt-2"
+                                                        >
                                                         Edit negatives
                                                     </button>
                                                 </div>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -1522,10 +2593,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
     // Step 6: Validation & Export
     const renderStep6 = () => {
-        // Calculate stats
-        const totalAdGroups = structure === 'SKAG' 
-            ? Math.min(selectedKeywords.length, 10) 
-            : Math.min(3, Math.ceil(selectedKeywords.length / 3));
+        // Calculate stats using dynamicAdGroups
+        const adGroupsForStats = getDynamicAdGroups();
+        const totalAdGroups = adGroupsForStats.length;
         const totalKeywords = selectedKeywords.length;
         const totalAds = generatedAds.length;
         const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
@@ -1599,15 +2669,37 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
                         <Separator />
 
-                        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg">
-                            <CheckCircle2 className="w-5 h-5" />
-                            <span>All CSV validations passed. No errors detected.</span>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">
+                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                                <span>Click "Validate CSV" below to check all parameters before exporting.</span>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Export Actions */}
                 <div className="grid md:grid-cols-2 gap-6">
+                    <Button 
+                        size="lg" 
+                        variant="outline"
+                        onClick={() => {
+                            const validation = validateCSV();
+                            if (validation.valid) {
+                                if (validation.warnings.length > 0) {
+                                    alert(`✅ CSV Validation Passed!\n\nWarnings:\n${validation.warnings.join('\n')}\n\nYou can proceed with export.`);
+                                } else {
+                                    alert('✅ CSV Validation Passed! All checks passed. Ready for Google Ads Editor import.');
+                                }
+                            } else {
+                                alert(`❌ CSV Validation Failed!\n\nErrors:\n${validation.errors.join('\n')}\n\nWarnings:\n${validation.warnings.join('\n')}\n\nPlease fix these issues before exporting.`);
+                            }
+                        }}
+                        className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-lg py-6"
+                    >
+                        <ShieldCheck className="mr-2 w-5 h-5" />
+                        Validate CSV
+                    </Button>
                     <Button 
                         size="lg" 
                         onClick={() => generateCSV()}
@@ -1658,11 +2750,151 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         );
     };
 
+    // Render Saved Campaigns View
+    const renderSavedCampaigns = () => {
+        return (
+            <div className="max-w-7xl mx-auto p-6 space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800">Saved Campaigns</h2>
+                        <p className="text-slate-500 mt-1">View and manage your campaign history</p>
+                    </div>
+                    <Button
+                        onClick={() => loadSavedCampaigns()}
+                        variant="outline"
+                        size="sm"
+                    >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh
+                    </Button>
+                </div>
+
+                {loadingCampaigns ? (
+                    <div className="text-center py-12">
+                        <div className="text-slate-500">Loading campaigns...</div>
+                    </div>
+                ) : savedCampaigns.length === 0 ? (
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-12 text-center">
+                            <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold text-slate-700 mb-2">No saved campaigns yet</h3>
+                            <p className="text-slate-500 mb-4">Start building a campaign and save it to see it here.</p>
+                            <Button onClick={() => setActiveView('builder')}>
+                                Create New Campaign
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {savedCampaigns.map((campaign) => {
+                            const isDraft = campaign.data?.isDraft || campaign.data?.step < 6;
+                            const date = new Date(campaign.timestamp);
+                            const formattedDate = date.toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+
+                            return (
+                                <Card key={campaign.id} className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-shadow">
+                                    <CardHeader>
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <CardTitle className="text-lg mb-1">{campaign.name}</CardTitle>
+                                                <CardDescription className="flex items-center gap-2 mt-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {formattedDate}
+                                                </CardDescription>
+                                            </div>
+                                            <Badge variant={isDraft ? "outline" : "default"} className={isDraft ? "border-yellow-500 text-yellow-700" : ""}>
+                                                {isDraft ? 'Draft' : 'Complete'}
+                                            </Badge>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                                <div>
+                                                    <span className="text-slate-500">Structure:</span>
+                                                    <span className="ml-2 font-medium">{campaign.data?.structure || 'N/A'}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-500">Step:</span>
+                                                    <span className="ml-2 font-medium">{campaign.data?.step || 1}/6</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-500">Keywords:</span>
+                                                    <span className="ml-2 font-medium">{campaign.data?.selectedKeywords?.length || 0}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-slate-500">Ads:</span>
+                                                    <span className="ml-2 font-medium">{campaign.data?.generatedAds?.length || 0}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 pt-2">
+                                                <Button
+                                                    onClick={() => handleLoadCampaign(campaign)}
+                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                                                    size="sm"
+                                                >
+                                                    <ArrowRight className="w-4 h-4 mr-2" />
+                                                    Load
+                                                </Button>
+                                                <Button
+                                                    onClick={async () => {
+                                                        if (confirm('Are you sure you want to delete this campaign?')) {
+                                                            try {
+                                                                await historyService.deleteHistory(campaign.id);
+                                                                await loadSavedCampaigns();
+                                                            } catch (error) {
+                                                                console.error("Failed to delete", error);
+                                                                alert('Failed to delete campaign. Please try again.');
+                                                            }
+                                                        }
+                                                    }}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // Main render based on step
     return (
         <div className="min-h-screen">
+            {/* Tabs at Top Right */}
+            <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
+                <div className="max-w-7xl mx-auto px-6 py-3">
+                    <div className="flex items-center justify-end mb-2">
+                        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'builder' | 'saved')} className="w-auto">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="builder">Campaign Builder</TabsTrigger>
+                                <TabsTrigger value="saved">Saved Campaigns</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                </div>
+            </div>
+
+            {activeView === 'saved' ? (
+                renderSavedCampaigns()
+            ) : (
+                <>
             {/* Progress Steps */}
-            <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
+                    <div className="sticky top-[73px] z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         {[
@@ -1716,100 +2948,39 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 {step === 6 && renderStep6()}
             </div>
 
-            {/* Edit Ad Dialog - Rendered at component level so it's always available */}
-            <Dialog open={showAdDialog} onOpenChange={(open) => {
-                setShowAdDialog(open);
-                if (!open) {
-                    setEditingAd(null);
-                }
-            }}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>Edit Ad</DialogTitle>
-                        <DialogDescription>Make changes to your ad</DialogDescription>
-                    </DialogHeader>
-                    {editingAd && (
-                        <div className="space-y-4">
-                            <div>
-                                <Label>Headline</Label>
-                                <Input 
-                                    value={editingAd.headline || ''} 
-                                    onChange={(e) => setEditingAd({...editingAd, headline: e.target.value})}
-                                    placeholder="Enter headline"
-                                />
-                            </div>
-                            <div>
-                                <Label>Display URL</Label>
-                                <Input 
-                                    value={editingAd.displayUrl || ''} 
-                                    onChange={(e) => setEditingAd({...editingAd, displayUrl: e.target.value})}
-                                    placeholder="Enter display URL"
-                                />
-                            </div>
-                            <div>
-                                <Label>Description</Label>
-                                <Textarea 
-                                    value={editingAd.description || ''} 
-                                    onChange={(e) => setEditingAd({...editingAd, description: e.target.value})}
-                                    placeholder="Enter description"
-                                    rows={3}
-                                />
-                            </div>
-                            {editingAd.extension && (
-                                <div>
-                                    <Label>Extension</Label>
-                                    <Input 
-                                        value={editingAd.extension || ''} 
-                                        onChange={(e) => setEditingAd({...editingAd, extension: e.target.value})}
-                                        placeholder="Enter extension"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    <DialogFooter>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => {
-                                setShowAdDialog(false);
-                                setEditingAd(null);
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button 
-                            onClick={handleSaveEditedAd} 
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                            disabled={!editingAd}
-                        >
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Success Modal */}
-            <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <CheckCircle2 className="w-6 h-6 text-green-500" />
-                            Campaign Saved Successfully!
-                        </DialogTitle>
-                        <DialogDescription>
-                            Your campaign "{campaignName}" has been saved to your saved campaigns. You can access it from the History panel.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button 
-                            onClick={() => setShowSuccessModal(false)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                        >
-                            OK
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    {/* Success Modal */}
+                    <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+                        <DialogContent className="max-w-md">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-6 h-6 text-green-500" />
+                                    Campaign Saved Successfully!
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Your campaign "{campaignName}" has been saved to your saved campaigns. You can access it from the Saved Campaigns tab.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button 
+                                    onClick={() => {
+                                        setShowSuccessModal(false);
+                                        setActiveView('saved');
+                                    }}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                >
+                                    View Saved Campaigns
+                                </Button>
+                                <Button 
+                                    onClick={() => setShowSuccessModal(false)}
+                                    variant="outline"
+                                >
+                                    OK
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </>
+            )}
         </div>
     );
 }

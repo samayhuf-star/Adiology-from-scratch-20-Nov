@@ -37,8 +37,20 @@ See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
 3. Configure environment variables (see `.env.example`)
 4. Deploy
 
+## Project Structure
+
+See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) for detailed information about the organized folder structure.
+
+**Quick Overview:**
+- `/docs/` - All documentation files
+- `/src/` - Frontend source code
+- `/backend/` - Backend/server code (Supabase functions)
+- `/scripts/` - Deployment and test scripts
+- Root - Configuration files (vite.config.ts, package.json, etc.)
+
 ## Documentation
 
+- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Project folder structure and organization
 - **[AUDIT_REPORT.md](./AUDIT_REPORT.md)** - Comprehensive audit findings
 - **[AUDIT_SUMMARY.md](./AUDIT_SUMMARY.md)** - Quick reference summary
 - **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Deployment instructions

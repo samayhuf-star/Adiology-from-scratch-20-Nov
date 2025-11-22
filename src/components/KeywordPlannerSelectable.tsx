@@ -354,19 +354,21 @@ export const KeywordPlannerSelectable = ({
                             <label className="block text-sm font-semibold text-slate-700">
                                 Negative Keywords (One term/phrase per line)
                             </label>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                    const generated = generateComprehensiveNegativeKeywords();
-                                    const slicedKeywords = generated.slice(0, negativeKeywordsCount);
-                                    setNegativeKeywords(slicedKeywords.join('\n'));
-                                }}
-                                className="gap-2 border-red-300 text-red-700 hover:bg-red-50"
-                            >
-                                <ShieldCheck className="w-3 h-3" />
-                                Generate {negativeKeywordsCount}
-                            </Button>
+                            {!isGenerating && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const generated = generateComprehensiveNegativeKeywords();
+                                        const slicedKeywords = generated.slice(0, negativeKeywordsCount);
+                                        setNegativeKeywords(slicedKeywords.join('\n'));
+                                    }}
+                                    className="gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                                >
+                                    <ShieldCheck className="w-3 h-3" />
+                                    Generate {negativeKeywordsCount}
+                                </Button>
+                            )}
                         </div>
 
                         {/* Slider for keyword count */}

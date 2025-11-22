@@ -109,7 +109,7 @@ Verify that the `build` directory is created successfully.
 
 ### 3.1 Deploy Edge Function
 
-The edge function is located at `src/supabase/functions/server/index.tsx`.
+The edge function is located at `backend/supabase-functions/server/index.tsx`.
 
 **Using Supabase CLI:**
 

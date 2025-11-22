@@ -246,7 +246,7 @@ CREATE POLICY "Admins can read audit logs"
 ## Edge Functions
 
 ### Function: `make-server-6757d0ca`
-**Location:** `src/supabase/functions/server/index.tsx`
+**Location:** `backend/supabase-functions/server/index.tsx`
 
 **Endpoints:**
 - `GET /health` - Health check

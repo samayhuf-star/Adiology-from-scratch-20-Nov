@@ -147,7 +147,7 @@ This audit covers dashboard modules, Supabase configuration, billing flows, erro
 - `audit_logs` - Admin action logs
 
 ### 3.3 Edge Functions
-**File:** `src/supabase/functions/server/index.tsx`
+**File:** `backend/supabase-functions/server/index.tsx`
 
 **Findings:**
 - ✅ Health check endpoint: `/health`
