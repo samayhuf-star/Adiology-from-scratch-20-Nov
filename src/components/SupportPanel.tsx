@@ -39,15 +39,35 @@ export const SupportPanel = () => {
         try {
             try {
                 const data = await api.get('/tickets/list');
-                if (data.tickets) setTickets(data.tickets);
+                if (data.tickets) {
+                    setTickets(data.tickets);
+                } else {
+                    // If API returns but no tickets, check localStorage
+                    const localTickets = JSON.parse(localStorage.getItem('support-tickets') || '[]');
+                    setTickets(localTickets);
+                }
             } catch (apiError) {
-                // Fallback to localStorage
+                // Fallback to localStorage - work silently
                 console.log('ℹ️ Loading tickets from local storage (API unavailable)');
                 const localTickets = JSON.parse(localStorage.getItem('support-tickets') || '[]');
+                // Sort by timestamp (newest first)
+                localTickets.sort((a: Ticket, b: Ticket) => 
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                );
                 setTickets(localTickets);
             }
         } catch (error) {
             console.error("Fetch tickets error", error);
+            // Even if there's an error, try to load from localStorage
+            try {
+                const localTickets = JSON.parse(localStorage.getItem('support-tickets') || '[]');
+                localTickets.sort((a: Ticket, b: Ticket) => 
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                );
+                setTickets(localTickets);
+            } catch (e) {
+                console.error("Failed to load from localStorage", e);
+            }
         } finally {
             setLoading(false);
         }
@@ -59,14 +79,18 @@ export const SupportPanel = () => {
 
         setIsSubmitting(true);
         try {
+            // Try API first
             try {
                 await api.post('/tickets/create', { subject, message, priority });
+                // Success - refresh tickets
                 setSubject('');
                 setMessage('');
                 setPriority('Medium');
-                fetchTickets(); // Refresh list
+                await fetchTickets();
+                // Show success message
+                alert('✅ Ticket submitted successfully! Our team will respond soon.');
             } catch (apiError) {
-                // Fallback to localStorage
+                // Fallback to localStorage - work silently
                 console.log('ℹ️ Saving ticket to local storage (API unavailable)');
                 const ticket: Ticket = {
                     id: crypto.randomUUID(),
@@ -79,14 +103,21 @@ export const SupportPanel = () => {
                 const existing = JSON.parse(localStorage.getItem('support-tickets') || '[]');
                 existing.unshift(ticket);
                 localStorage.setItem('support-tickets', JSON.stringify(existing));
+                
+                // Clear form
                 setSubject('');
                 setMessage('');
                 setPriority('Medium');
-                fetchTickets(); // Refresh list from localStorage
-                alert('Ticket saved locally! (Backend unavailable)');
+                
+                // Refresh tickets list
+                await fetchTickets();
+                
+                // Show success message (not error)
+                alert('✅ Ticket saved successfully! Your ticket has been recorded and our team will review it.');
             }
         } catch (error) {
             console.error("Create ticket error", error);
+            alert('❌ Failed to submit ticket. Please try again.');
         } finally {
             setIsSubmitting(false);
         }

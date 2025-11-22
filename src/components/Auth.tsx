@@ -119,22 +119,22 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800 p-4">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse delay-1000"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-xl">
+        <Card className="border border-slate-200 shadow-2xl bg-white backdrop-blur-xl">
           <CardHeader className="space-y-1 pb-4">
             <div className="flex items-center justify-between mb-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onBackToHome}
-                className="text-slate-600 hover:text-indigo-600"
+                className="text-slate-700 hover:text-indigo-600 font-medium"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
@@ -145,10 +145,10 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 <Sparkle className="w-8 h-8 text-white" />
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-center text-slate-800">
+            <CardTitle className="text-2xl font-bold text-center text-slate-900">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription className="text-center text-slate-600">
               {isLogin 
                 ? 'Sign in to your Adiology account' 
                 : 'Start building winning campaigns today'}
@@ -165,16 +165,16 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
 
               {!isLogin && (
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name" className="text-slate-900 font-semibold">Full Name</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <Input
                       id="name"
                       type="text"
                       placeholder="John Doe"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                       required={!isLogin}
                     />
                   </div>
@@ -182,38 +182,38 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-slate-900 font-semibold">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-slate-900 font-semibold">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder={isLogin ? 'Enter your password' : 'Create a password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -222,22 +222,22 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
 
               {!isLogin && (
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-slate-900 font-semibold">Confirm Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-10"
+                      className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                       required={!isLogin}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
                     >
                       {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -248,10 +248,10 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               {isLogin && (
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" className="rounded" />
-                    <span className="text-slate-600">Remember me</span>
+                    <input type="checkbox" className="rounded border-slate-300" />
+                    <span className="text-slate-700 font-medium">Remember me</span>
                   </label>
-                  <a href="#" className="text-indigo-600 hover:text-indigo-700">
+                  <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium">
                     Forgot password?
                   </a>
                 </div>
@@ -275,7 +275,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 )}
               </Button>
 
-              <div className="text-center text-sm text-slate-600">
+              <div className="text-center text-sm text-slate-700">
                 {isLogin ? (
                   <>
                     Don't have an account?{' '}
@@ -285,7 +285,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                         setIsLogin(false);
                         setError('');
                       }}
-                      className="text-indigo-600 hover:text-indigo-700 font-medium"
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
                     >
                       Sign up
                     </button>
@@ -299,7 +299,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                         setIsLogin(true);
                         setError('');
                       }}
-                      className="text-indigo-600 hover:text-indigo-700 font-medium"
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
                     >
                       Sign in
                     </button>
@@ -309,11 +309,16 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
             </form>
 
             {isLogin && (
-              <div className="mt-6 pt-6 border-t border-slate-200">
-                <p className="text-xs text-center text-slate-500 mb-2">Super Admin Access</p>
-                <p className="text-xs text-center text-slate-400">
-                  Email: sam@sam.com | Password: sam@sam.com
-                </p>
+              <div className="mt-6 pt-6 border-t border-slate-300">
+                <p className="text-xs text-center text-slate-700 font-semibold mb-2">Super Admin Access</p>
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                  <p className="text-xs text-center text-slate-800 font-mono">
+                    <span className="font-semibold">Email:</span> sam@sam.com
+                  </p>
+                  <p className="text-xs text-center text-slate-800 font-mono mt-1">
+                    <span className="font-semibold">Password:</span> sam@sam.com
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>

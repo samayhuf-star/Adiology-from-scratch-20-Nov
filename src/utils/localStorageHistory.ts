@@ -1,6 +1,6 @@
 // Local storage fallback for history when server is unavailable
 
-const STORAGE_KEY = 'google-ads-history';
+const STORAGE_KEY = 'adiology-campaign-history';
 
 export interface HistoryItem {
   id: string;

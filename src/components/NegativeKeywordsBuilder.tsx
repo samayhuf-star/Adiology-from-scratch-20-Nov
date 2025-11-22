@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { api } from '../utils/api';
+import { historyService } from '../utils/historyService';
 
 interface GeneratedKeyword {
     id: number;
@@ -40,16 +41,15 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         if (generatedKeywords.length === 0) return;
         setIsSaving(true);
         try {
-            const payload = {
-                type: 'negative-keywords',
-                name: `Negatives: ${coreKeywords.substring(0, 20)}...`,
-                data: { url, coreKeywords, userGoal, generatedKeywords }
-            };
-            
-            await api.post('/history/save', payload);
+            await historyService.save(
+                'negative-keywords',
+                `Negatives: ${coreKeywords.substring(0, 20)}...`,
+                { url, coreKeywords, userGoal, generatedKeywords }
+            );
             alert("Negative keywords saved!");
         } catch (error) {
             console.error("Save failed", error);
+            alert("Failed to save. Please try again.");
         } finally {
             setIsSaving(false);
         }

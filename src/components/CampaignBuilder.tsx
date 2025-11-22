@@ -615,6 +615,23 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [savedCampaigns, setSavedCampaigns] = useState<any[]>([]);
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
+    // Initialize campaign name with default date/time format
+    useEffect(() => {
+        if (!initialData) {
+            const now = new Date();
+            const day = now.getDate();
+            const month = now.toLocaleString('en-US', { month: 'short' });
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            const displayMinutes = minutes.toString().padStart(2, '0');
+            const defaultName = `Search Campaign-${day}${month}-${displayHours}:${displayMinutes} ${ampm}`;
+            setCampaignName(defaultName);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
+
     // --- Load Initial Data ---
     useEffect(() => {
         if (initialData) {
@@ -803,11 +820,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
 
     const handleNextStep = () => {
-        if (step < 6) {
-            setStep(step + 1);
-        }
+        if (step >= 6) return; // Don't go beyond step 6
         
-        if (step === 2) {
+        const nextStep = step + 1;
+        
+        // Handle step-specific logic BEFORE incrementing
+        if (step === 1) {
+            // Moving from Step 1 to Step 2 - nothing special needed
+        } else if (step === 2) {
             // Log selected keywords for campaign creation
             console.log(`✅ Proceeding to Ad Creation with ${selectedKeywords.length} selected keywords:`, selectedKeywords);
             console.log(`📊 Campaign Structure: ${structure}, Geo: ${geo}`);
@@ -841,13 +861,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     description2: 'Fast response times and affordable rates. Licensed and insured.'
                 }
             }));
-        }
-        if (step === 4) {
+        } else if (step === 4) {
             // Trigger validation on entering step 5
             setValidationStatus('idle');
             runValidation();
         }
-        setStep(prev => prev + 1);
+        
+        // Increment step only once
+        setStep(nextStep);
     };
 
     const runValidation = () => {
@@ -1032,6 +1053,30 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // Step 1: Structure & Settings
     const renderStep1 = () => (
         <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Campaign Name */}
+            <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-indigo-600" />
+                        Campaign Name
+                    </CardTitle>
+                    <CardDescription>Give your campaign a name to easily identify it later</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="relative">
+                        <Input
+                            value={campaignName}
+                            onChange={(e) => setCampaignName(e.target.value)}
+                            placeholder="Enter campaign name"
+                            className="text-lg py-6 bg-white border-slate-300 focus:border-indigo-500"
+                        />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                        This name will be used when saving and exporting your campaign
+                    </p>
+                </CardContent>
+            </Card>
+
             {/* Structure & Geo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
@@ -1147,6 +1192,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     }}
                     onKeywordsSelected={(keywords) => setSelectedKeywords(keywords)}
                     selectedKeywords={selectedKeywords}
+                    onNegativeKeywordsChange={(newNegativeKeywords) => setNegativeKeywords(newNegativeKeywords)}
                 />
                 
                 <div className="flex justify-between pt-6 border-t border-slate-200">
@@ -2631,6 +2677,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const totalKeywords = selectedKeywords.length;
         const totalAds = generatedAds.length;
         const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
+        
+        // Calculate number of locations
+        let totalLocations = 0;
+        if (manualGeoInput && manualGeoInput.trim()) {
+            // Count comma-separated locations
+            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
+            totalLocations = locations.length;
+        } else if (zipPreset) {
+            // If ZIP preset is selected, use the preset number
+            const presetNumber = parseInt(zipPreset.replace(/\D/g, '')) || 0;
+            totalLocations = presetNumber;
+        } else if (cityPreset) {
+            // If city preset is selected, use the preset number
+            const presetNumber = parseInt(cityPreset.replace(/\D/g, '')) || 0;
+            totalLocations = presetNumber;
+        } else {
+            // Default to 1 if only country is selected
+            totalLocations = 1;
+        }
 
         return (
             <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -2664,8 +2729,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     </Card>
                     <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
                         <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-green-600">{totalAds}</div>
-                            <div className="text-sm text-slate-600 mt-2">Ads</div>
+                            <div className="text-4xl font-bold text-green-600">{totalLocations}</div>
+                            <div className="text-sm text-slate-600 mt-2">Locations</div>
                         </CardContent>
                     </Card>
                 </div>

@@ -8,17 +8,20 @@ import { Slider } from './ui/slider';
 import { api } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { generateComprehensiveNegativeKeywords } from '../utils/negativeKeywords';
+import { historyService } from '../utils/historyService';
 
 interface KeywordPlannerSelectableProps {
     initialData?: any;
     onKeywordsSelected?: (keywords: string[]) => void;
     selectedKeywords?: string[];
+    onNegativeKeywordsChange?: (negativeKeywords: string) => void;
 }
 
 export const KeywordPlannerSelectable = ({ 
     initialData, 
     onKeywordsSelected,
-    selectedKeywords: externalSelectedKeywords = []
+    selectedKeywords: externalSelectedKeywords = [],
+    onNegativeKeywordsChange
 }: KeywordPlannerSelectableProps) => {
     const [seedKeywords, setSeedKeywords] = useState('');
     const [negativeKeywords, setNegativeKeywords] = useState('');
@@ -239,32 +242,15 @@ export const KeywordPlannerSelectable = ({
         if (generatedKeywords.length === 0) return;
         setIsSaving(true);
         try {
-            const payload = {
-                type: 'keyword-planner',
-                name: `Plan: ${seedKeywords.substring(0, 30)}...`,
-                data: { seedKeywords, negativeKeywords, generatedKeywords, matchTypes, selectedKeywords }
-            };
-            
-            try {
-                await api.post('/history/save', payload);
+            await historyService.save(
+                'keyword-planner',
+                `Plan: ${seedKeywords.substring(0, 30)}...`,
+                { seedKeywords, negativeKeywords, generatedKeywords, matchTypes, selectedKeywords }
+            );
                 alert("Keyword plan saved!");
-            } catch (error) {
-                // Fallback to localStorage if API fails
-                console.log('ℹ️ Saving to local storage (API unavailable)');
-                const historyKey = 'keyword-planner-history';
-                const existing = JSON.parse(localStorage.getItem(historyKey) || '[]');
-                const entry = {
-                    id: crypto.randomUUID(),
-                    timestamp: new Date().toISOString(),
-                    ...payload
-                };
-                existing.unshift(entry);
-                localStorage.setItem(historyKey, JSON.stringify(existing.slice(0, 50))); // Keep last 50
-                alert("Keyword plan saved locally!");
-            }
         } catch (error) {
             console.error("Save failed", error);
-            alert("Failed to save keyword plan");
+            alert("Failed to save. Please try again.");
         } finally {
             setIsSaving(false);
         }
@@ -355,19 +341,23 @@ export const KeywordPlannerSelectable = ({
                                 Negative Keywords (One term/phrase per line)
                             </label>
                             {!isGenerating && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
                                         const generated = generateComprehensiveNegativeKeywords();
                                         const slicedKeywords = generated.slice(0, negativeKeywordsCount);
-                                        setNegativeKeywords(slicedKeywords.join('\n'));
-                                    }}
-                                    className="gap-2 border-red-300 text-red-700 hover:bg-red-50"
-                                >
-                                    <ShieldCheck className="w-3 h-3" />
-                                    Generate {negativeKeywordsCount}
-                                </Button>
+                                        const newNegatives = slicedKeywords.join('\n');
+                                        setNegativeKeywords(newNegatives);
+                                        if (onNegativeKeywordsChange) {
+                                            onNegativeKeywordsChange(newNegatives);
+                                        }
+                                }}
+                                className="gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                            >
+                                <ShieldCheck className="w-3 h-3" />
+                                Generate {negativeKeywordsCount}
+                            </Button>
                             )}
                         </div>
 
@@ -391,31 +381,58 @@ export const KeywordPlannerSelectable = ({
                             </div>
                         </div>
 
-                        {/* Fixed-height box with 3 columns */}
-                        <div className="relative bg-white border border-slate-300 rounded-lg overflow-hidden h-[280px]">
-                            <div className="absolute inset-0 overflow-y-auto p-3">
-                                {negativeKeywords ? (
-                                    <div className="grid grid-cols-3 gap-x-3 gap-y-1 font-mono text-xs text-slate-700">
-                                        {negativeKeywords.split('\n').map((keyword, idx) => (
-                                            keyword.trim() && (
-                                                <div key={idx} className="truncate" title={keyword}>
-                                                    {keyword}
-                                                </div>
-                                            )
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full">
-                                        <p className="text-sm text-slate-400">
-                                            Click "Generate" to create negative keywords
-                                        </p>
-                                    </div>
-                                )}
+                        {/* Editable negative keywords box */}
+                        <div className="bg-white border border-slate-300 rounded-lg overflow-hidden h-[280px]">
+                            <Textarea
+                                value={negativeKeywords}
+                                onChange={(e) => {
+                                    const newValue = e.target.value;
+                                    setNegativeKeywords(newValue);
+                                    if (onNegativeKeywordsChange) {
+                                        onNegativeKeywordsChange(newValue);
+                                    }
+                                }}
+                                placeholder="Enter negative keywords (one per line)&#10;e.g.&#10;cheap&#10;discount&#10;reviews&#10;job&#10;free"
+                                className="w-full h-full border-0 font-mono text-xs resize-none p-3 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 bg-transparent"
+                                style={{ minHeight: '280px', maxHeight: '280px', overflowY: 'auto' }}
+                            />
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs text-slate-500">
+                                The AI will strictly avoid generating keywords containing these terms. Edit directly or adjust the slider and click "Generate" for your desired quantity.
+                            </p>
+                            <div className="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const lines = negativeKeywords.split('\n').filter(k => k.trim());
+                                        const uniqueLines = Array.from(new Set(lines.map(l => l.trim().toLowerCase())));
+                                        const cleaned = uniqueLines.join('\n');
+                                        setNegativeKeywords(cleaned);
+                                        if (onNegativeKeywordsChange) {
+                                            onNegativeKeywordsChange(cleaned);
+                                        }
+                                    }}
+                                    className="h-7 text-xs"
+                                >
+                                    Remove Duplicates
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setNegativeKeywords('');
+                                        if (onNegativeKeywordsChange) {
+                                            onNegativeKeywordsChange('');
+                                        }
+                                    }}
+                                    className="h-7 text-xs text-red-600 hover:text-red-700"
+                                >
+                                    Clear All
+                                </Button>
                             </div>
                         </div>
-                        <p className="text-xs text-slate-500 mt-2">
-                            The AI will strictly avoid generating keywords containing these terms. Adjust the slider and click "Generate" for your desired quantity.
-                        </p>
                     </div>
 
                     {/* Action Buttons */}

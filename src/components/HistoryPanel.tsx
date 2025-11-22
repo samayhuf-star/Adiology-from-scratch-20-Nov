@@ -45,12 +45,8 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
             } catch (apiError) {
                 // Fallback to localStorage if API fails
                 console.log('ℹ️ Loading history from local storage (API unavailable)');
-                const localHistory = [
-                    ...JSON.parse(localStorage.getItem('keyword-planner-history') || '[]'),
-                    ...JSON.parse(localStorage.getItem('campaign-builder-history') || '[]'),
-                    ...JSON.parse(localStorage.getItem('keyword-mixer-history') || '[]'),
-                    ...JSON.parse(localStorage.getItem('negative-keywords-history') || '[]')
-                ];
+                // Use the unified localStorage history service
+                const localHistory = await historyService.getAll();
                 // Sort by timestamp
                 localHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                 setHistory(localHistory);

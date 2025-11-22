@@ -25,6 +25,7 @@ import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
 import { HomePage } from './components/HomePage';
 import { Auth } from './components/Auth';
+import { SettingsPanel } from './components/SettingsPanel';
 
 type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel';
 
@@ -262,7 +263,7 @@ const App = () => {
       case 'help':
         return <HelpSupport />;
       case 'settings':
-        return <SettingsView />;
+        return <SettingsPanel />;
       case 'dashboard':
       default:
         return <DashboardView />;
@@ -310,12 +311,7 @@ const App = () => {
               <button
                 key={item.id}
                 onClick={() => {
-                  // Redirect Settings to login page
-                  if (item.id === 'settings') {
-                    setAppView('admin-login');
-                  } else {
-                    setActiveTab(item.id);
-                  }
+                  setActiveTab(item.id);
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                   isActive
@@ -455,7 +451,7 @@ const App = () => {
             </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setActiveTab('billing')}>
+                <DropdownMenuItem onClick={() => setActiveTab('settings')}>
                   <User className="w-4 h-4 mr-2" />
                   Account Settings
                 </DropdownMenuItem>
@@ -513,22 +509,5 @@ const DashboardView = () => (
   </div>
 );
 
-// Settings View
-const SettingsView = () => (
-  <div className="p-8">
-    <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-8">
-      Settings
-    </h1>
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-12 border border-slate-200/60 shadow-xl text-center">
-      <Settings className="w-20 h-20 text-indigo-500 mx-auto mb-4" />
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">
-        Application Settings
-      </h2>
-      <p className="text-slate-600 max-w-lg mx-auto">
-        Configure your account preferences, API connections, notification settings, and user permissions.
-      </p>
-    </div>
-  </div>
-);
 
 export default App;
