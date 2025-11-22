@@ -1,0 +1,164 @@
+import React, { useState } from 'react';
+import { Shield, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+interface SuperAdminLoginProps {
+  onLoginSuccess: () => void;
+}
+
+export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      // Valid super admin credentials
+      const validAdmins = [
+        { email: 'admin@adbuilder.com', password: 'SuperAdmin123!' },
+        { email: 'sam@sam.com', password: 'sam123' },
+      ];
+
+      // Trim and compare (case-insensitive for email)
+      const trimmedEmail = email.trim().toLowerCase();
+      const trimmedPassword = password.trim();
+
+      const isValidAdmin = validAdmins.some(
+        admin => admin.email.toLowerCase() === trimmedEmail && admin.password === trimmedPassword
+      );
+
+      if (isValidAdmin) {
+        onLoginSuccess();
+      } else {
+        setError('Invalid credentials. Please try again.');
+      }
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 p-4">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
+      </div>
+
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl shadow-purple-500/50 mb-4">
+            <Shield className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">Super Admin Access</h1>
+          <p className="text-indigo-200">Secure portal for system administration</p>
+        </div>
+
+        {/* Login Form */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl">
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-300" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@adbuilder.com"
+                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-300" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full pl-10 pr-12 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-indigo-300 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-500/20 border border-red-500/50 rounded-xl">
+                <AlertCircle className="w-5 h-5 text-red-300" />
+                <p className="text-sm text-red-200">{error}</p>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-5 h-5" />
+                  Access Admin Panel
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Demo Credentials */}
+          <div className="mt-6 p-4 bg-indigo-500/20 border border-indigo-400/30 rounded-xl">
+            <p className="text-xs text-indigo-200 font-medium mb-2">Valid Super Admin Accounts:</p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs text-white font-mono">admin@adbuilder.com</p>
+                <p className="text-xs text-indigo-300 font-mono">Password: SuperAdmin123!</p>
+              </div>
+              <div className="border-t border-indigo-400/30 pt-2">
+                <p className="text-xs text-white font-mono">sam@sam.com</p>
+                <p className="text-xs text-indigo-300 font-mono">Password: sam123</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Security Notice */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-indigo-300">
+            <Lock className="w-4 h-4 inline mr-1" />
+            All activities are logged and monitored
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
