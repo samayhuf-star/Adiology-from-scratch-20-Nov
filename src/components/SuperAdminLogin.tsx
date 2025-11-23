@@ -134,20 +134,6 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-indigo-500/20 border border-indigo-400/30 rounded-xl">
-            <p className="text-xs text-indigo-200 font-medium mb-2">Valid Super Admin Accounts:</p>
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs text-white font-mono">admin@adbuilder.com</p>
-                <p className="text-xs text-indigo-300 font-mono">Password: SuperAdmin123!</p>
-              </div>
-              <div className="border-t border-indigo-400/30 pt-2">
-                <p className="text-xs text-white font-mono">sam@sam.com</p>
-                <p className="text-xs text-indigo-300 font-mono">Password: sam123</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Security Notice */}

@@ -440,7 +440,7 @@ const App = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium shadow-lg hover:shadow-xl transition-all cursor-pointer">
-                  JD
+              JD
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">

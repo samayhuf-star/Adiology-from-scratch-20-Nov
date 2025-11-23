@@ -308,19 +308,6 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               </div>
             </form>
 
-            {isLogin && (
-              <div className="mt-6 pt-6 border-t border-slate-300">
-                <p className="text-xs text-center text-slate-700 font-semibold mb-2">Super Admin Access</p>
-                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-                  <p className="text-xs text-center text-slate-800 font-mono">
-                    <span className="font-semibold">Email:</span> sam@sam.com
-                  </p>
-                  <p className="text-xs text-center text-slate-800 font-mono mt-1">
-                    <span className="font-semibold">Password:</span> sam@sam.com
-                  </p>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

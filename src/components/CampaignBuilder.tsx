@@ -3,7 +3,9 @@ import {
   ArrowRight, Check, ChevronRight, Download, FileText, Globe, 
   Layout, Layers, MapPin, Mail, Hash, TrendingUp, Zap, 
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
-  CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus
+  CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, 
+  DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
+  Tag, Image as ImageIcon, Gift
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -421,6 +423,61 @@ const getTopCitiesByIncome = (country: string, count: number): string[] => {
     return cities.slice(0, count);
 };
 
+// Top states/provinces by population (ranked highest to lowest)
+const TOP_STATES_BY_POPULATION: Record<string, string[]> = {
+    "United States": [
+        "California", "Texas", "Florida", "New York", "Pennsylvania",
+        "Illinois", "Ohio", "Georgia", "North Carolina", "Michigan",
+        "New Jersey", "Virginia", "Washington", "Arizona", "Massachusetts",
+        "Tennessee", "Indiana", "Missouri", "Maryland", "Wisconsin",
+        "Colorado", "Minnesota", "South Carolina", "Alabama", "Louisiana",
+        "Kentucky", "Oregon", "Oklahoma", "Connecticut", "Utah",
+        "Iowa", "Nevada", "Arkansas", "Mississippi", "Kansas",
+        "New Mexico", "Nebraska", "West Virginia", "Idaho", "Hawaii",
+        "New Hampshire", "Maine", "Montana", "Rhode Island", "Delaware",
+        "South Dakota", "North Dakota", "Alaska", "Vermont", "Wyoming",
+        "District of Columbia"
+    ],
+    "United Kingdom": [
+        "England", "Scotland", "Wales", "Northern Ireland"
+    ],
+    "Canada": [
+        "Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba",
+        "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador",
+        "Prince Edward Island", "Northwest Territories", "Yukon", "Nunavut"
+    ],
+    "Australia": [
+        "New South Wales", "Victoria", "Queensland", "Western Australia",
+        "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"
+    ],
+    "Germany": [
+        "North Rhine-Westphalia", "Bavaria", "Baden-Württemberg", "Lower Saxony",
+        "Hesse", "Saxony", "Rhineland-Palatinate", "Berlin", "Schleswig-Holstein",
+        "Brandenburg", "Saxony-Anhalt", "Thuringia", "Hamburg", "Mecklenburg-Vorpommern",
+        "Saarland", "Bremen"
+    ],
+    "France": [
+        "Île-de-France", "Auvergne-Rhône-Alpes", "Nouvelle-Aquitaine", "Occitanie",
+        "Hauts-de-France", "Grand Est", "Provence-Alpes-Côte d'Azur", "Pays de la Loire",
+        "Normandy", "Brittany", "Bourgogne-Franche-Comté", "Centre-Val de Loire",
+        "Corsica"
+    ],
+    "India": [
+        "Uttar Pradesh", "Maharashtra", "Bihar", "West Bengal", "Madhya Pradesh",
+        "Tamil Nadu", "Rajasthan", "Karnataka", "Gujarat", "Odisha",
+        "Kerala", "Jharkhand", "Assam", "Punjab", "Chhattisgarh",
+        "Haryana", "Delhi", "Jammu and Kashmir", "Uttarakhand", "Himachal Pradesh",
+        "Tripura", "Meghalaya", "Manipur", "Nagaland", "Goa",
+        "Arunachal Pradesh", "Mizoram", "Sikkim"
+    ]
+};
+
+const getTopStatesByPopulation = (country: string, count: number): string[] => {
+    const states = TOP_STATES_BY_POPULATION[country] || TOP_STATES_BY_POPULATION["United States"];
+    if (count === 0) return states; // All states
+    return states.slice(0, count);
+};
+
 // --- Helper Functions ---
 
 const generateMockKeywords = (seeds: string, negatives: string) => {
@@ -604,6 +661,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [manualGeoInput, setManualGeoInput] = useState('');
     const [zipPreset, setZipPreset] = useState<string | null>(null);
     const [cityPreset, setCityPreset] = useState<string | null>(null);
+    const [statePreset, setStatePreset] = useState<string | null>(null);
 
     // Step 5: Review & Success
     const [isValidating, setIsValidating] = useState(false);
@@ -917,38 +975,118 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             }
         });
         
-        // Check required ad fields
+        // Check required ad fields and auto-fix URLs
+        const adsToFix: Array<{ index: number; finalUrl: string }> = [];
+        const adsByGroup: { [key: string]: any[] } = {};
+        
+        // Group ads by ad group for better error reporting
         generatedAds.forEach((ad, idx) => {
+            const groupName = ad.adGroup || 'Unknown';
+            if (!adsByGroup[groupName]) {
+                adsByGroup[groupName] = [];
+            }
+            adsByGroup[groupName].push({ ...ad, _index: idx });
+        });
+        
+        generatedAds.forEach((ad, idx) => {
+            const groupName = ad.adGroup || 'Unknown Group';
+            const adNumber = adsByGroup[groupName]?.findIndex((a: any) => a.id === ad.id) + 1 || idx + 1;
+            
             if (ad.type === 'rsa' || ad.type === 'dki') {
-                if (!ad.headline1 || !ad.headline2) {
-                    errors.push(`Ad ${idx + 1} is missing required headlines.`);
+                // RSA/DKI requires at least 3 headlines and 2 descriptions
+                const missingHeadlines: string[] = [];
+                if (!ad.headline1 || ad.headline1.trim() === '') missingHeadlines.push('Headline 1');
+                if (!ad.headline2 || ad.headline2.trim() === '') missingHeadlines.push('Headline 2');
+                if (!ad.headline3 || ad.headline3.trim() === '') missingHeadlines.push('Headline 3');
+                
+                if (missingHeadlines.length > 0) {
+                    errors.push(`Ad ${adNumber} in "${groupName}" is missing required headlines: ${missingHeadlines.join(', ')}. RSA/DKI ads require at least 3 headlines.`);
                 }
-                if (!ad.description1) {
-                    errors.push(`Ad ${idx + 1} is missing description.`);
+                
+                const missingDescriptions: string[] = [];
+                if (!ad.description1 || ad.description1.trim() === '') missingDescriptions.push('Description 1');
+                if (!ad.description2 || ad.description2.trim() === '') missingDescriptions.push('Description 2');
+                
+                if (missingDescriptions.length > 0) {
+                    errors.push(`Ad ${adNumber} in "${groupName}" is missing required descriptions: ${missingDescriptions.join(', ')}. RSA/DKI ads require at least 2 descriptions.`);
                 }
-                if (!ad.finalUrl) {
-                    warnings.push(`Ad ${idx + 1} is missing final URL.`);
+                
+                if (!ad.finalUrl || ad.finalUrl.trim() === '') {
+                    errors.push(`Ad ${adNumber} in "${groupName}" is missing Final URL.`);
+                } else if (!ad.finalUrl.match(/^https?:\/\//i)) {
+                    // Auto-fix URL format if missing protocol
+                    const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
+                    adsToFix.push({ index: idx, finalUrl: fixedUrl });
                 }
             }
             if (ad.type === 'callonly') {
-                if (!ad.phone || !ad.businessName) {
-                    errors.push(`Call-only ad ${idx + 1} is missing phone or business name.`);
+                const missingHeadlines: string[] = [];
+                if (!ad.headline1 || ad.headline1.trim() === '') missingHeadlines.push('Headline 1');
+                if (!ad.headline2 || ad.headline2.trim() === '') missingHeadlines.push('Headline 2');
+                
+                if (missingHeadlines.length > 0) {
+                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing required headlines: ${missingHeadlines.join(', ')}.`);
+                }
+                
+                const missingDescriptions: string[] = [];
+                if (!ad.description1 || ad.description1.trim() === '') missingDescriptions.push('Description 1');
+                if (!ad.description2 || ad.description2.trim() === '') missingDescriptions.push('Description 2');
+                
+                if (missingDescriptions.length > 0) {
+                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing required descriptions: ${missingDescriptions.join(', ')}.`);
+                }
+                
+                if (!ad.phone || ad.phone.trim() === '') {
+                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing phone number.`);
+                }
+                if (!ad.businessName || ad.businessName.trim() === '') {
+                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing business name.`);
+                }
+                if (ad.finalUrl && !ad.finalUrl.match(/^https?:\/\//i)) {
+                    // Auto-fix URL format if missing protocol
+                    const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
+                    adsToFix.push({ index: idx, finalUrl: fixedUrl });
                 }
             }
         });
         
-        // Check URL format
-        generatedAds.forEach((ad, idx) => {
-            if (ad.finalUrl && !ad.finalUrl.match(/^https?:\/\//)) {
-                warnings.push(`Ad ${idx + 1} URL should start with http:// or https://`);
-            }
-        });
+        // Auto-fix URLs that don't start with http:// or https://
+        if (adsToFix.length > 0) {
+            setGeneratedAds(prev => prev.map((ad, idx) => {
+                const fix = adsToFix.find(f => f.index === idx);
+                if (fix) {
+                    return { ...ad, finalUrl: fix.finalUrl };
+                }
+                return ad;
+            }));
+        }
         
         return {
             valid: errors.length === 0,
             errors,
             warnings
         };
+    };
+
+    // Helper function to escape CSV values
+    const escapeCSV = (value: string | null | undefined): string => {
+        if (!value) return '';
+        const str = String(value);
+        // Escape quotes by doubling them and wrap in quotes if contains comma, quote, or newline
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    };
+
+    // Helper function to format URL
+    const formatURL = (urlValue: string | null | undefined): string => {
+        if (!urlValue) return '';
+        let formatted = String(urlValue).trim();
+        if (!formatted.match(/^https?:\/\//i)) {
+            formatted = formatted.startsWith('www.') ? `https://${formatted}` : `https://${formatted}`;
+        }
+        return formatted;
     };
 
     const generateCSV = () => {
@@ -966,41 +1104,182 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
         
         const adGroups = getDynamicAdGroups();
-        const geoTarget = zipPreset ? `Top ${zipPreset} ZIPs` : (manualGeoInput ? manualGeoInput : targetCountry);
         const campaignNameValue = campaignName || 'Campaign 1';
+        const baseUrl = formatURL(url || 'www.example.com');
         
-        // Google Ads Editor compatible CSV format
-        // Required columns: Campaign, Ad Group, Keyword, Match Type, Headline 1, Headline 2, Description, Final URL
-        let csv = "Campaign,Ad Group,Keyword,Match Type,Headline 1,Headline 2,Headline 3,Description,Description 2,Final URL,Path 1,Path 2,Geo Target\n";
+        // Google Ads Editor compatible CSV format - all required columns
+        const headers = [
+            "Campaign", "Ad Group", "Row Type", "Status",
+            "Keyword", "Match Type", 
+            "Final URL", "Headline 1", "Headline 2", "Headline 3", "Headline 4", "Headline 5",
+            "Headline 6", "Headline 7", "Headline 8", "Headline 9", "Headline 10", "Headline 11",
+            "Headline 12", "Headline 13", "Headline 14", "Headline 15",
+            "Description 1", "Description 2", "Description 3", "Description 4",
+            "Path 1", "Path 2",
+            "Asset Type", "Link Text", "Description Line 1", "Description Line 2",
+            "Phone Number", "Country Code",
+            "Location", "Bid Adjustment", "Is Exclusion"
+        ];
         
+        const rows: string[] = [];
+        
+        // Process each ad group
         adGroups.forEach(group => {
-            const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
+            const groupAds = generatedAds.filter(ad => ad.adGroup === group.name && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
             
-            // If no ads for this group, create a default row
-            if (groupAds.length === 0) {
-                group.keywords.forEach(keyword => {
-                    const matchType = getMatchType(keyword);
-                    const keywordText = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
-                    csv += `${campaignNameValue},"${group.name}","${keywordText}",${matchType},Default Headline,Default Headline 2,Default Headline 3,Default Description,Default Description 2,${url || 'www.example.com'},shop,now,"${geoTarget}"\n`;
-                });
-            } else {
-                // Create a row for each keyword-ad combination
-                groupAds.forEach(ad => {
-                    group.keywords.forEach(keyword => {
-                        const matchType = getMatchType(keyword);
-                        const keywordText = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
-                        
+            // Export Keywords as separate rows
+            group.keywords.forEach(keyword => {
+                const matchType = getMatchType(keyword);
+                const keywordText = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
+                
+                const keywordRow: string[] = [
+                    escapeCSV(campaignNameValue),  // 1. Campaign
+                    escapeCSV(group.name),         // 2. Ad Group
+                    'keyword',                     // 3. Row Type
+                    'Active',                      // 4. Status
+                    escapeCSV(keywordText),        // 5. Keyword
+                    matchType,                     // 6. Match Type
+                    '',                            // 7. Final URL (empty for keyword rows)
+                    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // 8-22. Headlines 1-15 (15 empties)
+                    '', '', '', '',                // 23-26. Descriptions 1-4 (4 empties)
+                    '', '',                        // 27-28. Paths 1-2 (2 empties)
+                    '', '', '', '',                // 29-32. Asset fields (4 empties)
+                    '', '',                        // 33-34. Phone fields (2 empties)
+                    '', '', ''                     // 35-37. Location fields (3 empties)
+                ];
+                rows.push(keywordRow.join(','));
+            });
+            
+            // Export Ads as separate rows (Row Type: "ad") - only export valid ads with required fields
+            groupAds.forEach(ad => {
+                // Skip ads missing required fields (validation should catch these, but double-check)
                         if (ad.type === 'rsa' || ad.type === 'dki') {
-                            csv += `${campaignNameValue},"${group.name}","${keywordText}",${matchType},"${(ad.headline1 || '').replace(/"/g, '""')}","${(ad.headline2 || '').replace(/"/g, '""')}","${(ad.headline3 || '').replace(/"/g, '""')}","${(ad.description1 || '').replace(/"/g, '""')}","${(ad.description2 || '').replace(/"/g, '""')}",${ad.finalUrl || url || 'www.example.com'},${ad.path1 || ''},${ad.path2 || ''},"${geoTarget}"\n`;
+                    if (!ad.headline1 || !ad.headline2 || !ad.headline3 || !ad.description1 || !ad.description2) {
+                        console.warn(`Skipping ad in "${group.name}" - missing required fields`);
+                        return; // Skip this ad
+                    }
                         } else if (ad.type === 'callonly') {
-                            csv += `${campaignNameValue},"${group.name}","${keywordText}",${matchType},"${(ad.headline1 || '').replace(/"/g, '""')}","${(ad.headline2 || '').replace(/"/g, '""')}",,"${(ad.description1 || '').replace(/"/g, '""')}","${(ad.description2 || '').replace(/"/g, '""')}",${ad.finalUrl || url || 'www.example.com'},,,"${geoTarget}"\n`;
-                        }
-                    });
-                });
-            }
+                    if (!ad.headline1 || !ad.headline2 || !ad.description1 || !ad.description2) {
+                        console.warn(`Skipping call-only ad in "${group.name}" - missing required fields`);
+                        return; // Skip this ad
+                    }
+                }
+                
+                let finalUrl = formatURL(ad.finalUrl || url || baseUrl);
+                
+                if (ad.type === 'rsa' || ad.type === 'dki') {
+                    const adRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group
+                        'ad',                                            // Row Type
+                        'Active',                                        // Status
+                        '',                                              // Keyword (empty for ad rows)
+                        '',                                              // Match Type (empty for ad rows)
+                        escapeCSV(finalUrl),                            // Final URL
+                        escapeCSV(ad.headline1 || ''),                  // Headline 1
+                        escapeCSV(ad.headline2 || ''),                  // Headline 2
+                        escapeCSV(ad.headline3 || ''),                  // Headline 3
+                        escapeCSV(ad.headline4 || ''),                  // Headline 4
+                        escapeCSV(ad.headline5 || ''),                  // Headline 5
+                        '', '', '', '', '', '', '', '', '', '', '', '', // Headlines 6-15 (empty)
+                        escapeCSV(ad.description1 || ''),               // Description 1
+                        escapeCSV(ad.description2 || ''),               // Description 2
+                        escapeCSV(ad.description3 || ''),               // Description 3
+                        escapeCSV(ad.description4 || ''),               // Description 4
+                        escapeCSV(ad.path1 || ''),                      // Path 1
+                        escapeCSV(ad.path2 || ''),                      // Path 2
+                        '', '', '', '',                                 // Asset fields (empty)
+                        '', '',                                         // Phone fields (empty)
+                        '', '', ''                                      // Location fields (empty)
+                    ];
+                    rows.push(adRow.join(','));
+                } else if (ad.type === 'callonly') {
+                    const adRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group
+                        'ad',                                            // Row Type
+                        'Active',                                        // Status
+                        '',                                              // Keyword (empty for ad rows)
+                        '',                                              // Match Type (empty for ad rows)
+                        escapeCSV(finalUrl),                            // Final URL
+                        escapeCSV(ad.headline1 || ''),                  // Headline 1
+                        escapeCSV(ad.headline2 || ''),                  // Headline 2
+                        '',                                              // Headline 3 (call-only doesn't need 3rd headline)
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines 4-15 (empty)
+                        escapeCSV(ad.description1 || ''),               // Description 1
+                        escapeCSV(ad.description2 || ''),               // Description 2
+                        '',                                              // Description 3 (empty)
+                        '',                                              // Description 4 (empty)
+                        '',                                              // Path 1 (empty)
+                        '',                                              // Path 2 (empty)
+                        '', '', '', '',                                 // Asset fields (empty)
+                        escapeCSV(ad.phone || ''),                      // Phone Number
+                        'US',                                            // Country Code (default)
+                        '', '', ''                                      // Location fields (empty)
+                    ];
+                    rows.push(adRow.join(','));
+                }
+            });
+            
+            // Export Extensions as separate rows
+            const groupExtensions = generatedAds.filter(ad => ad.adGroup === group.name && ad.extensionType);
+            
+            groupExtensions.forEach(ext => {
+                if (ext.extensionType === 'sitelink') {
+                    // Each sitelink is a separate row
+                    if (Array.isArray(ext.sitelinks)) {
+                        ext.sitelinks.forEach((sitelink: any) => {
+                            if (sitelink && sitelink.text) {
+                                const sitelinkRow: string[] = [
+                                    escapeCSV(campaignNameValue),        // Campaign
+                                    escapeCSV(group.name),              // Ad Group
+                                    'sitelink',                          // Row Type
+                                    'Active',                            // Status
+                                    '', '',                              // Keyword fields (empty)
+                                    escapeCSV(formatURL(sitelink.url || url || baseUrl)), // Final URL
+                                    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                                    '', '', '', '',                      // Descriptions (empty)
+                                    '', '',                              // Paths (empty)
+                                    'Sitelink',                          // Asset Type
+                                    escapeCSV(sitelink.text || ''),      // Link Text
+                                    escapeCSV(sitelink.description || ''), // Description Line 1
+                                    '',                                  // Description Line 2
+                                    '', '',                              // Phone fields (empty)
+                                    '', '', ''                           // Location fields (empty)
+                                ];
+                                rows.push(sitelinkRow.join(','));
+                            }
+                        });
+                    }
+                } else if (ext.extensionType === 'call') {
+                    const callRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group
+                        'call',                                          // Row Type
+                        'Active',                                        // Status
+                        '', '',                                          // Keyword fields (empty)
+                        '',                                              // Final URL (empty for call)
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                        '', '', '', '',                                  // Descriptions (empty)
+                        '', '',                                          // Paths (empty)
+                        'Call',                                          // Asset Type
+                        '', '', '',                                      // Sitelink fields (empty)
+                        escapeCSV(ext.phone || ''),                     // Phone Number
+                        'US',                                            // Country Code (default)
+                        '', '', ''                                      // Location fields (empty)
+                    ];
+                    rows.push(callRow.join(','));
+                }
+                // Note: Other extension types (callout, snippet, etc.) are typically asset-level and 
+                // handled differently in Google Ads Editor - may need separate handling
+            });
         });
         
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        // Combine headers and rows
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        
+        // Create and download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `${campaignNameValue.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
@@ -1508,8 +1787,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
 
     const dynamicAdGroups = getDynamicAdGroups();
+    const ALL_AD_GROUPS_VALUE = 'ALL_AD_GROUPS';
     
-    const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout') => {
+    const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
         // Check total ads limit (25 max, excluding snippets and callouts)
         const regularAds = generatedAds.filter(ad => 
             ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
@@ -1522,6 +1802,183 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             }
         }
         
+        // Handle "ALL AD GROUPS" selection - create ad for each ad group
+        if (selectedAdGroup === ALL_AD_GROUPS_VALUE) {
+            const allGroups = dynamicAdGroups.length > 0 ? dynamicAdGroups : adGroups.map(name => ({ name, keywords: [] }));
+            
+            if (allGroups.length === 0) {
+                alert('No ad groups available. Please create ad groups first by selecting keywords.');
+                return;
+            }
+            
+            // Check if creating ads for all groups would exceed the limit
+            if (type === 'rsa' || type === 'dki' || type === 'callonly') {
+                const adsToCreate = allGroups.length;
+                if (regularAds.length + adsToCreate > 25) {
+                    alert(`Cannot create ads for all groups: This would create ${adsToCreate} ads, exceeding the limit of 25 total ads. Currently have ${regularAds.length} ads, would need ${regularAds.length + adsToCreate} total.`);
+                    return;
+                }
+            }
+            
+            const newAds: any[] = [];
+            const baseUrl = url || 'www.example.com';
+            const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+            
+            allGroups.forEach((group, index) => {
+                const mainKeyword = group.keywords?.[0] || 'your service';
+                let baseAd: any = {
+                    id: Date.now() + index,
+                    type: type,
+                    adGroup: group.name
+                };
+                
+                // Create ad based on type
+                if (type === 'rsa') {
+                    baseAd = {
+                        ...baseAd,
+                        headline1: `${mainKeyword} - Best Deals`,
+                        headline2: 'Shop Now & Save',
+                        headline3: 'Fast Delivery Available',
+                        description1: `Looking for ${mainKeyword}? We offer competitive prices and excellent service.`,
+                        description2: `Get your ${mainKeyword} today with free shipping on orders over $50.`,
+                        finalUrl: formattedUrl,
+                        path1: 'shop',
+                        path2: 'now'
+                    };
+                } else if (type === 'dki') {
+                    baseAd = {
+                        ...baseAd,
+                        headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+                        headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
+                        headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
+                        description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
+                        description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                        finalUrl: formattedUrl,
+                        path1: 'keyword',
+                        path2: 'deals'
+                    };
+                } else if (type === 'callonly') {
+                    baseAd = {
+                        ...baseAd,
+                        headline1: `Call for ${mainKeyword}`,
+                        headline2: 'Available 24/7 - Speak to Expert',
+                        description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing.`,
+                        description2: 'Get immediate assistance. Our specialists are ready to help!',
+                        phone: '(555) 123-4567',
+                        businessName: 'Your Business',
+                        finalUrl: formattedUrl
+                    };
+                } else if (type === 'snippet') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'snippet',
+                        header: 'Types',
+                        values: group.keywords?.slice(0, 4) || ['Option 1', 'Option 2', 'Option 3']
+                    };
+                } else if (type === 'callout') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'callout',
+                        callouts: ['Free Shipping', '24/7 Support', 'Best Price Guarantee', 'Expert Installation']
+                    };
+                } else if (type === 'call') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'call',
+                        phone: '(555) 123-4567',
+                        callTrackingEnabled: false,
+                        callOnly: false
+                    };
+                } else if (type === 'sitelink') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'sitelink',
+                        sitelinks: [
+                            { text: 'Shop Now', description: 'Browse our collection', url: url || 'www.example.com/shop' },
+                            { text: 'About Us', description: 'Learn more about us', url: url || 'www.example.com/about' },
+                            { text: 'Contact', description: 'Get in touch', url: url || 'www.example.com/contact' },
+                            { text: 'Support', description: 'Customer support', url: url || 'www.example.com/support' }
+                        ]
+                    };
+                } else if (type === 'price') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'price',
+                        type: 'SERVICES',
+                        priceQualifier: 'From',
+                        price: '$99',
+                        currency: 'USD',
+                        unit: 'per service',
+                        description: 'Starting price'
+                    };
+                } else if (type === 'app') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'app',
+                        appStore: 'GOOGLE_PLAY',
+                        appId: 'com.example.app',
+                        appLinkText: 'Download Now',
+                        appFinalUrl: 'https://play.google.com/store/apps/details?id=com.example.app'
+                    };
+                } else if (type === 'location') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'location',
+                        businessName: 'Your Business Name',
+                        addressLine1: '123 Main St',
+                        addressLine2: '',
+                        city: 'City',
+                        state: 'State',
+                        postalCode: '12345',
+                        country: 'United States',
+                        phone: '(555) 123-4567'
+                    };
+                } else if (type === 'message') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'message',
+                        messageText: 'Message us for quick answers',
+                        businessName: 'Your Business',
+                        phone: '(555) 123-4567'
+                    };
+                } else if (type === 'leadform') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'leadform',
+                        formName: 'Get Started',
+                        formDescription: 'Fill out this form to get in touch',
+                        formType: 'CONTACT',
+                        formUrl: formattedUrl,
+                        privacyPolicyUrl: formattedUrl + '/privacy'
+                    };
+                } else if (type === 'promotion') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'promotion',
+                        promotionText: 'Special Offer',
+                        promotionDescription: 'Get 20% off your first order',
+                        occasion: 'SALE',
+                        startDate: new Date().toISOString().split('T')[0],
+                        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                    };
+                } else if (type === 'image') {
+                    baseAd = {
+                        ...baseAd,
+                        extensionType: 'image',
+                        imageUrl: 'https://via.placeholder.com/1200x628',
+                        imageAltText: 'Product Image',
+                        imageName: 'Product Showcase',
+                        landscapeLogoImageUrl: 'https://via.placeholder.com/600x314'
+                    };
+                }
+                
+                newAds.push(baseAd);
+            });
+            
+            setGeneratedAds([...generatedAds, ...newAds]);
+            return;
+        }
+        
         const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
         const mainKeyword = currentGroup?.keywords[0] || 'your service';
         
@@ -1531,6 +1988,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             adGroup: selectedAdGroup
         };
 
+        // Format URL properly
+        const baseUrl = url || 'www.example.com';
+        const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+
         if (type === 'rsa') {
             newAd = {
                 ...newAd,
@@ -1539,7 +2000,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 headline3: 'Fast Delivery Available',
                 description1: `Looking for ${mainKeyword}? We offer competitive prices and excellent service.`,
                 description2: `Get your ${mainKeyword} today with free shipping on orders over $50.`,
-                finalUrl: url || 'www.example.com/shop',
+                finalUrl: formattedUrl,
                 path1: 'shop',
                 path2: 'now'
             };
@@ -1551,7 +2012,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
                 description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
                 description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
-                finalUrl: url || 'www.example.com/shop',
+                finalUrl: formattedUrl,
                 path1: 'keyword',
                 path2: 'deals'
             };
@@ -1563,7 +2024,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing.`,
                 description2: 'Get immediate assistance. Our specialists are ready to help!',
                 phone: '(555) 123-4567',
-                businessName: 'Your Business'
+                businessName: 'Your Business',
+                finalUrl: formattedUrl
             };
         } else if (type === 'snippet') {
             newAd = {
@@ -1578,6 +2040,95 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 extensionType: 'callout',
                 callouts: ['Free Shipping', '24/7 Support', 'Best Price Guarantee', 'Expert Installation']
             };
+        } else if (type === 'call') {
+            newAd = {
+                ...newAd,
+                extensionType: 'call',
+                phone: '(555) 123-4567',
+                callTrackingEnabled: false,
+                callOnly: false
+            };
+        } else if (type === 'sitelink') {
+            newAd = {
+                ...newAd,
+                extensionType: 'sitelink',
+                sitelinks: [
+                    { text: 'Shop Now', description: 'Browse our collection', url: url || 'www.example.com/shop' },
+                    { text: 'About Us', description: 'Learn more about us', url: url || 'www.example.com/about' },
+                    { text: 'Contact', description: 'Get in touch', url: url || 'www.example.com/contact' },
+                    { text: 'Support', description: 'Customer support', url: url || 'www.example.com/support' }
+                ]
+            };
+        } else if (type === 'price') {
+            newAd = {
+                ...newAd,
+                extensionType: 'price',
+                type: 'SERVICES',
+                priceQualifier: 'From',
+                price: '$99',
+                currency: 'USD',
+                unit: 'per service',
+                description: 'Starting price'
+            };
+        } else if (type === 'app') {
+            newAd = {
+                ...newAd,
+                extensionType: 'app',
+                appStore: 'GOOGLE_PLAY',
+                appId: 'com.example.app',
+                appLinkText: 'Download Now',
+                appFinalUrl: 'https://play.google.com/store/apps/details?id=com.example.app'
+            };
+        } else if (type === 'location') {
+            newAd = {
+                ...newAd,
+                extensionType: 'location',
+                businessName: 'Your Business Name',
+                addressLine1: '123 Main St',
+                addressLine2: '',
+                city: 'City',
+                state: 'State',
+                postalCode: '12345',
+                country: 'United States',
+                phone: '(555) 123-4567'
+            };
+        } else if (type === 'message') {
+            newAd = {
+                ...newAd,
+                extensionType: 'message',
+                messageText: 'Message us for quick answers',
+                businessName: 'Your Business',
+                phone: '(555) 123-4567'
+            };
+        } else if (type === 'leadform') {
+            newAd = {
+                ...newAd,
+                extensionType: 'leadform',
+                formName: 'Get Started',
+                formDescription: 'Fill out this form to get in touch',
+                formType: 'CONTACT',
+                formUrl: formattedUrl,
+                privacyPolicyUrl: formattedUrl + '/privacy'
+            };
+        } else if (type === 'promotion') {
+            newAd = {
+                ...newAd,
+                extensionType: 'promotion',
+                promotionText: 'Special Offer',
+                promotionDescription: 'Get 20% off your first order',
+                occasion: 'SALE',
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            };
+        } else if (type === 'image') {
+            newAd = {
+                ...newAd,
+                extensionType: 'image',
+                imageUrl: 'https://via.placeholder.com/1200x628',
+                imageAltText: 'Product Image',
+                imageName: 'Product Showcase',
+                landscapeLogoImageUrl: 'https://via.placeholder.com/600x314'
+            };
         }
 
         setGeneratedAds([...generatedAds, newAd]);
@@ -1586,8 +2137,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const adGroups = ['Refrigerators', 'Ovens', 'Microwaves'];
     
     const renderStep3 = () => {
-        // Filter ads for current ad group
-        const currentGroupAds = generatedAds.filter(ad => ad.adGroup === selectedAdGroup);
+        // Filter ads based on selection
+        const currentGroupAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
+            ? generatedAds // Show all ads when "ALL AD GROUPS" is selected
+            : generatedAds.filter(ad => ad.adGroup === selectedAdGroup);
         const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
         
         return (
@@ -1643,12 +2196,19 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 <SelectValue placeholder="Select ad group" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem key={ALL_AD_GROUPS_VALUE} value={ALL_AD_GROUPS_VALUE}>
+                                    ALL AD GROUPS
+                                </SelectItem>
                                 {adGroupList.map(group => (
                                     <SelectItem key={group} value={group}>{group}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
-                        {dynamicAdGroups.length > 0 && (
+                        {selectedAdGroup === ALL_AD_GROUPS_VALUE ? (
+                            <div className="mt-2 text-xs text-slate-600 font-semibold">
+                                Showing all ads from all ad groups ({adGroupList.length} groups)
+                            </div>
+                        ) : dynamicAdGroups.length > 0 && (
                             <div className="mt-2 text-xs text-slate-600">
                                 {dynamicAdGroups.find(g => g.name === selectedAdGroup)?.keywords.length || 0} keywords in this group
                             </div>
@@ -1658,8 +2218,16 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     {/* Help Text */}
                     <div className="bg-white rounded-lg p-4 border border-slate-200">
                         <p className="text-sm text-slate-600">
+                            {selectedAdGroup === ALL_AD_GROUPS_VALUE ? (
+                                <>
+                                    <strong>ALL AD GROUPS selected:</strong> Ads created here will be added to all ad groups. You can view and manage all ads from all groups in this view.
+                                </>
+                            ) : (
+                                <>
                             You can preview different ad groups, however changing ads here will change all ad groups. 
                             In the next section you can edit ads individually for each ad group.
+                                </>
+                            )}
                         </p>
                     </div>
                     
@@ -1713,6 +2281,74 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         >
                             <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                         </Button>
+                        <Button 
+                            onClick={() => createNewAd('leadform')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6"
+                        >
+                            <FormIcon className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('promotion')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6"
+                        >
+                            <Tag className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
+                        </Button>
+                        
+                        {/* Separator */}
+                        <div className="my-4 border-t border-slate-300"></div>
+                        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">More Extensions</div>
+                        
+                        <Button 
+                            onClick={() => createNewAd('call')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                        >
+                            <Phone className="mr-2 w-5 h-5" /> CALL EXTENSION
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('sitelink')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                        >
+                            <Link2 className="mr-2 w-5 h-5" /> SITELINK EXTENSION
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('price')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                        >
+                            <DollarSign className="mr-2 w-5 h-5" /> PRICE EXTENSION
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('app')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                        >
+                            <Smartphone className="mr-2 w-5 h-5" /> APP EXTENSION
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('location')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                        >
+                            <MapPin className="mr-2 w-5 h-5" /> LOCATION EXTENSION
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('message')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                        >
+                            <MessageSquare className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('image')}
+                            disabled={selectedKeywords.length === 0}
+                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                        >
+                            <ImageIcon className="mr-2 w-5 h-5" /> IMAGE EXTENSION
+                        </Button>
                     </div>
                 </div>
                 
@@ -1720,6 +2356,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 <div className="lg:col-span-2 space-y-4">
                     {currentGroupAds.map(ad => (
                         <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow">
+                            {/* Ad Group Badge (shown when ALL AD GROUPS is selected) */}
+                            {selectedAdGroup === ALL_AD_GROUPS_VALUE && ad.adGroup && (
+                                <div className="mb-2">
+                                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs">
+                                        Ad Group: {ad.adGroup}
+                                    </Badge>
+                                </div>
+                            )}
                             {/* Ad Type Badge */}
                             <div className="mb-3">
                                 <Badge className={
@@ -1727,9 +2371,33 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     ad.type === 'dki' ? 'bg-purple-100 text-purple-700' :
                                     ad.type === 'callonly' ? 'bg-green-100 text-green-700' :
                                     ad.extensionType === 'snippet' ? 'bg-orange-100 text-orange-700' :
-                                    'bg-pink-100 text-pink-700'
+                                    ad.extensionType === 'callout' ? 'bg-pink-100 text-pink-700' :
+                                    ad.extensionType === 'call' ? 'bg-teal-100 text-teal-700' :
+                                    ad.extensionType === 'sitelink' ? 'bg-cyan-100 text-cyan-700' :
+                                    ad.extensionType === 'price' ? 'bg-yellow-100 text-yellow-700' :
+                                    ad.extensionType === 'app' ? 'bg-indigo-100 text-indigo-700' :
+                                    ad.extensionType === 'location' ? 'bg-red-100 text-red-700' :
+                                    ad.extensionType === 'message' ? 'bg-violet-100 text-violet-700' :
+                                    ad.extensionType === 'leadform' ? 'bg-emerald-100 text-emerald-700' :
+                                    ad.extensionType === 'promotion' ? 'bg-rose-100 text-rose-700' :
+                                    ad.extensionType === 'image' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-slate-100 text-slate-700'
                                 }>
-                                    {ad.type === 'rsa' ? 'RSA' : ad.type === 'dki' ? 'DKI' : ad.type === 'callonly' ? 'Call Only' : ad.extensionType === 'snippet' ? 'Snippet Ext.' : 'Callout Ext.'}
+                                    {ad.type === 'rsa' ? 'RSA' : 
+                                     ad.type === 'dki' ? 'DKI' : 
+                                     ad.type === 'callonly' ? 'Call Only' : 
+                                     ad.extensionType === 'snippet' ? 'Structured Snippet' :
+                                     ad.extensionType === 'callout' ? 'Callout' :
+                                     ad.extensionType === 'call' ? 'Call Extension' :
+                                     ad.extensionType === 'sitelink' ? 'Sitelink' :
+                                     ad.extensionType === 'price' ? 'Price' :
+                                     ad.extensionType === 'app' ? 'App' :
+                                     ad.extensionType === 'location' ? 'Location' :
+                                     ad.extensionType === 'message' ? 'Message' :
+                                     ad.extensionType === 'leadform' ? 'Lead Form' :
+                                     ad.extensionType === 'promotion' ? 'Promotion' :
+                                     ad.extensionType === 'image' ? 'Image' :
+                                     'Extension'}
                                 </Badge>
                             </div>
 
@@ -1911,6 +2579,555 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
+                                    {/* Extension Editing Forms */}
+                                    {ad.extensionType === 'snippet' && (
+                                        <>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Header *</Label>
+                                                    <Input
+                                                        value={ad.header || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'header', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="e.g., Types, Brands, Styles"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Values (one per line) *</Label>
+                                                    <Textarea
+                                                        value={Array.isArray(ad.values) ? ad.values.join('\n') : ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'values', e.target.value.split('\n').filter(v => v.trim()))}
+                                                        className="mt-1"
+                                                        placeholder="Value 1&#10;Value 2&#10;Value 3"
+                                                        rows={4}
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-1">Enter one value per line (up to 10 values)</p>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'callout' && (
+                                        <>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Callouts (one per line) *</Label>
+                                                    <Textarea
+                                                        value={Array.isArray(ad.callouts) ? ad.callouts.join('\n') : ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'callouts', e.target.value.split('\n').filter(c => c.trim()))}
+                                                        className="mt-1"
+                                                        placeholder="Free Shipping&#10;24/7 Support&#10;Best Price Guarantee"
+                                                        rows={4}
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-1">Enter one callout per line (up to 4 callouts, max 25 characters each)</p>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'call' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
+                                                    <Input
+                                                        value={ad.phone || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'phone', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="(555) 123-4567"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Call Tracking</Label>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={ad.callTrackingEnabled || false}
+                                                            onChange={(e) => updateAdField(ad.id, 'callTrackingEnabled', e.target.checked)}
+                                                            className="rounded"
+                                                        />
+                                                        <Label className="text-xs text-slate-600">Enable call tracking</Label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'sitelink' && (
+                                        <>
+                                            <div className="space-y-4">
+                                                <Label className="text-xs font-semibold text-slate-700">Sitelinks (up to 4) *</Label>
+                                                {Array.isArray(ad.sitelinks) && ad.sitelinks.map((sitelink: any, idx: number) => (
+                                                    <div key={idx} className="p-3 border border-slate-200 rounded-lg space-y-2">
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                                            <Input
+                                                                value={sitelink.text || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...ad.sitelinks];
+                                                                    updated[idx] = { ...updated[idx], text: e.target.value };
+                                                                    updateAdField(ad.id, 'sitelinks', updated);
+                                                                }}
+                                                                placeholder="Link text (max 25 chars)"
+                                                                className="text-sm"
+                                                            />
+                                                            <Input
+                                                                value={sitelink.description || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...ad.sitelinks];
+                                                                    updated[idx] = { ...updated[idx], description: e.target.value };
+                                                                    updateAdField(ad.id, 'sitelinks', updated);
+                                                                }}
+                                                                placeholder="Description (max 35 chars)"
+                                                                className="text-sm"
+                                                            />
+                                                            <Input
+                                                                value={sitelink.url || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...ad.sitelinks];
+                                                                    updated[idx] = { ...updated[idx], url: e.target.value };
+                                                                    updateAdField(ad.id, 'sitelinks', updated);
+                                                                }}
+                                                                placeholder="URL"
+                                                                className="text-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (Array.isArray(ad.sitelinks) && ad.sitelinks.length < 4) {
+                                                            const updated = [...ad.sitelinks, { text: '', description: '', url: url || '' }];
+                                                            updateAdField(ad.id, 'sitelinks', updated);
+                                                        }
+                                                    }}
+                                                    disabled={!Array.isArray(ad.sitelinks) || ad.sitelinks.length >= 4}
+                                                    className="w-full"
+                                                >
+                                                    <Plus className="w-4 h-4 mr-2" /> Add Sitelink
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'price' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Type *</Label>
+                                                    <Select
+                                                        value={ad.type || 'SERVICES'}
+                                                        onValueChange={(value) => updateAdField(ad.id, 'type', value)}
+                                                    >
+                                                        <SelectTrigger className="mt-1">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="SERVICES">Services</SelectItem>
+                                                            <SelectItem value="BRAND">Brand</SelectItem>
+                                                            <SelectItem value="EVENT">Event</SelectItem>
+                                                            <SelectItem value="LOCATION">Location</SelectItem>
+                                                            <SelectItem value="NEIGHBORHOOD">Neighborhood</SelectItem>
+                                                            <SelectItem value="PRODUCT">Product</SelectItem>
+                                                            <SelectItem value="PRODUCT_TIER">Product Tier</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Price Qualifier</Label>
+                                                    <Input
+                                                        value={ad.priceQualifier || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'priceQualifier', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="e.g., From, Up to"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Price *</Label>
+                                                    <Input
+                                                        value={ad.price || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'price', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="$99"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Currency</Label>
+                                                    <Select
+                                                        value={ad.currency || 'USD'}
+                                                        onValueChange={(value) => updateAdField(ad.id, 'currency', value)}
+                                                    >
+                                                        <SelectTrigger className="mt-1">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="USD">USD</SelectItem>
+                                                            <SelectItem value="EUR">EUR</SelectItem>
+                                                            <SelectItem value="GBP">GBP</SelectItem>
+                                                            <SelectItem value="CAD">CAD</SelectItem>
+                                                            <SelectItem value="AUD">AUD</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Unit</Label>
+                                                    <Input
+                                                        value={ad.unit || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'unit', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="e.g., per service, per hour"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Description</Label>
+                                                    <Input
+                                                        value={ad.description || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Description of the price"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'app' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">App Store *</Label>
+                                                    <Select
+                                                        value={ad.appStore || 'GOOGLE_PLAY'}
+                                                        onValueChange={(value) => updateAdField(ad.id, 'appStore', value)}
+                                                    >
+                                                        <SelectTrigger className="mt-1">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="GOOGLE_PLAY">Google Play</SelectItem>
+                                                            <SelectItem value="APPLE_APP_STORE">Apple App Store</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">App ID *</Label>
+                                                    <Input
+                                                        value={ad.appId || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'appId', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="com.example.app"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Link Text</Label>
+                                                    <Input
+                                                        value={ad.appLinkText || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'appLinkText', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Download Now"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Final URL</Label>
+                                                    <Input
+                                                        value={ad.appFinalUrl || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'appFinalUrl', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="https://play.google.com/store/apps/..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'location' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Business Name *</Label>
+                                                    <Input
+                                                        value={ad.businessName || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'businessName', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Your Business Name"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
+                                                    <Input
+                                                        value={ad.phone || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'phone', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="(555) 123-4567"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Address Line 1 *</Label>
+                                                    <Input
+                                                        value={ad.addressLine1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'addressLine1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="123 Main St"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Address Line 2</Label>
+                                                    <Input
+                                                        value={ad.addressLine2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'addressLine2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Suite 100"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">City *</Label>
+                                                    <Input
+                                                        value={ad.city || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'city', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="City"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">State *</Label>
+                                                    <Input
+                                                        value={ad.state || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'state', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="State"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Postal Code *</Label>
+                                                    <Input
+                                                        value={ad.postalCode || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'postalCode', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="12345"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Country *</Label>
+                                                    <Input
+                                                        value={ad.country || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'country', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="United States"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'message' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Message Text *</Label>
+                                                    <Input
+                                                        value={ad.messageText || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'messageText', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Message us for quick answers"
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-1">Max 25 characters</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Business Name *</Label>
+                                                    <Input
+                                                        value={ad.businessName || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'businessName', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Your Business"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
+                                                    <Input
+                                                        value={ad.phone || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'phone', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="(555) 123-4567"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'leadform' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Form Name *</Label>
+                                                    <Input
+                                                        value={ad.formName || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'formName', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Get Started"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Form Type *</Label>
+                                                    <Select
+                                                        value={ad.formType || 'CONTACT'}
+                                                        onValueChange={(value) => updateAdField(ad.id, 'formType', value)}
+                                                    >
+                                                        <SelectTrigger className="mt-1">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="CONTACT">Contact</SelectItem>
+                                                            <SelectItem value="LEAD_GENERATION">Lead Generation</SelectItem>
+                                                            <SelectItem value="SIGNUP">Signup</SelectItem>
+                                                            <SelectItem value="BOOKING">Booking</SelectItem>
+                                                            <SelectItem value="SURVEY">Survey</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Form Description</Label>
+                                                    <Textarea
+                                                        value={ad.formDescription || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'formDescription', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Fill out this form to get in touch"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Form URL *</Label>
+                                                    <Input
+                                                        value={ad.formUrl || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'formUrl', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="https://example.com/form"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Privacy Policy URL *</Label>
+                                                    <Input
+                                                        value={ad.privacyPolicyUrl || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'privacyPolicyUrl', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="https://example.com/privacy"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'promotion' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Promotion Text *</Label>
+                                                    <Input
+                                                        value={ad.promotionText || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'promotionText', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Special Offer"
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-1">Max 15 characters</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Occasion *</Label>
+                                                    <Select
+                                                        value={ad.occasion || 'SALE'}
+                                                        onValueChange={(value) => updateAdField(ad.id, 'occasion', value)}
+                                                    >
+                                                        <SelectTrigger className="mt-1">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="SALE">Sale</SelectItem>
+                                                            <SelectItem value="SPECIAL_OFFER">Special Offer</SelectItem>
+                                                            <SelectItem value="NEW">New</SelectItem>
+                                                            <SelectItem value="CLEARANCE">Clearance</SelectItem>
+                                                            <SelectItem value="GIFT">Gift</SelectItem>
+                                                            <SelectItem value="HOLIDAY">Holiday</SelectItem>
+                                                            <SelectItem value="NO_SALE">No Sale</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Promotion Description</Label>
+                                                    <Input
+                                                        value={ad.promotionDescription || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'promotionDescription', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Get 20% off your first order"
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-1">Max 35 characters</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Start Date *</Label>
+                                                    <Input
+                                                        type="date"
+                                                        value={ad.startDate || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'startDate', e.target.value)}
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">End Date *</Label>
+                                                    <Input
+                                                        type="date"
+                                                        value={ad.endDate || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'endDate', e.target.value)}
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.extensionType === 'image' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Image URL *</Label>
+                                                    <Input
+                                                        value={ad.imageUrl || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'imageUrl', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="https://example.com/image.jpg"
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-1">Recommended: 1200x628px</p>
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Landscape Logo Image URL</Label>
+                                                    <Input
+                                                        value={ad.landscapeLogoImageUrl || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'landscapeLogoImageUrl', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="https://example.com/logo.jpg"
+                                                    />
+                                                    <p className="text-xs text-slate-500 mt-1">Recommended: 600x314px</p>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Image Name *</Label>
+                                                    <Input
+                                                        value={ad.imageName || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'imageName', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Product Showcase"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <Label className="text-xs font-semibold text-slate-700">Alt Text</Label>
+                                                    <Input
+                                                        value={ad.imageAltText || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'imageAltText', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Description of the image"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
                                     <div className="flex gap-2 pt-2 border-t border-slate-300">
                                         <Button
                                             onClick={() => handleSaveAd(ad.id)}
@@ -1991,11 +3208,182 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             {ad.extensionType === 'callout' && (
                                 <div className="bg-blue-50 border border-blue-200 rounded px-4 py-3 mb-3">
                                     <div className="flex flex-wrap gap-2">
-                                        {ad.callouts.map((callout: string, idx: number) => (
+                                        {Array.isArray(ad.callouts) && ad.callouts.map((callout: string, idx: number) => (
                                             <Badge key={idx} variant="outline" className="bg-white">
                                                 {callout}
                                             </Badge>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'call' && (
+                                <div className="bg-teal-50 border border-teal-200 rounded px-4 py-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="w-4 h-4 text-teal-700" />
+                                        <span className="font-semibold text-sm text-slate-700">{ad.phone || '(555) 123-4567'}</span>
+                                        {ad.callTrackingEnabled && (
+                                            <Badge variant="outline" className="text-xs bg-white">Call Tracking Enabled</Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'sitelink' && (
+                                <div className="bg-cyan-50 border border-cyan-200 rounded px-4 py-3 mb-3">
+                                    <div className="space-y-2">
+                                        {Array.isArray(ad.sitelinks) && ad.sitelinks.map((sitelink: any, idx: number) => (
+                                            <div key={idx} className="flex items-start gap-2">
+                                                <Link2 className="w-4 h-4 text-cyan-700 mt-0.5" />
+                                                <div>
+                                                    <div className="font-semibold text-sm text-slate-700">{sitelink.text || 'Link Text'}</div>
+                                                    {sitelink.description && (
+                                                        <div className="text-xs text-slate-600">{sitelink.description}</div>
+                                                    )}
+                                                    {sitelink.url && (
+                                                        <div className="text-xs text-cyan-600">{sitelink.url}</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'price' && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded px-4 py-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <DollarSign className="w-4 h-4 text-yellow-700" />
+                                        <span className="font-semibold text-sm text-slate-700">
+                                            {ad.priceQualifier && `${ad.priceQualifier} `}
+                                            {ad.price || '$99'} {ad.unit && ad.unit}
+                                        </span>
+                                        {ad.description && (
+                                            <span className="text-xs text-slate-600 ml-2">- {ad.description}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'app' && (
+                                <div className="bg-indigo-50 border border-indigo-200 rounded px-4 py-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Smartphone className="w-4 h-4 text-indigo-700" />
+                                        <div>
+                                            <div className="font-semibold text-sm text-slate-700">
+                                                {ad.appLinkText || 'Download Now'} - {ad.appStore === 'GOOGLE_PLAY' ? 'Google Play' : 'App Store'}
+                                            </div>
+                                            {ad.appId && (
+                                                <div className="text-xs text-slate-600">App ID: {ad.appId}</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'location' && (
+                                <div className="bg-red-50 border border-red-200 rounded px-4 py-3 mb-3">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="w-4 h-4 text-red-700" />
+                                            <span className="font-semibold text-sm text-slate-700">{ad.businessName || 'Business Name'}</span>
+                                        </div>
+                                        <div className="text-xs text-slate-600 ml-6">
+                                            {ad.addressLine1 && `${ad.addressLine1}`}
+                                            {ad.addressLine2 && `, ${ad.addressLine2}`}
+                                            {ad.city && `, ${ad.city}`}
+                                            {ad.state && `, ${ad.state}`}
+                                            {ad.postalCode && ` ${ad.postalCode}`}
+                                        </div>
+                                        {ad.phone && (
+                                            <div className="text-xs text-slate-600 ml-6 flex items-center gap-1">
+                                                <Phone className="w-3 h-3" />
+                                                {ad.phone}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'message' && (
+                                <div className="bg-violet-50 border border-violet-200 rounded px-4 py-3 mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <MessageSquare className="w-4 h-4 text-violet-700" />
+                                        <div>
+                                            <div className="font-semibold text-sm text-slate-700">{ad.messageText || 'Message us for quick answers'}</div>
+                                            <div className="text-xs text-slate-600">{ad.businessName || 'Business'} • {ad.phone || '(555) 123-4567'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'leadform' && (
+                                <div className="bg-emerald-50 border border-emerald-200 rounded px-4 py-3 mb-3">
+                                    <div className="flex items-start gap-2">
+                                        <FormIcon className="w-4 h-4 text-emerald-700 mt-0.5" />
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-sm text-slate-700">{ad.formName || 'Get Started'}</div>
+                                            {ad.formDescription && (
+                                                <div className="text-xs text-slate-600 mt-1">{ad.formDescription}</div>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <Badge variant="outline" className="text-xs bg-white">
+                                                    {ad.formType === 'CONTACT' ? 'Contact' :
+                                                     ad.formType === 'LEAD_GENERATION' ? 'Lead Generation' :
+                                                     ad.formType === 'SIGNUP' ? 'Signup' :
+                                                     ad.formType === 'BOOKING' ? 'Booking' :
+                                                     ad.formType === 'SURVEY' ? 'Survey' : 'Form'}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'promotion' && (
+                                <div className="bg-rose-50 border border-rose-200 rounded px-4 py-3 mb-3">
+                                    <div className="flex items-start gap-2">
+                                        <Tag className="w-4 h-4 text-rose-700 mt-0.5" />
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-sm text-slate-700">{ad.promotionText || 'Special Offer'}</div>
+                                            {ad.promotionDescription && (
+                                                <div className="text-xs text-slate-600 mt-1">{ad.promotionDescription}</div>
+                                            )}
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <Badge variant="outline" className="text-xs bg-white">
+                                                    {ad.occasion === 'SALE' ? 'Sale' :
+                                                     ad.occasion === 'SPECIAL_OFFER' ? 'Special Offer' :
+                                                     ad.occasion === 'NEW' ? 'New' :
+                                                     ad.occasion === 'CLEARANCE' ? 'Clearance' :
+                                                     ad.occasion === 'GIFT' ? 'Gift' :
+                                                     ad.occasion === 'HOLIDAY' ? 'Holiday' : 'Promotion'}
+                                                </Badge>
+                                                {ad.startDate && ad.endDate && (
+                                                    <span className="text-xs text-slate-600">
+                                                        {new Date(ad.startDate).toLocaleDateString()} - {new Date(ad.endDate).toLocaleDateString()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {ad.extensionType === 'image' && (
+                                <div className="bg-amber-50 border border-amber-200 rounded px-4 py-3 mb-3">
+                                    <div className="flex items-start gap-2">
+                                        <ImageIcon className="w-4 h-4 text-amber-700 mt-0.5" />
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-sm text-slate-700">{ad.imageName || 'Product Showcase'}</div>
+                                            {ad.imageAltText && (
+                                                <div className="text-xs text-slate-600 mt-1">{ad.imageAltText}</div>
+                                            )}
+                                            {ad.imageUrl && (
+                                                <div className="mt-2">
+                                                    <div className="text-xs text-amber-600 break-all">{ad.imageUrl}</div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -2108,9 +3496,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         </Label>
                         <Select value={targetCountry} onValueChange={(value) => {
                             setTargetCountry(value);
-                            // Reset city preset when country changes
+                            // Reset presets when country changes
                             if (targetType === 'CITY' && cityPreset) {
                                 setCityPreset(null);
+                                setManualGeoInput('');
+                            }
+                            if (targetType === 'STATE' && statePreset) {
+                                setStatePreset(null);
                                 setManualGeoInput('');
                             }
                         }}>
@@ -2155,17 +3547,35 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                             {count} ZIPs
                                         </Button>
                                     ))}
+                                    <Button 
+                                        variant={zipPreset === null && manualGeoInput ? "default" : "outline"}
+                                        onClick={() => {
+                                            setZipPreset(null);
+                                            if (!manualGeoInput) {
+                                                setManualGeoInput('');
+                                            }
+                                        }}
+                                        className="flex-1 border-dashed"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Manual Entry
+                                    </Button>
                                 </div>
                                 <Textarea 
-                                    placeholder="Or enter ZIP codes manually (comma-separated)..."
+                                    placeholder="Enter ZIP codes manually (comma-separated, e.g., 10001, 10002, 90210)..."
                                     value={manualGeoInput}
                                     onChange={(e) => {
                                         setManualGeoInput(e.target.value);
                                         setZipPreset(null);
                                     }}
-                                    rows={4}
+                                    rows={6}
                                     className="bg-white/80"
                                 />
+                                {manualGeoInput && !zipPreset && (
+                                    <p className="text-xs text-slate-500">
+                                        Manual entry: {manualGeoInput.split(',').filter(z => z.trim()).length} ZIP code(s) entered
+                                    </p>
+                                )}
                             </TabsContent>
 
                             <TabsContent value="CITY" className="space-y-4">
@@ -2184,9 +3594,22 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                             {count === '0' ? 'All Cities' : `Top ${count} Cities`}
                                         </Button>
                                     ))}
+                                    <Button 
+                                        variant={cityPreset === null && manualGeoInput ? "default" : "outline"}
+                                        onClick={() => {
+                                            setCityPreset(null);
+                                            if (!manualGeoInput) {
+                                                setManualGeoInput('');
+                                            }
+                                        }}
+                                        className="flex-1 border-dashed"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Manual Entry
+                                    </Button>
                                 </div>
                                 <Textarea 
-                                    placeholder="Enter cities (comma-separated)..."
+                                    placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
                                     value={manualGeoInput}
                                     onChange={(e) => {
                                         setManualGeoInput(e.target.value);
@@ -2200,16 +3623,63 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         Showing {cityPreset === '0' ? 'all' : `top ${cityPreset}`} cities by income per capita for {targetCountry}
                                     </p>
                                 )}
+                                {manualGeoInput && !cityPreset && (
+                                    <p className="text-xs text-slate-500">
+                                        Manual entry: {manualGeoInput.split(',').filter(c => c.trim()).length} city/cities entered
+                                    </p>
+                                )}
                             </TabsContent>
 
                             <TabsContent value="STATE" className="space-y-4">
+                                <div className="flex flex-wrap gap-3 mb-4">
+                                    {['10', '20', '30', '0'].map(count => (
+                                        <Button 
+                                            key={count}
+                                            variant={statePreset === count ? "default" : "outline"}
+                                            onClick={() => {
+                                                setStatePreset(count);
+                                                const states = getTopStatesByPopulation(targetCountry, count === '0' ? 0 : parseInt(count));
+                                                setManualGeoInput(states.join(', '));
+                                            }}
+                                            className="flex-1 min-w-[120px]"
+                                        >
+                                            {count === '0' ? 'All States' : `Top ${count} States`}
+                                        </Button>
+                                    ))}
+                                    <Button 
+                                        variant={statePreset === null && manualGeoInput ? "default" : "outline"}
+                                        onClick={() => {
+                                            setStatePreset(null);
+                                            if (!manualGeoInput) {
+                                                setManualGeoInput('');
+                                            }
+                                        }}
+                                        className="flex-1 border-dashed"
+                                    >
+                                        <Plus className="w-4 h-4 mr-2" />
+                                        Manual Entry
+                                    </Button>
+                                </div>
                                 <Textarea 
-                                    placeholder="Enter states/provinces (comma-separated)..."
+                                    placeholder="Enter states/provinces manually (comma-separated, e.g., California, New York, Texas, Florida)..."
                                     value={manualGeoInput}
-                                    onChange={(e) => setManualGeoInput(e.target.value)}
+                                    onChange={(e) => {
+                                        setManualGeoInput(e.target.value);
+                                        setStatePreset(null);
+                                    }}
                                     rows={6}
                                     className="bg-white/80"
                                 />
+                                {statePreset && (
+                                    <p className="text-xs text-slate-500">
+                                        Showing {statePreset === '0' ? 'all' : `top ${statePreset}`} states/provinces by population for {targetCountry}
+                                    </p>
+                                )}
+                                {manualGeoInput && !statePreset && (
+                                    <p className="text-xs text-slate-500">
+                                        Manual entry: {manualGeoInput.split(',').filter(s => s.trim()).length} state(s)/province(s) entered
+                                    </p>
+                                )}
                             </TabsContent>
                         </Tabs>
                     </div>
@@ -2237,38 +3707,93 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [tempKeywords, setTempKeywords] = useState('');
     const [tempNegatives, setTempNegatives] = useState('');
 
-    // Ensure we have ads for all ad groups when entering Step 5
+    // Ensure we have ads for all ad groups when entering Step 5 - ensure same number of ads per group
     useEffect(() => {
         if (step === 5) {
             const reviewAdGroups = getDynamicAdGroups();
             if (reviewAdGroups.length > 0) {
-                const missingGroups = reviewAdGroups.filter(group => 
-                    !generatedAds.some(ad => ad.adGroup === group.name)
-                );
+                // Find the maximum number of ads in any ad group
+                let maxAdsPerGroup = 0;
+                reviewAdGroups.forEach(group => {
+                    const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
+                    if (groupAds.length > maxAdsPerGroup) {
+                        maxAdsPerGroup = groupAds.length;
+                    }
+                });
                 
-                if (missingGroups.length > 0) {
-                    const newAds: any[] = [];
-                    missingGroups.forEach(group => {
+                // If no ads exist at all, default to 3 ads per group
+                if (maxAdsPerGroup === 0) {
+                    maxAdsPerGroup = 3;
+                }
+                
+                // Ensure all groups have the same number of ads
+                const newAds: any[] = [];
+                reviewAdGroups.forEach(group => {
+                    const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
+                    const adsNeeded = maxAdsPerGroup - groupAds.length;
+                    
+                    if (adsNeeded > 0) {
                         const mainKeyword = group.keywords[0] || 'your service';
                         const keywordText = mainKeyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
-                        const defaultAd: any = {
-                            id: Date.now() + Math.random() * 1000 + Math.random() * 100,
-                            type: enabledAdTypes.includes('rsa') ? 'rsa' : enabledAdTypes.includes('dki') ? 'dki' : 'callonly',
-                            adGroup: group.name,
-                            headline1: `${keywordText} - Best Deals`,
-                            headline2: 'Shop Now & Save',
-                            headline3: 'Fast Delivery Available',
-                            description1: `Looking for ${keywordText}? We offer competitive prices and excellent service.`,
-                            description2: `Get your ${keywordText} today with free shipping on orders over $50.`,
-                            finalUrl: url || 'www.example.com/shop',
-                            path1: 'shop',
-                            path2: 'now'
-                        };
-                        newAds.push(defaultAd);
-                    });
-                    if (newAds.length > 0) {
-                        setGeneratedAds(prev => [...prev, ...newAds]);
+                        
+                        // Create multiple ads for this group to match the max
+                        for (let i = 0; i < adsNeeded; i++) {
+                            const adTypes = ['rsa', 'dki', 'callonly'].filter(type => enabledAdTypes.includes(type));
+                            const adType = adTypes[i % adTypes.length] || (enabledAdTypes.includes('rsa') ? 'rsa' : enabledAdTypes.includes('dki') ? 'dki' : 'callonly');
+                            
+                            // Format URL properly
+                            const baseUrl = url || 'www.example.com';
+                            const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+                            
+                            let defaultAd: any = {
+                                id: Date.now() + Math.random() * 1000 + Math.random() * 100 + i,
+                                type: adType,
+                                adGroup: group.name,
+                                finalUrl: formattedUrl,
+                                path1: 'shop',
+                                path2: 'now'
+                            };
+                            
+                            if (adType === 'rsa') {
+                                defaultAd = {
+                                    ...defaultAd,
+                                    headline1: `${keywordText} - Best Deals`,
+                                    headline2: 'Shop Now & Save',
+                                    headline3: i === 0 ? 'Fast Delivery Available' : i === 1 ? 'Free Shipping' : '24/7 Support',
+                                    description1: `Looking for ${keywordText}? We offer competitive prices and excellent service.`,
+                                    description2: `Get your ${keywordText} today with free shipping on orders over $50.`,
+                                    finalUrl: formattedUrl
+                                };
+                            } else if (adType === 'dki') {
+                                defaultAd = {
+                                    ...defaultAd,
+                                    headline1: `{KeyWord:${keywordText}} - Official Site`,
+                                    headline2: `Best {KeyWord:${keywordText}} Deals`,
+                                    headline3: i === 0 ? `Order {KeyWord:${keywordText}} Online` : `Shop {KeyWord:${keywordText}} Now`,
+                                    description1: `Find quality {KeyWord:${keywordText}} at great prices. Shop our selection today.`,
+                                    description2: `Get your {KeyWord:${keywordText}} with fast shipping and expert support.`,
+                                    finalUrl: formattedUrl
+                                };
+                            } else if (adType === 'callonly') {
+                                defaultAd = {
+                                    ...defaultAd,
+                                    headline1: `Call for ${keywordText}`,
+                                    headline2: i === 0 ? 'Available 24/7 - Speak to Expert' : 'Get Expert Advice Now',
+                                    description1: `Need ${keywordText}? Call us now for expert advice and the best pricing.`,
+                                    description2: 'Get immediate assistance. Our specialists are ready to help!',
+                                    phone: '(555) 123-4567',
+                                    businessName: 'Your Business',
+                                    finalUrl: formattedUrl
+                                };
+                            }
+                            
+                            newAds.push(defaultAd);
+                        }
                     }
+                });
+                
+                if (newAds.length > 0) {
+                    setGeneratedAds(prev => [...prev, ...newAds]);
                 }
             }
         }

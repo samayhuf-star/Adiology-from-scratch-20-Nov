@@ -340,25 +340,6 @@ export const KeywordPlannerSelectable = ({
                             <label className="block text-sm font-semibold text-slate-700">
                                 Negative Keywords (One term/phrase per line)
                             </label>
-                            {!isGenerating && (
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                        const generated = generateComprehensiveNegativeKeywords();
-                                        const slicedKeywords = generated.slice(0, negativeKeywordsCount);
-                                        const newNegatives = slicedKeywords.join('\n');
-                                        setNegativeKeywords(newNegatives);
-                                        if (onNegativeKeywordsChange) {
-                                            onNegativeKeywordsChange(newNegatives);
-                                        }
-                                }}
-                                className="gap-2 border-red-300 text-red-700 hover:bg-red-50"
-                            >
-                                <ShieldCheck className="w-3 h-3" />
-                                Generate {negativeKeywordsCount}
-                            </Button>
-                            )}
                         </div>
 
                         {/* Slider for keyword count */}
@@ -396,7 +377,7 @@ export const KeywordPlannerSelectable = ({
                                 className="w-full h-full border-0 font-mono text-xs resize-none p-3 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 bg-transparent"
                                 style={{ minHeight: '280px', maxHeight: '280px', overflowY: 'auto' }}
                             />
-                        </div>
+                                                </div>
                         <div className="flex items-center justify-between mt-2">
                             <p className="text-xs text-slate-500">
                                 The AI will strictly avoid generating keywords containing these terms. Edit directly or adjust the slider and click "Generate" for your desired quantity.
