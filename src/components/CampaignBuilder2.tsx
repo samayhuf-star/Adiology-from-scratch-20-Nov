@@ -27,6 +27,8 @@ import { LiveAdPreview } from './LiveAdPreview';
 import { notifications } from '../utils/notifications';
 import { generateCampaignStructure, type StructureSettings } from '../utils/campaignStructureGenerator';
 import { exportCampaignToCSV } from '../utils/csvExporter';
+import { api } from '../utils/api';
+import { projectId } from '../utils/supabase/info';
 
 // Structure Types
 type StructureType = 
@@ -327,64 +329,166 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <div className="mt-4">
             <Button
               onClick={async () => {
-                setIsGeneratingKeywords(true);
-                // Simulate keyword generation
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                const keywords = seedKeywords.split('\n').filter(k => k.trim()).map((k, i) => ({
-                  id: `kw-${i}`,
-                  text: k.trim(),
-                  volume: 'High',
-                  cpc: '$2.50',
-                  type: 'Seed'
-                }));
-                setGeneratedKeywords(keywords);
-                const keywordTexts = keywords.map(k => k.text);
-                setSelectedKeywords(keywordTexts);
-                
-                // Populate structure-specific groups
-                if (structureType === 'intent') {
-                  // Classify keywords by intent
-                  const highIntent = keywordTexts.filter(k => k.toLowerCase().includes('call') || k.toLowerCase().includes('buy') || k.toLowerCase().includes('get'));
-                  const research = keywordTexts.filter(k => k.toLowerCase().includes('info') || k.toLowerCase().includes('compare') || k.toLowerCase().includes('best'));
-                  const brand = keywordTexts.filter(k => k.toLowerCase().includes('your') || k.toLowerCase().includes('company'));
-                  const competitor = keywordTexts.filter(k => ['nextiva', 'hubspot', 'clickcease', 'semrush'].some(c => k.toLowerCase().includes(c)));
-                  setIntentGroups({ high_intent: highIntent, research, brand, competitor });
-                } else if (structureType === 'alpha_beta') {
-                  // Split into beta (all keywords initially)
-                  setBetaKeywords(keywordTexts);
-                  setAlphaKeywords([]);
-                } else if (structureType === 'funnel') {
-                  // Classify by funnel stage
-                  const tof = keywordTexts.filter(k => k.toLowerCase().includes('what') || k.toLowerCase().includes('how') || k.toLowerCase().includes('info'));
-                  const mof = keywordTexts.filter(k => k.toLowerCase().includes('compare') || k.toLowerCase().includes('best') || k.toLowerCase().includes('review'));
-                  const bof = keywordTexts.filter(k => k.toLowerCase().includes('buy') || k.toLowerCase().includes('call') || k.toLowerCase().includes('get'));
-                  setFunnelGroups({ tof, mof, bof });
-                } else if (structureType === 'brand_split') {
-                  // Detect brand keywords
-                  const brand = keywordTexts.filter(k => k.toLowerCase().includes('your') || k.toLowerCase().includes('company') || k.toLowerCase().includes('brand'));
-                  const nonBrand = keywordTexts.filter(k => !brand.includes(k));
-                  setBrandKeywords(brand);
-                  setNonBrandKeywords(nonBrand);
-                } else if (structureType === 'competitor') {
-                  // Detect competitor keywords
-                  const competitors = keywordTexts.filter(k => ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor'].some(c => k.toLowerCase().includes(c)));
-                  setCompetitorKeywords(competitors);
-                } else if (structureType === 'stag_plus' || structureType === 'ngram') {
-                  // Smart clustering - group by common words
-                  const clusters: { [key: string]: string[] } = {};
-                  keywordTexts.forEach(kw => {
-                    const words = kw.toLowerCase().split(' ');
-                    const clusterKey = words[0] || 'other';
-                    if (!clusters[clusterKey]) {
-                      clusters[clusterKey] = [];
-                    }
-                    clusters[clusterKey].push(kw);
-                  });
-                  setSmartClusters(clusters);
+                if (!seedKeywords.trim()) {
+                  notifications.warning('Please enter seed keywords', { title: 'Seed Keywords Required' });
+                  return;
                 }
-                
-                setIsGeneratingKeywords(false);
-                notifications.success('Keywords generated successfully', { title: 'Success' });
+
+                setIsGeneratingKeywords(true);
+                const loadingToast = notifications.loading('Generating keywords with AI...', {
+                  title: 'AI Keyword Generation',
+                  description: 'This may take a few moments. Please wait...',
+                });
+
+                try {
+                  let keywords: any[] = [];
+
+                  if (!projectId) {
+                    // Fallback: Generate mock keywords
+                    console.warn("Project ID is missing, using mock generation");
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    keywords = seedKeywords.split('\n').filter(k => k.trim()).map((k, i) => ({
+                      id: `kw-${i}`,
+                      text: k.trim(),
+                      volume: 'High',
+                      cpc: '$2.50',
+                      type: 'Seed'
+                    }));
+                  } else {
+                    // Call AI API
+                    console.log("Attempting AI keyword generation...");
+                    const data = await api.post('/generate-keywords', {
+                      seeds: seedKeywords,
+                      negatives: negativeKeywords
+                    });
+
+                    if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
+                      console.log("AI generation successful:", data.keywords.length, "keywords");
+                      keywords = data.keywords;
+                    } else {
+                      throw new Error("No keywords returned from AI");
+                    }
+                  }
+
+                  setGeneratedKeywords(keywords);
+                  
+                  // Extract keyword texts for structure-specific grouping
+                  const keywordTexts = keywords.map(k => k.text || k.id);
+                  
+                  // Populate structure-specific groups
+                  if (structureType === 'intent') {
+                    // Classify keywords by intent using AI-generated keywords
+                    const highIntent = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return lower.includes('call') || lower.includes('buy') || lower.includes('get') || 
+                             lower.includes('purchase') || lower.includes('order') || lower.includes('now');
+                    });
+                    const research = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return lower.includes('info') || lower.includes('compare') || lower.includes('best') ||
+                             lower.includes('review') || lower.includes('guide') || lower.includes('how');
+                    });
+                    const brand = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return lower.includes('your') || lower.includes('company') || lower.includes('brand') ||
+                             lower.includes('official');
+                    });
+                    const competitor = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor', 'alternative'].some(c => lower.includes(c));
+                    });
+                    setIntentGroups({ 
+                      high_intent: highIntent, 
+                      research, 
+                      brand, 
+                      competitor 
+                    });
+                    // Auto-select all intent groups that have keywords
+                    const groupsWithKeywords = [];
+                    if (highIntent.length > 0) groupsWithKeywords.push('high_intent');
+                    if (research.length > 0) groupsWithKeywords.push('research');
+                    if (brand.length > 0) groupsWithKeywords.push('brand');
+                    if (competitor.length > 0) groupsWithKeywords.push('competitor');
+                    if (groupsWithKeywords.length > 0) {
+                      setSelectedIntents(groupsWithKeywords);
+                    }
+                  } else if (structureType === 'alpha_beta') {
+                    // Split into beta (all keywords initially)
+                    setBetaKeywords(keywordTexts);
+                    setAlphaKeywords([]);
+                  } else if (structureType === 'funnel') {
+                    // Classify by funnel stage
+                    const tof = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return lower.includes('what') || lower.includes('how') || lower.includes('info') ||
+                             lower.includes('guide') || lower.includes('learn');
+                    });
+                    const mof = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return lower.includes('compare') || lower.includes('best') || lower.includes('review') ||
+                             lower.includes('vs') || lower.includes('alternative');
+                    });
+                    const bof = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return lower.includes('buy') || lower.includes('call') || lower.includes('get') ||
+                             lower.includes('purchase') || lower.includes('order');
+                    });
+                    setFunnelGroups({ tof, mof, bof });
+                  } else if (structureType === 'brand_split') {
+                    // Detect brand keywords
+                    const brand = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return lower.includes('your') || lower.includes('company') || lower.includes('brand') ||
+                             lower.includes('official');
+                    });
+                    const nonBrand = keywordTexts.filter(k => !brand.includes(k));
+                    setBrandKeywords(brand);
+                    setNonBrandKeywords(nonBrand);
+                  } else if (structureType === 'competitor') {
+                    // Detect competitor keywords
+                    const competitors = keywordTexts.filter(k => {
+                      const lower = k.toLowerCase();
+                      return ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor', 'alternative'].some(c => lower.includes(c));
+                    });
+                    setCompetitorKeywords(competitors);
+                  } else if (structureType === 'stag_plus' || structureType === 'ngram') {
+                    // Smart clustering - group by common words
+                    const clusters: { [key: string]: string[] } = {};
+                    keywordTexts.forEach(kw => {
+                      const words = kw.toLowerCase().split(' ');
+                      const clusterKey = words[0] || 'other';
+                      if (!clusters[clusterKey]) {
+                        clusters[clusterKey] = [];
+                      }
+                      clusters[clusterKey].push(kw);
+                    });
+                    setSmartClusters(clusters);
+                  }
+                  
+                  if (loadingToast) loadingToast();
+                  notifications.success(`Generated ${keywords.length} keywords successfully`, {
+                    title: 'Keywords Generated',
+                    description: `AI found ${keywords.length} keyword suggestions. Review and select the ones you want to use.`,
+                  });
+                } catch (error) {
+                  console.log('ℹ️ Backend unavailable - using local fallback generation', error);
+                  // Fallback: Generate mock keywords
+                  const mockKeywords = seedKeywords.split('\n').filter(k => k.trim()).map((k, i) => ({
+                    id: `kw-${i}`,
+                    text: k.trim(),
+                    volume: 'High',
+                    cpc: '$2.50',
+                    type: 'Seed'
+                  }));
+                  setGeneratedKeywords(mockKeywords);
+                  if (loadingToast) loadingToast();
+                  notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
+                    title: 'Keywords Generated (Offline Mode)',
+                    description: 'Using local generation. Some features may be limited.',
+                  });
+                } finally {
+                  setIsGeneratingKeywords(false);
+                }
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
               className="bg-gradient-to-r from-indigo-600 to-purple-600"
@@ -396,6 +500,75 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               )}
             </Button>
           </div>
+          
+          {/* Display Generated Keywords */}
+          {generatedKeywords.length > 0 && (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl mt-4">
+              <CardHeader>
+                <CardTitle>Generated Keywords ({generatedKeywords.length})</CardTitle>
+                <CardDescription>Select keywords to include in your campaign</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedKeywords.length === generatedKeywords.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          const allKeywords = generatedKeywords.map(k => k.text || k.id);
+                          setSelectedKeywords(allKeywords);
+                        } else {
+                          setSelectedKeywords([]);
+                        }
+                      }}
+                    />
+                    <Label className="font-semibold">Select All</Label>
+                  </div>
+                  <Badge variant="outline">{selectedKeywords.length} selected</Badge>
+                </div>
+                <ScrollArea className="h-64 border border-slate-200 rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {generatedKeywords.map((keyword) => {
+                      const keywordText = keyword.text || keyword.id;
+                      const isSelected = selectedKeywords.includes(keywordText);
+                      return (
+                        <div
+                          key={keyword.id || keywordText}
+                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                            isSelected 
+                              ? 'bg-indigo-50 border-2 border-indigo-500' 
+                              : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100'
+                          }`}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedKeywords(selectedKeywords.filter(k => k !== keywordText));
+                            } else {
+                              setSelectedKeywords([...selectedKeywords, keywordText]);
+                            }
+                          }}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedKeywords([...selectedKeywords, keywordText]);
+                              } else {
+                                setSelectedKeywords(selectedKeywords.filter(k => k !== keywordText));
+                              }
+                            }}
+                          />
+                          <Label className="cursor-pointer flex-1">{keywordText}</Label>
+                          {keyword.volume && (
+                            <Badge variant="secondary" className="text-xs">{keyword.volume}</Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
     );
@@ -473,33 +646,67 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     { id: 'research', label: 'Research', color: 'blue' },
                     { id: 'brand', label: 'Brand', color: 'purple' },
                     { id: 'competitor', label: 'Competitor', color: 'red' }
-                  ].map((intent) => (
-                    <div key={intent.id} className="border border-slate-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={selectedIntents.includes(intent.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedIntents([...selectedIntents, intent.id]);
-                              } else {
-                                setSelectedIntents(selectedIntents.filter(i => i !== intent.id));
-                              }
-                            }}
-                          />
-                          <Label className="font-semibold">{intent.label}</Label>
+                  ].map((intent) => {
+                    const intentKeywords = intentGroups[intent.id] || [];
+                    const selectedIntentKeywords = intentKeywords.filter(kw => selectedKeywords.includes(kw));
+                    return (
+                      <div key={intent.id} className="border border-slate-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={selectedIntents.includes(intent.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedIntents([...selectedIntents, intent.id]);
+                                  // Auto-select all keywords in this intent group
+                                  const newSelected = [...selectedKeywords];
+                                  intentKeywords.forEach(kw => {
+                                    if (!newSelected.includes(kw)) {
+                                      newSelected.push(kw);
+                                    }
+                                  });
+                                  setSelectedKeywords(newSelected);
+                                } else {
+                                  setSelectedIntents(selectedIntents.filter(i => i !== intent.id));
+                                  // Remove keywords from this intent group
+                                  setSelectedKeywords(selectedKeywords.filter(kw => !intentKeywords.includes(kw)));
+                                }
+                              }}
+                            />
+                            <Label className="font-semibold">{intent.label}</Label>
+                          </div>
+                          <Badge variant="outline">{intentKeywords.length} keywords ({selectedIntentKeywords.length} selected)</Badge>
                         </div>
-                        <Badge variant="outline">{intentGroups[intent.id]?.length || 0} keywords</Badge>
+                        {selectedIntents.includes(intent.id) && intentKeywords.length > 0 && (
+                          <div className="mt-3">
+                            <ScrollArea className="h-32 border border-slate-200 rounded-lg p-2">
+                              <div className="flex flex-wrap gap-2">
+                                {intentKeywords.map((kw, idx) => {
+                                  const isSelected = selectedKeywords.includes(kw);
+                                  return (
+                                    <Badge
+                                      key={idx}
+                                      variant={isSelected ? "default" : "secondary"}
+                                      className={`cursor-pointer ${isSelected ? 'bg-indigo-600' : ''}`}
+                                      onClick={() => {
+                                        if (isSelected) {
+                                          setSelectedKeywords(selectedKeywords.filter(k => k !== kw));
+                                        } else {
+                                          setSelectedKeywords([...selectedKeywords, kw]);
+                                        }
+                                      }}
+                                    >
+                                      {kw}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                            </ScrollArea>
+                          </div>
+                        )}
                       </div>
-                      {selectedIntents.includes(intent.id) && intentGroups[intent.id] && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {intentGroups[intent.id].slice(0, 10).map((kw, idx) => (
-                            <Badge key={idx} variant="secondary">{kw}</Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -726,13 +933,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <Button
             size="lg"
             onClick={() => {
-              if (selectedKeywords.length === 0 && generatedKeywords.length === 0) {
-                notifications.warning('Please generate and select keywords', { title: 'Keywords Required' });
+              if (selectedKeywords.length === 0) {
+                notifications.warning('Please generate and select at least one keyword', { 
+                  title: 'Keywords Required',
+                  description: 'You need to select keywords before proceeding to the next step.'
+                });
                 return;
               }
               setStep(3);
             }}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+            disabled={selectedKeywords.length === 0}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next: Ads & Extensions <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
