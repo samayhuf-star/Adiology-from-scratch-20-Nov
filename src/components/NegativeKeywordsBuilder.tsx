@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Download, Globe, Type, ShieldAlert, Save } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Sparkles, Download, Globe, Type, ShieldAlert, Save, Filter, BarChart3, FileText, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -7,14 +7,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { api } from '../utils/api';
 import { historyService } from '../utils/historyService';
+import {
+    NEGATIVE_KEYWORD_CATEGORIES,
+    buildUserPrompt,
+    SYSTEM_PROMPT,
+    deduplicateKeywords,
+    filterProfanity,
+    addMisspellings,
+    handleBrandNames,
+    exportToCSV,
+    exportToGoogleAdsEditorCSV,
+    getCategoryStats,
+    type NegativeKeyword,
+    type NegativeKeywordCategory
+} from '../utils/negativeKeywordsGenerator';
 
 interface GeneratedKeyword {
     id: number;
     keyword: string;
     reason: string;
     category: string;
+    subcategory?: string;
+    matchType?: 'exact' | 'phrase' | 'broad';
 }
 
 export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) => {
@@ -22,11 +41,20 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
     const [url, setUrl] = useState('');
     const [coreKeywords, setCoreKeywords] = useState('');
     const [userGoal, setUserGoal] = useState('');
+    const [targetLocation, setTargetLocation] = useState('');
+    const [competitorBrands, setCompetitorBrands] = useState('');
+    const [excludeCompetitors, setExcludeCompetitors] = useState(false);
+    const [keywordCount, setKeywordCount] = useState(1000);
     
     // Generation State
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedKeywords, setGeneratedKeywords] = useState<GeneratedKeyword[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // Filter & Export State
+    const [selectedCategories, setSelectedCategories] = useState<Set<NegativeKeywordCategory>>(new Set());
+    const [exportFormat, setExportFormat] = useState<'exact' | 'phrase' | 'broad' | 'all'>('all');
+    const [showStats, setShowStats] = useState(false);
 
     useEffect(() => {
         if (initialData) {
@@ -68,45 +96,66 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
 
         try {
             console.log('Attempting AI negative keyword generation...');
-            // Call the Gemini API via Supabase edge function
-            const response = await api.post('/ai/generate-negative-keywords', {
+            // Build production-ready prompt
+            const userPrompt = buildUserPrompt({
                 url,
                 coreKeywords,
                 userGoal,
-                count: 1200, // Request minimum 300, target 1000+ keywords
-                format: 'exact', // Request exact match format
-                expansionStrategies: [
-                    'synonyms',
-                    'irrelevant_intents',
-                    'informational_searches',
-                    'diy_queries',
-                    'jobs_careers',
-                    'free_cheap_searches',
-                    'competitor_terms',
-                    'related_category_mismatches'
-                ],
-                instructions: 'Generate as many negative keywords as possible (minimum 300, target 1000+). Expand using: synonyms, irrelevant intents, informational searches, DIY queries, jobs/careers, free/cheap searches, competitor terms, related category mismatches. Categorize each keyword by intent and give a reason why it should be excluded. Make sure all outputs are unique and clean.'
+                count: keywordCount,
+                excludeCompetitors,
+                competitorBrands: competitorBrands.split(',').map(b => b.trim()).filter(Boolean),
+                targetLocation: targetLocation || undefined
+            });
+
+            // Call the Gemini API via Supabase edge function with production prompts
+            const response = await api.post('/ai/generate-negative-keywords', {
+                systemPrompt: SYSTEM_PROMPT,
+                userPrompt,
+                url,
+                coreKeywords,
+                userGoal,
+                count: keywordCount,
+                format: 'exact',
+                excludeCompetitors,
+                competitorBrands: competitorBrands.split(',').map(b => b.trim()).filter(Boolean),
+                targetLocation: targetLocation || undefined
             });
 
             if (response.keywords && Array.isArray(response.keywords)) {
                 console.log('AI generation successful:', response.keywords.length, 'keywords');
-                const formattedKeywords = response.keywords.map((item: any, index: number) => {
-                    // Clean keyword: remove any existing brackets (single or double) and add single brackets
-                    let cleanKeyword = item.keyword || '';
-                    // Remove double brackets [[keyword]] -> keyword
-                    cleanKeyword = cleanKeyword.replace(/^\[\[|\]\]$/g, '');
-                    // Remove single brackets [keyword] -> keyword
-                    cleanKeyword = cleanKeyword.replace(/^\[|\]$/g, '');
-                    // Add single brackets for exact match
-                    cleanKeyword = `[${cleanKeyword}]`;
-                    
-                    return {
-                        id: index + 1,
-                        keyword: cleanKeyword,
-                        reason: item.reason || 'AI suggested',
-                        category: item.category || 'General'
-                    };
-                });
+                
+                // Convert API response to NegativeKeyword format
+                let negativeKeywords: NegativeKeyword[] = response.keywords.map((item: any) => ({
+                    keyword: (item.keyword || '').trim(),
+                    category: (item.category || 'Other') as NegativeKeywordCategory,
+                    subcategory: item.subcategory,
+                    reason: item.reason || 'AI suggested',
+                    matchType: (item.matchType || 'exact') as 'exact' | 'phrase' | 'broad'
+                }));
+
+                // Apply quality controls
+                negativeKeywords = deduplicateKeywords(negativeKeywords);
+                negativeKeywords = filterProfanity(negativeKeywords);
+                
+                // Handle competitor brands if requested
+                if (excludeCompetitors && competitorBrands.trim()) {
+                    const brands = competitorBrands.split(',').map(b => b.trim()).filter(Boolean);
+                    negativeKeywords = handleBrandNames(negativeKeywords, brands);
+                }
+
+                // Add common misspellings
+                negativeKeywords = addMisspellings(negativeKeywords);
+
+                // Convert to GeneratedKeyword format for display
+                const formattedKeywords: GeneratedKeyword[] = negativeKeywords.map((item, index) => ({
+                    id: index + 1,
+                    keyword: `[${item.keyword}]`, // Always show exact match format in UI
+                    reason: item.reason,
+                    category: NEGATIVE_KEYWORD_CATEGORIES[item.category].label,
+                    subcategory: item.subcategory,
+                    matchType: item.matchType
+                }));
+
                 setGeneratedKeywords(formattedKeywords);
             } else {
                 throw new Error('Invalid response format');
@@ -352,25 +401,77 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         }
     };
 
-    const handleDownload = () => {
-        // Export only exact match type for negative keywords
-        let csvContent = "Keyword,Match Type,Reason,Category\n";
+    // Filter keywords by selected categories
+    const filteredKeywords = useMemo(() => {
+        if (selectedCategories.size === 0) return generatedKeywords;
+        
+        return generatedKeywords.filter(kw => {
+            // Find category key from label
+            const categoryKey = Object.keys(NEGATIVE_KEYWORD_CATEGORIES).find(
+                key => NEGATIVE_KEYWORD_CATEGORIES[key as NegativeKeywordCategory].label === kw.category
+            ) as NegativeKeywordCategory;
+            
+            return categoryKey && selectedCategories.has(categoryKey);
+        });
+    }, [generatedKeywords, selectedCategories]);
 
-        generatedKeywords.forEach(item => {
-            // Keyword already has brackets, use as-is
-            csvContent += `${item.keyword},Exact,${item.reason},${item.category}\n`;
+    // Get category statistics
+    const categoryStats = useMemo(() => {
+        if (generatedKeywords.length === 0) return {};
+        
+        const stats: Record<string, number> = {};
+        generatedKeywords.forEach(kw => {
+            stats[kw.category] = (stats[kw.category] || 0) + 1;
+        });
+        return stats;
+    }, [generatedKeywords]);
+
+    const handleDownload = (format: 'standard' | 'google-ads-editor' = 'standard') => {
+        if (filteredKeywords.length === 0) {
+            alert('No keywords to export');
+            return;
+        }
+
+        // Convert GeneratedKeyword back to NegativeKeyword format
+        const negativeKeywords: NegativeKeyword[] = filteredKeywords.map(kw => {
+            const cleanKeyword = kw.keyword.replace(/[\[\]"]/g, '');
+            const categoryKey = Object.keys(NEGATIVE_KEYWORD_CATEGORIES).find(
+                key => NEGATIVE_KEYWORD_CATEGORIES[key as NegativeKeywordCategory].label === kw.category
+            ) as NegativeKeywordCategory;
+            
+            return {
+                keyword: cleanKeyword,
+                category: categoryKey || 'Other',
+                subcategory: kw.subcategory,
+                reason: kw.reason,
+                matchType: kw.matchType || 'exact'
+            };
         });
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        let csvContent: string;
+        let filename: string;
+
+        if (format === 'google-ads-editor') {
+            csvContent = exportToGoogleAdsEditorCSV(negativeKeywords, 'Negative Keywords Campaign', 'All Ad Groups');
+            filename = `negative_keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+        } else {
+            csvContent = exportToCSV(negativeKeywords, exportFormat);
+            filename = `negative_keywords_${exportFormat}_${new Date().toISOString().split('T')[0]}.csv`;
+        }
+
+        // Add BOM for UTF-8 encoding
+        const BOM = '\ufeff';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         if (link.download !== undefined) {
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", "negative_keywords.csv");
+            link.setAttribute("download", filename);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
     };
 
@@ -503,47 +604,110 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                         </div>
                     </CardHeader>
                     
-                    {/* Info about match type */}
+                    {/* Stats & Filters */}
                     {generatedKeywords.length > 0 && (
-                        <div className="px-6 py-3 bg-slate-50/50 border-y border-slate-100">
-                            <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="font-normal">
-                                    Exact Match [keyword]
-                                </Badge>
-                                <span className="text-xs text-slate-600">
-                                    All negative keywords are exported in exact match format for maximum precision
-                                </span>
+                        <div className="px-6 py-3 bg-slate-50/50 border-y border-slate-100 space-y-3">
+                            {showStats && (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                                    {Object.entries(categoryStats).map(([category, count]) => (
+                                        <div key={category} className="bg-white rounded-lg p-2 border border-slate-200">
+                                            <div className="text-xs text-slate-500">{category}</div>
+                                            <div className="text-lg font-semibold text-slate-800">{count}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="flex items-center gap-4 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="h-4 w-4 text-slate-400" />
+                                    <span className="text-xs font-medium text-slate-600">Filter by Category:</span>
+                                </div>
+                                {Object.entries(NEGATIVE_KEYWORD_CATEGORIES).map(([key, cat]) => {
+                                    const isSelected = selectedCategories.has(key as NegativeKeywordCategory);
+                                    return (
+                                        <div key={key} className="flex items-center space-x-1">
+                                            <Checkbox
+                                                id={`cat-${key}`}
+                                                checked={isSelected}
+                                                onCheckedChange={(checked) => {
+                                                    const newSet = new Set(selectedCategories);
+                                                    if (checked) {
+                                                        newSet.add(key as NegativeKeywordCategory);
+                                                    } else {
+                                                        newSet.delete(key as NegativeKeywordCategory);
+                                                    }
+                                                    setSelectedCategories(newSet);
+                                                }}
+                                            />
+                                            <Label htmlFor={`cat-${key}`} className="text-xs cursor-pointer">
+                                                {cat.label}
+                                            </Label>
+                                        </div>
+                                    );
+                                })}
+                                {selectedCategories.size > 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setSelectedCategories(new Set())}
+                                        className="text-xs h-6"
+                                    >
+                                        Clear Filters
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     )}
 
                     <CardContent className="p-0 flex-1">
-                        {generatedKeywords.length > 0 ? (
+                        {filteredKeywords.length > 0 ? (
                             <div className="max-h-[600px] overflow-auto">
                                 <Table>
                                     <TableHeader className="bg-slate-50 sticky top-0 z-10">
                                         <TableRow>
-                                            <TableHead className="w-[40%]">Negative Keyword (Exact Match)</TableHead>
-                                            <TableHead>Suggested Reason</TableHead>
-                                            <TableHead>Category</TableHead>
+                                            <TableHead className="w-[30%]">Negative Keyword</TableHead>
+                                            <TableHead className="w-[15%]">Match Type</TableHead>
+                                            <TableHead className="w-[35%]">Reason</TableHead>
+                                            <TableHead className="w-[20%]">Category</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {generatedKeywords.map((item) => (
+                                        {filteredKeywords.map((item) => (
                                             <TableRow key={item.id} className="hover:bg-slate-50/50">
-                                                <TableCell className="font-medium text-slate-700">
+                                                <TableCell className="font-medium text-slate-700 font-mono text-sm">
                                                     {item.keyword}
                                                 </TableCell>
-                                                <TableCell className="text-slate-500">{item.reason}</TableCell>
                                                 <TableCell>
-                                                    <Badge variant="secondary" className="font-normal text-slate-500 bg-slate-100 hover:bg-slate-200">
-                                                        {item.category}
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {item.matchType?.charAt(0).toUpperCase() + item.matchType?.slice(1) || 'Exact'}
                                                     </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-slate-500 text-sm">{item.reason}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col gap-1">
+                                                        <Badge variant="secondary" className="font-normal text-slate-500 bg-slate-100 hover:bg-slate-200 w-fit">
+                                                            {item.category}
+                                                        </Badge>
+                                                        {item.subcategory && (
+                                                            <span className="text-xs text-slate-400">{item.subcategory}</span>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
+                            </div>
+                        ) : generatedKeywords.length > 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+                                <Filter className="h-12 w-12 text-slate-300 mb-4" />
+                                <h3 className="text-lg font-semibold text-slate-800">No Keywords Match Filters</h3>
+                                <p className="text-slate-500 max-w-md mt-2">
+                                    Try adjusting your category filters to see more results.
+                                </p>
+                                <Button variant="outline" onClick={() => setSelectedCategories(new Set())} className="mt-4">
+                                    Clear All Filters
+                                </Button>
                             </div>
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-60 min-h-[400px]">
