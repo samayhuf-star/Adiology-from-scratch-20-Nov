@@ -1,6 +1,5 @@
 # New Adiology- Build Campaign Dashboard
 
-This is a code bundle for New Adiology- Build Campaign Dashboard. The original project is available at https://www.figma.com/design/v6hU54GLQmgjEkcGzMyTnT/New-Adiology--Build-Campaign-Dashboard.
 
 ## Quick Start
 
