@@ -1,0 +1,1309 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  ArrowRight, Check, ChevronRight, Download, FileText, Globe, 
+  Layout, Layers, MapPin, Mail, Hash, TrendingUp, Zap, 
+  Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
+  CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
+  DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
+  Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map, Funnel, 
+  Users, TrendingDown, Network, Filter
+} from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Badge } from './ui/badge';
+import { ScrollArea } from './ui/scroll-area';
+import { Separator } from './ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { KeywordPlannerSelectable } from './KeywordPlannerSelectable';
+import { LiveAdPreview } from './LiveAdPreview';
+import { notifications } from '../utils/notifications';
+
+// Structure Types
+type StructureType = 
+  | 'skag' 
+  | 'stag' 
+  | 'mix' 
+  | 'stag_plus' 
+  | 'intent' 
+  | 'alpha_beta' 
+  | 'match_type' 
+  | 'geo' 
+  | 'funnel' 
+  | 'brand_split' 
+  | 'competitor' 
+  | 'ngram';
+
+// Structure Definitions
+const STRUCTURE_TYPES = [
+  { id: 'skag' as StructureType, name: 'SKAG', icon: Zap, description: 'Single Keyword Ad Group - Maximum relevance' },
+  { id: 'stag' as StructureType, name: 'STAG', icon: TrendingUp, description: 'Single Theme Ad Group - Balanced approach' },
+  { id: 'mix' as StructureType, name: 'MIX', icon: Layers, description: 'Hybrid Structure - Best of both worlds' },
+  { id: 'stag_plus' as StructureType, name: 'STAG+', icon: Brain, description: 'Smart Grouping - ML-powered themes' },
+  { id: 'intent' as StructureType, name: 'IBAG', icon: Target, description: 'Intent-Based - High/Research/Brand/Competitor' },
+  { id: 'alpha_beta' as StructureType, name: 'Alpha–Beta', icon: Split, description: 'Alpha winners, Beta discovery' },
+  { id: 'match_type' as StructureType, name: 'Match-Type Split', icon: Filter, description: 'Broad/Phrase/Exact separation' },
+  { id: 'geo' as StructureType, name: 'GEO-Segmented', icon: Map, description: 'Location-based segmentation' },
+  { id: 'funnel' as StructureType, name: 'Funnel-Based', icon: Funnel, description: 'TOF/MOF/BOF intent grouping' },
+  { id: 'brand_split' as StructureType, name: 'Brand vs Non-Brand', icon: Users, description: 'Brand and non-brand separation' },
+  { id: 'competitor' as StructureType, name: 'Competitor Campaigns', icon: TrendingDown, description: 'Competitor brand queries' },
+  { id: 'ngram' as StructureType, name: 'Smart Cluster', icon: Network, description: 'N-Gram ML clustering' },
+];
+
+export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
+  // Wizard State
+  const [step, setStep] = useState(1);
+  const [structureType, setStructureType] = useState<StructureType | null>(null);
+  
+  // Step 1: Setup
+  const [campaignName, setCampaignName] = useState('');
+  const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
+  const [url, setUrl] = useState('');
+  
+  // Step 2: Keywords
+  const [seedKeywords, setSeedKeywords] = useState('');
+  const [negativeKeywords, setNegativeKeywords] = useState('');
+  const [generatedKeywords, setGeneratedKeywords] = useState<any[]>([]);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+  
+  // Step 2 Dynamic State (structure-specific)
+  const [intentGroups, setIntentGroups] = useState<{ [key: string]: string[] }>({
+    high_intent: [],
+    research: [],
+    brand: [],
+    competitor: []
+  });
+  const [selectedIntents, setSelectedIntents] = useState<string[]>(['high_intent', 'research', 'brand']);
+  const [alphaKeywords, setAlphaKeywords] = useState<string[]>([]);
+  const [betaKeywords, setBetaKeywords] = useState<string[]>([]);
+  const [funnelGroups, setFunnelGroups] = useState<{ [key: string]: string[] }>({
+    tof: [],
+    mof: [],
+    bof: []
+  });
+  const [brandKeywords, setBrandKeywords] = useState<string[]>([]);
+  const [nonBrandKeywords, setNonBrandKeywords] = useState<string[]>([]);
+  const [competitorKeywords, setCompetitorKeywords] = useState<string[]>([]);
+  const [smartClusters, setSmartClusters] = useState<{ [key: string]: string[] }>({});
+  
+  // Step 3: Ads
+  const [ads, setAds] = useState<any[]>([]);
+  const [generatedAds, setGeneratedAds] = useState<any[]>([]);
+  
+  // Step 4: Geo
+  const [targetCountry, setTargetCountry] = useState('United States');
+  const [geoType, setGeoType] = useState('STANDARD');
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedZips, setSelectedZips] = useState<string[]>([]);
+  
+  // Step 5: Review
+  const [reviewData, setReviewData] = useState<any>(null);
+  
+  // Step 6: Validate
+  const [validationResults, setValidationResults] = useState<any>(null);
+
+  // Load initial data
+  useEffect(() => {
+    if (initialData) {
+      setCampaignName(initialData.campaignName || '');
+      setStructureType(initialData.structureType || null);
+      setUrl(initialData.url || '');
+      setSelectedKeywords(initialData.selectedKeywords || []);
+      setGeneratedAds(initialData.generatedAds || []);
+    }
+  }, [initialData]);
+
+  // Step Indicator
+  const renderStepIndicator = () => (
+    <div className="flex items-center justify-center mb-8 space-x-2 sm:space-x-4">
+      {[
+        { num: 1, label: 'Setup' },
+        { num: 2, label: 'Keywords' },
+        { num: 3, label: 'Ads & Extensions' },
+        { num: 4, label: 'Geo Target' },
+        { num: 5, label: 'Review' },
+        { num: 6, label: 'Validate' }
+      ].map((s, idx) => (
+        <div key={s.num} className="flex items-center">
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${
+            step >= s.num 
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200' 
+              : 'bg-slate-100 text-slate-400'
+          }`}>
+            {s.num}
+          </div>
+          <span className={`ml-3 font-medium hidden sm:block ${step >= s.num ? 'text-slate-800' : 'text-slate-400'}`}>
+            {s.label}
+          </span>
+          {idx < 5 && (
+            <div className={`w-6 sm:w-12 h-1 mx-2 sm:mx-3 rounded-full ${step > s.num ? 'bg-indigo-200' : 'bg-slate-100'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  // Step 1: Setup with Structure Selection
+  const renderStep1 = () => {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">Campaign Setup</h2>
+          <p className="text-slate-600">Choose your campaign structure and configure basic settings</p>
+        </div>
+
+        {/* Campaign Name */}
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Campaign Name</CardTitle>
+            <CardDescription>Give your campaign a descriptive name</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input
+              value={campaignName}
+              onChange={(e) => setCampaignName(e.target.value)}
+              placeholder="e.g., Summer Sale Campaign 2025"
+              className="max-w-md"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Structure Selection */}
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Select Campaign Structure</CardTitle>
+            <CardDescription>Choose the structure that best fits your campaign goals</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {STRUCTURE_TYPES.map((structure) => {
+                const Icon = structure.icon;
+                const isSelected = structureType === structure.id;
+                return (
+                  <Card
+                    key={structure.id}
+                    onClick={() => setStructureType(structure.id)}
+                    className={`cursor-pointer transition-all hover:shadow-lg ${
+                      isSelected 
+                        ? 'border-2 border-indigo-500 bg-indigo-50' 
+                        : 'border border-slate-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-lg ${
+                          isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-slate-800 mb-1">{structure.name}</h3>
+                          <p className="text-xs text-slate-600">{structure.description}</p>
+                        </div>
+                        {isSelected && (
+                          <CheckCircle2 className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Match Types */}
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Match Types</CardTitle>
+            <CardDescription>Select which match types to include</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-6">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="broad"
+                  checked={matchTypes.broad}
+                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, broad: !!checked })}
+                />
+                <Label htmlFor="broad" className="cursor-pointer">Broad Match</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="phrase"
+                  checked={matchTypes.phrase}
+                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, phrase: !!checked })}
+                />
+                <Label htmlFor="phrase" className="cursor-pointer">Phrase Match</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="exact"
+                  checked={matchTypes.exact}
+                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, exact: !!checked })}
+                />
+                <Label htmlFor="exact" className="cursor-pointer">Exact Match</Label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Landing Page URL */}
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Landing Page URL</CardTitle>
+            <CardDescription>Where should your ads direct users?</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com"
+              className="max-w-md"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Navigation */}
+        <div className="flex justify-end">
+          <Button
+            size="lg"
+            onClick={() => {
+              if (!campaignName) {
+                notifications.warning('Please enter a campaign name', { title: 'Campaign Name Required' });
+                return;
+              }
+              if (!structureType) {
+                notifications.warning('Please select a campaign structure', { title: 'Structure Required' });
+                return;
+              }
+              if (!url) {
+                notifications.warning('Please enter a landing page URL', { title: 'URL Required' });
+                return;
+              }
+              setStep(2);
+            }}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+          >
+            Next: Keywords <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Step 2: Keywords (Dynamic based on structure)
+  const renderStep2 = () => {
+    if (!structureType) {
+      return <div>Please select a structure first</div>;
+    }
+
+    // Common keyword input section
+    const commonKeywordSection = (
+      <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+        <CardHeader>
+          <CardTitle>Seed Keywords</CardTitle>
+          <CardDescription>Enter your seed keywords (one per line)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={seedKeywords}
+            onChange={(e) => setSeedKeywords(e.target.value)}
+            placeholder="Call airline&#10;airline number&#10;call united number"
+            rows={6}
+            className="font-mono text-sm"
+          />
+          <div className="mt-4">
+            <Button
+              onClick={async () => {
+                setIsGeneratingKeywords(true);
+                // Simulate keyword generation
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                const keywords = seedKeywords.split('\n').filter(k => k.trim()).map((k, i) => ({
+                  id: `kw-${i}`,
+                  text: k.trim(),
+                  volume: 'High',
+                  cpc: '$2.50',
+                  type: 'Seed'
+                }));
+                setGeneratedKeywords(keywords);
+                const keywordTexts = keywords.map(k => k.text);
+                setSelectedKeywords(keywordTexts);
+                
+                // Populate structure-specific groups
+                if (structureType === 'intent') {
+                  // Classify keywords by intent
+                  const highIntent = keywordTexts.filter(k => k.toLowerCase().includes('call') || k.toLowerCase().includes('buy') || k.toLowerCase().includes('get'));
+                  const research = keywordTexts.filter(k => k.toLowerCase().includes('info') || k.toLowerCase().includes('compare') || k.toLowerCase().includes('best'));
+                  const brand = keywordTexts.filter(k => k.toLowerCase().includes('your') || k.toLowerCase().includes('company'));
+                  const competitor = keywordTexts.filter(k => ['nextiva', 'hubspot', 'clickcease', 'semrush'].some(c => k.toLowerCase().includes(c)));
+                  setIntentGroups({ high_intent: highIntent, research, brand, competitor });
+                } else if (structureType === 'alpha_beta') {
+                  // Split into beta (all keywords initially)
+                  setBetaKeywords(keywordTexts);
+                  setAlphaKeywords([]);
+                } else if (structureType === 'funnel') {
+                  // Classify by funnel stage
+                  const tof = keywordTexts.filter(k => k.toLowerCase().includes('what') || k.toLowerCase().includes('how') || k.toLowerCase().includes('info'));
+                  const mof = keywordTexts.filter(k => k.toLowerCase().includes('compare') || k.toLowerCase().includes('best') || k.toLowerCase().includes('review'));
+                  const bof = keywordTexts.filter(k => k.toLowerCase().includes('buy') || k.toLowerCase().includes('call') || k.toLowerCase().includes('get'));
+                  setFunnelGroups({ tof, mof, bof });
+                } else if (structureType === 'brand_split') {
+                  // Detect brand keywords
+                  const brand = keywordTexts.filter(k => k.toLowerCase().includes('your') || k.toLowerCase().includes('company') || k.toLowerCase().includes('brand'));
+                  const nonBrand = keywordTexts.filter(k => !brand.includes(k));
+                  setBrandKeywords(brand);
+                  setNonBrandKeywords(nonBrand);
+                } else if (structureType === 'competitor') {
+                  // Detect competitor keywords
+                  const competitors = keywordTexts.filter(k => ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor'].some(c => k.toLowerCase().includes(c)));
+                  setCompetitorKeywords(competitors);
+                } else if (structureType === 'stag_plus' || structureType === 'ngram') {
+                  // Smart clustering - group by common words
+                  const clusters: { [key: string]: string[] } = {};
+                  keywordTexts.forEach(kw => {
+                    const words = kw.toLowerCase().split(' ');
+                    const clusterKey = words[0] || 'other';
+                    if (!clusters[clusterKey]) {
+                      clusters[clusterKey] = [];
+                    }
+                    clusters[clusterKey].push(kw);
+                  });
+                  setSmartClusters(clusters);
+                }
+                
+                setIsGeneratingKeywords(false);
+                notifications.success('Keywords generated successfully', { title: 'Success' });
+              }}
+              disabled={!seedKeywords.trim() || isGeneratingKeywords}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600"
+            >
+              {isGeneratingKeywords ? (
+                <><RefreshCw className="w-5 h-5 mr-2 animate-spin"/> Generating...</>
+              ) : (
+                <><Sparkles className="w-5 h-5 mr-2"/> Generate Keywords</>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+
+    // Structure-specific UI
+    const renderStructureSpecificUI = () => {
+      switch (structureType) {
+        case 'skag':
+        case 'stag':
+        case 'mix':
+          // Standard keyword selection
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Select Keywords</CardTitle>
+                <CardDescription>Choose keywords for your campaign</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <KeywordPlannerSelectable
+                  initialData={{
+                    seedKeywords,
+                    negativeKeywords,
+                    selectedKeywords
+                  }}
+                  onKeywordsSelected={(keywords) => setSelectedKeywords(keywords)}
+                />
+              </CardContent>
+            </Card>
+          );
+
+        case 'stag_plus':
+          // Smart Grouping
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Smart Groups</CardTitle>
+                <CardDescription>AI-powered keyword clustering</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.keys(smartClusters).length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <Brain className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                      <p>Generate keywords to see smart clusters</p>
+                    </div>
+                  ) : (
+                    Object.entries(smartClusters).map(([clusterName, keywords]) => (
+                      <div key={clusterName} className="border border-slate-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-slate-800 mb-2">{clusterName}</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {keywords.map((kw, idx) => (
+                            <Badge key={idx} variant="secondary">{kw}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+
+        case 'intent':
+          // Intent-Based Groups
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Intent Groups</CardTitle>
+                <CardDescription>Select which intent groups to include</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { id: 'high_intent', label: 'High Intent', color: 'green' },
+                    { id: 'research', label: 'Research', color: 'blue' },
+                    { id: 'brand', label: 'Brand', color: 'purple' },
+                    { id: 'competitor', label: 'Competitor', color: 'red' }
+                  ].map((intent) => (
+                    <div key={intent.id} className="border border-slate-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedIntents.includes(intent.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedIntents([...selectedIntents, intent.id]);
+                              } else {
+                                setSelectedIntents(selectedIntents.filter(i => i !== intent.id));
+                              }
+                            }}
+                          />
+                          <Label className="font-semibold">{intent.label}</Label>
+                        </div>
+                        <Badge variant="outline">{intentGroups[intent.id]?.length || 0} keywords</Badge>
+                      </div>
+                      {selectedIntents.includes(intent.id) && intentGroups[intent.id] && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {intentGroups[intent.id].slice(0, 10).map((kw, idx) => (
+                            <Badge key={idx} variant="secondary">{kw}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+
+        case 'alpha_beta':
+          // Alpha-Beta Split
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Alpha-Beta Split</CardTitle>
+                <CardDescription>Beta discovery and Alpha winners</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="beta" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="beta">Beta Discovery</TabsTrigger>
+                    <TabsTrigger value="alpha">Alpha Winners</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="beta" className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {betaKeywords.length === 0 ? (
+                        <p className="text-slate-500">Generate keywords to populate Beta</p>
+                      ) : (
+                        betaKeywords.map((kw, idx) => (
+                          <Badge key={idx} variant="secondary">{kw}</Badge>
+                        ))
+                      )}
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="alpha" className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {alphaKeywords.length === 0 ? (
+                        <p className="text-slate-500">Promote winners from Beta to Alpha</p>
+                      ) : (
+                        alphaKeywords.map((kw, idx) => (
+                          <Badge key={idx} className="bg-green-100 text-green-700">{kw}</Badge>
+                        ))
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          );
+
+        case 'match_type':
+          // Match Type Split
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Match Type Split</CardTitle>
+                <CardDescription>Keywords duplicated by match type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {['broad', 'phrase', 'exact'].map((matchType) => (
+                    <div key={matchType} className="border border-slate-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="font-semibold capitalize">{matchType} Match</Label>
+                        <Badge variant="outline">{selectedKeywords.length} keywords</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedKeywords.slice(0, 10).map((kw, idx) => (
+                          <Badge key={idx} variant="secondary">
+                            {matchType === 'broad' ? kw : matchType === 'phrase' ? `"${kw}"` : `[${kw}]`}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+
+        case 'funnel':
+          // Funnel-Based
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Funnel Groups</CardTitle>
+                <CardDescription>TOF/MOF/BOF intent grouping</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { id: 'tof', label: 'Top of Funnel (TOF)', color: 'blue' },
+                    { id: 'mof', label: 'Middle of Funnel (MOF)', color: 'purple' },
+                    { id: 'bof', label: 'Bottom of Funnel (BOF)', color: 'green' }
+                  ].map((funnel) => (
+                    <div key={funnel.id} className="border border-slate-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-slate-800 mb-2">{funnel.label}</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {funnelGroups[funnel.id]?.length === 0 ? (
+                          <p className="text-slate-500 text-sm">Generate keywords to populate</p>
+                        ) : (
+                          funnelGroups[funnel.id]?.slice(0, 10).map((kw, idx) => (
+                            <Badge key={idx} variant="secondary">{kw}</Badge>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          );
+
+        case 'brand_split':
+          // Brand vs Non-Brand
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Brand vs Non-Brand</CardTitle>
+                <CardDescription>Automatic brand detection and separation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="border border-slate-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-slate-800 mb-2">Brand Keywords</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {brandKeywords.length === 0 ? (
+                        <p className="text-slate-500 text-sm">No brand keywords detected</p>
+                      ) : (
+                        brandKeywords.map((kw, idx) => (
+                          <Badge key={idx} className="bg-purple-100 text-purple-700">{kw}</Badge>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  <div className="border border-slate-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-slate-800 mb-2">Non-Brand Keywords</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {nonBrandKeywords.length === 0 ? (
+                        <p className="text-slate-500 text-sm">Generate keywords to populate</p>
+                      ) : (
+                        nonBrandKeywords.map((kw, idx) => (
+                          <Badge key={idx} variant="secondary">{kw}</Badge>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+
+        case 'competitor':
+          // Competitor Campaigns
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Competitor Keywords</CardTitle>
+                <CardDescription>Detected competitor brand queries</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {competitorKeywords.length === 0 ? (
+                    <p className="text-slate-500">No competitor keywords detected. Generate keywords to detect competitors.</p>
+                  ) : (
+                    competitorKeywords.map((kw, idx) => (
+                      <Badge key={idx} className="bg-red-100 text-red-700">{kw}</Badge>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+
+        case 'ngram':
+          // N-Gram Smart Cluster
+          return (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Smart Clusters</CardTitle>
+                <CardDescription>ML-powered N-gram clustering</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Object.keys(smartClusters).length === 0 ? (
+                    <div className="text-center py-8 text-slate-500">
+                      <Network className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                      <p>Generate keywords to see smart clusters</p>
+                    </div>
+                  ) : (
+                    Object.entries(smartClusters).map(([clusterName, keywords]) => (
+                      <div key={clusterName} className="border border-slate-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-slate-800 mb-2">{clusterName}</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {keywords.map((kw, idx) => (
+                            <Badge key={idx} variant="secondary">{kw}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">Keywords</h2>
+          <p className="text-slate-600">Generate and organize keywords based on your structure: {STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</p>
+        </div>
+
+        {commonKeywordSection}
+        {renderStructureSpecificUI()}
+
+        {/* Navigation */}
+        <div className="flex justify-between">
+          <Button variant="ghost" onClick={() => setStep(1)}>
+            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+            Back
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => {
+              if (selectedKeywords.length === 0 && generatedKeywords.length === 0) {
+                notifications.warning('Please generate and select keywords', { title: 'Keywords Required' });
+                return;
+              }
+              setStep(3);
+            }}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+          >
+            Next: Ads & Extensions <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Step 3: Ads & Extensions (Structure-based templates)
+  const renderStep3 = () => {
+    // Generate ads based on structure
+    const generateAdsForStructure = () => {
+      const baseAds: any[] = [];
+      const mainKeyword = selectedKeywords[0] || 'your service';
+
+      switch (structureType) {
+        case 'alpha_beta':
+          // Alpha: Hyper-specific, Beta: Broader
+          baseAds.push({
+            id: 1,
+            type: 'rsa',
+            headline1: `${mainKeyword} - Exact Match Solution`,
+            headline2: 'Precision Targeting',
+            headline3: 'Optimized Performance',
+            description1: `Get the exact ${mainKeyword} solution you need.`,
+            description2: 'Tailored for high-converting searches.',
+            finalUrl: url
+          });
+          baseAds.push({
+            id: 2,
+            type: 'rsa',
+            headline1: `Best ${mainKeyword} Options`,
+            headline2: 'Compare & Choose',
+            headline3: 'Multiple Solutions',
+            description1: `Explore various ${mainKeyword} options.`,
+            description2: 'Find the perfect fit for your needs.',
+            finalUrl: url
+          });
+          break;
+
+        case 'intent':
+          // Intent-matched templates
+          if (selectedIntents.includes('high_intent')) {
+            baseAds.push({
+              id: 1,
+              type: 'rsa',
+              headline1: `Need ${mainKeyword} Now?`,
+              headline2: 'Immediate Solutions',
+              headline3: 'Fast Response',
+              description1: `Get ${mainKeyword} immediately.`,
+              description2: 'Quick and reliable service.',
+              finalUrl: url
+            });
+          }
+          if (selectedIntents.includes('research')) {
+            baseAds.push({
+              id: 2,
+              type: 'rsa',
+              headline1: `Affordable ${mainKeyword} Info`,
+              headline2: 'Compare Prices',
+              headline3: 'Research Options',
+              description1: `Learn about ${mainKeyword} pricing.`,
+              description2: 'Make informed decisions.',
+              finalUrl: url
+            });
+          }
+          break;
+
+        case 'competitor':
+          // Competitor-avoiding ads
+          baseAds.push({
+            id: 1,
+            type: 'rsa',
+            headline1: `Better Than Your Current Provider`,
+            headline2: 'Superior Solutions',
+            headline3: 'Proven Results',
+            description1: 'Switch to a better solution.',
+            description2: 'Experience the difference.',
+            finalUrl: url
+          });
+          break;
+
+        case 'funnel':
+          // Funnel-based ads
+          baseAds.push({
+            id: 1,
+            type: 'rsa',
+            headline1: `Learn About ${mainKeyword}`,
+            headline2: 'Educational Resources',
+            headline3: 'Expert Guides',
+            description1: `Discover everything about ${mainKeyword}.`,
+            description2: 'Start your journey here.',
+            finalUrl: url
+          });
+          baseAds.push({
+            id: 2,
+            type: 'rsa',
+            headline1: `Get ${mainKeyword} Today`,
+            headline2: 'Call to Action',
+            headline3: 'Limited Time Offer',
+            description1: `Act now and get ${mainKeyword}.`,
+            description2: 'Don\'t miss out!',
+            finalUrl: url
+          });
+          break;
+
+        default:
+          // Standard RSA ads
+          baseAds.push({
+            id: 1,
+            type: 'rsa',
+            headline1: `${mainKeyword} - Best Deals`,
+            headline2: 'Shop Now & Save',
+            headline3: 'Fast Delivery',
+            description1: `Looking for ${mainKeyword}? We offer competitive prices.`,
+            description2: 'Get started today!',
+            finalUrl: url
+          });
+      }
+
+      setGeneratedAds(baseAds);
+    };
+
+    useEffect(() => {
+      if (step === 3 && generatedAds.length === 0 && structureType && selectedKeywords.length > 0) {
+        generateAdsForStructure();
+      }
+    }, [step, structureType, selectedKeywords.length]);
+
+    return (
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">Ads & Extensions</h2>
+          <p className="text-slate-600">Structure-optimized ad templates</p>
+        </div>
+
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Generated Ads</CardTitle>
+            <CardDescription>Ads optimized for {STRUCTURE_TYPES.find(s => s.id === structureType)?.name} structure</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {generatedAds.map((ad) => (
+                <div key={ad.id} className="border border-slate-200 rounded-lg p-4">
+                  <LiveAdPreview ad={ad} />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Navigation */}
+        <div className="flex justify-between">
+          <Button variant="ghost" onClick={() => setStep(2)}>
+            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+            Back
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => setStep(4)}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+          >
+            Next: Geo Target <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Step 4: Geo Targeting (Dynamic based on structure)
+  const renderStep4 = () => {
+    const isGeoSegmented = structureType === 'geo';
+    
+    // Calculate number of campaigns for GEO-Segmented structure
+    const getCampaignCount = () => {
+      if (!isGeoSegmented) return 1;
+      if (geoType === 'STATE' && selectedStates.length > 0) return selectedStates.length;
+      if (geoType === 'CITY' && selectedCities.length > 0) return selectedCities.length;
+      if (geoType === 'ZIP' && selectedZips.length > 0) return selectedZips.length;
+      return 0;
+    };
+
+    const campaignCount = getCampaignCount();
+    const geoUnitName = geoType === 'STATE' ? 'states' : geoType === 'CITY' ? 'cities' : geoType === 'ZIP' ? 'ZIPs' : 'locations';
+    const geoUnitCount = geoType === 'STATE' ? selectedStates.length : geoType === 'CITY' ? selectedCities.length : geoType === 'ZIP' ? selectedZips.length : 0;
+
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">Geo Targeting</h2>
+          <p className="text-slate-600">Select target locations</p>
+        </div>
+
+        {/* GEO-Segmented Structure Warning */}
+        {isGeoSegmented && (
+          <Card className="border-2 border-indigo-500 bg-indigo-50 shadow-xl">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-indigo-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-indigo-900 mb-2">GEO-Segmented Structure Selected</h3>
+                  <p className="text-indigo-800 mb-3">
+                    This structure creates multiple campaigns, not one.
+                  </p>
+                  {campaignCount > 0 ? (
+                    <p className="text-lg font-bold text-indigo-900">
+                      We will create <span className="text-indigo-600">{campaignCount}</span> campaign{campaignCount !== 1 ? 's' : ''}.
+                    </p>
+                  ) : (
+                    <p className="text-indigo-700">
+                      Select geo-units below to see campaign count.
+                    </p>
+                  )}
+                  {campaignCount > 0 && (
+                    <p className="text-sm text-indigo-700 mt-2">
+                      {geoUnitCount} {geoUnitName} = {campaignCount} campaign{campaignCount !== 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Target Country</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={targetCountry} onValueChange={setTargetCountry}>
+              <SelectTrigger className="max-w-md">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="United States">United States</SelectItem>
+                <SelectItem value="Canada">Canada</SelectItem>
+                <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                <SelectItem value="Australia">Australia</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Geo Type Selection */}
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Geo Segmentation Type</CardTitle>
+            <CardDescription>Choose how to segment your geo targeting</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { id: 'STANDARD', label: 'Standard', icon: Hash },
+                { id: 'STATE', label: 'States', icon: MapPin },
+                { id: 'CITY', label: 'Cities', icon: Layout },
+                { id: 'ZIP', label: 'ZIPs', icon: Mail }
+              ].map((type) => {
+                const Icon = type.icon;
+                const isSelected = geoType === type.id;
+                return (
+                  <Card
+                    key={type.id}
+                    onClick={() => setGeoType(type.id as any)}
+                    className={`cursor-pointer transition-all hover:shadow-lg ${
+                      isSelected 
+                        ? 'border-2 border-indigo-500 bg-indigo-50' 
+                        : 'border border-slate-200 hover:border-indigo-300'
+                    }`}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <Icon className={`w-6 h-6 mx-auto mb-2 ${isSelected ? 'text-indigo-600' : 'text-slate-600'}`} />
+                      <p className={`text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                        {type.label}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Geo Selection based on type */}
+        {geoType === 'STATE' && (
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardHeader>
+              <CardTitle>Select States</CardTitle>
+              <CardDescription>Choose states to target (each state = 1 campaign for GEO-Segmented)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {['California', 'Texas', 'Florida', 'New York', 'Illinois'].map((state) => (
+                  <div key={state} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`state-${state}`}
+                      checked={selectedStates.includes(state)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedStates([...selectedStates, state]);
+                        } else {
+                          setSelectedStates(selectedStates.filter(s => s !== state));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`state-${state}`} className="cursor-pointer">{state}</Label>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {geoType === 'CITY' && (
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardHeader>
+              <CardTitle>Select Cities</CardTitle>
+              <CardDescription>Choose cities to target (each city = 1 campaign for GEO-Segmented)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'].map((city) => (
+                  <div key={city} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`city-${city}`}
+                      checked={selectedCities.includes(city)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedCities([...selectedCities, city]);
+                        } else {
+                          setSelectedCities(selectedCities.filter(c => c !== city));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`city-${city}`} className="cursor-pointer">{city}</Label>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {geoType === 'ZIP' && (
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardHeader>
+              <CardTitle>Select ZIP Codes</CardTitle>
+              <CardDescription>Enter ZIP codes (each ZIP = 1 campaign for GEO-Segmented)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={selectedZips.join('\n')}
+                onChange={(e) => {
+                  const zips = e.target.value.split('\n').filter(z => z.trim());
+                  setSelectedZips(zips);
+                }}
+                placeholder="10001&#10;10002&#10;10003"
+                rows={6}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Enter one ZIP code per line. {selectedZips.length > 0 && `${selectedZips.length} ZIP${selectedZips.length !== 1 ? 's' : ''} = ${selectedZips.length} campaign${selectedZips.length !== 1 ? 's' : ''}`}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="flex justify-between">
+          <Button variant="ghost" onClick={() => setStep(3)}>
+            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+            Back
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => setStep(5)}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+          >
+            Next: Review <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Step 5: Review
+  const renderStep5 = () => {
+    // Calculate number of campaigns
+    const getCampaignCount = () => {
+      if (structureType === 'geo') {
+        if (geoType === 'STATE') return selectedStates.length || 1;
+        if (geoType === 'CITY') return selectedCities.length || 1;
+        if (geoType === 'ZIP') return selectedZips.length || 1;
+        return 1;
+      }
+      return 1; // Single campaign for other structures
+    };
+
+    // Calculate number of ad groups
+    const getAdGroupCount = () => {
+      if (!structureType) return 0;
+      
+      switch (structureType) {
+        case 'skag':
+          return selectedKeywords.length;
+        case 'stag':
+        case 'mix':
+          // Estimate: group keywords into ~5-10 groups
+          return Math.ceil(selectedKeywords.length / 5);
+        case 'stag_plus':
+        case 'ngram':
+          return Object.keys(smartClusters).length || Math.ceil(selectedKeywords.length / 5);
+        case 'intent':
+          return selectedIntents.length;
+        case 'alpha_beta':
+          return 2; // Alpha and Beta
+        case 'match_type':
+          return Object.values(matchTypes).filter(Boolean).length;
+        case 'geo':
+          return getCampaignCount(); // 1 ad group per campaign
+        case 'funnel':
+          return Object.keys(funnelGroups).filter(k => funnelGroups[k].length > 0).length;
+        case 'brand_split':
+          return 2; // Brand and Non-Brand
+        case 'competitor':
+          return competitorKeywords.length > 0 ? 1 : 0;
+        default:
+          return Math.ceil(selectedKeywords.length / 5);
+      }
+    };
+
+    const campaignCount = getCampaignCount();
+    const adGroupCount = getAdGroupCount();
+    const structureName = STRUCTURE_TYPES.find(s => s.id === structureType)?.name || 'Not Selected';
+
+    return (
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">Review Campaign</h2>
+          <p className="text-slate-600">Review your campaign configuration</p>
+        </div>
+
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Campaign Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="border border-slate-200 rounded-lg p-4">
+                <Label className="text-xs text-slate-500 uppercase tracking-wide">Number of Campaigns</Label>
+                <p className="text-3xl font-bold text-indigo-600 mt-2">{campaignCount}</p>
+                {structureType === 'geo' && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {geoType === 'STATE' && selectedStates.length > 0 && `${selectedStates.length} states`}
+                    {geoType === 'CITY' && selectedCities.length > 0 && `${selectedCities.length} cities`}
+                    {geoType === 'ZIP' && selectedZips.length > 0 && `${selectedZips.length} ZIPs`}
+                  </p>
+                )}
+              </div>
+              <div className="border border-slate-200 rounded-lg p-4">
+                <Label className="text-xs text-slate-500 uppercase tracking-wide">Number of Ad Groups</Label>
+                <p className="text-3xl font-bold text-purple-600 mt-2">{adGroupCount}</p>
+              </div>
+              <div className="border border-slate-200 rounded-lg p-4">
+                <Label className="text-xs text-slate-500 uppercase tracking-wide">Structure Type</Label>
+                <p className="text-xl font-semibold text-slate-800 mt-2">{structureName}</p>
+              </div>
+            </div>
+            
+            <Separator />
+            
+            {/* Additional Details */}
+            <div className="space-y-3">
+              <div>
+                <Label className="font-semibold text-slate-700">Campaign Name:</Label>
+                <p className="text-slate-600">{campaignName || 'Not set'}</p>
+              </div>
+              <div>
+                <Label className="font-semibold text-slate-700">Keywords:</Label>
+                <p className="text-slate-600">{selectedKeywords.length} selected</p>
+              </div>
+              <div>
+                <Label className="font-semibold text-slate-700">Ads:</Label>
+                <p className="text-slate-600">{generatedAds.length} generated</p>
+              </div>
+              <div>
+                <Label className="font-semibold text-slate-700">Target Country:</Label>
+                <p className="text-slate-600">{targetCountry}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-between">
+          <Button variant="ghost" onClick={() => setStep(4)}>
+            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+            Back
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => setStep(6)}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+          >
+            Next: Validate <ArrowRight className="ml-2 w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Step 6: Validate
+  const renderStep6 = () => (
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Validate Campaign</h2>
+        <p className="text-slate-600">Validate your campaign before export</p>
+      </div>
+
+      <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+        <CardHeader>
+          <CardTitle>Validation Results</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Campaign name is valid</span>
+            </div>
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Structure selected</span>
+            </div>
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Keywords configured</span>
+            </div>
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Ads generated</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-between">
+        <Button variant="ghost" onClick={() => setStep(5)}>
+          <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+          Back
+        </Button>
+        <Button
+          size="lg"
+          onClick={() => {
+            notifications.success('Campaign validated successfully!', { title: 'Validation Complete' });
+          }}
+          className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
+        >
+          <Download className="mr-2 w-5 h-5" />
+          Export CSV
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+      {renderStepIndicator()}
+      
+      {step === 1 && renderStep1()}
+      {step === 2 && renderStep2()}
+      {step === 3 && renderStep3()}
+      {step === 4 && renderStep4()}
+      {step === 5 && renderStep5()}
+      {step === 6 && renderStep6()}
+    </div>
+  );
+};
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from './components/ui/dropdown-menu';
 import { CampaignBuilder } from './components/CampaignBuilder';
+import { CampaignBuilder2 } from './components/CampaignBuilder2';
 import { CSVValidator } from './components/CSVValidator';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
@@ -226,6 +227,7 @@ const App = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },
+    { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
     { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
     { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
@@ -243,6 +245,8 @@ const App = () => {
     switch (activeTab) {
       case 'campaign-builder':
         return <CampaignBuilder initialData={activeTab === 'campaign-builder' ? historyData : null} />;
+      case 'builder-2':
+        return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
       case 'csv-validator':
         return <CSVValidator />;
       case 'keyword-planner':
