@@ -576,16 +576,24 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 <Card className="lg:col-span-2 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl min-h-[600px] flex flex-col">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <div>
-                            <CardTitle>Generated Keywords (Exact Match)</CardTitle>
+                            <CardTitle>Generated Keywords ({filteredKeywords.length} of {generatedKeywords.length})</CardTitle>
                             <CardDescription>
                                 {generatedKeywords.length > 0 
-                                    ? `${generatedKeywords.length} negative keywords found based on your website analysis.` 
+                                    ? `${generatedKeywords.length} negative keywords generated. ${filteredKeywords.length} visible after filtering.` 
                                     : "Results will appear here after generation."}
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                             {generatedKeywords.length > 0 && (
                                 <>
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={() => setShowStats(!showStats)}
+                                        className="gap-2"
+                                    >
+                                        <BarChart3 className="h-4 w-4" />
+                                        Stats
+                                    </Button>
                                     <Button 
                                         variant="outline" 
                                         onClick={handleSave}
@@ -595,9 +603,24 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                         <Save className="h-4 w-4" />
                                         {isSaving ? 'Saving...' : 'Save'}
                                     </Button>
-                                    <Button variant="outline" onClick={handleDownload} className="gap-2">
+                                    <Select value={exportFormat} onValueChange={(v: any) => setExportFormat(v)}>
+                                        <SelectTrigger className="w-32">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Formats</SelectItem>
+                                            <SelectItem value="exact">Exact Only</SelectItem>
+                                            <SelectItem value="phrase">Phrase Only</SelectItem>
+                                            <SelectItem value="broad">Broad Only</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Button variant="outline" onClick={() => handleDownload('standard')} className="gap-2">
                                         <Download className="h-4 w-4" />
-                                        Export
+                                        CSV
+                                    </Button>
+                                    <Button variant="outline" onClick={() => handleDownload('google-ads-editor')} className="gap-2">
+                                        <FileText className="h-4 w-4" />
+                                        Google Ads
                                     </Button>
                                 </>
                             )}
