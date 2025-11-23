@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
-import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap } from 'lucide-react';
+import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
-import { Card } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Label } from './ui/label';
+import { LiveAdPreview } from './LiveAdPreview';
 import { api } from '../utils/api';
 
 interface AdGroup {
     id: string;
     name: string;
     keywords: string;
+}
+
+interface Extension {
+    id: string;
+    extensionType: 'callout' | 'sitelink' | 'call' | 'snippet' | 'price' | 'location' | 'message' | 'leadform' | 'promotion' | 'image' | 'app';
+    [key: string]: any;
 }
 
 interface GeneratedAd {
@@ -32,6 +41,8 @@ interface GeneratedAd {
     phoneNumber?: string;
     businessName?: string;
     selected: boolean;
+    extensions?: Extension[];
+    type?: 'rsa' | 'dki' | 'callonly';
 }
 
 export const AdsBuilder = () => {
@@ -52,6 +63,23 @@ export const AdsBuilder = () => {
     const [generatedAds, setGeneratedAds] = useState<GeneratedAd[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [selectedAds, setSelectedAds] = useState<string[]>([]);
+    const [showExtensionDialog, setShowExtensionDialog] = useState(false);
+    const [selectedAdForExtension, setSelectedAdForExtension] = useState<string | null>(null);
+    const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+    
+    const extensionTypes = [
+        { id: 'callout', label: 'Callout Extension', icon: Tag, description: 'Highlight key benefits', color: 'purple' },
+        { id: 'sitelink', label: 'Sitelink Extension', icon: Link2, description: 'Add links to important pages', color: 'blue' },
+        { id: 'call', label: 'Call Extension', icon: Phone, description: 'Add phone number', color: 'green' },
+        { id: 'snippet', label: 'Snippet Extension', icon: FileText, description: 'Show structured information', color: 'indigo' },
+        { id: 'price', label: 'Price Extension', icon: DollarSign, description: 'Display pricing', color: 'emerald' },
+        { id: 'location', label: 'Location Extension', icon: MapPin, description: 'Show business location', color: 'red' },
+        { id: 'message', label: 'Message Extension', icon: MessageSquare, description: 'Enable messaging', color: 'purple' },
+        { id: 'promotion', label: 'Promotion Extension', icon: Gift, description: 'Show special offers', color: 'orange' },
+        { id: 'image', label: 'Image Extension', icon: ImageIcon, description: 'Add images', color: 'pink' },
+        { id: 'app', label: 'App Extension', icon: Smartphone, description: 'Link to mobile app', color: 'cyan' },
+        { id: 'leadform', label: 'Lead Form Extension', icon: Building2, description: 'Add lead form', color: 'blue' },
+    ];
 
     const addAdGroup = () => {
         const newId = (adGroups.length + 1).toString();
@@ -119,8 +147,10 @@ export const AdsBuilder = () => {
                                     id: crypto.randomUUID(),
                                     groupName: group.name,
                                     adType: 'RSA',
+                                    type: 'rsa',
                                     ...ad,
-                                    selected: false
+                                    selected: false,
+                                    extensions: []
                                 });
                             });
                         }
@@ -149,8 +179,10 @@ export const AdsBuilder = () => {
                                     id: crypto.randomUUID(),
                                     groupName: group.name,
                                     adType: 'DKI',
+                                    type: 'dki',
                                     ...ad,
-                                    selected: false
+                                    selected: false,
+                                    extensions: []
                                 });
                             });
                         }
@@ -179,8 +211,12 @@ export const AdsBuilder = () => {
                                     id: crypto.randomUUID(),
                                     groupName: group.name,
                                     adType: 'CallOnly',
+                                    type: 'callonly',
+                                    phone: ad.phoneNumber || ad.phone,
+                                    businessName: ad.businessName,
                                     ...ad,
-                                    selected: false
+                                    selected: false,
+                                    extensions: []
                                 });
                             });
                         }
@@ -220,6 +256,7 @@ export const AdsBuilder = () => {
             id: crypto.randomUUID(),
             groupName,
             adType: 'RSA',
+            type: 'rsa',
             headline1: variation.h1,
             headline2: variation.h2,
             headline3: variation.h3,
@@ -230,7 +267,8 @@ export const AdsBuilder = () => {
             path1: mainKeyword.toLowerCase().replace(/\s+/g, '-').substring(0, 15),
             path2: 'shop',
             finalUrl: baseUrl,
-            selected: false
+            selected: false,
+            extensions: []
         };
     };
 
@@ -241,6 +279,7 @@ export const AdsBuilder = () => {
             id: crypto.randomUUID(),
             groupName,
             adType: 'DKI',
+            type: 'dki',
             headline1: `{KeyWord:${mainKeyword}} - Official Site`,
             headline2: 'Shop {KeyWord:' + mainKeyword + '}',
             headline3: 'Best {KeyWord:' + mainKeyword + '} Deals',
@@ -249,7 +288,8 @@ export const AdsBuilder = () => {
             path1: 'keyword',
             path2: 'deals',
             finalUrl: baseUrl,
-            selected: false
+            selected: false,
+            extensions: []
         };
     };
 
@@ -269,13 +309,16 @@ export const AdsBuilder = () => {
             id: crypto.randomUUID(),
             groupName,
             adType: 'CallOnly',
+            type: 'callonly',
             headline1: variation.h1,
             headline2: variation.h2,
             description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help!`,
             description2: `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today!`,
             phoneNumber: '+1-800-123-4567',
+            phone: '+1-800-123-4567',
             businessName: 'Your Business',
-            selected: false
+            selected: false,
+            extensions: []
         };
     };
 
@@ -366,28 +409,146 @@ export const AdsBuilder = () => {
         alert('Copied to clipboard!');
     };
 
+    const handleAddExtensions = (adId: string) => {
+        setSelectedAdForExtension(adId);
+        const ad = generatedAds.find(a => a.id === adId);
+        if (ad && ad.extensions) {
+            setSelectedExtensions(ad.extensions.map((ext: Extension) => ext.extensionType));
+        } else {
+            setSelectedExtensions([]);
+        }
+        setShowExtensionDialog(true);
+    };
+
+    const handleConfirmExtensions = () => {
+        if (!selectedAdForExtension) return;
+
+        const newExtensions: Extension[] = selectedExtensions.map(extType => {
+            const extId = crypto.randomUUID();
+            const ad = generatedAds.find(a => a.id === selectedAdForExtension);
+            const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
+
+            let extension: Extension = {
+                id: extId,
+                extensionType: extType as any,
+            };
+
+            switch (extType) {
+                case 'callout':
+                    extension.callouts = [
+                        `Free ${mainKeyword} Consultation`,
+                        '24/7 Expert Support',
+                        'Best Price Guarantee',
+                        'Fast & Reliable Service'
+                    ];
+                    break;
+                case 'sitelink':
+                    extension.sitelinks = [
+                        { text: 'Shop Now', description: 'Browse our collection', url: `${baseUrl}/shop` },
+                        { text: 'About Us', description: 'Learn more about us', url: `${baseUrl}/about` },
+                        { text: 'Contact', description: 'Get in touch', url: `${baseUrl}/contact` },
+                        { text: 'Support', description: 'Customer support', url: `${baseUrl}/support` }
+                    ];
+                    break;
+                case 'call':
+                    extension.phone = '(555) 123-4567';
+                    extension.callTrackingEnabled = true;
+                    break;
+                case 'snippet':
+                    extension.header = 'Services';
+                    extension.values = [mainKeyword, 'Expert Service', 'Quality Products', 'Fast Delivery'];
+                    break;
+                case 'price':
+                    extension.priceQualifier = 'From';
+                    extension.price = '$99';
+                    extension.currency = 'USD';
+                    extension.unit = 'per service';
+                    extension.description = 'Competitive pricing';
+                    break;
+                case 'location':
+                    extension.businessName = 'Your Business Name';
+                    extension.addressLine1 = '123 Main St';
+                    extension.city = 'City';
+                    extension.state = 'State';
+                    extension.postalCode = '12345';
+                    extension.phone = '(555) 123-4567';
+                    break;
+                case 'message':
+                    extension.messageText = `Message us about ${mainKeyword}`;
+                    extension.businessName = 'Your Business';
+                    extension.phone = '(555) 123-4567';
+                    break;
+                case 'promotion':
+                    extension.promotionText = 'Special Offer';
+                    extension.promotionDescription = `Get 20% off ${mainKeyword}`;
+                    extension.occasion = 'SALE';
+                    extension.startDate = new Date().toISOString().split('T')[0];
+                    extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                    break;
+                case 'image':
+                    extension.imageUrl = 'https://via.placeholder.com/1200x628';
+                    extension.imageAltText = 'Product Image';
+                    extension.imageName = 'Product Showcase';
+                    break;
+                case 'app':
+                    extension.appStore = 'GOOGLE_PLAY';
+                    extension.appId = 'com.example.app';
+                    extension.appLinkText = 'Download Now';
+                    break;
+                case 'leadform':
+                    extension.formName = 'Get Started';
+                    extension.formDescription = 'Fill out this form to get in touch';
+                    extension.formType = 'CONTACT';
+                    break;
+            }
+
+            return extension;
+        });
+
+        setGeneratedAds(generatedAds.map(ad => 
+            ad.id === selectedAdForExtension 
+                ? { ...ad, extensions: newExtensions }
+                : ad
+        ));
+
+        setShowExtensionDialog(false);
+        setSelectedAdForExtension(null);
+        setSelectedExtensions([]);
+    };
+
     return (
-        <div className="p-8">
-            <div className="mb-6">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-6 lg:p-8">
+            {/* Header */}
+            <div className="mb-8">
+                <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
-                        Adiology
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                            Ads Builder
                     </h1>
-                    <p className="text-xs text-slate-500 mb-2">~ Samay</p>
-                    <p className="text-slate-500 text-sm">
+                        <p className="text-slate-600 text-sm">
                         Generate high-converting Google Ads with AI optimization for maximum ad rank
                     </p>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 {/* Left Panel: Configuration */}
                 <div className="space-y-6">
                     {/* Mode Selection */}
-                    <Card className="p-6 bg-white/80 backdrop-blur-xl border-slate-200/60 shadow-xl">
-                        <h2 className="text-xl font-bold text-indigo-600 mb-4">
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 p-6 border-b border-slate-200/50">
+                            <CardHeader className="p-0">
+                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
+                                    <Settings className="h-5 w-5 text-indigo-600" />
                             1. Choose Your Mode
-                        </h2>
+                                </CardTitle>
+                                <CardDescription className="text-slate-600 mt-1">
+                                    Select single or multiple keyword groups
+                                </CardDescription>
+                            </CardHeader>
+                        </div>
+                        <CardContent className="p-6">
                         <Tabs value={mode} onValueChange={(v) => setMode(v as 'single' | 'multiple')}>
                             <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="single">Single Group</TabsTrigger>
@@ -458,42 +619,62 @@ export const AdsBuilder = () => {
                                 </div>
                             </TabsContent>
                         </Tabs>
+                        </CardContent>
                     </Card>
 
                     {/* Base URL Configuration */}
-                    <Card className="p-6 bg-white/80 backdrop-blur-xl border-slate-200/60 shadow-xl">
-                        <h2 className="text-xl font-bold text-indigo-600 mb-4">
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 p-6 border-b border-slate-200/50">
+                            <CardHeader className="p-0">
+                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
+                                    <Globe className="h-5 w-5 text-emerald-600" />
                             Base URL Configuration
-                        </h2>
+                                </CardTitle>
+                                <CardDescription className="text-slate-600 mt-1">
+                                    Set the landing page URL for all ads
+                                </CardDescription>
+                            </CardHeader>
+                        </div>
+                        <CardContent className="p-6">
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
                                 Landing Page URL
-                            </label>
+                                </Label>
                             <Input
                                 type="url"
                                 placeholder="https://www.example.com"
                                 value={baseUrl}
                                 onChange={(e) => setBaseUrl(e.target.value)}
-                                className="bg-white"
+                                    className="bg-white border-slate-300 focus:border-indigo-500"
                             />
                             <p className="text-xs text-slate-500 mt-2">
                                 This URL will be used for all generated ads. You can edit individual ad URLs after generation.
                             </p>
                         </div>
+                        </CardContent>
                     </Card>
 
                     {/* Ad Type Configuration */}
-                    <Card className="p-6 bg-white/80 backdrop-blur-xl border-slate-200/60 shadow-xl">
-                        <h2 className="text-xl font-bold text-indigo-600 mb-4">
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
+                            <CardHeader className="p-0">
+                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
+                                    <Zap className="h-5 w-5 text-blue-600" />
                             2. Configure Ad Types & Quantity
-                        </h2>
-                        
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    <Badge variant="outline" className="mr-2 bg-blue-50 text-blue-700 border-blue-200">RSA</Badge>
-                                    Responsive Search Ads
-                                </label>
+                                </CardTitle>
+                                <CardDescription className="text-slate-600 mt-1">
+                                    Select ad types and quantities (max 25 total)
+                                </CardDescription>
+                            </CardHeader>
+                        </div>
+                        <CardContent className="p-6">
+                            <div className="space-y-6">
+                                <div className="p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-lg border border-blue-200/50">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 font-semibold">RSA</Badge>
+                                            <Label className="text-sm font-semibold text-slate-800">Responsive Search Ads</Label>
+                                        </div>
                                 <Input
                                     type="number"
                                     min="0"
@@ -508,18 +689,20 @@ export const AdsBuilder = () => {
                                             alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
                                         }
                                     }}
-                                    className="max-w-[120px]"
+                                            className="w-20 text-center font-semibold border-blue-300 focus:border-blue-500"
                                 />
-                                <p className="text-xs text-slate-500 mt-1">
+                                    </div>
+                                    <p className="text-xs text-slate-600">
                                     Multiple headlines and descriptions for testing
                                 </p>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    <Badge variant="outline" className="mr-2 bg-purple-50 text-purple-700 border-purple-200">DKI</Badge>
-                                    Dynamic Keyword Insertion Ads
-                                </label>
+                                <div className="p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-lg border border-purple-200/50">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 font-semibold">DKI</Badge>
+                                            <Label className="text-sm font-semibold text-slate-800">Dynamic Keyword Insertion</Label>
+                                        </div>
                                 <Input
                                     type="number"
                                     min="0"
@@ -534,18 +717,20 @@ export const AdsBuilder = () => {
                                             alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
                                         }
                                     }}
-                                    className="max-w-[120px]"
+                                            className="w-20 text-center font-semibold border-purple-300 focus:border-purple-500"
                                 />
-                                <p className="text-xs text-slate-500 mt-1">
+                                    </div>
+                                    <p className="text-xs text-slate-600">
                                     Automatically inserts search keywords into ad text
                                 </p>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    <Badge variant="outline" className="mr-2 bg-green-50 text-green-700 border-green-200">Call</Badge>
-                                    Call Only Ads
-                                </label>
+                                <div className="p-4 bg-gradient-to-r from-green-50/50 to-emerald-50/50 rounded-lg border border-green-200/50">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 font-semibold">Call</Badge>
+                                            <Label className="text-sm font-semibold text-slate-800">Call Only Ads</Label>
+                                        </div>
                                 <Input
                                     type="number"
                                     min="0"
@@ -560,33 +745,35 @@ export const AdsBuilder = () => {
                                             alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
                                         }
                                     }}
-                                    className="max-w-[120px]"
+                                            className="w-20 text-center font-semibold border-green-300 focus:border-green-500"
                                 />
-                                <p className="text-xs text-slate-500 mt-1">
+                                    </div>
+                                    <p className="text-xs text-slate-600">
                                     Mobile-only ads with click-to-call functionality
                                 </p>
                             </div>
                             
                             {/* Total Ads Counter */}
-                            <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                <div className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg border-2 border-indigo-200">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-slate-700">Total Ads:</span>
-                                    <span className={`text-lg font-bold ${(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 ? 'text-red-600' : 'text-indigo-600'}`}>
+                                        <span className="text-sm font-bold text-slate-700">Total Ads:</span>
+                                        <span className={`text-2xl font-bold ${(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 ? 'text-red-600' : 'text-indigo-600'}`}>
                                         {adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount} / 25
                                     </span>
                                 </div>
                                 {(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 && (
-                                    <p className="text-xs text-red-600 mt-1">Maximum limit exceeded. Please reduce quantities.</p>
+                                        <p className="text-xs text-red-600 mt-2 font-semibold">⚠️ Maximum limit exceeded. Please reduce quantities.</p>
                                 )}
                             </div>
                         </div>
+                        </CardContent>
                     </Card>
 
                     {/* Generate Button */}
                     <Button
                         onClick={generateAds}
                         disabled={isGenerating || (adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-700 text-white py-7 text-lg font-semibold shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02]"
                     >
                         {isGenerating ? (
                             <>
@@ -601,19 +788,28 @@ export const AdsBuilder = () => {
                         )}
                     </Button>
                 </div>
+                </div>
 
                 {/* Right Panel: Generated Ads */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-indigo-600">
+                <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden h-fit lg:sticky lg:top-6">
+                    <div className="bg-gradient-to-r from-slate-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
+                                    <Eye className="h-5 w-5 text-indigo-600" />
                             3. Review & Export Ads
-                        </h2>
+                                </CardTitle>
+                                <CardDescription className="text-slate-600 mt-1">
+                                    Preview and manage your generated ads
+                                </CardDescription>
+                            </div>
                         {generatedAds.length > 0 && (
                             <div className="flex gap-2">
                                 <Button
                                     onClick={selectAll}
                                     variant="outline"
                                     size="sm"
+                                        className="border-slate-300"
                                 >
                                     {selectedAds.length === generatedAds.length ? (
                                         <><Square className="w-4 h-4 mr-1" /> Deselect All</>
@@ -643,13 +839,14 @@ export const AdsBuilder = () => {
                             </div>
                         )}
                     </div>
-
+                    </div>
+                    <CardContent className="p-6">
                     {generatedAds.length > 0 && (
-                        <div className="mb-4 px-4 py-3 bg-slate-100 rounded-lg">
-                            <p className="text-sm font-semibold text-slate-700">
+                            <div className="mb-6 px-4 py-3 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-indigo-50/50 rounded-lg border border-indigo-200/50">
+                                <p className="text-sm font-bold text-slate-800">
                                 {generatedAds.length} Ads Generated
                                 {selectedAds.length > 0 && (
-                                    <span className="ml-2 text-indigo-600">
+                                        <span className="ml-2 text-indigo-600 font-semibold">
                                         ({selectedAds.length} selected)
                                     </span>
                                 )}
@@ -657,59 +854,80 @@ export const AdsBuilder = () => {
                         </div>
                     )}
 
-                    <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2">
+                        <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
                         {generatedAds.length > 0 ? (
-                            generatedAds.map((ad) => (
+                                generatedAds.map((ad) => {
+                                    // Convert GeneratedAd to LiveAdPreview format
+                                    const previewAd = {
+                                        id: parseInt(ad.id) || Date.now(),
+                                        type: (ad.type || (ad.adType === 'RSA' ? 'rsa' : ad.adType === 'DKI' ? 'dki' : 'callonly')) as 'rsa' | 'dki' | 'callonly',
+                                        headline1: ad.headline1,
+                                        headline2: ad.headline2,
+                                        headline3: ad.headline3,
+                                        headline4: ad.headline4,
+                                        headline5: ad.headline5,
+                                        description1: ad.description1,
+                                        description2: ad.description2,
+                                        finalUrl: ad.finalUrl || baseUrl,
+                                        path1: ad.path1,
+                                        path2: ad.path2,
+                                        phone: ad.phone || ad.phoneNumber,
+                                        businessName: ad.businessName,
+                                        extensions: ad.extensions || []
+                                    };
+
+                                    return (
                                 <div
                                     key={ad.id}
-                                    onClick={() => toggleAdSelection(ad.id)}
-                                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                                            className={`border-2 rounded-xl p-4 transition-all ${
                                         selectedAds.includes(ad.id)
-                                            ? 'border-indigo-300 bg-indigo-50'
-                                            : 'border-slate-200 bg-white hover:border-indigo-200'
+                                                    ? 'border-indigo-400 bg-indigo-50/50 shadow-md'
+                                                    : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
                                     }`}
                                 >
-                                    <div className="flex items-start gap-3">
+                                            <div className="flex items-start gap-3 mb-3">
                                         <Checkbox
                                             checked={selectedAds.includes(ad.id)}
                                             onCheckedChange={() => toggleAdSelection(ad.id)}
                                             className="mt-1"
                                         />
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant="outline" className="text-xs">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <Badge variant="outline" className="text-xs font-semibold bg-slate-100">
                                                     {ad.groupName}
                                                 </Badge>
                                                 <Badge 
                                                     variant="outline"
                                                     className={
-                                                        ad.adType === 'RSA' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                        ad.adType === 'DKI' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                        'bg-green-50 text-green-700 border-green-200'
+                                                                ad.adType === 'RSA' ? 'bg-blue-100 text-blue-700 border-blue-300 font-semibold' :
+                                                                ad.adType === 'DKI' ? 'bg-purple-100 text-purple-700 border-purple-300 font-semibold' :
+                                                                'bg-green-100 text-green-700 border-green-300 font-semibold'
                                                     }
                                                 >
                                                     {ad.adType}
                                                 </Badge>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleAddExtensions(ad.id);
+                                                            }}
+                                                            className="ml-auto text-xs h-7 border-purple-300 text-purple-700 hover:bg-purple-50"
+                                                        >
+                                                            <Plus className="w-3 h-3 mr-1" />
+                                                            Extensions
+                                                        </Button>
                                             </div>
 
-                                            {ad.adType === 'CallOnly' ? (
-                                                <div className="space-y-1 text-sm">
-                                                    <div className="font-semibold text-blue-600">{ad.headline1}</div>
-                                                    <div className="text-slate-700">{ad.headline2}</div>
-                                                    <div className="text-slate-600 text-xs">{ad.description1}</div>
-                                                    <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                                                        <span>📞 {ad.phoneNumber}</span>
-                                                        <span>•</span>
-                                                        <span>{ad.businessName}</span>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-1 text-sm">
-                                                    <div className="font-semibold text-blue-600">{ad.headline1}</div>
-                                                    <div className="text-slate-700">{ad.headline2}</div>
-                                                    {ad.headline3 && <div className="text-slate-600">{ad.headline3}</div>}
-                                                    <div className="text-slate-600 text-xs mt-2">{ad.description1}</div>
-                                                    <div className="flex items-center gap-2 mt-2">
+                                                    {/* Live Ad Preview */}
+                                                    <LiveAdPreview ad={previewAd} />
+
+                                                    {/* Editable URL for RSA/DKI */}
+                                                    {(ad.adType === 'RSA' || ad.adType === 'DKI') && (
+                                                        <div className="mt-3 pt-3 border-t border-slate-200">
+                                                            <Label className="text-xs font-semibold text-slate-700 mb-1 block">Final URL</Label>
+                                                            <div className="flex items-center gap-2">
                                                         <Input
                                                             type="url"
                                                             value={ad.finalUrl || baseUrl}
@@ -718,7 +936,8 @@ export const AdsBuilder = () => {
                                                                     a.id === ad.id ? { ...a, finalUrl: e.target.value } : a
                                                                 ));
                                                             }}
-                                                            className="text-xs h-7 text-green-700 border-green-200 focus:border-green-400 flex-1"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="text-xs h-8 text-green-700 border-green-200 focus:border-green-400 flex-1"
                                                             placeholder="Enter URL"
                                                         />
                                                         <span className="text-xs text-slate-500 whitespace-nowrap">/{ad.path1}/{ad.path2}</span>
@@ -728,20 +947,115 @@ export const AdsBuilder = () => {
                                         </div>
                                     </div>
                                 </div>
-                            ))
+                                    );
+                                })
                         ) : (
                             <div className="flex items-center justify-center h-[400px]">
                                 <div className="text-center">
-                                    <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-slate-500">
+                                        <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+                                            <Sparkles className="w-10 h-10 text-indigo-400" />
+                                        </div>
+                                        <p className="text-slate-600 font-medium mb-1">No ads generated yet</p>
+                                        <p className="text-sm text-slate-500">
                                         Configure your settings and click "Generate" to create optimized ads
                                     </p>
                                 </div>
                             </div>
                         )}
                     </div>
+                    </CardContent>
+                </Card>
                 </div>
+
+            {/* Extension Selection Dialog */}
+            <Dialog open={showExtensionDialog} onOpenChange={setShowExtensionDialog}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-purple-600" />
+                            Add Extensions to Ad
+                        </DialogTitle>
+                        <DialogDescription>
+                            Select extensions to add to your ad. These will appear in the live preview below.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-4">
+                        {extensionTypes.map((ext) => {
+                            const IconComponent = ext.icon;
+                            const isSelected = selectedExtensions.includes(ext.id);
+                            return (
+                                <div
+                                    key={ext.id}
+                                    onClick={() => {
+                                        setSelectedExtensions(prev =>
+                                            prev.includes(ext.id)
+                                                ? prev.filter(e => e !== ext.id)
+                                                : [...prev, ext.id]
+                                        );
+                                    }}
+                                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                                        isSelected
+                                            ? (ext.color === 'purple' ? 'border-purple-500 bg-purple-50' :
+                                               ext.color === 'blue' ? 'border-blue-500 bg-blue-50' :
+                                               ext.color === 'green' ? 'border-green-500 bg-green-50' :
+                                               ext.color === 'indigo' ? 'border-indigo-500 bg-indigo-50' :
+                                               ext.color === 'emerald' ? 'border-emerald-500 bg-emerald-50' :
+                                               ext.color === 'red' ? 'border-red-500 bg-red-50' :
+                                               ext.color === 'orange' ? 'border-orange-500 bg-orange-50' :
+                                               ext.color === 'pink' ? 'border-pink-500 bg-pink-50' :
+                                               ext.color === 'cyan' ? 'border-cyan-500 bg-cyan-50' :
+                                               'border-purple-500 bg-purple-50')
+                                            : 'border-slate-200 hover:border-indigo-300 bg-white'
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <Checkbox
+                                            checked={isSelected}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                    setSelectedExtensions([...selectedExtensions, ext.id]);
+                                                } else {
+                                                    setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
+                                                }
+                                            }}
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <IconComponent className={`h-4 w-4 ${
+                                                    ext.color === 'purple' ? 'text-purple-600' :
+                                                    ext.color === 'blue' ? 'text-blue-600' :
+                                                    ext.color === 'green' ? 'text-green-600' :
+                                                    ext.color === 'indigo' ? 'text-indigo-600' :
+                                                    ext.color === 'emerald' ? 'text-emerald-600' :
+                                                    ext.color === 'red' ? 'text-red-600' :
+                                                    ext.color === 'orange' ? 'text-orange-600' :
+                                                    ext.color === 'pink' ? 'text-pink-600' :
+                                                    ext.color === 'cyan' ? 'text-cyan-600' :
+                                                    'text-purple-600'
+                                                }`} />
+                                                <div className="font-semibold text-slate-800">{ext.label}</div>
             </div>
+                                            <div className="text-sm text-slate-600">{ext.description}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            setShowExtensionDialog(false);
+                            setSelectedAdForExtension(null);
+                            setSelectedExtensions([]);
+                        }}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleConfirmExtensions} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+                            Add {selectedExtensions.length > 0 ? `${selectedExtensions.length} ` : ''}Extension{selectedExtensions.length !== 1 ? 's' : ''}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
