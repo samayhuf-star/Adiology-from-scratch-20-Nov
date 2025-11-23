@@ -1788,7 +1788,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
 
     const dynamicAdGroups = getDynamicAdGroups();
-    const ALL_AD_GROUPS_VALUE = 'ALL_AD_GROUPS';
     
     const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
         // Check total ads limit (25 max, excluding snippets and callouts)
@@ -2141,9 +2140,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
     
     const adGroups = ['Refrigerators', 'Ovens', 'Microwaves'];
-    
-    const [activeBuilderTab, setActiveBuilderTab] = useState<'builder' | 'history'>('builder');
-    const [selectedPreviewAdId, setSelectedPreviewAdId] = useState<number | null>(null);
     
     const renderStep3 = () => {
         // Filter ads based on selection
