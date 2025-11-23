@@ -1184,6 +1184,19 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Step 3: Ads & Extensions (Structure-based templates)
   const renderStep3 = () => {
+    if (!structureType) {
+      return (
+        <div className="max-w-7xl mx-auto p-8 text-center">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+          <h3 className="text-xl font-semibold text-slate-600 mb-2">Structure Not Selected</h3>
+          <p className="text-slate-500 mb-4">Please go back and select a campaign structure first.</p>
+          <Button onClick={() => setStep(1)} variant="outline">
+            Go to Setup
+          </Button>
+        </div>
+      );
+    }
+
     // Generate ads based on structure
     const generateAdsForStructure = () => {
       const baseAds: any[] = [];
@@ -1300,8 +1313,21 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     useEffect(() => {
       if (step === 3 && generatedAds.length === 0 && structureType && selectedKeywords.length > 0) {
         generateAdsForStructure();
+      } else if (step === 3 && generatedAds.length === 0 && structureType) {
+        // Generate default ads even if no keywords selected yet
+        const defaultAd = {
+          id: Date.now(),
+          type: 'rsa',
+          headline1: 'Your Service - Best Deals',
+          headline2: 'Shop Now & Save',
+          headline3: 'Fast Delivery',
+          description1: 'Looking for your service? We offer competitive prices.',
+          description2: 'Get started today!',
+          finalUrl: url
+        };
+        setGeneratedAds([defaultAd]);
       }
-    }, [step, structureType, selectedKeywords.length]);
+    }, [step, structureType, selectedKeywords.length, generatedAds.length]);
 
     // Create extension
     const createExtension = (extensionType: string) => {
