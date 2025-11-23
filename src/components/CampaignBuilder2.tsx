@@ -66,8 +66,16 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [step, setStep] = useState(1);
   const [structureType, setStructureType] = useState<StructureType | null>(null);
   
+  // Generate default campaign name with date and time
+  const generateDefaultCampaignName = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(/:/g, '-');
+    return `Search Campaign ${dateStr} ${timeStr}`;
+  };
+  
   // Step 1: Setup
-  const [campaignName, setCampaignName] = useState('');
+  const [campaignName, setCampaignName] = useState(generateDefaultCampaignName());
   const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
   const [url, setUrl] = useState('');
   
@@ -118,7 +126,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Load initial data
   useEffect(() => {
     if (initialData) {
-      setCampaignName(initialData.campaignName || '');
+      setCampaignName(initialData.campaignName || generateDefaultCampaignName());
       setStructureType(initialData.structureType || null);
       setUrl(initialData.url || '');
       setSelectedKeywords(initialData.selectedKeywords || []);
