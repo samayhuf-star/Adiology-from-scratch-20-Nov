@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sparkles, Download, Globe, Type, ShieldAlert, Save, Filter, BarChart3, FileText, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Download, Globe, Type, ShieldAlert, Save, Filter, BarChart3, FileText, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -148,7 +148,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
 
                 // Convert to GeneratedKeyword format for display
                 const formattedKeywords: GeneratedKeyword[] = negativeKeywords.map((item, index) => ({
-                    id: index + 1,
+                        id: index + 1,
                     keyword: `[${item.keyword}]`, // Always show exact match format in UI
                     reason: item.reason,
                     category: NEGATIVE_KEYWORD_CATEGORIES[item.category].label,
@@ -491,13 +491,34 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 {/* Left Panel: Inputs */}
                 <Card className="lg:col-span-1 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl h-fit">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldAlert className="h-5 w-5 text-indigo-600" />
-                            Analysis Configuration
-                        </CardTitle>
-                        <CardDescription>
-                            Provide details to guide the AI model.
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ShieldAlert className="h-5 w-5 text-indigo-600" />
+                                    Analysis Configuration
+                                </CardTitle>
+                                <CardDescription>
+                                    Provide details to guide the AI model.
+                                </CardDescription>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setUrl('https://example.com/landing-page');
+                                    setCoreKeywords('plumbing services, emergency plumber, drain cleaning, water heater repair, pipe repair');
+                                    setUserGoal('leads');
+                                    setTargetLocation('');
+                                    setCompetitorBrands('');
+                                    setExcludeCompetitors(false);
+                                    setKeywordCount(1000);
+                                }}
+                                className="flex items-center gap-2"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                                Fill Info
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
@@ -641,7 +662,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                 </div>
                             )}
                             <div className="flex items-center gap-4 flex-wrap">
-                                <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                                     <Filter className="h-4 w-4 text-slate-400" />
                                     <span className="text-xs font-medium text-slate-600">Filter by Category:</span>
                                 </div>
