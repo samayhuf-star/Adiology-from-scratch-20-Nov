@@ -2540,6 +2540,46 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const adGroups = ['Refrigerators', 'Ovens', 'Microwaves'];
     
     const renderStep3 = () => {
+        // Use CompactAdBuilder component for the redesigned UI
+        const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
+        const extensionsList = generatedAds.filter(ad => ad.extensionType);
+        
+        return (
+            <div className="w-full h-full">
+                <CompactAdBuilder
+                    selectedKeywords={selectedKeywords}
+                    selectedAdGroup={selectedAdGroup}
+                    onAdGroupChange={setSelectedAdGroup}
+                    adGroups={adGroupList}
+                    generatedAds={generatedAds}
+                    extensions={extensionsList}
+                    onCreateAd={createNewAd}
+                    onUpdateAd={updateAdField}
+                    onDeleteAd={handleDeleteAd}
+                    onDuplicateAd={handleDuplicateAd}
+                    selectedAdIds={selectedAdIds}
+                    ALL_AD_GROUPS_VALUE={ALL_AD_GROUPS_VALUE}
+                />
+                {/* Navigation */}
+                <div className="flex justify-between mt-6 px-6">
+                    <Button variant="ghost" onClick={() => setStep(2)}>
+                        <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+                        Back
+                    </Button>
+                    <Button 
+                        size="lg" 
+                        onClick={() => setStep(4)}
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+                    >
+                        Next Step <ChevronRight className="ml-2 w-5 h-5" />
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+    
+    // Legacy renderStep3 code kept for reference (not used)
+    const renderStep3Legacy = () => {
         // Filter ads based on selection
         // When ALL AD GROUPS is selected, show only selected ads (max 3)
         // Only show actual ads (rsa, dki, callonly), not extensions
@@ -2566,8 +2606,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             });
             return { ...ad, extensions: adExtensions };
         });
-        const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
-        const extensionsList = generatedAds.filter(ad => ad.extensionType);
+        const adGroupListLegacy = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
+        const extensionsListLegacy = generatedAds.filter(ad => ad.extensionType);
         
         // Auto-select first ad for preview if none selected
         useEffect(() => {
