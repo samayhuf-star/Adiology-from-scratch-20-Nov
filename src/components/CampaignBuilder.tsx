@@ -736,6 +736,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [generatedAds, setGeneratedAds] = useState<any[]>([]);
     const [editingAdId, setEditingAdId] = useState<number | null>(null);
     const [editingStarted, setEditingStarted] = useState<Set<number>>(new Set());
+    
+    // State for editing in review page
+    const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+    const [editingGroupKeywords, setEditingGroupKeywords] = useState<string | null>(null);
+    const [editingGroupNegatives, setEditingGroupNegatives] = useState<string | null>(null);
+    const [tempGroupName, setTempGroupName] = useState('');
+    const [tempKeywords, setTempKeywords] = useState('');
+    const [tempNegatives, setTempNegatives] = useState('');
 
     // Step 4: Geo Targeting
     const [targetCountry, setTargetCountry] = useState('United States');
@@ -4304,14 +4312,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             </div>
         </div>
     );
-
-    // State for editing in review page
-    const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
-    const [editingGroupKeywords, setEditingGroupKeywords] = useState<string | null>(null);
-    const [editingGroupNegatives, setEditingGroupNegatives] = useState<string | null>(null);
-    const [tempGroupName, setTempGroupName] = useState('');
-    const [tempKeywords, setTempKeywords] = useState('');
-    const [tempNegatives, setTempNegatives] = useState('');
 
     // Ensure we have ads for all ad groups when entering Step 5 - ensure same number of ads per group
     useEffect(() => {
