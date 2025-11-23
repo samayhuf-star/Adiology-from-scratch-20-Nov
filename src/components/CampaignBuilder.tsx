@@ -640,6 +640,21 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [canUndo, setCanUndo] = useState(false);
     const [canRedo, setCanRedo] = useState(false);
     const [lastActionDescription, setLastActionDescription] = useState<string | null>(null);
+    
+    // Ads state - MUST be declared before functions that use it
+    const [generatedAds, setGeneratedAds] = useState<any[]>([]);
+    const [editingAdId, setEditingAdId] = useState<number | null>(null);
+    const [editingStarted, setEditingStarted] = useState<Set<number>>(new Set());
+    const [history, setHistory] = useState<any[]>([]);
+    const [searchHistory, setSearchHistory] = useState('');
+    
+    // State for editing in review page
+    const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+    const [editingGroupKeywords, setEditingGroupKeywords] = useState<string | null>(null);
+    const [editingGroupNegatives, setEditingGroupNegatives] = useState<string | null>(null);
+    const [tempGroupName, setTempGroupName] = useState('');
+    const [tempKeywords, setTempKeywords] = useState('');
+    const [tempNegatives, setTempNegatives] = useState('');
 
     // Generate dynamic ad groups based on structure and selected keywords
     // MUST be defined early to avoid "Cannot access before initialization" errors
@@ -785,20 +800,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, canUndo]);
-    
-    const [history, setHistory] = useState<any[]>([]);
-    const [searchHistory, setSearchHistory] = useState('');
-    const [generatedAds, setGeneratedAds] = useState<any[]>([]);
-    const [editingAdId, setEditingAdId] = useState<number | null>(null);
-    const [editingStarted, setEditingStarted] = useState<Set<number>>(new Set());
-    
-    // State for editing in review page
-    const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
-    const [editingGroupKeywords, setEditingGroupKeywords] = useState<string | null>(null);
-    const [editingGroupNegatives, setEditingGroupNegatives] = useState<string | null>(null);
-    const [tempGroupName, setTempGroupName] = useState('');
-    const [tempKeywords, setTempKeywords] = useState('');
-    const [tempNegatives, setTempNegatives] = useState('');
 
     // Step 4: Geo Targeting
     const [targetCountry, setTargetCountry] = useState('United States');
