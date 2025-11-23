@@ -166,7 +166,7 @@ const OverviewModule = () => {
   const loadOverview = async () => {
     try {
       setLoading(true);
-      const { adminApi } = await import('../../utils/api/admin.ts');
+      const { adminApi } = await import('../../utils/api/admin');
       const data = await adminApi.getOverview();
       setStats(data);
     } catch (error) {
@@ -258,7 +258,7 @@ const UsersModule = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const { adminApi } = await import('../../utils/api/admin.ts');
+      const { adminApi } = await import('../../utils/api/admin');
       const result = await adminApi.getUsers({ 
         search: searchQuery || undefined, 
         page, 
@@ -283,7 +283,7 @@ const UsersModule = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     
     try {
-      const { adminApi } = await import('../../utils/api/admin.ts');
+      const { adminApi } = await import('../../utils/api/admin');
       await adminApi.deleteUser(userId);
       loadUsers();
     } catch (error) {
@@ -294,7 +294,7 @@ const UsersModule = () => {
 
   const handleSuspendUser = async (userId: string, suspend: boolean) => {
     try {
-      const { adminApi } = await import('../../utils/api/admin.ts');
+      const { adminApi } = await import('../../utils/api/admin');
       await adminApi.updateUser(userId, { 
         subscription_status: suspend ? 'suspended' : 'active' 
       });
@@ -634,7 +634,7 @@ const AuditModule = () => {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const { adminApi } = await import('../../utils/api/admin.ts');
+      const { adminApi } = await import('../../utils/api/admin');
       const result = await adminApi.getAuditLogs({ 
         action: filters.action || undefined,
         userId: filters.userId || undefined,
