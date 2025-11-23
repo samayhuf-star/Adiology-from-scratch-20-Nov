@@ -111,6 +111,94 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 3: Ads
   const [ads, setAds] = useState<any[]>([]);
   const [generatedAds, setGeneratedAds] = useState<any[]>([]);
+  const ALL_AD_GROUPS_VALUE = 'ALL_AD_GROUPS';
+  const [selectedAdGroup, setSelectedAdGroup] = useState(ALL_AD_GROUPS_VALUE);
+  const [selectedAdIds, setSelectedAdIds] = useState<number[]>([]);
+  const [editingAdId, setEditingAdId] = useState<number | null>(null);
+  
+  // Helper to get dynamic ad groups based on structure
+  const getDynamicAdGroups = useCallback(() => {
+    if (!selectedKeywords || selectedKeywords.length === 0) return [];
+    if (!structureType) return [];
+    
+    switch (structureType) {
+      case 'skag':
+        return selectedKeywords.slice(0, 20).map(kw => ({
+          name: kw,
+          keywords: [kw]
+        }));
+      case 'stag':
+      case 'stag_plus':
+      case 'ngram':
+        const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
+        const groups = [];
+        for (let i = 0; i < selectedKeywords.length; i += groupSize) {
+          const groupKeywords = selectedKeywords.slice(i, i + groupSize);
+          groups.push({
+            name: `Ad Group ${groups.length + 1}`,
+            keywords: groupKeywords
+          });
+        }
+        return groups.slice(0, 10);
+      case 'intent':
+        const intentGroupsList: Array<{ name: string; keywords: string[] }> = [];
+        if (selectedIntents.includes('high_intent') && intentGroups.high_intent.length > 0) {
+          intentGroupsList.push({ name: 'High Intent', keywords: intentGroups.high_intent });
+        }
+        if (selectedIntents.includes('research') && intentGroups.research.length > 0) {
+          intentGroupsList.push({ name: 'Research', keywords: intentGroups.research });
+        }
+        if (selectedIntents.includes('brand') && intentGroups.brand.length > 0) {
+          intentGroupsList.push({ name: 'Brand', keywords: intentGroups.brand });
+        }
+        if (selectedIntents.includes('competitor') && intentGroups.competitor.length > 0) {
+          intentGroupsList.push({ name: 'Competitor', keywords: intentGroups.competitor });
+        }
+        return intentGroupsList;
+      case 'alpha_beta':
+        return [
+          { name: 'Alpha Winners', keywords: alphaKeywords },
+          { name: 'Beta Discovery', keywords: betaKeywords }
+        ].filter(g => g.keywords.length > 0);
+      case 'funnel':
+        return [
+          { name: 'TOF', keywords: funnelGroups.tof },
+          { name: 'MOF', keywords: funnelGroups.mof },
+          { name: 'BOF', keywords: funnelGroups.bof }
+        ].filter(g => g.keywords.length > 0);
+      case 'brand_split':
+        return [
+          { name: 'Brand', keywords: brandKeywords },
+          { name: 'Non-Brand', keywords: nonBrandKeywords }
+        ].filter(g => g.keywords.length > 0);
+      case 'competitor':
+        return competitorKeywords.length > 0 ? [{ name: 'Competitor', keywords: competitorKeywords }] : [];
+      case 'match_type':
+        return [
+          { name: 'Broad Match', keywords: selectedKeywords },
+          { name: 'Phrase Match', keywords: selectedKeywords },
+          { name: 'Exact Match', keywords: selectedKeywords }
+        ];
+      default:
+        // Mix or default
+        const mixGroups: any[] = [];
+        selectedKeywords.slice(0, 5).forEach(kw => {
+          mixGroups.push({ name: kw, keywords: [kw] });
+        });
+        const remaining = selectedKeywords.slice(5);
+        if (remaining.length > 0) {
+          const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
+          for (let i = 0; i < remaining.length; i += groupSize) {
+            const groupKeywords = remaining.slice(i, i + groupSize);
+            mixGroups.push({
+              name: `Mixed Group ${mixGroups.length - 4}`,
+              keywords: groupKeywords
+            });
+          }
+        }
+        return mixGroups.slice(0, 10);
+    }
+  }, [selectedKeywords, structureType, selectedIntents, intentGroups, alphaKeywords, betaKeywords, funnelGroups, brandKeywords, nonBrandKeywords, competitorKeywords]);
   
   // Step 4: Geo
   const [targetCountry, setTargetCountry] = useState('United States');
@@ -1354,6 +1442,387 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
   }, [step, structureType, selectedKeywords.length, generateAdsForStructure]);
 
+  // Helper functions for ad management (matching Campaign Builder)
+  const handleEditAd = (ad: any) => {
+    if (editingAdId === ad.id) {
+      setEditingAdId(null);
+    } else {
+      setEditingAdId(ad.id);
+    }
+  };
+
+  const handleSaveAd = (adId: number) => {
+    setEditingAdId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAdId(null);
+  };
+
+  const updateAdField = (adId: number, field: string, value: any) => {
+    setGeneratedAds(generatedAds.map(ad => 
+      ad.id === adId ? { ...ad, [field]: value } : ad
+    ));
+  };
+
+  const handleDuplicateAd = (ad: any) => {
+    const newAd = { ...ad, id: Date.now() };
+    setGeneratedAds([...generatedAds, newAd]);
+    notifications.success('Ad duplicated successfully', {
+      title: 'Ad Duplicated',
+      description: 'A copy of the ad has been created. You can edit it as needed.',
+    });
+  };
+
+  const handleDeleteAd = (adId: number) => {
+    setGeneratedAds(generatedAds.filter(a => a.id !== adId));
+    if (selectedAdIds.includes(adId)) {
+      setSelectedAdIds(selectedAdIds.filter(id => id !== adId));
+    }
+    notifications.success('Ad deleted successfully', {
+      title: 'Ad Removed',
+      description: 'The ad has been removed from your campaign.',
+    });
+  };
+
+  const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
+    const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
+    const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+    
+    if (isExtension && !hasRegularAds) {
+      notifications.info('Creating a default ad first, then adding your extension', {
+        title: 'Ad Required',
+        description: 'Extensions require at least one ad. A DKI ad will be created automatically.',
+      });
+      
+      const dynamicAdGroups = getDynamicAdGroups();
+      const currentGroup = dynamicAdGroups.length > 0 ? dynamicAdGroups[0] : null;
+      const baseUrl = url || 'www.example.com';
+      const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+      const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+      
+      const dkiAd: any = {
+        id: Date.now(),
+        type: 'dki',
+        adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
+        headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+        headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
+        headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
+        description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
+        description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+        finalUrl: formattedUrl,
+        path1: 'keyword',
+        path2: 'deals'
+      };
+      
+      setGeneratedAds(prev => [...prev, dkiAd]);
+      
+      if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3) {
+        setSelectedAdIds(prev => [...prev, dkiAd.id]);
+      }
+    }
+
+    const dynamicAdGroups = getDynamicAdGroups();
+    const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
+    const mainKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
+    
+    let newAd: any = {
+      id: Date.now(),
+      type: type,
+      adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup
+    };
+
+    const baseUrl = url || 'www.example.com';
+    const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+
+    if (type === 'rsa') {
+      newAd = {
+        ...newAd,
+        headline1: `${mainKeyword} - Best Deals`,
+        headline2: 'Shop Now & Save',
+        headline3: 'Fast Delivery Available',
+        description1: `Looking for ${mainKeyword}? We offer competitive prices and excellent service.`,
+        description2: `Get your ${mainKeyword} today with free shipping on orders over $50.`,
+        finalUrl: formattedUrl,
+        path1: 'shop',
+        path2: 'now'
+      };
+    } else if (type === 'dki') {
+      newAd = {
+        ...newAd,
+        headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+        headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
+        headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
+        description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
+        description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+        finalUrl: formattedUrl,
+        path1: 'keyword',
+        path2: 'deals'
+      };
+    } else if (type === 'callonly') {
+      newAd = {
+        ...newAd,
+        headline1: `Call for ${mainKeyword}`,
+        headline2: 'Available 24/7 - Speak to Expert',
+        description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing.`,
+        description2: 'Get immediate assistance. Our specialists are ready to help!',
+        phone: '(555) 123-4567',
+        businessName: 'Your Business',
+        finalUrl: formattedUrl
+      };
+    } else if (type === 'snippet') {
+      newAd = {
+        ...newAd,
+        extensionType: 'snippet',
+        header: 'Types',
+        values: currentGroup?.keywords.slice(0, 4) || ['Option 1', 'Option 2', 'Option 3']
+      };
+    } else if (type === 'callout') {
+      newAd = {
+        ...newAd,
+        extensionType: 'callout',
+        callouts: ['Free Shipping', '24/7 Support', 'Best Price Guarantee', 'Expert Installation']
+      };
+    } else if (type === 'call') {
+      newAd = {
+        ...newAd,
+        extensionType: 'call',
+        phone: '(555) 123-4567',
+        callTrackingEnabled: false,
+        callOnly: false
+      };
+    } else if (type === 'sitelink') {
+      newAd = {
+        ...newAd,
+        extensionType: 'sitelink',
+        sitelinks: [
+          { text: 'Shop Now', description: 'Browse our collection', url: formattedUrl + '/shop' },
+          { text: 'About Us', description: 'Learn more about us', url: formattedUrl + '/about' },
+          { text: 'Contact', description: 'Get in touch', url: formattedUrl + '/contact' },
+          { text: 'Support', description: 'Customer support', url: formattedUrl + '/support' }
+        ]
+      };
+    } else if (type === 'price') {
+      newAd = {
+        ...newAd,
+        extensionType: 'price',
+        type: 'SERVICES',
+        priceQualifier: 'From',
+        price: '$99',
+        currency: 'USD',
+        unit: 'per service',
+        description: 'Starting price'
+      };
+    } else if (type === 'app') {
+      newAd = {
+        ...newAd,
+        extensionType: 'app',
+        appStore: 'GOOGLE_PLAY',
+        appId: 'com.example.app',
+        appLinkText: 'Download Now',
+        appFinalUrl: 'https://play.google.com/store/apps/details?id=com.example.app'
+      };
+    } else if (type === 'location') {
+      newAd = {
+        ...newAd,
+        extensionType: 'location',
+        businessName: 'Your Business Name',
+        addressLine1: '123 Main St',
+        addressLine2: '',
+        city: 'City',
+        state: 'State',
+        postalCode: '12345',
+        country: 'United States',
+        phone: '(555) 123-4567'
+      };
+    } else if (type === 'message') {
+      newAd = {
+        ...newAd,
+        extensionType: 'message',
+        messageText: 'Message us for quick answers',
+        businessName: 'Your Business',
+        phone: '(555) 123-4567'
+      };
+    } else if (type === 'leadform') {
+      newAd = {
+        ...newAd,
+        extensionType: 'leadform',
+        formName: 'Get Started',
+        formDescription: 'Fill out this form to get in touch',
+        formType: 'CONTACT',
+        formUrl: formattedUrl,
+        privacyPolicyUrl: formattedUrl + '/privacy'
+      };
+    } else if (type === 'promotion') {
+      newAd = {
+        ...newAd,
+        extensionType: 'promotion',
+        promotionText: 'Special Offer',
+        promotionDescription: 'Get 20% off your first order',
+        occasion: 'SALE',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+    } else if (type === 'image') {
+      newAd = {
+        ...newAd,
+        extensionType: 'image',
+        imageUrl: 'https://via.placeholder.com/1200x628',
+        imageAltText: 'Product Image',
+        imageName: 'Product Showcase',
+        landscapeLogoImageUrl: 'https://via.placeholder.com/600x314'
+      };
+    }
+
+    setGeneratedAds([...generatedAds, newAd]);
+    
+    const adTypeName = type === 'rsa' ? 'Responsive Search Ad' : 
+                      type === 'dki' ? 'DKI Text Ad' : 
+                      type === 'callonly' ? 'Call Only Ad' : 
+                      type === 'snippet' ? 'Snippet Extension' :
+                      type === 'callout' ? 'Callout Extension' :
+                      type === 'sitelink' ? 'Sitelink Extension' :
+                      type === 'call' ? 'Call Extension' :
+                      type === 'price' ? 'Price Extension' :
+                      type === 'app' ? 'App Extension' :
+                      type === 'location' ? 'Location Extension' :
+                      type === 'message' ? 'Message Extension' :
+                      type === 'leadform' ? 'Lead Form Extension' :
+                      type === 'promotion' ? 'Promotion Extension' :
+                      type === 'image' ? 'Image Extension' : type;
+    notifications.success(`${adTypeName} created successfully`, {
+      title: 'Ad Created',
+      description: `Your ${adTypeName} has been added.`,
+    });
+    
+    if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3 && (type === 'rsa' || type === 'dki' || type === 'callonly')) {
+      setSelectedAdIds([...selectedAdIds, newAd.id]);
+    }
+  };
+
+  const handleGenerateAIExtensions = async () => {
+    const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+    if (!hasRegularAds) {
+      notifications.warning('Create at least one ad first', {
+        title: 'Ad Required',
+        description: 'You need at least one ad (RSA, DKI, or Call Only) before adding extensions.',
+      });
+      return;
+    }
+    setShowExtensionDialog(true);
+  };
+
+  const [showExtensionDialog, setShowExtensionDialog] = useState(false);
+  const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+  
+  const extensionTypes = [
+    { id: 'callout', label: 'Callout Extension', description: 'Highlight key benefits' },
+    { id: 'sitelink', label: 'Sitelink Extension', description: 'Add links to important pages' },
+    { id: 'call', label: 'Call Extension', description: 'Add phone number' },
+    { id: 'snippet', label: 'Snippet Extension', description: 'Show structured information' },
+    { id: 'price', label: 'Price Extension', description: 'Display pricing' },
+    { id: 'location', label: 'Location Extension', description: 'Show business location' },
+    { id: 'message', label: 'Message Extension', description: 'Enable messaging' },
+    { id: 'promotion', label: 'Promotion Extension', description: 'Show special offers' },
+  ];
+
+  const handleConfirmAIExtensions = () => {
+    if (selectedExtensions.length === 0) {
+      notifications.warning('Please select at least one extension', {
+        title: 'No Extensions Selected',
+      });
+      return;
+    }
+
+    const dynamicAdGroups = getDynamicAdGroups();
+    const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
+    const mainKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
+    const baseUrl = url || 'www.example.com';
+    const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+
+    const newExtensions: any[] = [];
+
+    selectedExtensions.forEach(extType => {
+      const extId = Date.now() + Math.random();
+      let extension: any = {
+        id: extId,
+        extensionType: extType,
+        adGroup: selectedAdGroup
+      };
+
+      if (extType === 'callout') {
+        extension.callouts = [
+          `Free ${mainKeyword} Consultation`,
+          '24/7 Expert Support',
+          'Best Price Guarantee',
+          'Fast & Reliable Service'
+        ];
+      } else if (extType === 'sitelink') {
+        extension.sitelinks = [
+          { text: `Shop ${mainKeyword}`, description: 'Browse our collection', url: `${formattedUrl}/shop` },
+          { text: 'About Us', description: 'Learn more about us', url: `${formattedUrl}/about` },
+          { text: 'Contact', description: 'Get in touch', url: `${formattedUrl}/contact` },
+          { text: 'Support', description: 'Customer support', url: `${formattedUrl}/support` }
+        ];
+      } else if (extType === 'call') {
+        extension.phone = '(555) 123-4567';
+        extension.callTrackingEnabled = true;
+      } else if (extType === 'snippet') {
+        extension.header = 'Services';
+        extension.values = currentGroup?.keywords.slice(0, 4) || [mainKeyword, 'Expert Service', 'Quality Products', 'Fast Delivery'];
+      } else if (extType === 'price') {
+        extension.priceQualifier = 'From';
+        extension.price = '$99';
+        extension.currency = 'USD';
+        extension.unit = 'per service';
+        extension.description = 'Competitive pricing';
+      } else if (extType === 'location') {
+        extension.businessName = 'Your Business Name';
+        extension.addressLine1 = '123 Main St';
+        extension.city = 'City';
+        extension.state = 'State';
+        extension.postalCode = '12345';
+        extension.phone = '(555) 123-4567';
+      } else if (extType === 'message') {
+        extension.messageText = `Message us about ${mainKeyword}`;
+        extension.businessName = 'Your Business';
+        extension.phone = '(555) 123-4567';
+      } else if (extType === 'promotion') {
+        extension.promotionText = 'Special Offer';
+        extension.promotionDescription = `Get 20% off ${mainKeyword}`;
+        extension.occasion = 'SALE';
+        extension.startDate = new Date().toISOString().split('T')[0];
+        extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      }
+
+      newExtensions.push(extension);
+    });
+
+    const firstAd = generatedAds.find(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+    if (firstAd) {
+      const updatedAds = generatedAds.map(ad => {
+        if (ad.id === firstAd.id) {
+          return {
+            ...ad,
+            extensions: [...(ad.extensions || []), ...newExtensions]
+          };
+        }
+        return ad;
+      });
+      setGeneratedAds(updatedAds);
+    } else {
+      setGeneratedAds([...generatedAds, ...newExtensions]);
+    }
+
+    setShowExtensionDialog(false);
+    setSelectedExtensions([]);
+    
+    notifications.success(`Generated ${selectedExtensions.length} AI extensions`, {
+      title: 'Extensions Created',
+      description: 'Your AI-generated extensions have been added and will appear in ad previews.',
+    });
+  };
+
   const renderStep3 = () => {
     if (!structureType) {
       return (
@@ -1381,292 +1850,643 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       );
     }
 
-    // Create extension
-    const createExtension = (extensionType: string) => {
-      if (selectedKeywords.length === 0) {
-        notifications.warning('Please select keywords first', { title: 'Keywords Required' });
-        return;
+    const dynamicAdGroups = getDynamicAdGroups();
+    const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : [];
+    
+    // Filter ads for the selected ad group
+    const filteredAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
+      ? generatedAds.filter(ad => selectedAdIds.includes(ad.id))
+      : generatedAds.filter(ad => ad.adGroup === selectedAdGroup || !ad.adGroup);
+    
+    // Calculate total ads (excluding extensions for the counter)
+    const totalAds = filteredAds.filter(ad => !ad.extensionType).length;
+    const maxAds = 25; // Maximum ads allowed
+    
+    // Format display URL for ads
+    const formatDisplayUrl = (ad: any) => {
+      if (ad.finalUrl) {
+        const url = ad.finalUrl.replace(/^https?:\/\//, '').replace(/^www\./, '');
+        const path1 = ad.path1 ? `/${ad.path1}` : '';
+        const path2 = ad.path2 ? `/${ad.path2}` : '';
+        return `https://${url}${path1}${path2}`;
       }
-
-      const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
-      if (!hasRegularAds) {
-        notifications.info('Creating a default ad first, then adding your extension', {
-          title: 'Ad Required',
-          description: 'Extensions need to be attached to an ad.'
-        });
-        // Create a default ad
-        const defaultAd = {
-          id: Date.now(),
-          type: 'rsa',
-          headline1: `${selectedKeywords[0] || 'Your Service'} - Best Deals`,
-          headline2: 'Shop Now & Save',
-          headline3: 'Fast Delivery',
-          description1: `Looking for ${selectedKeywords[0] || 'your service'}? We offer competitive prices.`,
-          description2: 'Get started today!',
-          finalUrl: url
-        };
-        setGeneratedAds([defaultAd]);
-      }
-
-      const mainKeyword = selectedKeywords[0] || 'your service';
-      const extensionId = Date.now();
-      let extension: any = {
-        id: extensionId,
-        type: 'extension',
-        extensionType: extensionType,
-        finalUrl: url
-      };
-
-      // Generate extension content based on type
-      switch (extensionType) {
-        case 'snippet':
-          extension.header = 'Types';
-          extension.values = selectedKeywords.slice(0, 4).map(kw => kw.split(' ')[0]);
-          break;
-        case 'callout':
-          extension.values = [
-            `Free ${mainKeyword} Consultation`,
-            '24/7 Expert Support',
-            'Best Price Guarantee',
-            'Fast & Reliable Service'
-          ];
-          break;
-        case 'sitelink':
-          extension.links = [
-            { text: 'Shop Now', description: 'Browse our collection', url: url || 'www.example.com/shop' },
-            { text: 'About Us', description: 'Learn more about us', url: url || 'www.example.com/about' },
-            { text: 'Contact', description: 'Get in touch', url: url || 'www.example.com/contact' },
-            { text: 'Support', description: 'Customer support', url: url || 'www.example.com/support' }
-          ];
-          break;
-        case 'call':
-          extension.phone = '(555) 123-4567';
-          extension.callTrackingEnabled = false;
-          break;
-        case 'price':
-          extension.type = 'SERVICES';
-          extension.priceQualifier = 'From';
-          extension.price = '$99';
-          extension.currency = 'USD';
-          extension.unit = 'per service';
-          break;
-        case 'app':
-          extension.appStore = 'GOOGLE_PLAY';
-          extension.appId = 'com.example.app';
-          extension.appLinkText = 'Download Now';
-          break;
-        case 'location':
-          extension.businessName = 'Your Business Name';
-          extension.addressLine1 = '123 Main St';
-          extension.city = 'City';
-          extension.state = 'State';
-          extension.postalCode = '12345';
-          extension.country = 'United States';
-          extension.phone = '(555) 123-4567';
-          break;
-        case 'message':
-          extension.messageText = 'Message us for quick answers';
-          extension.businessName = 'Your Business';
-          extension.phone = '(555) 123-4567';
-          break;
-        case 'leadform':
-          extension.formName = 'Get Started';
-          extension.formDescription = 'Fill out this form to get in touch';
-          extension.formType = 'CONTACT';
-          break;
-        case 'promotion':
-          extension.promotionText = 'Special Offer';
-          extension.promotionDescription = 'Get 20% off your first order';
-          extension.occasion = 'SALE';
-          extension.startDate = new Date().toISOString().split('T')[0];
-          extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          break;
-        case 'image':
-          extension.imageUrl = 'https://via.placeholder.com/1200x628';
-          extension.imageAltText = 'Product Image';
-          extension.imageName = 'Product Showcase';
-          break;
-      }
-
-      // Attach extension to first regular ad if exists, otherwise add as separate item
-      const regularAds = generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
-      if (regularAds.length > 0) {
-        // Attach to first ad
-        const updatedAds = generatedAds.map(ad => {
-          if (ad.id === regularAds[0].id) {
-            return {
-              ...ad,
-              extensions: [...(ad.extensions || []), extension]
-            };
-          }
-          return ad;
-        });
-        setGeneratedAds(updatedAds);
-      } else {
-        // Add as separate extension item
-        setGeneratedAds([...generatedAds, extension]);
-      }
-
-      notifications.success(`${extensionType.charAt(0).toUpperCase() + extensionType.slice(1)} extension added`, {
-        title: 'Extension Created'
-      });
+      return 'https://example.com';
     };
+    
+    // Format headline for display
+    const formatHeadline = (ad: any) => {
+      if (ad.type === 'rsa' || ad.type === 'dki') {
+        const headlines = [
+          ad.headline1,
+          ad.headline2,
+          ad.headline3,
+          ad.headline4,
+          ad.headline5
+        ].filter(Boolean);
+        return headlines.join(' | ');
+      } else if (ad.type === 'callonly') {
+        return ad.headline1 || 'Call Only Ad';
+      }
+      return ad.headline1 || 'Ad';
+    };
+    
+    // Format description for display
+    const formatDescription = (ad: any) => {
+      if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
+        const descs = [ad.description1, ad.description2].filter(Boolean);
+        return descs.join(' ');
+      }
+      return ad.description1 || '';
+    };
+    
+    // Check if we have regular ads
+    const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
 
     return (
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">Ads & Extensions</h2>
-          <p className="text-slate-600">Structure-optimized ad templates</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Panel - Extension Buttons */}
-          <div className="lg:col-span-1 space-y-4">
-            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">EXTENSIONS</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+      <>
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Panel */}
+            <div className="lg:col-span-1 space-y-4">
+              {/* Ad Group Selector */}
+              <div className="bg-slate-100 p-4 rounded-lg">
+                <Select value={selectedAdGroup} onValueChange={setSelectedAdGroup}>
+                  <SelectTrigger className="w-full bg-white border-slate-300">
+                    <SelectValue placeholder="Select ad group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem key={ALL_AD_GROUPS_VALUE} value={ALL_AD_GROUPS_VALUE}>
+                      ALL AD GROUPS
+                    </SelectItem>
+                    {adGroupList.map(group => (
+                      <SelectItem key={group} value={group}>{group}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedAdGroup !== ALL_AD_GROUPS_VALUE && dynamicAdGroups.length > 0 && (
+                  <div className="mt-2 text-xs text-slate-600">
+                    {dynamicAdGroups.find(g => g.name === selectedAdGroup)?.keywords.length || 0} keywords in this group
+                  </div>
+                )}
+              </div>
+              
+              {/* Info Card */}
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <p className="text-sm text-slate-600">
+                  You can preview different ad groups, however changing ads here will change all ad groups. 
+                  In the next section you can edit ads individually for each ad group.
+                </p>
+              </div>
+              
+              {/* Total Ads Counter */}
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-700">Total Ads:</span>
+                  <span className={`text-lg font-bold ${totalAds >= maxAds ? 'text-green-600' : 'text-indigo-600'}`}>
+                    {totalAds} / {maxAds}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Create Ad Buttons */}
+              <div className="space-y-3">
                 <Button 
-                  onClick={() => createExtension('snippet')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  onClick={() => createNewAd('rsa')}
+                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                 >
-                  <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
+                  <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
                 </Button>
                 <Button 
-                  onClick={() => createExtension('callout')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  onClick={() => createNewAd('dki')}
+                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                 >
-                  <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
+                  <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
                 </Button>
                 <Button 
-                  onClick={() => createExtension('sitelink')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  onClick={() => createNewAd('callonly')}
+                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                 >
-                  <Plus className="mr-2 w-5 h-5" /> SITELINK EXTENSION
+                  <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
                 </Button>
-                <Button 
-                  onClick={() => createExtension('call')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> CALL EXTENSION
-                </Button>
-                <Button 
-                  onClick={() => createExtension('price')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
-                </Button>
-                <Button 
-                  onClick={() => createExtension('app')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
-                </Button>
-                <Button 
-                  onClick={() => createExtension('location')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> LOCATION EXTENSION
-                </Button>
-                <Button 
-                  onClick={() => createExtension('message')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
-                </Button>
-                <Button 
-                  onClick={() => createExtension('leadform')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
-                </Button>
-                <Button 
-                  onClick={() => createExtension('promotion')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
-                </Button>
-                <Button 
-                  onClick={() => createExtension('image')} 
-                  disabled={selectedKeywords.length === 0} 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                >
-                  <Plus className="mr-2 w-5 h-5" /> IMAGE EXTENSION
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Panel - Ads with Extensions */}
-          <div className="lg:col-span-2">
-            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-              <CardHeader>
-                <CardTitle>Generated Ads</CardTitle>
-                <CardDescription>Ads optimized for {STRUCTURE_TYPES.find(s => s.id === structureType)?.name} structure</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {generatedAds.map((ad) => (
-                    <div key={ad.id} className="border border-slate-200 rounded-lg p-4">
-                      {ad.type === 'extension' ? (
-                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                
+                {/* Extension Buttons */}
+                <div className="pt-2 border-t border-slate-200">
+                  <p className="text-xs text-slate-500 mb-2 font-semibold">EXTENSIONS</p>
+                  <Button 
+                    onClick={() => createNewAd('snippet')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('callout')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('sitelink')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> SITELINK EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('call')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> CALL EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('price')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('app')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('location')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> LOCATION EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('message')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('leadform')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('promotion')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
+                  </Button>
+                  <Button 
+                    onClick={() => createNewAd('image')}
+                    disabled={selectedKeywords.length === 0}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Plus className="mr-2 w-5 h-5" /> IMAGE EXTENSION
+                  </Button>
+                </div>
+                
+                {/* AI Extension Generator */}
+                <div className="pt-2 border-t border-slate-200">
+                  <Button 
+                    onClick={handleGenerateAIExtensions}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    <Sparkles className="mr-2 w-5 h-5" /> GENERATE AI EXTENSIONS
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Right Panel - Ad Cards */}
+            <div className="lg:col-span-2 space-y-4">
+              {filteredAds.map((ad: any) => {
+                const headline = formatHeadline(ad);
+                const displayUrl = formatDisplayUrl(ad);
+                const description = formatDescription(ad);
+                
+                return (
+                  <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    {/* Badge - Top Left */}
+                    <div className="mb-3">
+                      <Badge className={
+                        ad.type === 'rsa' ? 'bg-blue-100 text-blue-700 border-0' :
+                        ad.type === 'dki' ? 'bg-purple-100 text-purple-700 border-0' :
+                        ad.type === 'callonly' ? 'bg-green-100 text-green-700 border-0' :
+                        'bg-slate-100 text-slate-700 border-0'
+                      }>
+                        {ad.type === 'rsa' ? 'RSA' : 
+                         ad.type === 'dki' ? 'DKI' : 
+                         ad.type === 'callonly' ? 'Call Only' : 
+                         ad.extensionType ? ad.extensionType.charAt(0).toUpperCase() + ad.extensionType.slice(1) : 'Ad'}
+                      </Badge>
+                    </div>
+                    
+                    {/* Ad Preview with Extensions */}
+                    <div className="mb-4">
+                      {ad.extensionType ? (
+                        // Show extension preview
+                        <div className="bg-slate-50 p-3 rounded border border-slate-200">
                           <Badge className="mb-2 bg-purple-100 text-purple-700">
-                            {ad.extensionType?.charAt(0).toUpperCase() + ad.extensionType?.slice(1)} Extension
+                            {ad.extensionType.charAt(0).toUpperCase() + ad.extensionType.slice(1)} Extension
                           </Badge>
-                          <LiveAdPreview ad={ad} />
-                        </div>
-                      ) : (
-                        <>
-                          <LiveAdPreview ad={ad} />
-                          {ad.extensions && ad.extensions.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-slate-200">
-                              <p className="text-xs text-slate-500 mb-2 font-semibold">EXTENSIONS</p>
-                              {ad.extensions.map((ext: any, idx: number) => (
-                                <div key={idx} className="bg-purple-50 p-3 rounded border border-purple-200 mb-2">
-                                  <Badge className="mb-2 bg-purple-100 text-purple-700">
-                                    {ext.extensionType?.charAt(0).toUpperCase() + ext.extensionType?.slice(1)} Extension
-                                  </Badge>
-                                  <LiveAdPreview ad={ext} />
+                          {ad.extensionType === 'callout' && ad.callouts && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {ad.callouts.map((c: string, idx: number) => (
+                                <span key={idx} className="text-xs text-slate-700 px-2 py-1 bg-white rounded border border-slate-200">
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {ad.extensionType === 'sitelink' && ad.sitelinks && (
+                            <div className="space-y-1">
+                              {ad.sitelinks.slice(0, 4).map((sl: any, idx: number) => (
+                                <div key={idx} className="text-xs">
+                                  <span className="text-blue-600 font-semibold">{sl.text}</span>
+                                  {sl.description && <span className="text-slate-600 ml-1">- {sl.description}</span>}
                                 </div>
                               ))}
                             </div>
                           )}
-                        </>
+                          {ad.extensionType === 'call' && ad.phone && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="w-4 h-4 text-green-600" />
+                              <span className="text-slate-700 font-semibold">{ad.phone}</span>
+                            </div>
+                          )}
+                          {ad.extensionType === 'snippet' && (
+                            <div className="text-sm">
+                              <span className="font-semibold text-slate-700">{ad.header}:</span>
+                              <span className="text-slate-600 ml-1">
+                                {Array.isArray(ad.values) ? ad.values.slice(0, 3).join(', ') : ''}
+                              </span>
+                            </div>
+                          )}
+                          {ad.extensionType === 'price' && (
+                            <div className="text-sm">
+                              <span className="font-semibold text-slate-700">
+                                {ad.priceQualifier} {ad.price} {ad.unit}
+                              </span>
+                              {ad.description && <span className="text-slate-600 ml-1">- {ad.description}</span>}
+                            </div>
+                          )}
+                          {ad.extensionType === 'location' && (
+                            <div className="text-sm">
+                              <div className="font-semibold text-slate-700">{ad.businessName}</div>
+                              <div className="text-slate-600 text-xs">
+                                {[ad.addressLine1, ad.city, ad.state].filter(Boolean).join(', ')}
+                              </div>
+                            </div>
+                          )}
+                          {ad.extensionType === 'message' && (
+                            <div className="text-sm">
+                              <div className="font-semibold text-slate-700">{ad.messageText}</div>
+                              <div className="text-slate-600 text-xs">{ad.businessName} • {ad.phone}</div>
+                            </div>
+                          )}
+                          {ad.extensionType === 'promotion' && (
+                            <div className="text-sm">
+                              <div className="font-semibold text-slate-700">{ad.promotionText}</div>
+                              <div className="text-slate-600 text-xs">{ad.promotionDescription}</div>
+                            </div>
+                          )}
+                          {ad.extensionType === 'image' && (
+                            <div className="text-sm">
+                              <div className="font-semibold text-slate-700">{ad.imageName}</div>
+                              <div className="text-slate-600 text-xs">{ad.imageAltText}</div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        // Show regular ad preview with LiveAdPreview component
+                        <LiveAdPreview ad={ad} />
                       )}
                     </div>
-                  ))}
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        onClick={() => handleEditAd(ad)}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                        size="sm"
+                      >
+                        <Edit3 className="w-4 h-4 mr-1" />
+                        EDIT
+                      </Button>
+                      <Button
+                        onClick={() => handleDuplicateAd(ad)}
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+                        size="sm"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-1" />
+                        DUPLICATE
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteAd(ad.id)}
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                        size="sm"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        DELETE
+                      </Button>
+                    </div>
+
+                    {/* Edit Form - shown when editing */}
+                    {editingAdId === ad.id && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+                        {(ad.type === 'rsa' || ad.type === 'dki') && (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                <Input
+                                  value={ad.headline1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter headline 1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Headline 2 *</Label>
+                                <Input
+                                  value={ad.headline2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter headline 2"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Headline 3</Label>
+                                <Input
+                                  value={ad.headline3 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline3', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter headline 3"
+                                />
+                              </div>
+                              {ad.type === 'rsa' && (
+                                <>
+                                  <div>
+                                    <Label className="text-xs font-semibold text-slate-700">Headline 4</Label>
+                                    <Input
+                                      value={ad.headline4 || ''}
+                                      onChange={(e) => updateAdField(ad.id, 'headline4', e.target.value)}
+                                      className="mt-1"
+                                      placeholder="Enter headline 4"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs font-semibold text-slate-700">Headline 5</Label>
+                                    <Input
+                                      value={ad.headline5 || ''}
+                                      onChange={(e) => updateAdField(ad.id, 'headline5', e.target.value)}
+                                      className="mt-1"
+                                      placeholder="Enter headline 5"
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                <Textarea
+                                  value={ad.description1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter description 1"
+                                  rows={2}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
+                                <Textarea
+                                  value={ad.description2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter description 2"
+                                  rows={2}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Final URL *</Label>
+                                <Input
+                                  value={ad.finalUrl || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'finalUrl', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="www.example.com"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Path 1</Label>
+                                <Input
+                                  value={ad.path1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'path1', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="path1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Path 2</Label>
+                                <Input
+                                  value={ad.path2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'path2', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="path2"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        
+                        {ad.type === 'callonly' && (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                <Input
+                                  value={ad.headline1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter headline 1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Headline 2</Label>
+                                <Input
+                                  value={ad.headline2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter headline 2"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                <Textarea
+                                  value={ad.description1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter description 1"
+                                  rows={2}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
+                                <Textarea
+                                  value={ad.description2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Enter description 2"
+                                  rows={2}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
+                                <Input
+                                  value={ad.phone || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'phone', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="(555) 123-4567"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Business Name *</Label>
+                                <Input
+                                  value={ad.businessName || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'businessName', e.target.value)}
+                                  className="mt-1"
+                                  placeholder="Your Business"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        
+                        <div className="flex gap-2 pt-2 border-t border-slate-300">
+                          <Button
+                            onClick={() => handleSaveAd(ad.id)}
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                            size="sm"
+                          >
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
+                          </Button>
+                          <Button
+                            onClick={handleCancelEdit}
+                            variant="outline"
+                            className="flex-1"
+                            size="sm"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {filteredAds.length === 0 && (
+                <div className="bg-white border border-dashed border-slate-300 rounded-lg p-12 text-center">
+                  <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                  <p className="text-slate-500 font-medium mb-2">No ads created for "{selectedAdGroup}"</p>
+                  <p className="text-sm text-slate-400">Click a button on the left to create your first ad for this ad group.</p>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
+          </div>
+          
+          {/* Navigation */}
+          <div className="flex justify-between mt-8">
+            <Button variant="ghost" onClick={() => setStep(2)}>
+              <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+              Back
+            </Button>
+            <Button 
+              size="lg" 
+              onClick={() => setStep(4)}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+            >
+              Next Step <ChevronRight className="ml-2 w-5 h-5" />
+            </Button>
           </div>
         </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between">
-          <Button variant="ghost" onClick={() => setStep(2)}>
-            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-            Back
-          </Button>
-          <Button
-            size="lg"
-            onClick={() => setStep(4)}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
-          >
-            Next: Geo Target <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+        
+        {/* Extension Selection Dialog */}
+        <Dialog open={showExtensionDialog} onOpenChange={setShowExtensionDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Select Extensions to Generate</DialogTitle>
+              <DialogDescription>
+                Choose which extensions you want AI to generate. These will be automatically created and attached to your ads.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+              {extensionTypes.map((ext) => (
+                <div
+                  key={ext.id}
+                  onClick={() => {
+                    setSelectedExtensions(prev =>
+                      prev.includes(ext.id)
+                        ? prev.filter(e => e !== ext.id)
+                        : [...prev, ext.id]
+                    );
+                  }}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedExtensions.includes(ext.id)
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-slate-200 hover:border-indigo-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={selectedExtensions.includes(ext.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedExtensions([...selectedExtensions, ext.id]);
+                        } else {
+                          setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
+                        }
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-slate-800">{ext.label}</div>
+                      <div className="text-sm text-slate-600 mt-1">{ext.description}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setShowExtensionDialog(false);
+                setSelectedExtensions([]);
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmAIExtensions} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+                Generate {selectedExtensions.length > 0 ? `${selectedExtensions.length} ` : ''}Extensions
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   };
 
