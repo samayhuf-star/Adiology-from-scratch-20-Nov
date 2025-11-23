@@ -2033,8 +2033,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
     };
 
-    const dynamicAdGroups = getDynamicAdGroups();
-    
     const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
         // Check if this is an extension type
         const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
@@ -2051,7 +2049,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             
             // Create DKI ad directly (bypassing the extension check)
             // Get the current ad group context
-            const allGroups = dynamicAdGroups.length > 0 ? dynamicAdGroups : adGroups.map(name => ({ name, keywords: [] }));
+            const currentDynamicAdGroups = getDynamicAdGroups();
+            const allGroups = currentDynamicAdGroups.length > 0 ? currentDynamicAdGroups : adGroups.map(name => ({ name, keywords: [] }));
             if (allGroups.length === 0) {
                 notifications.warning('No ad groups available. Please create ad groups first by selecting keywords.', {
                     title: 'No Ad Groups',
@@ -2156,7 +2155,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         
         // Handle "ALL AD GROUPS" selection - create ad for each ad group
         if (selectedAdGroup === ALL_AD_GROUPS_VALUE) {
-            const allGroups = dynamicAdGroups.length > 0 ? dynamicAdGroups : adGroups.map(name => ({ name, keywords: [] }));
+            const currentDynamicAdGroups = getDynamicAdGroups();
+            const allGroups = currentDynamicAdGroups.length > 0 ? currentDynamicAdGroups : adGroups.map(name => ({ name, keywords: [] }));
             
             if (allGroups.length === 0) {
                 notifications.warning('No ad groups available. Please create ad groups first by selecting keywords.', {
@@ -2357,7 +2357,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             return;
         }
         
-        const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
+        const currentDynamicAdGroups = getDynamicAdGroups();
+        const currentGroup = currentDynamicAdGroups.find(g => g.name === selectedAdGroup) || currentDynamicAdGroups[0];
         const mainKeyword = currentGroup?.keywords[0] || 'your service';
         
         let newAd: any = {
@@ -2540,6 +2541,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const adGroups = ['Refrigerators', 'Ovens', 'Microwaves'];
     
     const renderStep3 = () => {
+        const dynamicAdGroups = getDynamicAdGroups();
         const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
         
         // Filter ads for the selected ad group
