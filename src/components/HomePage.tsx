@@ -482,9 +482,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                   <div>
                     <div className="flex items-center gap-4 mb-6">
-                      <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${detailedFeatures[activeFeature].color} flex items-center justify-center shadow-lg`}>
-                        <detailedFeatures[activeFeature].icon className="w-8 h-8 text-white" />
-                      </div>
+                      {(() => {
+                        const FeatureIcon = detailedFeatures[activeFeature].icon;
+                        return (
+                          <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${detailedFeatures[activeFeature].color} flex items-center justify-center shadow-lg`}>
+                            <FeatureIcon className="w-8 h-8 text-white" />
+                          </div>
+                        );
+                      })()}
                       <div>
                         <h3 className="text-2xl font-bold text-slate-800">{detailedFeatures[activeFeature].title}</h3>
                         <p className="text-indigo-600 font-semibold">{detailedFeatures[activeFeature].stats}</p>
