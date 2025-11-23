@@ -81,7 +81,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   
   // Step 2: Keywords
   const [seedKeywords, setSeedKeywords] = useState('');
-  const [negativeKeywords, setNegativeKeywords] = useState('');
+  // Default negative keywords (comma-separated)
+  const DEFAULT_NEGATIVE_KEYWORDS = 'cheap, discount, reviews, job, headquater, apply, free, best, company, information, when, why, where, how, career, hiring, scam, feedback';
+  const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
   const [generatedKeywords, setGeneratedKeywords] = useState<any[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
@@ -129,6 +131,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       setCampaignName(initialData.campaignName || generateDefaultCampaignName());
       setStructureType(initialData.structureType || null);
       setUrl(initialData.url || 'https://example.com');
+      setNegativeKeywords(initialData.negativeKeywords || DEFAULT_NEGATIVE_KEYWORDS);
       setSelectedKeywords(initialData.selectedKeywords || []);
       setGeneratedAds(initialData.generatedAds || []);
     }
@@ -334,6 +337,23 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             rows={6}
             className="font-mono text-sm"
           />
+          
+          {/* Negative Keywords Input */}
+          <div className="mt-4">
+            <Label className="text-sm font-semibold text-slate-700 mb-2 block">
+              Negative Keywords (comma-separated)
+            </Label>
+            <Input
+              value={negativeKeywords}
+              onChange={(e) => setNegativeKeywords(e.target.value)}
+              placeholder="cheap, discount, reviews, job, free..."
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Keywords containing these terms will be excluded from generation. Separate with commas.
+            </p>
+          </div>
+          
           <div className="mt-4">
             <Button
               onClick={async () => {
@@ -357,52 +377,153 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 try {
                   let keywords: any[] = [];
 
+                  // Parse negative keywords (comma or newline separated)
+                  const negativeList = negativeKeywords
+                    .split(/[,\n]/)
+                    .map(n => n.trim().toLowerCase())
+                    .filter(Boolean);
+                  
                   // Always try fallback first due to CORS issues
-                  // Generate enhanced mock keywords based on seed keywords
+                  // Generate enhanced mock keywords based on seed keywords (300-600 keywords)
                   const seedList = seedKeywords.split('\n').filter(k => k.trim());
                   const mockKeywords: any[] = [];
                   
+                  // Expanded variation lists for generating 300-600 keywords
+                  const prefixes = [
+                    'best', 'top', 'affordable', 'cheap', 'quality', 'professional', 'reliable', 
+                    'trusted', 'local', 'nearby', 'online', 'fast', 'quick', 'easy', 'simple',
+                    'affordable', 'premium', 'expert', 'certified', 'licensed', 'experienced',
+                    'affordable', 'budget', 'discount', 'deal', 'sale', 'special', 'limited'
+                  ];
+                  
+                  const suffixes = [
+                    'near me', 'online', 'service', 'company', 'provider', 'expert', 'specialist',
+                    'professional', 'guide', 'tips', 'help', 'support', 'assistance', 'advice',
+                    'information', 'details', 'pricing', 'cost', 'price', 'rates', 'quotes',
+                    'reviews', 'ratings', 'testimonials', 'comparison', 'vs', 'alternatives',
+                    'options', 'solutions', 'how to', 'what is', 'where to', 'when to', 'why'
+                  ];
+                  
+                  const intents = [
+                    'buy', 'get', 'find', 'search', 'look for', 'need', 'want', 'looking for',
+                    'hire', 'book', 'schedule', 'order', 'purchase', 'call', 'contact', 'reach'
+                  ];
+                  
+                  const locations = [
+                    'near me', 'local', 'nearby', 'in my area', 'close to me', 'nearby me',
+                    'in city', 'in town', 'in state', 'in region', 'in area', 'in location'
+                  ];
+                  
                   seedList.forEach((seed, seedIdx) => {
                     const cleanSeed = seed.trim().toLowerCase();
+                    let keywordCounter = 0;
                     
-                    // Add the seed keyword itself
-                    mockKeywords.push({
-                      id: `kw-${seedIdx}-0`,
-                      text: seed.trim(),
-                      volume: 'High',
-                      cpc: '$2.50',
-                      type: 'Seed'
+                    // Add the seed keyword itself (if not in negatives)
+                    if (!negativeList.some(n => cleanSeed.includes(n))) {
+                      mockKeywords.push({
+                        id: `kw-${seedIdx}-${keywordCounter++}`,
+                        text: seed.trim(),
+                        volume: 'High',
+                        cpc: '$2.50',
+                        type: 'Seed'
+                      });
+                    }
+                    
+                    // Generate prefix + seed combinations (~50)
+                    prefixes.forEach((prefix, pIdx) => {
+                      const keyword = `${prefix} ${cleanSeed}`;
+                      if (!negativeList.some(n => keyword.includes(n))) {
+                        mockKeywords.push({
+                          id: `kw-${seedIdx}-${keywordCounter++}`,
+                          text: keyword,
+                          volume: ['High', 'Medium', 'Low'][pIdx % 3],
+                          cpc: ['$2.50', '$1.80', '$1.20'][pIdx % 3],
+                          type: ['Exact', 'Phrase', 'Broad'][pIdx % 3]
+                        });
+                      }
                     });
                     
-                    // Generate variations
-                    const variations = [
-                      `best ${cleanSeed}`,
-                      `${cleanSeed} near me`,
-                      `cheap ${cleanSeed}`,
-                      `affordable ${cleanSeed}`,
-                      `${cleanSeed} online`,
-                      `buy ${cleanSeed}`,
-                      `${cleanSeed} price`,
-                      `${cleanSeed} cost`,
-                      `how to ${cleanSeed}`,
-                      `${cleanSeed} guide`,
-                      `${cleanSeed} review`,
-                      `top ${cleanSeed}`,
-                      `${cleanSeed} comparison`,
-                      `${cleanSeed} vs`,
-                      `free ${cleanSeed}`,
-                    ];
+                    // Generate seed + suffix combinations (~50)
+                    suffixes.forEach((suffix, sIdx) => {
+                      const keyword = `${cleanSeed} ${suffix}`;
+                      if (!negativeList.some(n => keyword.includes(n))) {
+                        mockKeywords.push({
+                          id: `kw-${seedIdx}-${keywordCounter++}`,
+                          text: keyword,
+                          volume: ['High', 'Medium', 'Low'][sIdx % 3],
+                          cpc: ['$2.50', '$1.80', '$1.20'][sIdx % 3],
+                          type: ['Exact', 'Phrase', 'Broad'][sIdx % 3]
+                        });
+                      }
+                    });
                     
-                    variations.forEach((variation, varIdx) => {
-                      mockKeywords.push({
-                        id: `kw-${seedIdx}-${varIdx + 1}`,
-                        text: variation,
-                        volume: ['High', 'Medium', 'Low'][varIdx % 3],
-                        cpc: ['$2.50', '$1.80', '$1.20'][varIdx % 3],
-                        type: ['Exact', 'Phrase', 'Broad'][varIdx % 3]
-                      });
+                    // Generate intent + seed combinations (~20)
+                    intents.forEach((intent, iIdx) => {
+                      const keyword = `${intent} ${cleanSeed}`;
+                      if (!negativeList.some(n => keyword.includes(n))) {
+                        mockKeywords.push({
+                          id: `kw-${seedIdx}-${keywordCounter++}`,
+                          text: keyword,
+                          volume: 'High',
+                          cpc: '$3.50',
+                          type: 'Exact'
+                        });
+                      }
+                    });
+                    
+                    // Generate prefix + seed + suffix combinations (~100)
+                    for (let i = 0; i < 100; i++) {
+                      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+                      const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+                      const keyword = `${prefix} ${cleanSeed} ${suffix}`;
+                      if (!negativeList.some(n => keyword.includes(n))) {
+                        mockKeywords.push({
+                          id: `kw-${seedIdx}-${keywordCounter++}`,
+                          text: keyword,
+                          volume: ['High', 'Medium', 'Low'][i % 3],
+                          cpc: ['$2.50', '$1.80', '$1.20'][i % 3],
+                          type: ['Exact', 'Phrase', 'Broad'][i % 3]
+                        });
+                      }
+                    }
+                    
+                    // Generate seed + location combinations (~30)
+                    locations.forEach((loc, lIdx) => {
+                      const keyword = `${cleanSeed} ${loc}`;
+                      if (!negativeList.some(n => keyword.includes(n))) {
+                        mockKeywords.push({
+                          id: `kw-${seedIdx}-${keywordCounter++}`,
+                          text: keyword,
+                          volume: 'Medium',
+                          cpc: '$4.20',
+                          type: 'Local'
+                        });
+                      }
                     });
                   });
+                  
+                  // Ensure we have 300-600 keywords
+                  if (mockKeywords.length < 300) {
+                    const needed = 300 - mockKeywords.length;
+                    for (let i = 0; i < needed; i++) {
+                      const base = mockKeywords[i % mockKeywords.length];
+                      const variation = `${base.text} ${i}`;
+                      if (!negativeList.some(n => variation.includes(n))) {
+                        mockKeywords.push({
+                          id: `kw-extra-${i}`,
+                          text: variation,
+                          volume: base.volume,
+                          cpc: base.cpc,
+                          type: base.type
+                        });
+                      }
+                    }
+                  }
+                  
+                  // Limit to 600 max
+                  if (mockKeywords.length > 600) {
+                    mockKeywords.splice(600);
+                  }
                   
                   // Try API call, but don't fail if it doesn't work
                   if (projectId) {
@@ -410,12 +531,18 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       console.log("Attempting AI keyword generation...");
                       const data = await api.post('/generate-keywords', {
                         seeds: seedKeywords,
-                        negatives: negativeKeywords
+                        negatives: negativeKeywords,
+                        count: 500 // Request 300-600 keywords
                       });
 
                       if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
                         console.log("AI generation successful:", data.keywords.length, "keywords");
-                        keywords = data.keywords;
+                        // Filter out keywords containing negative keywords
+                        const filteredKeywords = data.keywords.filter((k: any) => {
+                          const keywordText = (k.text || k.id || '').toLowerCase();
+                          return !negativeList.some(neg => keywordText.includes(neg));
+                        });
+                        keywords = filteredKeywords.length > 0 ? filteredKeywords : mockKeywords;
                       } else {
                         console.log("No keywords from API, using mock generation");
                         keywords = mockKeywords;
@@ -431,7 +558,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     keywords = mockKeywords;
                   }
 
-                  setGeneratedKeywords(keywords);
+                  // Final filter: Remove any keywords containing negative keywords
+                  const finalKeywords = keywords.filter((k: any) => {
+                    const keywordText = (k.text || k.id || '').toLowerCase();
+                    return !negativeList.some(neg => keywordText.includes(neg));
+                  });
+
+                  setGeneratedKeywords(finalKeywords);
                   
                   // Extract keyword texts for structure-specific grouping
                   const keywordTexts = keywords.map(k => k.text || k.id);
