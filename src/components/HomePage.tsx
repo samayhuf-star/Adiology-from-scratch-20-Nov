@@ -3,7 +3,7 @@ import {
   ArrowRight, Check, Zap, TrendingUp, Shield, Sparkles, 
   BarChart3, Target, Rocket, Users, Globe, Lock, 
   FileText, Search, Layers, Megaphone, Award, Star,
-  ChevronRight, Play, Sparkle, Settings, Clock, CheckCircle2,
+  ChevronRight, Sparkle, Settings, Clock, CheckCircle2,
   ArrowDown, Brain, LineChart, ShieldCheck, Globe2, Download,
   Mail, Phone, MapPin, Twitter, Linkedin, Github, Facebook,
   Menu, X, Eye, Code, Database, Cpu, Wand2, FileCheck,
