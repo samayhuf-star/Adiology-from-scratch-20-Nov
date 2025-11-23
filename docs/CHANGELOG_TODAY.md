@@ -245,7 +245,7 @@ Today's session included major improvements to the Campaign Builder, project str
 
 ### GitHub Push
 - ✅ Successfully pushed to `main` branch
-- **Remote**: `https://github.com/samayhuf-star/emailboxing.git`
+- **Remote**: `https://github.com/samayhuf-star/Adiology-from-scratch-20-Nov.git`
 - **Status**: All changes committed and pushed
 
 ### Vercel Deployment
