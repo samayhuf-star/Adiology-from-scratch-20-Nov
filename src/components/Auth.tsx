@@ -21,6 +21,9 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Disable signup - only allow login
+  const SIGNUP_DISABLED = true;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,16 +36,10 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
       const trimmedPassword = password.trim();
 
       if (isLogin) {
-        // Login logic
-        // Super admin credentials
+        // Login logic - Super admin should use /superadmin route
         if (trimmedEmail === 'sam@sam.com' && trimmedPassword === 'sam@sam.com') {
-          localStorage.setItem('auth_user', JSON.stringify({ 
-            email: trimmedEmail, 
-            role: 'superadmin',
-            name: 'Super Admin'
-          }));
+          setError('Super admin access is available at /superadmin');
           setIsLoading(false);
-          onLoginSuccess();
           return;
         }
 
@@ -59,6 +56,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
             name: user.name
           }));
           setIsLoading(false);
+          // Directly go to dashboard - no admin/user selection
           onLoginSuccess();
         } else {
           setError('Invalid email or password. Please try again.');
@@ -148,12 +146,14 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               <p className="text-xs text-slate-500 -mt-0.5">~ Samay</p>
             </div>
             <CardTitle className="text-xl font-bold text-center text-slate-900">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
+              {isLogin ? 'Welcome Back' : SIGNUP_DISABLED ? 'Sign Up Disabled' : 'Create Account'}
             </CardTitle>
             <CardDescription className="text-center text-slate-600">
               {isLogin 
                 ? 'Sign in to your Adiology account' 
-                : 'Start building winning campaigns today'}
+                : SIGNUP_DISABLED 
+                  ? 'New signups are currently disabled until production launch'
+                  : 'Start building winning campaigns today'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -165,7 +165,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 </Alert>
               )}
 
-              {!isLogin && (
+              {!isLogin && !SIGNUP_DISABLED && (
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-slate-900 font-semibold">Full Name</Label>
                   <div className="relative">
@@ -178,6 +178,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                       onChange={(e) => setName(e.target.value)}
                       className="pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                       required={!isLogin}
+                      disabled={SIGNUP_DISABLED}
                     />
                   </div>
                 </div>
@@ -222,7 +223,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 </div>
               </div>
 
-              {!isLogin && (
+              {!isLogin && !SIGNUP_DISABLED && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword" className="text-slate-900 font-semibold">Confirm Password</Label>
                   <div className="relative">
@@ -235,6 +236,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                       required={!isLogin}
+                      disabled={SIGNUP_DISABLED}
                     />
                     <button
                       type="button"
@@ -262,7 +264,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 h-11"
-                disabled={isLoading}
+                disabled={isLoading || (!isLogin && SIGNUP_DISABLED)}
               >
                 {isLoading ? (
                   <span className="flex items-center">
@@ -273,41 +275,47 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                     {isLogin ? 'Signing in...' : 'Creating account...'}
                   </span>
                 ) : (
-                  isLogin ? 'Sign In' : 'Create Account'
+                  isLogin ? 'Sign In' : (SIGNUP_DISABLED ? 'Sign Up Disabled' : 'Create Account')
                 )}
               </Button>
 
-              <div className="text-center text-sm text-slate-700">
-                {isLogin ? (
-                  <>
-                    Don't have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLogin(false);
-                        setError('');
-                      }}
-                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      Sign up
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLogin(true);
-                        setError('');
-                      }}
-                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      Sign in
-                    </button>
-                  </>
-                )}
-              </div>
+              {SIGNUP_DISABLED ? (
+                <div className="text-center text-sm text-slate-500 italic">
+                  Sign up is currently disabled. Please contact support for access.
+                </div>
+              ) : (
+                <div className="text-center text-sm text-slate-700">
+                  {isLogin ? (
+                    <>
+                      Don't have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLogin(false);
+                          setError('');
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      >
+                        Sign up
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLogin(true);
+                          setError('');
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </form>
 
           </CardContent>

@@ -33,9 +33,17 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
       );
 
       if (isValidAdmin) {
+        // Save super admin auth
+        localStorage.setItem('auth_user', JSON.stringify({ 
+          email: trimmedEmail, 
+          role: 'superadmin',
+          name: 'Super Admin'
+        }));
+        // Update URL to /superadmin
+        window.history.pushState({}, '', '/superadmin');
         onLoginSuccess();
       } else {
-        setError('Invalid credentials. Please try again.');
+        setError('Invalid credentials. Only superadmin can access this portal.');
       }
       setIsLoading(false);
     }, 1000);

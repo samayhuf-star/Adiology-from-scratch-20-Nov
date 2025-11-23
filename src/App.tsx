@@ -117,13 +117,37 @@ const App = () => {
     }
   }, []);
 
-  // Check authentication on mount
+  // Check URL path and authentication on mount
   useEffect(() => {
+    const path = window.location.pathname;
+    
+    // Check if user is accessing /superadmin route
+    if (path === '/superadmin' || path.startsWith('/superadmin/')) {
+      const authUser = localStorage.getItem('auth_user');
+      if (authUser) {
+        try {
+          const user = JSON.parse(authUser);
+          if (user.role === 'superadmin') {
+            setAppView('admin-landing');
+            return;
+          }
+        } catch (e) {
+          // Invalid auth data
+        }
+      }
+      // Not authenticated or not superadmin, show login
+      setAppView('admin-login');
+      return;
+    }
+
+    // Regular routes
     const authUser = localStorage.getItem('auth_user');
     if (authUser) {
       try {
         const user = JSON.parse(authUser);
         if (user.role === 'superadmin') {
+          // Super admin accessing regular routes, redirect to superadmin
+          window.history.pushState({}, '', '/superadmin');
           setAppView('admin-landing');
         } else {
           setAppView('user');
@@ -137,17 +161,46 @@ const App = () => {
     }
   }, []);
 
-  // Check for super admin access key (Ctrl/Cmd + Shift + A)
+  // Handle browser back/forward navigation
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
-        e.preventDefault();
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/superadmin' || path.startsWith('/superadmin/')) {
+        const authUser = localStorage.getItem('auth_user');
+        if (authUser) {
+          try {
+            const user = JSON.parse(authUser);
+            if (user.role === 'superadmin') {
+              setAppView('admin-landing');
+              return;
+            }
+          } catch (e) {
+            // Invalid auth data
+          }
+        }
         setAppView('admin-login');
+      } else {
+        const authUser = localStorage.getItem('auth_user');
+        if (authUser) {
+          try {
+            const user = JSON.parse(authUser);
+            if (user.role === 'superadmin') {
+              window.history.pushState({}, '', '/superadmin');
+              setAppView('admin-landing');
+            } else {
+              setAppView('user');
+            }
+          } catch (e) {
+            setAppView('home');
+          }
+        } else {
+          setAppView('home');
+        }
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Render based on app view
@@ -164,17 +217,8 @@ const App = () => {
     return (
       <Auth
         onLoginSuccess={() => {
-          const authUser = localStorage.getItem('auth_user');
-          if (authUser) {
-            const user = JSON.parse(authUser);
-            if (user.role === 'superadmin') {
-              setAppView('admin-landing');
-            } else {
-              setAppView('user');
-            }
-          } else {
-            setAppView('user');
-          }
+          // Directly go to dashboard - no admin/user selection
+          setAppView('user');
         }}
         onBackToHome={() => setAppView('home')}
       />
@@ -196,6 +240,7 @@ const App = () => {
         onSelectAdminPanel={() => setAppView('admin-panel')}
         onLogout={() => {
           localStorage.removeItem('auth_user');
+          window.history.pushState({}, '', '/');
           setAppView('home');
           setActiveTab('dashboard');
         }}
