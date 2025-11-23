@@ -26,6 +26,8 @@ import { api } from '../utils/api';
 import { historyService } from '../utils/historyService';
 import { KeywordPlanner } from './KeywordPlanner';
 import { KeywordPlannerSelectable } from './KeywordPlannerSelectable';
+import { LiveAdPreview } from './LiveAdPreview';
+import { CompactAdBuilder } from './CompactAdBuilder';
 
 // --- Constants & Mock Data ---
 
@@ -625,7 +627,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
     });
     const [enabledAdTypes, setEnabledAdTypes] = useState<string[]>(['rsa', 'dki', 'call']);
-    const [selectedAdGroup, setSelectedAdGroup] = useState('Refrigerators');
+    const ALL_AD_GROUPS_VALUE = 'ALL_AD_GROUPS';
+    const [selectedAdGroup, setSelectedAdGroup] = useState(ALL_AD_GROUPS_VALUE);
+    const [selectedAdIds, setSelectedAdIds] = useState<number[]>([]); // Track selected ads for ALL AD GROUPS mode
+    const [activeBuilderTab, setActiveBuilderTab] = useState<'builder' | 'history'>('builder');
+    const [selectedPreviewAdId, setSelectedPreviewAdId] = useState<number | null>(null);
     const [generatedAds, setGeneratedAds] = useState<any[]>([
         {
             id: 1,
@@ -712,13 +718,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
     }, [initialData]);
 
-    // Auto-select first ad group when keywords change
-    useEffect(() => {
-        const groups = getDynamicAdGroups();
-        if (selectedKeywords.length > 0 && groups.length > 0) {
-            setSelectedAdGroup(groups[0].name);
-        }
-    }, [selectedKeywords.length, structure]);
+    // Keep ALL AD GROUPS selected by default, don't auto-switch
+    // useEffect removed - we want to stay on ALL AD GROUPS by default
 
     const saveToHistory = async () => {
         // Use date/time as default name if campaign name is empty
@@ -1128,9 +1129,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             const groupAds = generatedAds.filter(ad => ad.adGroup === group.name && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
             
             // Export Keywords as separate rows
-            group.keywords.forEach(keyword => {
-                const matchType = getMatchType(keyword);
-                const keywordText = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
+                group.keywords.forEach(keyword => {
+                    const matchType = getMatchType(keyword);
+                    const keywordText = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
                 
                 const keywordRow: string[] = [
                     escapeCSV(campaignNameValue),  // 1. Campaign
@@ -2132,19 +2133,88 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
 
         setGeneratedAds([...generatedAds, newAd]);
+        
+        // If ALL AD GROUPS is selected and we haven't reached max 3 ads, and this is an ad (not extension), add to selected ads
+        if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3 && (type === 'rsa' || type === 'dki' || type === 'callonly')) {
+            setSelectedAdIds([...selectedAdIds, newAd.id]);
+        }
     };
     
     const adGroups = ['Refrigerators', 'Ovens', 'Microwaves'];
     
+    const [activeBuilderTab, setActiveBuilderTab] = useState<'builder' | 'history'>('builder');
+    const [selectedPreviewAdId, setSelectedPreviewAdId] = useState<number | null>(null);
+    
     const renderStep3 = () => {
         // Filter ads based on selection
+        // When ALL AD GROUPS is selected, show only selected ads (max 3)
+        // Only show actual ads (rsa, dki, callonly), not extensions
+        const baseAds = generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+        const extensions = generatedAds.filter(ad => ad.extensionType);
+        
         const currentGroupAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
-            ? generatedAds // Show all ads when "ALL AD GROUPS" is selected
-            : generatedAds.filter(ad => ad.adGroup === selectedAdGroup);
+            ? baseAds.filter(ad => selectedAdIds.includes(ad.id)) // Show only selected ads
+            : baseAds.filter(ad => ad.adGroup === selectedAdGroup);
+        
+        // Attach extensions to their corresponding ads
+        const adsWithExtensions = currentGroupAds.map(ad => {
+            // Find extensions that belong to this ad's group, or if ALL AD GROUPS mode, attach to all selected ads
+            const adExtensions = extensions.filter(ext => {
+                if (selectedAdGroup === ALL_AD_GROUPS_VALUE) {
+                    // In ALL AD GROUPS mode, extensions apply to all selected ads
+                    return selectedAdIds.includes(ad.id);
+                } else {
+                    // In specific group mode, extensions apply to ads in that group
+                    return ext.adGroup === ad.adGroup || !ext.adGroup;
+                }
+            });
+            return { ...ad, extensions: adExtensions };
+        });
         const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
+        const extensionsList = generatedAds.filter(ad => ad.extensionType);
+        
+        // Use compact builder for better UX
+        const useCompactBuilder = true;
+        
+        if (useCompactBuilder) {
+            return (
+                <div className="w-full h-full p-4">
+                    <CompactAdBuilder
+                        selectedKeywords={selectedKeywords}
+                        selectedAdGroup={selectedAdGroup}
+                        onAdGroupChange={setSelectedAdGroup}
+                        adGroups={adGroupList}
+                        generatedAds={generatedAds}
+                        extensions={extensionsList}
+                        onCreateAd={createNewAd}
+                        onUpdateAd={updateAdField}
+                        onDeleteAd={handleDeleteAd}
+                        onDuplicateAd={handleDuplicateAd}
+                        selectedAdIds={selectedAdIds}
+                        ALL_AD_GROUPS_VALUE={ALL_AD_GROUPS_VALUE}
+                    />
+                    {/* Navigation */}
+                    <div className="flex justify-between mt-6">
+                        <Button variant="ghost" onClick={() => setStep(2)}>
+                            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+                            Back
+                        </Button>
+                        <Button 
+                            size="lg" 
+                            onClick={handleNextStep}
+                            disabled={generatedAds.length === 0}
+                            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg disabled:opacity-50"
+                        >
+                            Continue to Geo Targeting
+                            <ArrowRight className="ml-2 w-5 h-5" />
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
         
         return (
-        <div className="max-w-7xl mx-auto p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-[1920px] mx-auto p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Campaign Info Panel */}
             {selectedKeywords.length > 0 && (
                 <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6">
@@ -2218,11 +2288,16 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     {/* Help Text */}
                     <div className="bg-white rounded-lg p-4 border border-slate-200">
                         <p className="text-sm text-slate-600">
-                            {selectedAdGroup === ALL_AD_GROUPS_VALUE ? (
-                                <>
-                                    <strong>ALL AD GROUPS selected:</strong> Ads created here will be added to all ad groups. You can view and manage all ads from all groups in this view.
-                                </>
-                            ) : (
+                        {selectedAdGroup === ALL_AD_GROUPS_VALUE ? (
+                            <>
+                                <strong>ALL AD GROUPS selected:</strong> Ads created here will be added to all ad groups. You can select up to 3 ads (shown on the right). Each ad will be applied to all ad groups.
+                                {selectedAdIds.length > 0 && (
+                                    <span className="block mt-2 text-xs">
+                                        Currently showing {selectedAdIds.length} of {selectedAdIds.length >= 3 ? '3 (max)' : '3'} selected ads
+                                    </span>
+                                )}
+                            </>
+                        ) : (
                                 <>
                             You can preview different ad groups, however changing ads here will change all ad groups. 
                             In the next section you can edit ads individually for each ad group.
@@ -2235,6 +2310,23 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     <div className="space-y-3">
                         {/* Total Ads Counter */}
                         <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            {selectedAdGroup === ALL_AD_GROUPS_VALUE ? (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-slate-700">Selected Ads:</span>
+                                        <span className={`text-lg font-bold ${selectedAdIds.length >= 3 ? 'text-green-600' : 'text-indigo-600'}`}>
+                                            {selectedAdIds.length} / 3
+                                        </span>
+                                    </div>
+                                    {selectedAdIds.length >= 3 && (
+                                        <p className="text-xs text-slate-600 mt-1">Maximum 3 ads for all ad groups. Remove an ad to add another.</p>
+                                    )}
+                                    {selectedAdIds.length < 3 && (
+                                        <p className="text-xs text-slate-600 mt-1">Create ads below. They will appear in all ad groups.</p>
+                                    )}
+                                </>
+                            ) : (
+                                <>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-semibold text-slate-700">Total Ads:</span>
                                 <span className={`text-lg font-bold ${generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25 ? 'text-red-600' : 'text-indigo-600'}`}>
@@ -2243,26 +2335,37 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             </div>
                             {generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25 && (
                                 <p className="text-xs text-red-600 mt-1">Maximum limit reached. Delete ads to create new ones.</p>
+                                    )}
+                                </>
                             )}
                         </div>
                         
                         <Button 
                             onClick={() => createNewAd('rsa')}
-                            disabled={selectedKeywords.length === 0 || generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25}
+                            disabled={
+                                selectedKeywords.length === 0 || 
+                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25)
+                            }
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
                         </Button>
                         <Button 
                             onClick={() => createNewAd('dki')}
-                            disabled={selectedKeywords.length === 0 || generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25}
+                            disabled={
+                                selectedKeywords.length === 0 || 
+                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25)
+                            }
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
                         </Button>
                         <Button 
                             onClick={() => createNewAd('callonly')}
-                            disabled={selectedKeywords.length === 0 || generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25}
+                            disabled={
+                                selectedKeywords.length === 0 || 
+                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25)
+                            }
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
@@ -2270,28 +2373,28 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         <Button 
                             onClick={() => createNewAd('snippet')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6"
+                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
                         >
                             <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('callout')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6"
+                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
                         >
                             <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('leadform')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6"
+                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
                         >
                             <FormIcon className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('promotion')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6"
+                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
                         >
                             <Tag className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
                         </Button>
@@ -2303,49 +2406,49 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         <Button 
                             onClick={() => createNewAd('call')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
                         >
                             <Phone className="mr-2 w-5 h-5" /> CALL EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('sitelink')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
                         >
                             <Link2 className="mr-2 w-5 h-5" /> SITELINK EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('price')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
                         >
                             <DollarSign className="mr-2 w-5 h-5" /> PRICE EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('app')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
                         >
                             <Smartphone className="mr-2 w-5 h-5" /> APP EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('location')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
                         >
                             <MapPin className="mr-2 w-5 h-5" /> LOCATION EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('message')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
                         >
                             <MessageSquare className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
                         </Button>
                         <Button 
                             onClick={() => createNewAd('image')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-teal-600 hover:bg-teal-700 text-white justify-start py-6"
+                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
                         >
                             <ImageIcon className="mr-2 w-5 h-5" /> IMAGE EXTENSION
                         </Button>
@@ -2354,7 +2457,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 
                 {/* Right Panel - Ad Cards */}
                 <div className="lg:col-span-2 space-y-4">
-                    {currentGroupAds.map(ad => (
+                    {adsWithExtensions.map((ad: any) => {
+                        const adExtensions = ad.extensions || [];
+                        return (
                         <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow">
                             {/* Ad Group Badge (shown when ALL AD GROUPS is selected) */}
                             {selectedAdGroup === ALL_AD_GROUPS_VALUE && ad.adGroup && (
@@ -3168,6 +3273,50 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         {ad.description2}
                                     </div>
                                             )}
+                                    
+                                    {/* Show extensions integrated into the ad preview */}
+                                    {adExtensions && adExtensions.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-slate-200 space-y-2">
+                                            {adExtensions.map((ext: any, idx: number) => (
+                                                <div key={idx}>
+                                                    {ext.extensionType === 'callout' && Array.isArray(ext.callouts) && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {ext.callouts.map((callout: string, cIdx: number) => (
+                                                                <Badge key={cIdx} variant="outline" className="bg-slate-50 text-slate-700 text-xs border-slate-300">
+                                                                    {callout}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {ext.extensionType === 'snippet' && (
+                                                        <div className="text-xs text-slate-600 mt-2">
+                                                            <span className="font-semibold">{ext.header}:</span> {Array.isArray(ext.values) ? ext.values.join(', ') : ''}
+                                                        </div>
+                                                    )}
+                                                    {ext.extensionType === 'sitelink' && Array.isArray(ext.sitelinks) && (
+                                                        <div className="space-y-1 mt-2">
+                                                            {ext.sitelinks.slice(0, 4).map((sitelink: any, sIdx: number) => (
+                                                                <div key={sIdx} className="text-xs text-blue-600 hover:underline">
+                                                                    {sitelink.text || 'Link'}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {ext.extensionType === 'call' && ext.phone && (
+                                                        <div className="text-xs text-slate-600 mt-2 flex items-center gap-1">
+                                                            <Phone className="w-3 h-3" />
+                                                            {ext.phone}
+                                                        </div>
+                                                    )}
+                                                    {ext.extensionType === 'price' && (
+                                                        <div className="text-xs text-slate-700 mt-2 font-semibold">
+                                                            {ext.priceQualifier && `${ext.priceQualifier} `}{ext.price || '$99'} {ext.unit || ''}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                    </div>
+                                            )}
                                 </div>
                             )}
 
@@ -3192,12 +3341,34 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     <div className="text-green-700 font-semibold text-sm">
                                         📞 {ad.phone} • {ad.businessName}
                                     </div>
+                                    
+                                    {/* Show extensions integrated into the call-only ad preview */}
+                                    {adExtensions && adExtensions.length > 0 && (
+                                        <div className="mt-4 pt-4 border-t border-slate-200 space-y-2">
+                                            {adExtensions.map((ext: any, idx: number) => (
+                                                <div key={idx}>
+                                                    {ext.extensionType === 'callout' && Array.isArray(ext.callouts) && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {ext.callouts.map((callout: string, cIdx: number) => (
+                                                                <Badge key={cIdx} variant="outline" className="bg-slate-50 text-slate-700 text-xs border-slate-300">
+                                                                    {callout}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {ext.extensionType === 'snippet' && (
+                                                        <div className="text-xs text-slate-600 mt-2">
+                                                            <span className="font-semibold">{ext.header}:</span> {Array.isArray(ext.values) ? ext.values.join(', ') : ''}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                                     )}
                                 </>
                             )}
-
-                            {ad.extensionType === 'snippet' && (
                                 <div className="bg-green-50 border border-green-200 rounded px-4 py-3 mb-3">
                                     <div className="font-semibold text-sm text-slate-700 mb-2">
                                         {ad.header}: {ad.values.join(', ')}
@@ -3418,9 +3589,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             </div>
                             )}
                         </div>
-                    ))}
+                        );
+                    })}
                     
-                    {currentGroupAds.length > 0 && dynamicAdGroups.length > 0 && (
+                    {adsWithExtensions.length > 0 && dynamicAdGroups.length > 0 && (
                         <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
                             <p className="text-sm text-slate-700">
                                 <strong>Ad Group:</strong> {selectedAdGroup} 
@@ -3435,7 +3607,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         </div>
                     )}
                     
-                    {currentGroupAds.length === 0 && (
+                    {adsWithExtensions.length === 0 && (
                         <div className="bg-white border border-dashed border-slate-300 rounded-lg p-12 text-center">
                             <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                             <p className="text-slate-500 font-medium mb-2">No ads created for "{selectedAdGroup}"</p>

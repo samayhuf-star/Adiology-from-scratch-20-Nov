@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, DollarSign, Activity, Server, Flag, FileText, BarChart3, 
   Shield, FileSearch, Settings, Search, Bell, Home, ChevronRight,
@@ -155,86 +155,315 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
 
 // ===== MODULE COMPONENTS =====
 
-const OverviewModule = () => (
-  <div>
-    <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-8">
-      System Overview
-    </h1>
+const OverviewModule = () => {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-    {/* Key Metrics */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <EmptyMetricCard icon={Users} label="Total Users" color="from-purple-500 to-pink-500" />
-      <EmptyMetricCard icon={DollarSign} label="MRR" color="from-green-500 to-emerald-500" />
-      <EmptyMetricCard icon={Activity} label="Active Sessions" color="from-blue-500 to-cyan-500" />
-      <EmptyMetricCard icon={Server} label="System Health" color="from-indigo-500 to-purple-500" />
-    </div>
+  useEffect(() => {
+    loadOverview();
+  }, []);
 
-    {/* Recent Activity */}
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-      <h2 className="text-xl font-bold text-slate-800 mb-4">Recent System Activity</h2>
-      <EmptyState icon={Activity} message="No recent activity" />
-    </div>
-  </div>
-);
+  const loadOverview = async () => {
+    try {
+      setLoading(true);
+      const { adminApi } = await import('../../utils/api/admin');
+      const data = await adminApi.getOverview();
+      setStats(data);
+    } catch (error) {
+      console.error('Error loading overview:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const UsersModule = () => (
-  <div>
-    <div className="flex items-center justify-between mb-8">
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-        Users & Accounts
+  return (
+    <div>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-8">
+        System Overview
       </h1>
-      <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
-        <UserPlus className="w-4 h-4" />
-        Add User
-      </button>
-    </div>
 
-    {/* Search & Filters */}
-    <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6 flex items-center gap-4">
-      <input
-        type="text"
-        placeholder="Search users by email, name, or ID..."
-        className="flex-1 px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-purple-500"
-      />
-      <button className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
-        Search
-      </button>
-    </div>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <MetricCard 
+          icon={Users} 
+          label="Total Users" 
+          value={loading ? '--' : (stats?.totalUsers || 0)} 
+          color="from-purple-500 to-pink-500" 
+        />
+        <MetricCard 
+          icon={DollarSign} 
+          label="Active Subscriptions" 
+          value={loading ? '--' : (stats?.activeSubscriptions || 0)} 
+          color="from-green-500 to-emerald-500" 
+        />
+        <MetricCard 
+          icon={UserPlus} 
+          label="Recent Signups (30d)" 
+          value={loading ? '--' : (stats?.recentSignups || 0)} 
+          color="from-blue-500 to-cyan-500" 
+        />
+        <MetricCard 
+          icon={Server} 
+          label="System Health" 
+          value={loading ? '--' : (stats?.systemHealth?.length > 0 ? 'Operational' : 'Unknown')} 
+          color="from-indigo-500 to-purple-500" 
+        />
+      </div>
 
-    {/* Quick Actions */}
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <ActionCard icon={Eye} label="Impersonate User" color="from-blue-500 to-cyan-500" />
-      <ActionCard icon={Ban} label="Suspend Account" color="from-red-500 to-pink-500" />
-      <ActionCard icon={Key} label="Reset Password" color="from-green-500 to-emerald-500" />
-      <ActionCard icon={UserMinus} label="Delete User" color="from-orange-500 to-red-500" />
-    </div>
-
-    {/* Users Table */}
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-medium">User</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Plan</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Joined</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Last Active</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colSpan={6} className="px-6 py-12">
-                <EmptyState icon={Users} message="No users found" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Recent Activity */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">Recent System Activity</h2>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="w-6 h-6 animate-spin text-purple-500" />
+          </div>
+        ) : (
+          <EmptyState icon={Activity} message="No recent activity" />
+        )}
       </div>
     </div>
+  );
+};
+
+interface MetricCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  color: string;
+}
+
+const MetricCard: React.FC<MetricCardProps> = ({ icon: Icon, label, value, color }) => (
+  <div className="bg-white/80 backdrop-blur-xl rounded-xl p-6 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
+    <div className="flex items-center justify-between mb-4">
+      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-md`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+    </div>
+    <p className="text-sm text-slate-600 mb-1">{label}</p>
+    <p className="text-2xl font-bold text-slate-800">{value}</p>
   </div>
 );
+
+const UsersModule = () => {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
+
+  useEffect(() => {
+    loadUsers();
+  }, [page, searchQuery]);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const { adminApi } = await import('../../utils/api/admin');
+      const result = await adminApi.getUsers({ 
+        search: searchQuery || undefined, 
+        page, 
+        limit: 50 
+      });
+      setUsers(result.users || []);
+      setPagination(result.pagination || { total: 0, totalPages: 0 });
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    setPage(1);
+    loadUsers();
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      const { adminApi } = await import('../../utils/api/admin');
+      await adminApi.deleteUser(userId);
+      loadUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user');
+    }
+  };
+
+  const handleSuspendUser = async (userId: string, suspend: boolean) => {
+    try {
+      const { adminApi } = await import('../../utils/api/admin');
+      await adminApi.updateUser(userId, { 
+        subscription_status: suspend ? 'suspended' : 'active' 
+      });
+      loadUsers();
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      alert('Failed to update user status');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          Users & Accounts
+        </h1>
+        <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
+          <UserPlus className="w-4 h-4" />
+          Add User
+        </button>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6 flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Search users by email, name, or ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          className="flex-1 px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+        <button 
+          onClick={handleSearch}
+          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+        >
+          Search
+        </button>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <ActionCard icon={Eye} label="Impersonate User" color="from-blue-500 to-cyan-500" />
+        <ActionCard icon={Ban} label="Suspend Account" color="from-red-500 to-pink-500" />
+        <ActionCard icon={Key} label="Reset Password" color="from-green-500 to-emerald-500" />
+        <ActionCard icon={UserMinus} label="Delete User" color="from-orange-500 to-red-500" />
+      </div>
+
+      {/* Users Table */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-medium">User</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Plan</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Joined</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Last Active</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="w-6 h-6 animate-spin text-purple-500" />
+                      <span className="ml-2 text-slate-600">Loading users...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12">
+                    <EmptyState icon={Users} message="No users found" />
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id} className="border-b border-slate-200 hover:bg-slate-50">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium text-slate-900">{user.full_name || 'N/A'}</div>
+                        <div className="text-sm text-slate-500">{user.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                        {user.subscription_plan || 'free'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        user.subscription_status === 'active' 
+                          ? 'bg-green-100 text-green-700'
+                          : user.subscription_status === 'suspended'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {user.subscription_status || 'active'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {formatDate(user.created_at)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {formatDate(user.last_login_at)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleSuspendUser(user.id, user.subscription_status !== 'suspended')}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                          title={user.subscription_status === 'suspended' ? 'Activate' : 'Suspend'}
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="p-1.5 text-orange-600 hover:bg-orange-50 rounded"
+                          title="Delete"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {pagination.totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+            <div className="text-sm text-slate-600">
+              Showing {((page - 1) * 50) + 1} to {Math.min(page * 50, pagination.total)} of {pagination.total} users
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1 bg-slate-100 text-slate-700 rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                disabled={page === pagination.totalPages}
+                className="px-3 py-1 bg-purple-500 text-white rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const BillingModule = () => (
   <div>
@@ -393,63 +622,134 @@ const AnalyticsModule = () => (
   </div>
 );
 
-const AuditModule = () => (
-  <div>
-    <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-600 to-gray-600 bg-clip-text text-transparent mb-8">
-      Audit Logs
-    </h1>
+const AuditModule = () => {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({ action: '', userId: '' });
 
-    {/* Filters */}
-    <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <select className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500">
-          <option>All Events</option>
-          <option>User Actions</option>
-          <option>Admin Actions</option>
-          <option>System Events</option>
-        </select>
-        <select className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500">
-          <option>All Users</option>
-          <option>Admins Only</option>
-          <option>System Only</option>
-        </select>
-        <input
-          type="date"
-          className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500"
-        />
-        <button className="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center justify-center gap-2">
-          <Filter className="w-4 h-4" />
-          Apply Filters
-        </button>
+  useEffect(() => {
+    loadLogs();
+  }, [filters]);
+
+  const loadLogs = async () => {
+    try {
+      setLoading(true);
+      const { adminApi } = await import('../../utils/api/admin');
+      const result = await adminApi.getAuditLogs({ 
+        action: filters.action || undefined,
+        userId: filters.userId || undefined,
+        page: 1,
+        limit: 100
+      });
+      setLogs(result.logs || []);
+    } catch (error) {
+      console.error('Error loading audit logs:', error);
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-600 to-gray-600 bg-clip-text text-transparent mb-8">
+        Audit Logs
+      </h1>
+
+      {/* Filters */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <select 
+            value={filters.action}
+            onChange={(e) => setFilters({ ...filters, action: e.target.value })}
+            className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500"
+          >
+            <option value="">All Events</option>
+            <option value="update_user">User Actions</option>
+            <option value="delete_user">Admin Actions</option>
+            <option value="system">System Events</option>
+          </select>
+          <input
+            type="text"
+            placeholder="User ID"
+            value={filters.userId}
+            onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
+            className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500"
+          />
+          <input
+            type="date"
+            className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500"
+          />
+          <button 
+            onClick={loadLogs}
+            className="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Apply Filters
+          </button>
+        </div>
+      </div>
+
+      {/* Audit Log Table */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gradient-to-r from-slate-500 to-gray-600 text-white">
+              <tr>
+                <th className="px-6 py-4 text-left text-sm font-medium">Timestamp</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">User</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Action</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Resource</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">IP Address</th>
+                <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-500 mx-auto" />
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12">
+                    <EmptyState icon={FileSearch} message="No audit logs found" />
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id} className="border-b border-slate-200 hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {new Date(log.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      {log.users?.email || log.user_id || 'System'}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-800">
+                      {log.action}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {log.resource_type} {log.resource_id ? `(${log.resource_id.substring(0, 8)}...)` : ''}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500 font-mono">
+                      {log.ip_address || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                        Success
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-
-    {/* Audit Log Table */}
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gradient-to-r from-slate-500 to-gray-600 text-white">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-medium">Timestamp</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">User</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Action</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Resource</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">IP Address</th>
-              <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colSpan={6} className="px-6 py-12">
-                <EmptyState icon={FileSearch} message="No audit logs found" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const SupportModule = () => (
   <div>

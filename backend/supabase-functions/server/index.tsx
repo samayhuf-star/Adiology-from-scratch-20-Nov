@@ -499,4 +499,535 @@ app.post("/make-server-6757d0ca/billing/subscribe", async (c) => {
     return c.json({ success: true, message: "Redirecting to payment provider..." });
 });
 
+// ============================================
+// SUPER ADMIN ENDPOINTS
+// ============================================
+
+// Helper to verify super admin
+async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: string }> {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return { valid: false };
+    }
+
+    const token = authHeader.substring(7);
+    // In production, verify JWT token with Supabase
+    // For now, we'll use a simple check - in production use Supabase Admin API
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Supabase credentials missing");
+      return { valid: false };
+    }
+
+    // Verify token and check user role
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false }
+    });
+
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return { valid: false };
+    }
+
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!userData || userData.role !== "superadmin") {
+      return { valid: false };
+    }
+
+    return { valid: true, userId: user.id };
+  } catch (err) {
+    console.error("Super admin verification error:", err);
+    return { valid: false };
+  }
+}
+
+// Get all users (Super Admin only)
+app.get("/make-server-6757d0ca/admin/users", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { search, page = "1", limit = "50" } = c.req.query();
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 50;
+    const offset = (pageNum - 1) * limitNum;
+
+    let query = supabase
+      .from("users")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limitNum - 1);
+
+    if (search) {
+      query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error("Error fetching users:", error);
+      return c.json({ error: "Failed to fetch users" }, 500);
+    }
+
+    return c.json({
+      users: data || [],
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limitNum)
+      }
+    });
+  } catch (err) {
+    console.error("Get users error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Get user by ID
+app.get("/make-server-6757d0ca/admin/users/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const userId = c.req.param("id");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    return c.json({ user: data });
+  } catch (err) {
+    console.error("Get user error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Update user
+app.put("/make-server-6757d0ca/admin/users/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const userId = c.req.param("id");
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("users")
+      .update(body)
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating user:", error);
+      return c.json({ error: "Failed to update user" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "update_user",
+      resource_type: "user",
+      resource_id: userId,
+      metadata: { changes: body }
+    });
+
+    return c.json({ user: data });
+  } catch (err) {
+    console.error("Update user error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Delete user
+app.delete("/make-server-6757d0ca/admin/users/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const userId = c.req.param("id");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", userId);
+
+    if (error) {
+      console.error("Error deleting user:", error);
+      return c.json({ error: "Failed to delete user" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "delete_user",
+      resource_type: "user",
+      resource_id: userId
+    });
+
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("Delete user error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Get system overview stats
+app.get("/make-server-6757d0ca/admin/overview", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get total users
+    const { count: totalUsers } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true });
+
+    // Get active subscriptions
+    const { count: activeSubscriptions } = await supabase
+      .from("subscriptions")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "active");
+
+    // Get recent signups (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const { count: recentSignups } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", thirtyDaysAgo.toISOString());
+
+    // Get system health
+    const { data: healthData } = await supabase
+      .from("system_health")
+      .select("*")
+      .order("last_check_at", { ascending: false })
+      .limit(10);
+
+    return c.json({
+      totalUsers: totalUsers || 0,
+      activeSubscriptions: activeSubscriptions || 0,
+      recentSignups: recentSignups || 0,
+      systemHealth: healthData || []
+    });
+  } catch (err) {
+    console.error("Get overview error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Get audit logs
+app.get("/make-server-6757d0ca/admin/audit-logs", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { page = "1", limit = "50", action, userId } = c.req.query();
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 50;
+    const offset = (pageNum - 1) * limitNum;
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    let query = supabase
+      .from("audit_logs")
+      .select("*, users(email, full_name)", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limitNum - 1);
+
+    if (action) {
+      query = query.eq("action", action);
+    }
+    if (userId) {
+      query = query.eq("user_id", userId);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error("Error fetching audit logs:", error);
+      return c.json({ error: "Failed to fetch audit logs" }, 500);
+    }
+
+    return c.json({
+      logs: data || [],
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limitNum)
+      }
+    });
+  } catch (err) {
+    console.error("Get audit logs error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Get billing/subscription stats
+app.get("/make-server-6757d0ca/admin/billing/stats", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get subscription counts by plan
+    const { data: subscriptions } = await supabase
+      .from("subscriptions")
+      .select("plan, status");
+
+    const planDistribution: Record<string, number> = {};
+    subscriptions?.forEach(sub => {
+      const key = `${sub.plan}_${sub.status}`;
+      planDistribution[key] = (planDistribution[key] || 0) + 1;
+    });
+
+    // Get recent transactions
+    const { data: recentInvoices } = await supabase
+      .from("invoices")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    return c.json({
+      planDistribution,
+      recentTransactions: recentInvoices || []
+    });
+  } catch (err) {
+    console.error("Get billing stats error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Get usage metrics
+app.get("/make-server-6757d0ca/admin/usage", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { metricType, period = "24h" } = c.req.query();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const periodStart = new Date();
+    if (period === "24h") {
+      periodStart.setHours(periodStart.getHours() - 24);
+    } else if (period === "7d") {
+      periodStart.setDate(periodStart.getDate() - 7);
+    } else {
+      periodStart.setDate(periodStart.getDate() - 30);
+    }
+
+    let query = supabase
+      .from("usage_metrics")
+      .select("*")
+      .gte("period_start", periodStart.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (metricType) {
+      query = query.eq("metric_type", metricType);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching usage metrics:", error);
+      return c.json({ error: "Failed to fetch usage metrics" }, 500);
+    }
+
+    return c.json({ metrics: data || [] });
+  } catch (err) {
+    console.error("Get usage metrics error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Get system health
+app.get("/make-server-6757d0ca/admin/health", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("system_health")
+      .select("*")
+      .order("last_check_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error("Error fetching system health:", error);
+      return c.json({ error: "Failed to fetch system health" }, 500);
+    }
+
+    return c.json({ health: data || [] });
+  } catch (err) {
+    console.error("Get system health error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Feature flags endpoints
+app.get("/make-server-6757d0ca/admin/feature-flags", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("feature_flags")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching feature flags:", error);
+      return c.json({ error: "Failed to fetch feature flags" }, 500);
+    }
+
+    return c.json({ flags: data || [] });
+  } catch (err) {
+    console.error("Get feature flags error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.post("/make-server-6757d0ca/admin/feature-flags", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("feature_flags")
+      .insert(body)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating feature flag:", error);
+      return c.json({ error: "Failed to create feature flag" }, 500);
+    }
+
+    return c.json({ flag: data });
+  } catch (err) {
+    console.error("Create feature flag error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.put("/make-server-6757d0ca/admin/feature-flags/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const flagId = c.req.param("id");
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("feature_flags")
+      .update(body)
+      .eq("id", flagId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating feature flag:", error);
+      return c.json({ error: "Failed to update feature flag" }, 500);
+    }
+
+    return c.json({ flag: data });
+  } catch (err) {
+    console.error("Update feature flag error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
 Deno.serve(app.fetch);
