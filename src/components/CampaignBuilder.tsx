@@ -1987,9 +1987,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     
     // Generate dynamic ad groups based on structure and selected keywords
     const getDynamicAdGroups = () => {
-        if (selectedKeywords.length === 0) return [];
-        
-        if (structure === 'SKAG') {
+        try {
+            if (!selectedKeywords || selectedKeywords.length === 0) return [];
+            if (!structure) return [];
+            
+            if (structure === 'SKAG') {
             // Each keyword is its own ad group
             return selectedKeywords.slice(0, 20).map(kw => ({
                 name: kw,
@@ -2030,6 +2032,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 }
             }
             return groups.slice(0, 10);
+            }
+        } catch (error) {
+            console.error('Error generating dynamic ad groups:', error);
+            return [];
         }
     };
 
