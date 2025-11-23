@@ -13,6 +13,9 @@ import {
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
 
 interface HomePageProps {
   onGetStarted: () => void;
@@ -960,36 +963,180 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <Card className="border-0 bg-gradient-to-br from-indigo-600 to-purple-600 shadow-2xl overflow-hidden">
-            <CardContent className="p-8 sm:p-12 lg:p-16 text-center text-white">
-              <Sparkle className="w-16 h-16 mx-auto mb-6 opacity-90" />
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
-                Ready to Transform Your Google Ads?
-              </h2>
-              <p className="text-lg sm:text-xl mb-8 sm:mb-12 opacity-90 max-w-2xl mx-auto">
-                Join thousands of marketers who trust Adiology for their campaign management. Start building winning campaigns today.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg"
-                  onClick={onGetStarted}
-                  className="bg-white text-indigo-600 hover:bg-slate-100 text-lg px-8 py-6 h-auto w-full sm:w-auto shadow-lg rounded-lg"
-                >
-                  Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                <Button 
-                  size="lg"
-                  onClick={onLogin}
-                  className="bg-white text-indigo-600 hover:bg-slate-100 text-lg px-8 py-6 h-auto w-full sm:w-auto shadow-lg rounded-lg"
-                >
-                  Sign In <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Contact Us Section */}
+      <section id="contact" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-indigo-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Get In Touch
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Contact Form */}
+            <Card className="border-slate-200 shadow-xl">
+              <CardContent className="p-6 sm:p-8">
+                <h3 className="text-2xl font-bold text-slate-800 mb-6">Send us a Message</h3>
+                <form className="space-y-6" onSubmit={(e) => {
+                  e.preventDefault();
+                  notifications.success('Thank you for your message! We\'ll get back to you soon.', {
+                    title: 'Message Sent',
+                    description: 'Your contact form submission has been received.'
+                  });
+                  // Reset form
+                  (e.target as HTMLFormElement).reset();
+                }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName" className="text-slate-700 font-medium mb-2 block">
+                        First Name
+                      </Label>
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        type="text"
+                        required
+                        className="w-full"
+                        placeholder="John"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lastName" className="text-slate-700 font-medium mb-2 block">
+                        Last Name
+                      </Label>
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        type="text"
+                        required
+                        className="w-full"
+                        placeholder="Doe"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-slate-700 font-medium mb-2 block">
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      className="w-full"
+                      placeholder="john.doe@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="subject" className="text-slate-700 font-medium mb-2 block">
+                      Subject
+                    </Label>
+                    <Input
+                      id="subject"
+                      name="subject"
+                      type="text"
+                      required
+                      className="w-full"
+                      placeholder="How can we help?"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="message" className="text-slate-700 font-medium mb-2 block">
+                      Message
+                    </Label>
+                    <Textarea
+                      id="message"
+                      name="message"
+                      required
+                      rows={6}
+                      className="w-full"
+                      placeholder="Tell us more about your inquiry..."
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
+                  >
+                    Send Message <Mail className="w-5 h-5 ml-2" />
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Contact Information */}
+            <div className="space-y-6">
+              <Card className="border-slate-200 shadow-xl">
+                <CardContent className="p-6 sm:p-8">
+                  <h3 className="text-2xl font-bold text-slate-800 mb-6">Contact Information</h3>
+                  <div className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-800 mb-1">Address</h4>
+                        <p className="text-slate-600">
+                          Sheridan, Wyoming USA 82801
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0">
+                        <Mail className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-800 mb-1">Email</h4>
+                        <a 
+                          href="mailto:contact@adiology.com" 
+                          className="text-indigo-600 hover:text-indigo-700 transition"
+                        >
+                          contact@adiology.com
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0">
+                        <MessageSquare className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-800 mb-1">Support</h4>
+                        <a 
+                          href="mailto:support@adiology.com" 
+                          className="text-indigo-600 hover:text-indigo-700 transition"
+                        >
+                          support@adiology.com
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-200 shadow-xl bg-gradient-to-br from-indigo-50 to-purple-50">
+                <CardContent className="p-6 sm:p-8">
+                  <h4 className="font-semibold text-slate-800 mb-3">Business Hours</h4>
+                  <div className="space-y-2 text-slate-600">
+                    <p className="flex justify-between">
+                      <span>Monday - Friday</span>
+                      <span className="font-medium">9:00 AM - 6:00 PM MST</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span>Saturday</span>
+                      <span className="font-medium">10:00 AM - 4:00 PM MST</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span>Sunday</span>
+                      <span className="font-medium">Closed</span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </section>
 
