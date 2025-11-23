@@ -5,9 +5,10 @@ import {
   UserPlus, UserMinus, Ban, Key, Eye, TrendingUp, AlertCircle,
   CheckCircle, Clock, CreditCard, Zap, Database, Globe, Mail,
   Code, Webhook, Lock, Download, Upload, RefreshCw, Play, Pause,
-  Inbox, Filter, X
+  Inbox, Filter, X, TestTube, CheckCircle2
 } from 'lucide-react';
 import { adminApi } from '../utils/api/admin';
+import { lambdaTestApi, type LambdaTestBuild, type LambdaTestSession } from '../utils/api/lambdatest';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -29,7 +30,8 @@ type Module =
   | 'analytics'
   | 'audit'
   | 'support'
-  | 'config';
+  | 'config'
+  | 'testing';
 
 export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLanding }) => {
   const [activeModule, setActiveModule] = useState<Module>('overview');
@@ -46,6 +48,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
     { id: 'analytics' as Module, label: 'Analytics & Reports', icon: BarChart3, color: 'from-pink-500 to-rose-500' },
     { id: 'audit' as Module, label: 'Audit Logs', icon: FileSearch, color: 'from-slate-500 to-gray-600' },
     { id: 'support' as Module, label: 'Support Tools', icon: Shield, color: 'from-emerald-500 to-green-600' },
+    { id: 'testing' as Module, label: 'LambdaTest Results', icon: TestTube, color: 'from-orange-500 to-red-500' },
     { id: 'config' as Module, label: 'Configuration', icon: Settings, color: 'from-violet-500 to-purple-600' },
   ];
 
@@ -71,6 +74,8 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
         return <AuditModule />;
       case 'support':
         return <SupportModule />;
+      case 'testing':
+        return <TestingModule />;
       case 'config':
         return <ConfigModule />;
       default:
@@ -919,6 +924,314 @@ const SupportModule = () => (
     </div>
   </div>
 );
+
+const TestingModule = () => {
+  const [builds, setBuilds] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedBuild, setSelectedBuild] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [sessionDetails, setSessionDetails] = useState<any>(null);
+  const [consoleLogs, setConsoleLogs] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadTestResults();
+  }, []);
+
+  const loadTestResults = async () => {
+    try {
+      setLoading(true);
+      const buildsData = await lambdaTestApi.getBuilds({ limit: 50 });
+      setBuilds(buildsData.data || []);
+      
+      const sessionsData = await lambdaTestApi.getAllSessions({ limit: 100 });
+      setSessions(sessionsData.data || []);
+    } catch (error) {
+      console.error('Error loading test results:', error);
+      setBuilds([]);
+      setSessions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTriggerTest = async (type: 'selenium' | 'cypress' | 'playwright' | 'puppeteer' | 'k6') => {
+    try {
+      const result = await lambdaTestApi.triggerTest(type);
+      alert(result.message || `Test triggered for ${type}. Check LambdaTest dashboard for execution.`);
+      setTimeout(() => {
+        loadTestResults();
+      }, 2000);
+    } catch (error: any) {
+      alert(`Failed to trigger test: ${error.message}`);
+    }
+  };
+
+  const handleViewBuildDetails = async (buildId: string) => {
+    try {
+      const details = await lambdaTestApi.getBuildDetails(buildId);
+      const buildSessions = await lambdaTestApi.getBuildSessions(buildId);
+      setSelectedBuild(buildId);
+      setSessions(buildSessions.data || []);
+    } catch (error) {
+      console.error('Error loading build details:', error);
+    }
+  };
+
+  const handleViewSessionDetails = async (sessionId: string) => {
+    try {
+      const details = await lambdaTestApi.getSessionDetails(sessionId);
+      const logs = await lambdaTestApi.getSessionConsoleLogs(sessionId);
+      setSelectedSession(sessionId);
+      setSessionDetails(details);
+      setConsoleLogs(logs.data || []);
+    } catch (error) {
+      console.error('Error loading session details:', error);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+      case 'passed':
+      case 'success':
+        return 'bg-green-100 text-green-700';
+      case 'failed':
+      case 'error':
+        return 'bg-red-100 text-red-700';
+      case 'running':
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-700';
+      case 'timeout':
+        return 'bg-yellow-100 text-yellow-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const testTypes = [
+    { id: 'selenium', label: 'Selenium Testing' },
+    { id: 'cypress', label: 'Cypress Testing' },
+    { id: 'playwright', label: 'Playwright Testing' },
+    { id: 'puppeteer', label: 'Puppeteer Testing' },
+    { id: 'k6', label: 'K6 Testing' },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+          LambdaTest Results
+        </h1>
+        <Button onClick={loadTestResults} variant="outline">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Test Type Selection */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl mb-6">
+        <h2 className="text-xl font-bold text-slate-800 mb-4">Trigger Tests</h2>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {testTypes.map((test) => (
+            <button
+              key={test.id}
+              onClick={() => handleTriggerTest(test.id as any)}
+              className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border-2 border-orange-200 hover:border-orange-400 transition-all hover:shadow-lg flex flex-col items-center gap-2"
+            >
+              <TestTube className="w-8 h-8 text-orange-600" />
+              <span className="font-medium text-slate-700 text-sm">{test.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Builds List */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl mb-6">
+        <div className="p-6 border-b border-slate-200">
+          <h2 className="text-xl font-bold text-slate-800">Recent Builds ({builds.length})</h2>
+        </div>
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="p-12 text-center">
+              <RefreshCw className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-4" />
+              <p className="text-slate-600">Loading test results...</p>
+            </div>
+          ) : builds.length === 0 ? (
+            <div className="p-12 text-center">
+              <TestTube className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500">No builds found. Trigger a test to see results.</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Build ID</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Name</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Duration</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Start Time</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Tests</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {builds.map((build: any) => (
+                  <tr key={build.build_id} className="border-b border-slate-200 hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm font-mono text-slate-600">
+                      {build.build_id?.substring(0, 12) || 'N/A'}...
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-800">
+                      {build.name || 'Unnamed Build'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(build.status)}`}>
+                        {build.status || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {build.duration ? `${Math.round(build.duration / 1000)}s` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {build.start_time ? new Date(build.start_time).toLocaleString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {build.test_count ? `${build.passed || 0}/${build.test_count}` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <Button
+                        onClick={() => handleViewBuildDetails(build.build_id)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Sessions List */}
+      {selectedBuild && (
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl mb-6">
+          <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-800">Build Sessions ({sessions.length})</h2>
+            <Button onClick={() => setSelectedBuild(null)} variant="ghost" size="sm">
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-100">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Session ID</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Name</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Browser/OS</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Test Type</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Duration</th>
+                  <th className="px-6 py-4 text-left text-sm font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.map((session: any) => (
+                  <tr key={session.session_id} className="border-b border-slate-200 hover:bg-slate-50">
+                    <td className="px-6 py-4 text-sm font-mono text-slate-600">
+                      {session.session_id?.substring(0, 12) || 'N/A'}...
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-800">
+                      {session.name || 'Unnamed Session'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(session.status)}`}>
+                        {session.status || 'Unknown'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {session.browser || 'N/A'} / {session.os || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {session.test_type || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {session.duration ? `${Math.round(session.duration / 1000)}s` : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <Button
+                        onClick={() => handleViewSessionDetails(session.session_id)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Details
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Session Details Modal */}
+      {selectedSession && sessionDetails && (
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl mb-6">
+          <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-800">Session Details</h2>
+            <Button onClick={() => { setSelectedSession(null); setSessionDetails(null); setConsoleLogs([]); }} variant="ghost" size="sm">
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-xs text-slate-500">Session ID</Label>
+                <p className="text-sm font-mono text-slate-800">{sessionDetails.session_id || selectedSession}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500">Status</Label>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(sessionDetails.status)}`}>
+                  {sessionDetails.status}
+                </span>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500">Browser</Label>
+                <p className="text-sm text-slate-800">{sessionDetails.browser || 'N/A'}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500">OS</Label>
+                <p className="text-sm text-slate-800">{sessionDetails.os || 'N/A'}</p>
+              </div>
+            </div>
+
+            {/* Console Logs */}
+            {consoleLogs.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">Console Logs</h3>
+                <div className="bg-slate-900 rounded-lg p-4 max-h-96 overflow-y-auto">
+                  {consoleLogs.map((log: any, idx: number) => (
+                    <div key={idx} className="text-xs font-mono text-green-400 mb-1">
+                      <span className="text-slate-500">[{log.timestamp || 'N/A'}]</span>{' '}
+                      <span className={log.level === 'error' ? 'text-red-400' : 'text-green-400'}>
+                        {log.message || log}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ConfigModule = () => (
   <div>
