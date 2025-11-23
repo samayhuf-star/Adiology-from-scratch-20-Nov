@@ -2638,35 +2638,35 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             <Button 
                                 onClick={() => createNewAd('rsa')}
                                 disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                             >
                                 <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
                             </Button>
                             <Button 
                                 onClick={() => createNewAd('dki')}
                                 disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                             >
                                 <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
                             </Button>
                             <Button 
                                 onClick={() => createNewAd('callonly')}
                                 disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                             >
                                 <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
                             </Button>
                             <Button 
                                 onClick={() => createNewAd('snippet')}
                                 disabled={selectedKeywords.length === 0}
-                                className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                             >
                                 <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
                             </Button>
                             <Button 
                                 onClick={() => createNewAd('callout')}
                                 disabled={selectedKeywords.length === 0}
-                                className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                             >
                                 <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                             </Button>
@@ -2682,13 +2682,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             
                             return (
                                 <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                    {/* Badge */}
+                                    {/* Badge - Top Left */}
                                     <div className="mb-3">
                                         <Badge className={
-                                            ad.type === 'rsa' ? 'bg-blue-100 text-blue-700' :
-                                            ad.type === 'dki' ? 'bg-purple-100 text-purple-700' :
-                                            ad.type === 'callonly' ? 'bg-green-100 text-green-700' :
-                                            'bg-slate-100 text-slate-700'
+                                            ad.type === 'rsa' ? 'bg-blue-100 text-blue-700 border-0' :
+                                            ad.type === 'dki' ? 'bg-purple-100 text-purple-700 border-0' :
+                                            ad.type === 'callonly' ? 'bg-green-100 text-green-700 border-0' :
+                                            'bg-slate-100 text-slate-700 border-0'
                                         }>
                                             {ad.type === 'rsa' ? 'RSA' : 
                                              ad.type === 'dki' ? 'DKI' : 
@@ -2699,22 +2699,22 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     
                                     {/* Ad Preview */}
                                     <div className="mb-4">
-                                        <div className="text-blue-600 hover:underline cursor-pointer mb-1 text-base font-medium">
+                                        <div className="text-blue-600 hover:underline cursor-pointer mb-1 text-base font-medium leading-relaxed">
                                             {headline}
                                         </div>
-                                        <div className="text-green-700 text-sm mb-2">
+                                        <div className="text-green-700 text-sm mb-2 font-normal">
                                             {displayUrl}
                                         </div>
-                                        <div className="text-slate-600 text-sm">
+                                        <div className="text-slate-600 text-sm leading-relaxed">
                                             {description}
                                         </div>
                                     </div>
                                     
                                     {/* Action Buttons */}
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 mt-4">
                                         <Button
                                             onClick={() => handleEditAd(ad)}
-                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg"
                                             size="sm"
                                         >
                                             <Edit3 className="w-4 h-4 mr-1" />
@@ -2722,7 +2722,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </Button>
                                         <Button
                                             onClick={() => handleDuplicateAd(ad)}
-                                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
                                             size="sm"
                                         >
                                             <RefreshCw className="w-4 h-4 mr-1" />
@@ -2730,7 +2730,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </Button>
                                         <Button
                                             onClick={() => handleDeleteAd(ad.id)}
-                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                                             size="sm"
                                         >
                                             <Trash2 className="w-4 h-4 mr-1" />
