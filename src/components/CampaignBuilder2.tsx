@@ -25,6 +25,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { KeywordPlannerSelectable } from './KeywordPlannerSelectable';
 import { LiveAdPreview } from './LiveAdPreview';
 import { notifications } from '../utils/notifications';
+import { generateCampaignStructure, type StructureSettings } from '../utils/campaignStructureGenerator';
+import { exportCampaignToCSV } from '../utils/csvExporter';
 
 // Structure Types
 type StructureType = 
@@ -1241,57 +1243,119 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
 
   // Step 6: Validate
-  const renderStep6 = () => (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-800 mb-2">Validate Campaign</h2>
-        <p className="text-slate-600">Validate your campaign before export</p>
-      </div>
+  const renderStep6 = () => {
+    const handleExportCSV = () => {
+      if (!structureType || !campaignName || selectedKeywords.length === 0) {
+        notifications.warning('Please complete all required fields', { title: 'Incomplete Campaign' });
+        return;
+      }
 
-      <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-        <CardHeader>
-          <CardTitle>Validation Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>Campaign name is valid</span>
-            </div>
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>Structure selected</span>
-            </div>
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>Keywords configured</span>
-            </div>
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>Ads generated</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      // Prepare settings for structure generation
+      const settings: StructureSettings = {
+        structureType,
+        campaignName,
+        keywords: selectedKeywords,
+        matchTypes,
+        url,
+        negativeKeywords: negativeKeywords.split('\n').filter(k => k.trim()),
+        geoType,
+        selectedStates,
+        selectedCities,
+        selectedZips,
+        targetCountry,
+        ads: generatedAds.map(ad => ({
+          type: ad.type || 'rsa',
+          headline1: ad.headline1,
+          headline2: ad.headline2,
+          headline3: ad.headline3,
+          headline4: ad.headline4,
+          headline5: ad.headline5,
+          description1: ad.description1,
+          description2: ad.description2,
+          final_url: ad.finalUrl || url,
+          path1: ad.path1,
+          path2: ad.path2
+        })),
+        intentGroups,
+        selectedIntents,
+        alphaKeywords,
+        betaKeywords,
+        funnelGroups,
+        brandKeywords,
+        nonBrandKeywords,
+        competitorKeywords,
+        smartClusters
+      };
 
-      <div className="flex justify-between">
-        <Button variant="ghost" onClick={() => setStep(5)}>
-          <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-          Back
-        </Button>
-        <Button
-          size="lg"
-          onClick={() => {
-            notifications.success('Campaign validated successfully!', { title: 'Validation Complete' });
-          }}
-          className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
-        >
-          <Download className="mr-2 w-5 h-5" />
-          Export CSV
-        </Button>
+      // Generate campaign structure
+      const structure = generateCampaignStructure(selectedKeywords, settings);
+      
+      // Export to CSV
+      const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+      exportCampaignToCSV(structure, filename);
+      
+      notifications.success('Campaign exported successfully!', { 
+        title: 'Export Complete',
+        description: `Generated ${structure.campaigns.length} campaign(s) with ${structure.campaigns.reduce((sum, c) => sum + c.adgroups.length, 0)} ad group(s)`
+      });
+    };
+
+    // Validation checks
+    const validations = [
+      { check: !!campaignName, message: 'Campaign name is valid' },
+      { check: !!structureType, message: 'Structure selected' },
+      { check: selectedKeywords.length > 0, message: 'Keywords configured' },
+      { check: generatedAds.length > 0, message: 'Ads generated' },
+      { check: !!url, message: 'Landing page URL configured' }
+    ];
+
+    const allValid = validations.every(v => v.check);
+
+    return (
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">Validate Campaign</h2>
+          <p className="text-slate-600">Validate your campaign before export</p>
+        </div>
+
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader>
+            <CardTitle>Validation Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {validations.map((validation, idx) => (
+                <div key={idx} className={`flex items-center gap-2 ${validation.check ? 'text-green-600' : 'text-red-600'}`}>
+                  {validation.check ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5" />
+                  )}
+                  <span>{validation.message}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-between">
+          <Button variant="ghost" onClick={() => setStep(5)}>
+            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+            Back
+          </Button>
+          <Button
+            size="lg"
+            onClick={handleExportCSV}
+            disabled={!allValid}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="mr-2 w-5 h-5" />
+            Export CSV
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
