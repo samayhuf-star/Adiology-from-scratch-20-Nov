@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { Upload, Download, Sparkles, AlertCircle, CheckCircle, AlertTriangle, FileText, Loader2, FolderOpen, Layers, Hash, MinusCircle, FileType, Link, Phone, MapPin, MessageSquare } from 'lucide-react';
+import { Upload, Download, Sparkles, AlertCircle, CheckCircle, AlertTriangle, FileText, Loader2, FolderOpen, Layers, Hash, MinusCircle, FileType, Link, Phone, MapPin, MessageSquare, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import * as XLSXStyle from 'xlsx-js-style';
 
 // --- Column Rules Configuration ---
 const COLUMN_RULES = {
@@ -296,6 +298,91 @@ export const CSVValidator = () => {
         URL.revokeObjectURL(url);
         
         setSuccessMessage('CSV downloaded successfully!');
+    };
+
+    const handleDownloadWithErrors = () => {
+        if (uploadedData.length === 0) {
+            setErrorMessage('Please upload and process a file first.');
+            return;
+        }
+
+        try {
+            // Create a workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Prepare data with error highlighting
+            const wsData: any[][] = [];
+            
+            // Add headers
+            wsData.push(uploadedHeaders);
+            
+            // Add data rows
+            uploadedData.forEach((row, rowIdx) => {
+                const rowData: any[] = [];
+                uploadedHeaders.forEach((header) => {
+                    const value = row[header] || '';
+                    rowData.push(value || '');
+                });
+                wsData.push(rowData);
+            });
+            
+            // Create worksheet from data
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Apply red background styling to error cells
+            uploadedData.forEach((row, rowIdx) => {
+                uploadedHeaders.forEach((header, colIdx) => {
+                    const validation = validationResults[rowIdx]?.[header];
+                    const cellAddress = XLSX.utils.encode_cell({ r: rowIdx + 1, c: colIdx });
+                    
+                    if (!ws[cellAddress]) {
+                        ws[cellAddress] = { t: 's', v: '' };
+                    }
+                    
+                    // Apply red background for errors, yellow for warnings
+                    if (validation?.status === 'error') {
+                        ws[cellAddress].s = {
+                            fill: { fgColor: { rgb: 'FFFF0000' } }, // Red background
+                            font: { color: { rgb: 'FFFFFFFF' }, bold: true }, // White bold text
+                        };
+                    } else if (validation?.status === 'warning') {
+                        ws[cellAddress].s = {
+                            fill: { fgColor: { rgb: 'FFFFFF00' } }, // Yellow background
+                            font: { color: { rgb: 'FF000000' }, bold: true }, // Black bold text
+                        };
+                    } else {
+                        ws[cellAddress].s = {
+                            fill: { fgColor: { rgb: 'FFFFFFFF' } }, // White background
+                            font: { color: { rgb: 'FF000000' } }, // Black text
+                        };
+                    }
+                });
+            });
+            
+            // Style header row
+            uploadedHeaders.forEach((header, colIdx) => {
+                const cellAddress = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].s = {
+                        fill: { fgColor: { rgb: 'FF4472C4' } }, // Blue background
+                        font: { color: { rgb: 'FFFFFFFF' }, bold: true }, // White bold text
+                    };
+                }
+            });
+            
+            // Set column widths for better readability
+            ws['!cols'] = uploadedHeaders.map(() => ({ wch: 20 }));
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Campaign Data');
+            
+            // Write file with styling using xlsx-js-style
+            XLSXStyle.writeFile(wb, 'google_ads_with_errors.xlsx');
+            
+            setSuccessMessage('Excel file with errors downloaded successfully! Errors are highlighted in red.');
+        } catch (error: any) {
+            setErrorMessage(`Error exporting Excel file: ${error.message}`);
+        }
     };
 
     const getCellClass = (status: string) => {
@@ -618,6 +705,14 @@ export const CSVValidator = () => {
                             >
                                 <Download className="w-5 h-5" />
                                 Submit & Save (Download)
+                            </button>
+                            <button
+                                onClick={handleDownloadWithErrors}
+                                disabled={totalErrors === 0}
+                                className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                <FileSpreadsheet className="w-5 h-5" />
+                                Download CSV with Errors
                             </button>
                         </div>
                         <div className="flex gap-6 text-sm font-medium">
