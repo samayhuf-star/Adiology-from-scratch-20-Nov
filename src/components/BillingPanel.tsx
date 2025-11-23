@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
     CreditCard, CheckCircle, Shield, Zap, Download, 
-    ArrowUpRight, Calendar, Clock, FileText, ArrowRight, CheckCircle2
+    ArrowUpRight, Calendar, Clock, FileText, ArrowRight, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from './ui/card';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { api } from '../utils/api';
 
 export const BillingPanel = () => {
@@ -18,6 +20,20 @@ export const BillingPanel = () => {
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [showPricingDialog, setShowPricingDialog] = useState(false);
     const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+    const [showAddCardDialog, setShowAddCardDialog] = useState(false);
+    
+    // Card form state
+    const [cardNumber, setCardNumber] = useState('');
+    const [cardName, setCardName] = useState('');
+    const [cardExpiry, setCardExpiry] = useState('');
+    const [cardCVV, setCardCVV] = useState('');
+    const [cardErrors, setCardErrors] = useState<{
+        number?: string;
+        name?: string;
+        expiry?: string;
+        cvv?: string;
+    }>({});
+    const [savedCards, setSavedCards] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchInfo = async () => {
@@ -228,21 +244,58 @@ Generated on ${new Date().toLocaleDateString()}`;
                             <CardTitle className="text-lg">Payment Method</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center gap-4 p-4 border border-slate-200 rounded-xl bg-white">
-                                <div className="w-10 h-6 bg-slate-800 rounded flex items-center justify-center text-white text-[8px] font-mono">VISA</div>
-                                <div>
-                                    <div className="text-sm font-medium">Visa ending in 4242</div>
-                                    <div className="text-xs text-slate-500">Expires 12/2028</div>
+                            {savedCards.length > 0 ? (
+                                <div className="space-y-3">
+                                    {savedCards.map((card, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-4 border border-slate-200 rounded-xl bg-white">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-10 h-6 rounded flex items-center justify-center text-white text-[8px] font-mono ${
+                                                    card.brand === 'visa' ? 'bg-slate-800' :
+                                                    card.brand === 'mastercard' ? 'bg-red-600' :
+                                                    card.brand === 'amex' ? 'bg-blue-600' :
+                                                    'bg-slate-600'
+                                                }`}>
+                                                    {card.brand?.toUpperCase() || 'CARD'}
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-medium">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
+                                                    <div className="text-xs text-slate-500">Expires {card.expMonth}/{card.expYear}</div>
+                                                </div>
+                                            </div>
+                                            {card.isDefault && (
+                                                <Badge className="bg-green-100 text-green-700 border-green-200">Default</Badge>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
+                            ) : (
+                                <div className="text-center py-8 text-slate-500">
+                                    <CreditCard className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                                    <p className="text-sm mb-4">No payment method added yet</p>
+                                    <p className="text-xs text-slate-400">Add a card to enable upgrades</p>
+                                </div>
+                            )}
+                            <div className="flex gap-2 mt-4">
+                                <Button 
+                                    variant="outline" 
+                                    className="flex-1"
+                                    onClick={() => setShowAddCardDialog(true)}
+                                    disabled={processing}
+                                >
+                                    <CreditCard className="w-4 h-4 mr-2" />
+                                    {savedCards.length > 0 ? 'Add New Card' : 'Add Payment Card'}
+                                </Button>
+                                {savedCards.length > 0 && (
+                                    <Button 
+                                        variant="outline" 
+                                        className="flex-1"
+                                        onClick={() => setShowPaymentDialog(true)}
+                                        disabled={processing}
+                                    >
+                                        Update Payment Method
+                                    </Button>
+                                )}
                             </div>
-                            <Button 
-                                variant="outline" 
-                                className="w-full mt-4"
-                                onClick={() => setShowPaymentDialog(true)}
-                                disabled={processing}
-                            >
-                                Update Payment Method
-                            </Button>
                         </CardContent>
                     </Card>
 
@@ -551,6 +604,152 @@ Generated on ${new Date().toLocaleDateString()}`;
                 </DialogContent>
             </Dialog>
 
+            {/* Add Payment Card Dialog */}
+            <Dialog open={showAddCardDialog} onOpenChange={setShowAddCardDialog}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Add Payment Card</DialogTitle>
+                        <DialogDescription>
+                            Add a payment card to enable plan upgrades. Your card will be securely stored for future transactions.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        handleAddCard();
+                    }} className="space-y-4">
+                        {/* Card Number */}
+                        <div className="space-y-2">
+                            <Label htmlFor="cardNumber">Card Number</Label>
+                            <Input
+                                id="cardNumber"
+                                type="text"
+                                placeholder="1234 5678 9012 3456"
+                                value={cardNumber}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
+                                    if (value.length <= 16) {
+                                        const formatted = value.match(/.{1,4}/g)?.join(' ') || value;
+                                        setCardNumber(formatted);
+                                        validateCardNumber(value);
+                                    }
+                                }}
+                                className={cardErrors.number ? 'border-red-500' : ''}
+                            />
+                            {cardErrors.number && (
+                                <p className="text-xs text-red-600 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {cardErrors.number}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Cardholder Name */}
+                        <div className="space-y-2">
+                            <Label htmlFor="cardName">Cardholder Name</Label>
+                            <Input
+                                id="cardName"
+                                type="text"
+                                placeholder="John Doe"
+                                value={cardName}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                    setCardName(value);
+                                    validateCardName(value);
+                                }}
+                                className={cardErrors.name ? 'border-red-500' : ''}
+                            />
+                            {cardErrors.name && (
+                                <p className="text-xs text-red-600 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {cardErrors.name}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Expiry and CVV */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cardExpiry">Expiry Date</Label>
+                                <Input
+                                    id="cardExpiry"
+                                    type="text"
+                                    placeholder="MM/YY"
+                                    value={cardExpiry}
+                                    onChange={(e) => {
+                                        let value = e.target.value.replace(/\D/g, '');
+                                        if (value.length >= 2) {
+                                            value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                                        }
+                                        if (value.length <= 5) {
+                                            setCardExpiry(value);
+                                            validateCardExpiry(value);
+                                        }
+                                    }}
+                                    className={cardErrors.expiry ? 'border-red-500' : ''}
+                                />
+                                {cardErrors.expiry && (
+                                    <p className="text-xs text-red-600 flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {cardErrors.expiry}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cardCVV">CVV</Label>
+                                <Input
+                                    id="cardCVV"
+                                    type="text"
+                                    placeholder="123"
+                                    value={cardCVV}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                        setCardCVV(value);
+                                        validateCardCVV(value);
+                                    }}
+                                    className={cardErrors.cvv ? 'border-red-500' : ''}
+                                />
+                                {cardErrors.cvv && (
+                                    <p className="text-xs text-red-600 flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {cardErrors.cvv}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Security Notice */}
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div className="flex items-start gap-2">
+                                <Shield className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-slate-600">
+                                    Your card details are encrypted and securely stored. We use industry-standard security measures to protect your information.
+                                </p>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button 
+                                type="button"
+                                variant="outline" 
+                                onClick={() => {
+                                    setShowAddCardDialog(false);
+                                    resetCardForm();
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                type="submit"
+                                disabled={processing || !isCardFormValid()}
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                            >
+                                {processing ? "Processing..." : "Add Card"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
             {/* Update Payment Method Dialog */}
             <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
                 <DialogContent>
@@ -561,16 +760,39 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
-                        <div className="p-4 border border-slate-200 rounded-lg bg-slate-50">
-                            <div className="text-sm font-medium mb-2">Current Payment Method</div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-6 bg-slate-800 rounded flex items-center justify-center text-white text-[8px] font-mono">VISA</div>
-                                <div>
-                                    <div className="text-sm font-medium">Visa ending in 4242</div>
-                                    <div className="text-xs text-slate-500">Expires 12/2028</div>
-                                </div>
+                        {savedCards.length > 0 ? (
+                            <div className="space-y-3">
+                                {savedCards.map((card, idx) => (
+                                    <div key={idx} className="p-4 border border-slate-200 rounded-lg bg-slate-50">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="text-sm font-medium">Payment Method {idx + 1}</div>
+                                            {card.isDefault && (
+                                                <Badge className="bg-green-100 text-green-700 border-green-200">Default</Badge>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-6 rounded flex items-center justify-center text-white text-[8px] font-mono ${
+                                                card.brand === 'visa' ? 'bg-slate-800' :
+                                                card.brand === 'mastercard' ? 'bg-red-600' :
+                                                card.brand === 'amex' ? 'bg-blue-600' :
+                                                'bg-slate-600'
+                                            }`}>
+                                                {card.brand?.toUpperCase() || 'CARD'}
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
+                                                <div className="text-xs text-slate-500">Expires {card.expMonth}/{card.expYear}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+                        ) : (
+                            <div className="p-4 border border-slate-200 rounded-lg bg-slate-50">
+                                <div className="text-sm font-medium mb-2">No Payment Methods</div>
+                                <div className="text-xs text-slate-500">Add a payment card to enable plan upgrades.</div>
+                            </div>
+                        )}
                         <div className="text-sm text-slate-600">
                             Clicking "Update Payment Method" will redirect you to our secure payment processor to add or update your payment information.
                         </div>
