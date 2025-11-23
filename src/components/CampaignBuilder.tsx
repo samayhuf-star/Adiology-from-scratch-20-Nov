@@ -2813,7 +2813,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
-                                    {ad.extensionType === 'price' && (
+                                    {false && ad.extensionType === 'price' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -2894,7 +2894,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
-                                    {ad.extensionType === 'app' && (
+                                    {false && ad.extensionType === 'app' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -2943,7 +2943,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
-                                    {ad.extensionType === 'location' && (
+                                    {false && ad.extensionType === 'location' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -3022,7 +3022,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
-                                    {ad.extensionType === 'message' && (
+                                    {false && ad.extensionType === 'message' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -3057,7 +3057,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
-                                    {ad.extensionType === 'leadform' && (
+                                    {false && ad.extensionType === 'leadform' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -3119,7 +3119,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
-                                    {ad.extensionType === 'promotion' && (
+                                    {false && ad.extensionType === 'promotion' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -3184,7 +3184,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </>
                                     )}
                                     
-                                    {ad.extensionType === 'image' && (
+                                    {false && ad.extensionType === 'image' && (
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
@@ -3362,29 +3362,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </div>
                                     )}
                                 </div>
-                                    )}
-                                </>
-                            )}
-                                <div className="bg-green-50 border border-green-200 rounded px-4 py-3 mb-3">
-                                    <div className="font-semibold text-sm text-slate-700 mb-2">
-                                        {ad.header}: {ad.values.join(', ')}
-                                    </div>
-                                </div>
                             )}
 
-                            {ad.extensionType === 'callout' && (
-                                <div className="bg-blue-50 border border-blue-200 rounded px-4 py-3 mb-3">
-                                    <div className="flex flex-wrap gap-2">
-                                        {Array.isArray(ad.callouts) && ad.callouts.map((callout: string, idx: number) => (
-                                            <Badge key={idx} variant="outline" className="bg-white">
-                                                {callout}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                            {/* Old extension display code disabled - extensions are now integrated into ad preview above via CompactAdBuilder */}
                             
-                            {ad.extensionType === 'call' && (
+                            {false && ad.extensionType === 'call' && (
                                 <div className="bg-teal-50 border border-teal-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-center gap-2">
                                         <Phone className="w-4 h-4 text-teal-700" />
@@ -3396,7 +3378,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'sitelink' && (
+                            {false && ad.extensionType === 'sitelink' && (
                                 <div className="bg-cyan-50 border border-cyan-200 rounded px-4 py-3 mb-3">
                                     <div className="space-y-2">
                                         {Array.isArray(ad.sitelinks) && ad.sitelinks.map((sitelink: any, idx: number) => (
@@ -3417,7 +3399,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'price' && (
+                            {false && ad.extensionType === 'price' && (
                                 <div className="bg-yellow-50 border border-yellow-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-center gap-2">
                                         <DollarSign className="w-4 h-4 text-yellow-700" />
@@ -3432,7 +3414,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'app' && (
+                            {false && ad.extensionType === 'app' && (
                                 <div className="bg-indigo-50 border border-indigo-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-center gap-2">
                                         <Smartphone className="w-4 h-4 text-indigo-700" />
@@ -3448,7 +3430,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'location' && (
+                            {false && ad.extensionType === 'location' && (
                                 <div className="bg-red-50 border border-red-200 rounded px-4 py-3 mb-3">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
@@ -3472,7 +3454,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'message' && (
+                            {false && ad.extensionType === 'message' && (
                                 <div className="bg-violet-50 border border-violet-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-center gap-2">
                                         <MessageSquare className="w-4 h-4 text-violet-700" />
@@ -3484,7 +3466,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'leadform' && (
+                            {false && ad.extensionType === 'leadform' && (
                                 <div className="bg-emerald-50 border border-emerald-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-start gap-2">
                                         <FormIcon className="w-4 h-4 text-emerald-700 mt-0.5" />
@@ -3507,7 +3489,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'promotion' && (
+                            {false && ad.extensionType === 'promotion' && (
                                 <div className="bg-rose-50 border border-rose-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-start gap-2">
                                         <Tag className="w-4 h-4 text-rose-700 mt-0.5" />
@@ -3536,7 +3518,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
                             
-                            {ad.extensionType === 'image' && (
+                            {false && ad.extensionType === 'image' && (
                                 <div className="bg-amber-50 border border-amber-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-start gap-2">
                                         <ImageIcon className="w-4 h-4 text-amber-700 mt-0.5" />
