@@ -1196,35 +1196,24 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
 
   // Step 3: Ads & Extensions (Structure-based templates)
-  const renderStep3 = () => {
-    if (!structureType) {
-      return (
-        <div className="max-w-7xl mx-auto p-8 text-center">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-          <h3 className="text-xl font-semibold text-slate-600 mb-2">Structure Not Selected</h3>
-          <p className="text-slate-500 mb-4">Please go back and select a campaign structure first.</p>
-          <Button onClick={() => setStep(1)} variant="outline">
-            Go to Setup
-          </Button>
-        </div>
-      );
+  // Generate ads based on structure - moved outside renderStep3 to avoid closure issues
+  const generateAdsForStructure = useCallback(() => {
+    if (!structureType || selectedKeywords.length === 0) {
+      // Fallback: create at least one default ad
+      const defaultAd = {
+        id: Date.now(),
+        type: 'rsa',
+        headline1: `${selectedKeywords[0] || 'Your Service'} - Best Deals`,
+        headline2: 'Shop Now & Save',
+        headline3: 'Fast Delivery',
+        description1: `Looking for ${selectedKeywords[0] || 'your service'}? We offer competitive prices.`,
+        description2: 'Get started today!',
+        finalUrl: url
+      };
+      setGeneratedAds([defaultAd]);
+      return;
     }
 
-    if (selectedKeywords.length === 0) {
-      return (
-        <div className="max-w-7xl mx-auto p-8 text-center">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-          <h3 className="text-xl font-semibold text-slate-600 mb-2">No Keywords Selected</h3>
-          <p className="text-slate-500 mb-4">Please go back and select keywords before creating ads.</p>
-          <Button onClick={() => setStep(2)} variant="outline">
-            Go to Keywords
-          </Button>
-        </div>
-      );
-    }
-
-    // Generate ads based on structure
-    const generateAdsForStructure = () => {
       const baseAds: any[] = [];
       const mainKeyword = selectedKeywords[0] || 'your service';
 
@@ -1333,21 +1322,64 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           });
       }
 
-      setGeneratedAds(baseAds);
-    };
-
-    useEffect(() => {
-      if (step === 3 && structureType && selectedKeywords.length > 0) {
-        // Always regenerate ads when step 3 is reached with valid data
-        // Check if ads need to be generated or regenerated
-        const needsRegeneration = generatedAds.length === 0 || 
-          generatedAds.some(ad => !ad.headline1 || !ad.headline2);
-        
-        if (needsRegeneration) {
-          generateAdsForStructure();
-        }
+      // Ensure at least one ad is generated (fallback for cases where baseAds might be empty)
+      if (baseAds.length === 0) {
+        baseAds.push({
+          id: Date.now(),
+          type: 'rsa',
+          headline1: `${mainKeyword} - Best Deals`,
+          headline2: 'Shop Now & Save',
+          headline3: 'Fast Delivery',
+          description1: `Looking for ${mainKeyword}? We offer competitive prices.`,
+          description2: 'Get started today!',
+          finalUrl: url
+        });
       }
-    }, [step, structureType, selectedKeywords.length]);
+
+      setGeneratedAds(baseAds);
+  }, [structureType, selectedKeywords.length, url, selectedIntents]);
+
+  // Generate ads when step 3 is reached
+  useEffect(() => {
+    if (step === 3) {
+      if (!structureType) {
+        return; // Will show error message in renderStep3
+      }
+      if (selectedKeywords.length === 0) {
+        return; // Will show error message in renderStep3
+      }
+      
+      // Always generate ads when step 3 is reached with valid data
+      generateAdsForStructure();
+    }
+  }, [step, structureType, selectedKeywords.length, generateAdsForStructure]);
+
+  const renderStep3 = () => {
+    if (!structureType) {
+      return (
+        <div className="max-w-7xl mx-auto p-8 text-center">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+          <h3 className="text-xl font-semibold text-slate-600 mb-2">Structure Not Selected</h3>
+          <p className="text-slate-500 mb-4">Please go back and select a campaign structure first.</p>
+          <Button onClick={() => setStep(1)} variant="outline">
+            Go to Setup
+          </Button>
+        </div>
+      );
+    }
+
+    if (selectedKeywords.length === 0) {
+      return (
+        <div className="max-w-7xl mx-auto p-8 text-center">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+          <h3 className="text-xl font-semibold text-slate-600 mb-2">No Keywords Selected</h3>
+          <p className="text-slate-500 mb-4">Please go back and select keywords before creating ads.</p>
+          <Button onClick={() => setStep(2)} variant="outline">
+            Go to Keywords
+          </Button>
+        </div>
+      );
+    }
 
     // Create extension
     const createExtension = (extensionType: string) => {
