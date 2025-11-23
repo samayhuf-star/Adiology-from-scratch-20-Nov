@@ -27,7 +27,7 @@ import { historyService } from '../utils/historyService';
 import { KeywordPlanner } from './KeywordPlanner';
 import { KeywordPlannerSelectable } from './KeywordPlannerSelectable';
 import { LiveAdPreview } from './LiveAdPreview';
-import { CompactAdBuilder } from './CompactAdBuilder';
+// import { CompactAdBuilder } from './CompactAdBuilder'; // Not used - using custom renderStep3 instead
 import { notifications } from '../utils/notifications';
 import { rateLimiter } from '../utils/rateLimiter';
 import { usageTracker } from '../utils/usageTracker';
