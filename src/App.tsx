@@ -501,12 +501,6 @@ const DashboardView = () => (
       <p className="text-slate-600 max-w-lg mx-auto mb-4">
         Your Google Ads campaign management platform is ready. Navigate to Campaign Builder, CSV Validator, or Keyword tools to get started.
       </p>
-      <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg mt-4">
-        <Shield className="w-4 h-4 text-purple-600" />
-        <p className="text-sm text-purple-700">
-          Press <kbd className="px-2 py-1 bg-white rounded border border-purple-300 text-xs font-mono">Ctrl+Shift+A</kbd> for Super Admin access
-        </p>
-      </div>
     </div>
   </div>
 );
