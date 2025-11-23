@@ -33,6 +33,7 @@ export interface Ad {
   path1?: string;
   path2?: string;
   type: 'rsa' | 'dki' | 'callonly';
+  extensions?: any[]; // Extensions attached to this ad
 }
 
 export interface StructureSettings {

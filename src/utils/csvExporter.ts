@@ -9,14 +9,38 @@ export interface CSVRow {
   Campaign: string;
   'Campaign Type': string;
   'Ad Group': string;
-  Keyword: string;
-  'Criterion Type': string;
+  'Row Type': string;
+  Status: string;
+  'Keyword': string;
+  'Match Type': string;
   'Final URL': string;
   'Headline 1': string;
   'Headline 2': string;
   'Headline 3': string;
+  'Headline 4': string;
+  'Headline 5': string;
+  'Headline 6': string;
+  'Headline 7': string;
+  'Headline 8': string;
+  'Headline 9': string;
+  'Headline 10': string;
+  'Headline 11': string;
+  'Headline 12': string;
+  'Headline 13': string;
+  'Headline 14': string;
+  'Headline 15': string;
   'Description 1': string;
   'Description 2': string;
+  'Description 3': string;
+  'Description 4': string;
+  'Path 1': string;
+  'Path 2': string;
+  'Asset Type': string;
+  'Link Text': string;
+  'Description Line 1': string;
+  'Description Line 2': string;
+  'Phone Number': string;
+  'Country Code': string;
   'Location Target': string;
   'Negative Keyword': string;
 }
@@ -29,10 +53,11 @@ export function structureToCSV(structure: CampaignStructure): CSVRow[] {
 
   structure.campaigns.forEach((campaign) => {
     campaign.adgroups.forEach((adGroup) => {
-      // Create rows for each keyword
+      // Create rows for each keyword-ad combination
       adGroup.keywords.forEach((keyword) => {
-        // Determine criterion type from keyword format
-        const criterionType = getCriterionType(keyword);
+        // Determine match type from keyword format
+        const matchType = getMatchType(keyword);
+        const cleanKeyword = keyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes for display
         
         // Create one row per ad (or one row if no ads)
         const ads = adGroup.ads.length > 0 ? adGroup.ads : [getDefaultAdRow(campaign)];
@@ -51,40 +76,265 @@ export function structureToCSV(structure: CampaignStructure): CSVRow[] {
             Campaign: campaign.campaign_name,
             'Campaign Type': 'Search',
             'Ad Group': adGroup.adgroup_name,
-            Keyword: keyword,
-            'Criterion Type': criterionType,
+            'Row Type': 'ad',
+            Status: 'Active',
+            'Keyword': cleanKeyword,
+            'Match Type': matchType,
             'Final URL': finalUrl,
             'Headline 1': ad.headline1 || '',
             'Headline 2': ad.headline2 || '',
             'Headline 3': ad.headline3 || '',
+            'Headline 4': ad.headline4 || '',
+            'Headline 5': ad.headline5 || '',
+            'Headline 6': '',
+            'Headline 7': '',
+            'Headline 8': '',
+            'Headline 9': '',
+            'Headline 10': '',
+            'Headline 11': '',
+            'Headline 12': '',
+            'Headline 13': '',
+            'Headline 14': '',
+            'Headline 15': '',
             'Description 1': ad.description1 || '',
             'Description 2': ad.description2 || '',
+            'Description 3': '',
+            'Description 4': '',
+            'Path 1': ad.path1 || '',
+            'Path 2': ad.path2 || '',
+            'Asset Type': '',
+            'Link Text': '',
+            'Description Line 1': '',
+            'Description Line 2': '',
+            'Phone Number': '',
+            'Country Code': '',
             'Location Target': adGroup.location_target || '',
             'Negative Keyword': ''
           });
         });
       });
 
-      // Add negative keyword rows (one per negative keyword)
+      // Add extension rows
+      if (adGroup.ads && adGroup.ads.length > 0) {
+        adGroup.ads.forEach((ad) => {
+          // Check if ad has extensions
+          const extensions = (ad as any).extensions || [];
+          extensions.forEach((ext: any) => {
+            if (ext.extensionType === 'sitelink' && ext.links) {
+              ext.links.forEach((link: any) => {
+                rows.push({
+                  Campaign: campaign.campaign_name,
+                  'Campaign Type': 'Search',
+                  'Ad Group': adGroup.adgroup_name,
+                  'Row Type': 'sitelink',
+                  Status: 'Active',
+                  'Keyword': '',
+                  'Match Type': '',
+                  'Final URL': link.url || ad.final_url || '',
+                  'Headline 1': '',
+                  'Headline 2': '',
+                  'Headline 3': '',
+                  'Headline 4': '',
+                  'Headline 5': '',
+                  'Headline 6': '',
+                  'Headline 7': '',
+                  'Headline 8': '',
+                  'Headline 9': '',
+                  'Headline 10': '',
+                  'Headline 11': '',
+                  'Headline 12': '',
+                  'Headline 13': '',
+                  'Headline 14': '',
+                  'Headline 15': '',
+                  'Description 1': '',
+                  'Description 2': '',
+                  'Description 3': '',
+                  'Description 4': '',
+                  'Path 1': '',
+                  'Path 2': '',
+                  'Asset Type': 'Sitelink',
+                  'Link Text': link.text || '',
+                  'Description Line 1': link.description || '',
+                  'Description Line 2': '',
+                  'Phone Number': '',
+                  'Country Code': '',
+                  'Location Target': '',
+                  'Negative Keyword': ''
+                });
+              });
+            } else if (ext.extensionType === 'call' && ext.phone) {
+              rows.push({
+                Campaign: campaign.campaign_name,
+                'Campaign Type': 'Search',
+                'Ad Group': adGroup.adgroup_name,
+                'Row Type': 'call',
+                Status: 'Active',
+                'Keyword': '',
+                'Match Type': '',
+                'Final URL': '',
+                'Headline 1': '',
+                'Headline 2': '',
+                'Headline 3': '',
+                'Headline 4': '',
+                'Headline 5': '',
+                'Headline 6': '',
+                'Headline 7': '',
+                'Headline 8': '',
+                'Headline 9': '',
+                'Headline 10': '',
+                'Headline 11': '',
+                'Headline 12': '',
+                'Headline 13': '',
+                'Headline 14': '',
+                'Headline 15': '',
+                'Description 1': '',
+                'Description 2': '',
+                'Description 3': '',
+                'Description 4': '',
+                'Path 1': '',
+                'Path 2': '',
+                'Asset Type': 'Call',
+                'Link Text': '',
+                'Description Line 1': '',
+                'Description Line 2': '',
+                'Phone Number': ext.phone || '',
+                'Country Code': 'US',
+                'Location Target': '',
+                'Negative Keyword': ''
+              });
+            } else if (ext.extensionType === 'callout' && ext.values) {
+              ext.values.forEach((value: string) => {
+                rows.push({
+                  Campaign: campaign.campaign_name,
+                  'Campaign Type': 'Search',
+                  'Ad Group': adGroup.adgroup_name,
+                  'Row Type': 'callout',
+                  Status: 'Active',
+                  'Keyword': '',
+                  'Match Type': '',
+                  'Final URL': '',
+                  'Headline 1': '',
+                  'Headline 2': '',
+                  'Headline 3': '',
+                  'Headline 4': '',
+                  'Headline 5': '',
+                  'Headline 6': '',
+                  'Headline 7': '',
+                  'Headline 8': '',
+                  'Headline 9': '',
+                  'Headline 10': '',
+                  'Headline 11': '',
+                  'Headline 12': '',
+                  'Headline 13': '',
+                  'Headline 14': '',
+                  'Headline 15': '',
+                  'Description 1': '',
+                  'Description 2': '',
+                  'Description 3': '',
+                  'Description 4': '',
+                  'Path 1': '',
+                  'Path 2': '',
+                  'Asset Type': 'Callout',
+                  'Link Text': value,
+                  'Description Line 1': '',
+                  'Description Line 2': '',
+                  'Phone Number': '',
+                  'Country Code': '',
+                  'Location Target': '',
+                  'Negative Keyword': ''
+                });
+              });
+            } else if (ext.extensionType === 'snippet' && ext.values) {
+              ext.values.forEach((value: string) => {
+                rows.push({
+                  Campaign: campaign.campaign_name,
+                  'Campaign Type': 'Search',
+                  'Ad Group': adGroup.adgroup_name,
+                  'Row Type': 'snippet',
+                  Status: 'Active',
+                  'Keyword': '',
+                  'Match Type': '',
+                  'Final URL': '',
+                  'Headline 1': '',
+                  'Headline 2': '',
+                  'Headline 3': '',
+                  'Headline 4': '',
+                  'Headline 5': '',
+                  'Headline 6': '',
+                  'Headline 7': '',
+                  'Headline 8': '',
+                  'Headline 9': '',
+                  'Headline 10': '',
+                  'Headline 11': '',
+                  'Headline 12': '',
+                  'Headline 13': '',
+                  'Headline 14': '',
+                  'Headline 15': '',
+                  'Description 1': '',
+                  'Description 2': '',
+                  'Description 3': '',
+                  'Description 4': '',
+                  'Path 1': '',
+                  'Path 2': '',
+                  'Asset Type': 'Snippet',
+                  'Link Text': value,
+                  'Description Line 1': ext.header || '',
+                  'Description Line 2': '',
+                  'Phone Number': '',
+                  'Country Code': '',
+                  'Location Target': '',
+                  'Negative Keyword': ''
+                });
+              });
+            }
+          });
+        });
+      }
+
+      // Add negative keyword rows
       if (adGroup.negative_keywords && adGroup.negative_keywords.length > 0) {
         adGroup.negative_keywords.forEach((negativeKw) => {
-          // Format negative keyword with match type if needed
           const formattedNegative = negativeKw.startsWith('[') || negativeKw.startsWith('"') 
             ? negativeKw 
-            : `[${negativeKw}]`; // Default to exact match for negatives
+            : `[${negativeKw}]`;
+          const cleanNegative = formattedNegative.replace(/^\[|\]$|^"|"$/g, '');
           
           rows.push({
             Campaign: campaign.campaign_name,
             'Campaign Type': 'Search',
             'Ad Group': adGroup.adgroup_name,
-            Keyword: formattedNegative,
-            'Criterion Type': 'Negative',
+            'Row Type': 'keyword',
+            Status: 'Active',
+            'Keyword': cleanNegative,
+            'Match Type': 'Negative',
             'Final URL': '',
             'Headline 1': '',
             'Headline 2': '',
             'Headline 3': '',
+            'Headline 4': '',
+            'Headline 5': '',
+            'Headline 6': '',
+            'Headline 7': '',
+            'Headline 8': '',
+            'Headline 9': '',
+            'Headline 10': '',
+            'Headline 11': '',
+            'Headline 12': '',
+            'Headline 13': '',
+            'Headline 14': '',
+            'Headline 15': '',
             'Description 1': '',
             'Description 2': '',
+            'Description 3': '',
+            'Description 4': '',
+            'Path 1': '',
+            'Path 2': '',
+            'Asset Type': '',
+            'Link Text': '',
+            'Description Line 1': '',
+            'Description Line 2': '',
+            'Phone Number': '',
+            'Country Code': '',
             'Location Target': adGroup.location_target || '',
             'Negative Keyword': 'Yes'
           });
@@ -143,11 +393,7 @@ export function exportCampaignToCSV(structure: CampaignStructure, filename: stri
 
 // Helper Functions
 
-function getCriterionType(keyword: string): string {
-  // Check for negative keyword first
-  if (keyword.toLowerCase().includes('negative')) {
-    return 'Negative';
-  }
+function getMatchType(keyword: string): string {
   if (keyword.startsWith('[') && keyword.endsWith(']')) {
     return 'Exact';
   } else if (keyword.startsWith('"') && keyword.endsWith('"')) {

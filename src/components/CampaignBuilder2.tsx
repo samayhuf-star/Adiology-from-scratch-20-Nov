@@ -862,6 +862,137 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       }
     }, [step, structureType, selectedKeywords.length]);
 
+    // Create extension
+    const createExtension = (extensionType: string) => {
+      if (selectedKeywords.length === 0) {
+        notifications.warning('Please select keywords first', { title: 'Keywords Required' });
+        return;
+      }
+
+      const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+      if (!hasRegularAds) {
+        notifications.info('Creating a default ad first, then adding your extension', {
+          title: 'Ad Required',
+          description: 'Extensions need to be attached to an ad.'
+        });
+        // Create a default ad
+        const defaultAd = {
+          id: Date.now(),
+          type: 'rsa',
+          headline1: `${selectedKeywords[0] || 'Your Service'} - Best Deals`,
+          headline2: 'Shop Now & Save',
+          headline3: 'Fast Delivery',
+          description1: `Looking for ${selectedKeywords[0] || 'your service'}? We offer competitive prices.`,
+          description2: 'Get started today!',
+          finalUrl: url
+        };
+        setGeneratedAds([defaultAd]);
+      }
+
+      const mainKeyword = selectedKeywords[0] || 'your service';
+      const extensionId = Date.now();
+      let extension: any = {
+        id: extensionId,
+        type: 'extension',
+        extensionType: extensionType,
+        finalUrl: url
+      };
+
+      // Generate extension content based on type
+      switch (extensionType) {
+        case 'snippet':
+          extension.header = 'Types';
+          extension.values = selectedKeywords.slice(0, 4).map(kw => kw.split(' ')[0]);
+          break;
+        case 'callout':
+          extension.values = [
+            `Free ${mainKeyword} Consultation`,
+            '24/7 Expert Support',
+            'Best Price Guarantee',
+            'Fast & Reliable Service'
+          ];
+          break;
+        case 'sitelink':
+          extension.links = [
+            { text: 'Shop Now', description: 'Browse our collection', url: url || 'www.example.com/shop' },
+            { text: 'About Us', description: 'Learn more about us', url: url || 'www.example.com/about' },
+            { text: 'Contact', description: 'Get in touch', url: url || 'www.example.com/contact' },
+            { text: 'Support', description: 'Customer support', url: url || 'www.example.com/support' }
+          ];
+          break;
+        case 'call':
+          extension.phone = '(555) 123-4567';
+          extension.callTrackingEnabled = false;
+          break;
+        case 'price':
+          extension.type = 'SERVICES';
+          extension.priceQualifier = 'From';
+          extension.price = '$99';
+          extension.currency = 'USD';
+          extension.unit = 'per service';
+          break;
+        case 'app':
+          extension.appStore = 'GOOGLE_PLAY';
+          extension.appId = 'com.example.app';
+          extension.appLinkText = 'Download Now';
+          break;
+        case 'location':
+          extension.businessName = 'Your Business Name';
+          extension.addressLine1 = '123 Main St';
+          extension.city = 'City';
+          extension.state = 'State';
+          extension.postalCode = '12345';
+          extension.country = 'United States';
+          extension.phone = '(555) 123-4567';
+          break;
+        case 'message':
+          extension.messageText = 'Message us for quick answers';
+          extension.businessName = 'Your Business';
+          extension.phone = '(555) 123-4567';
+          break;
+        case 'leadform':
+          extension.formName = 'Get Started';
+          extension.formDescription = 'Fill out this form to get in touch';
+          extension.formType = 'CONTACT';
+          break;
+        case 'promotion':
+          extension.promotionText = 'Special Offer';
+          extension.promotionDescription = 'Get 20% off your first order';
+          extension.occasion = 'SALE';
+          extension.startDate = new Date().toISOString().split('T')[0];
+          extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          break;
+        case 'image':
+          extension.imageUrl = 'https://via.placeholder.com/1200x628';
+          extension.imageAltText = 'Product Image';
+          extension.imageName = 'Product Showcase';
+          break;
+      }
+
+      // Attach extension to first regular ad if exists, otherwise add as separate item
+      const regularAds = generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+      if (regularAds.length > 0) {
+        // Attach to first ad
+        const updatedAds = generatedAds.map(ad => {
+          if (ad.id === regularAds[0].id) {
+            return {
+              ...ad,
+              extensions: [...(ad.extensions || []), extension]
+            };
+          }
+          return ad;
+        });
+        setGeneratedAds(updatedAds);
+      } else {
+        // Add as separate extension item
+        setGeneratedAds([...generatedAds, extension]);
+      }
+
+      notifications.success(`${extensionType.charAt(0).toUpperCase() + extensionType.slice(1)} extension added`, {
+        title: 'Extension Created'
+      });
+    };
+
     return (
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
@@ -869,21 +1000,138 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <p className="text-slate-600">Structure-optimized ad templates</p>
         </div>
 
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Generated Ads</CardTitle>
-            <CardDescription>Ads optimized for {STRUCTURE_TYPES.find(s => s.id === structureType)?.name} structure</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {generatedAds.map((ad) => (
-                <div key={ad.id} className="border border-slate-200 rounded-lg p-4">
-                  <LiveAdPreview ad={ad} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Panel - Extension Buttons */}
+          <div className="lg:col-span-1 space-y-4">
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-sm text-slate-500 uppercase tracking-wide">EXTENSIONS</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  onClick={() => createExtension('snippet')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('callout')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('sitelink')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> SITELINK EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('call')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> CALL EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('price')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('app')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('location')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> LOCATION EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('message')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('leadform')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('promotion')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
+                </Button>
+                <Button 
+                  onClick={() => createExtension('image')} 
+                  disabled={selectedKeywords.length === 0} 
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  <Plus className="mr-2 w-5 h-5" /> IMAGE EXTENSION
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Panel - Ads with Extensions */}
+          <div className="lg:col-span-2">
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardHeader>
+                <CardTitle>Generated Ads</CardTitle>
+                <CardDescription>Ads optimized for {STRUCTURE_TYPES.find(s => s.id === structureType)?.name} structure</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {generatedAds.map((ad) => (
+                    <div key={ad.id} className="border border-slate-200 rounded-lg p-4">
+                      {ad.type === 'extension' ? (
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                          <Badge className="mb-2 bg-purple-100 text-purple-700">
+                            {ad.extensionType?.charAt(0).toUpperCase() + ad.extensionType?.slice(1)} Extension
+                          </Badge>
+                          <LiveAdPreview ad={ad} />
+                        </div>
+                      ) : (
+                        <>
+                          <LiveAdPreview ad={ad} />
+                          {ad.extensions && ad.extensions.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-slate-200">
+                              <p className="text-xs text-slate-500 mb-2 font-semibold">EXTENSIONS</p>
+                              {ad.extensions.map((ext: any, idx: number) => (
+                                <div key={idx} className="bg-purple-50 p-3 rounded border border-purple-200 mb-2">
+                                  <Badge className="mb-2 bg-purple-100 text-purple-700">
+                                    {ext.extensionType?.charAt(0).toUpperCase() + ext.extensionType?.slice(1)} Extension
+                                  </Badge>
+                                  <LiveAdPreview ad={ext} />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Navigation */}
         <div className="flex justify-between">
@@ -1263,19 +1511,22 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         selectedCities,
         selectedZips,
         targetCountry,
-        ads: generatedAds.map(ad => ({
-          type: ad.type || 'rsa',
-          headline1: ad.headline1,
-          headline2: ad.headline2,
-          headline3: ad.headline3,
-          headline4: ad.headline4,
-          headline5: ad.headline5,
-          description1: ad.description1,
-          description2: ad.description2,
-          final_url: ad.finalUrl || url,
-          path1: ad.path1,
-          path2: ad.path2
-        })),
+        ads: generatedAds
+          .filter(ad => ad.type !== 'extension') // Filter out standalone extensions
+          .map(ad => ({
+            type: ad.type || 'rsa',
+            headline1: ad.headline1,
+            headline2: ad.headline2,
+            headline3: ad.headline3,
+            headline4: ad.headline4,
+            headline5: ad.headline5,
+            description1: ad.description1,
+            description2: ad.description2,
+            final_url: ad.finalUrl || url,
+            path1: ad.path1,
+            path2: ad.path2,
+            extensions: ad.extensions || [] // Include extensions attached to ads
+          })),
         intentGroups,
         selectedIntents,
         alphaKeywords,
