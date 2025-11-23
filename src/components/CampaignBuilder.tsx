@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ArrowRight, Check, ChevronRight, Download, FileText, Globe, 
   Layout, Layers, MapPin, Mail, Hash, TrendingUp, Zap, 
@@ -643,7 +643,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
     // Generate dynamic ad groups based on structure and selected keywords
     // MUST be defined early to avoid "Cannot access before initialization" errors
-    const getDynamicAdGroups = React.useCallback(() => {
+    const getDynamicAdGroups = useCallback(() => {
         try {
             if (!selectedKeywords || selectedKeywords.length === 0) return [];
             if (!structure) return [];
