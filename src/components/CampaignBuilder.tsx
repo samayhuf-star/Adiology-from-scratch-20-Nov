@@ -641,6 +641,61 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [canRedo, setCanRedo] = useState(false);
     const [lastActionDescription, setLastActionDescription] = useState<string | null>(null);
 
+    // Generate dynamic ad groups based on structure and selected keywords
+    // MUST be defined early to avoid "Cannot access before initialization" errors
+    const getDynamicAdGroups = React.useCallback(() => {
+        try {
+            if (!selectedKeywords || selectedKeywords.length === 0) return [];
+            if (!structure) return [];
+            
+            if (structure === 'SKAG') {
+                // Each keyword is its own ad group
+                return selectedKeywords.slice(0, 20).map(kw => ({
+                    name: kw,
+                    keywords: [kw]
+                }));
+            } else if (structure === 'STAG') {
+                // Group keywords thematically (simplified grouping)
+                const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
+                const groups = [];
+                for (let i = 0; i < selectedKeywords.length; i += groupSize) {
+                    const groupKeywords = selectedKeywords.slice(i, i + groupSize);
+                    groups.push({
+                        name: `Ad Group ${groups.length + 1}`,
+                        keywords: groupKeywords
+                    });
+                }
+                return groups.slice(0, 10);
+            } else {
+                // Mix: Some SKAG, some STAG
+                const groups = [];
+                // First 5 as SKAG
+                selectedKeywords.slice(0, 5).forEach(kw => {
+                    groups.push({
+                        name: kw,
+                        keywords: [kw]
+                    });
+                });
+                // Rest grouped
+                const remaining = selectedKeywords.slice(5);
+                if (remaining.length > 0) {
+                    const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
+                    for (let i = 0; i < remaining.length; i += groupSize) {
+                        const groupKeywords = remaining.slice(i, i + groupSize);
+                        groups.push({
+                            name: `Mixed Group ${groups.length - 4}`,
+                            keywords: groupKeywords
+                        });
+                    }
+                }
+                return groups.slice(0, 10);
+            }
+        } catch (error) {
+            console.error('Error generating dynamic ad groups:', error);
+            return [];
+        }
+    }, [selectedKeywords, structure]);
+
     // Helper function to get current ad state (deep copy to maintain CSV structure)
     const getCurrentAdState = (): AdHistoryState => ({
         generatedAds: JSON.parse(JSON.stringify(generatedAds)), // Deep copy for CSV compatibility
@@ -1985,60 +2040,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         });
     };
     
-    // Generate dynamic ad groups based on structure and selected keywords
-    const getDynamicAdGroups = () => {
-        try {
-            if (!selectedKeywords || selectedKeywords.length === 0) return [];
-            if (!structure) return [];
-            
-            if (structure === 'SKAG') {
-                // Each keyword is its own ad group
-                return selectedKeywords.slice(0, 20).map(kw => ({
-                    name: kw,
-                    keywords: [kw]
-                }));
-            } else if (structure === 'STAG') {
-                // Group keywords thematically (simplified grouping)
-                const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
-                const groups = [];
-                for (let i = 0; i < selectedKeywords.length; i += groupSize) {
-                    const groupKeywords = selectedKeywords.slice(i, i + groupSize);
-                    groups.push({
-                        name: `Ad Group ${groups.length + 1}`,
-                        keywords: groupKeywords
-                    });
-                }
-                return groups.slice(0, 10);
-            } else {
-                // Mix: Some SKAG, some STAG
-                const groups = [];
-                // First 5 as SKAG
-                selectedKeywords.slice(0, 5).forEach(kw => {
-                    groups.push({
-                        name: kw,
-                        keywords: [kw]
-                    });
-                });
-                // Rest grouped
-                const remaining = selectedKeywords.slice(5);
-                if (remaining.length > 0) {
-                    const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
-                    for (let i = 0; i < remaining.length; i += groupSize) {
-                        const groupKeywords = remaining.slice(i, i + groupSize);
-                        groups.push({
-                            name: `Mixed Group ${groups.length - 4}`,
-                            keywords: groupKeywords
-                        });
-                    }
-                }
-                return groups.slice(0, 10);
-            }
-        } catch (error) {
-            console.error('Error generating dynamic ad groups:', error);
-            return [];
-        }
-    };
-
+    
     const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
         // Check if this is an extension type
         const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
@@ -2598,39 +2600,39 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         
         return (
             <div className="max-w-7xl mx-auto p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Panel */}
-                    <div className="lg:col-span-1 space-y-4">
-                        {/* Ad Group Selector */}
-                        <div className="bg-slate-100 p-4 rounded-lg">
-                            <Select value={selectedAdGroup} onValueChange={setSelectedAdGroup}>
-                                <SelectTrigger className="w-full bg-white border-slate-300">
-                                    <SelectValue placeholder="Select ad group" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem key={ALL_AD_GROUPS_VALUE} value={ALL_AD_GROUPS_VALUE}>
-                                        ALL AD GROUPS
-                                    </SelectItem>
-                                    {adGroupList.map(group => (
-                                        <SelectItem key={group} value={group}>{group}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                <div className="lg:col-span-1 space-y-4">
+                    {/* Ad Group Selector */}
+                    <div className="bg-slate-100 p-4 rounded-lg">
+                        <Select value={selectedAdGroup} onValueChange={setSelectedAdGroup}>
+                            <SelectTrigger className="w-full bg-white border-slate-300">
+                                <SelectValue placeholder="Select ad group" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem key={ALL_AD_GROUPS_VALUE} value={ALL_AD_GROUPS_VALUE}>
+                                    ALL AD GROUPS
+                                </SelectItem>
+                                {adGroupList.map(group => (
+                                    <SelectItem key={group} value={group}>{group}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                             {selectedAdGroup !== ALL_AD_GROUPS_VALUE && dynamicAdGroups.length > 0 && (
-                                <div className="mt-2 text-xs text-slate-600">
-                                    {dynamicAdGroups.find(g => g.name === selectedAdGroup)?.keywords.length || 0} keywords in this group
-                                </div>
-                            )}
-                        </div>
-                        
+                            <div className="mt-2 text-xs text-slate-600">
+                                {dynamicAdGroups.find(g => g.name === selectedAdGroup)?.keywords.length || 0} keywords in this group
+                            </div>
+                        )}
+                    </div>
+                    
                         {/* Info Card */}
-                        <div className="bg-white rounded-lg p-4 border border-slate-200">
-                            <p className="text-sm text-slate-600">
-                                You can preview different ad groups, however changing ads here will change all ad groups. 
-                                In the next section you can edit ads individually for each ad group.
-                            </p>
-                        </div>
-                        
+                    <div className="bg-white rounded-lg p-4 border border-slate-200">
+                        <p className="text-sm text-slate-600">
+                            You can preview different ad groups, however changing ads here will change all ad groups. 
+                            In the next section you can edit ads individually for each ad group.
+                        </p>
+                    </div>
+                    
                         {/* Total Ads Counter */}
                         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                             <div className="flex items-center justify-between">
@@ -2643,46 +2645,46 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         
                         {/* Create Ad Buttons */}
                         <div className="space-y-3">
-                            <Button 
-                                onClick={() => createNewAd('rsa')}
+                        <Button 
+                            onClick={() => createNewAd('rsa')}
                                 disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                            >
-                                <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
-                            </Button>
-                            <Button 
-                                onClick={() => createNewAd('dki')}
+                        >
+                            <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('dki')}
                                 disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                            >
-                                <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
-                            </Button>
-                            <Button 
-                                onClick={() => createNewAd('callonly')}
+                        >
+                            <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
+                        </Button>
+                        <Button 
+                            onClick={() => createNewAd('callonly')}
                                 disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-                            >
-                                <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
-                            </Button>
+                        >
+                            <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
+                        </Button>
                             <Button 
-                                onClick={() => createNewAd('snippet')}
-                                disabled={selectedKeywords.length === 0}
+                            onClick={() => createNewAd('snippet')}
+                            disabled={selectedKeywords.length === 0}
                                 className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                             >
                                 <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
                             </Button>
                             <Button 
-                                onClick={() => createNewAd('callout')}
+                            onClick={() => createNewAd('callout')}
                                 disabled={selectedKeywords.length === 0}
                                 className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                             >
                                 <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                             </Button>
-                        </div>
                     </div>
-                    
+                </div>
+                
                     {/* Right Panel - Ad Cards */}
-                    <div className="lg:col-span-2 space-y-4">
+                <div className="lg:col-span-2 space-y-4">
                         {filteredAds.map((ad: any) => {
                             const headline = formatHeadline(ad);
                             const displayUrl = formatDisplayUrl(ad);
@@ -2692,24 +2694,24 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                                     {/* Badge - Top Left */}
                                     <div className="mb-3">
-                                        <Badge className={
+                                <Badge className={
                                             ad.type === 'rsa' ? 'bg-blue-100 text-blue-700 border-0' :
                                             ad.type === 'dki' ? 'bg-purple-100 text-purple-700 border-0' :
                                             ad.type === 'callonly' ? 'bg-green-100 text-green-700 border-0' :
                                             'bg-slate-100 text-slate-700 border-0'
-                                        }>
-                                            {ad.type === 'rsa' ? 'RSA' : 
-                                             ad.type === 'dki' ? 'DKI' : 
+                                }>
+                                    {ad.type === 'rsa' ? 'RSA' : 
+                                     ad.type === 'dki' ? 'DKI' : 
                                              ad.type === 'callonly' ? 'Call Only' : 
                                              ad.extensionType ? ad.extensionType.charAt(0).toUpperCase() + ad.extensionType.slice(1) : 'Ad'}
-                                        </Badge>
-                                    </div>
+                                </Badge>
+                                        </div>
                                     
                                     {/* Ad Preview */}
                                     <div className="mb-4">
                                         <div className="text-blue-600 hover:underline cursor-pointer mb-1 text-base font-medium leading-relaxed">
                                             {headline}
-                                        </div>
+                                    </div>
                                         <div className="text-green-700 text-sm mb-2 font-normal">
                                             {displayUrl}
                                         </div>
@@ -2744,225 +2746,225 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                             <Trash2 className="w-4 h-4 mr-1" />
                                             DELETE
                                         </Button>
-                                    </div>
-                                    
-                                    {/* Edit Form - shown when editing */}
-                                    {editingAdId === ad.id && (
-                                        <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
-                                            {(ad.type === 'rsa' || ad.type === 'dki') && (
-                                                <>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
-                                                            <Input
-                                                                value={ad.headline1 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter headline 1"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Headline 2 *</Label>
-                                                            <Input
-                                                                value={ad.headline2 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter headline 2"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Headline 3</Label>
-                                                            <Input
-                                                                value={ad.headline3 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'headline3', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter headline 3"
-                                                            />
-                                                        </div>
-                                                        {ad.type === 'rsa' && (
-                                                            <>
-                                                                <div>
-                                                                    <Label className="text-xs font-semibold text-slate-700">Headline 4</Label>
-                                                                    <Input
-                                                                        value={ad.headline4 || ''}
-                                                                        onChange={(e) => updateAdField(ad.id, 'headline4', e.target.value)}
-                                                                        className="mt-1"
-                                                                        placeholder="Enter headline 4"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <Label className="text-xs font-semibold text-slate-700">Headline 5</Label>
-                                                                    <Input
-                                                                        value={ad.headline5 || ''}
-                                                                        onChange={(e) => updateAdField(ad.id, 'headline5', e.target.value)}
-                                                                        className="mt-1"
-                                                                        placeholder="Enter headline 5"
-                                                                    />
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
-                                                            <Textarea
-                                                                value={ad.description1 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter description 1"
-                                                                rows={2}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
-                                                            <Textarea
-                                                                value={ad.description2 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter description 2"
-                                                                rows={2}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Final URL *</Label>
-                                                            <Input
-                                                                value={ad.finalUrl || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'finalUrl', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="www.example.com"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Path 1</Label>
-                                                            <Input
-                                                                value={ad.path1 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'path1', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="path1"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Path 2</Label>
-                                                            <Input
-                                                                value={ad.path2 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'path2', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="path2"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            )}
-                                            
-                                            {ad.type === 'callonly' && (
-                                                <>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
-                                                            <Input
-                                                                value={ad.headline1 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter headline 1"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Headline 2</Label>
-                                                            <Input
-                                                                value={ad.headline2 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter headline 2"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
-                                                            <Textarea
-                                                                value={ad.description1 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter description 1"
-                                                                rows={2}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
-                                                            <Textarea
-                                                                value={ad.description2 || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Enter description 2"
-                                                                rows={2}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
-                                                            <Input
-                                                                value={ad.phone || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'phone', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="(555) 123-4567"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Label className="text-xs font-semibold text-slate-700">Business Name *</Label>
-                                                            <Input
-                                                                value={ad.businessName || ''}
-                                                                onChange={(e) => updateAdField(ad.id, 'businessName', e.target.value)}
-                                                                className="mt-1"
-                                                                placeholder="Your Business"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            )}
-                                            
-                                            <div className="flex gap-2 pt-2 border-t border-slate-300">
-                                                <Button
-                                                    onClick={() => handleSaveAd(ad.id)}
-                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                                                    size="sm"
-                                                >
-                                                    <Save className="w-4 h-4 mr-2" />
-                                                    Save Changes
-                                                </Button>
-                                                <Button
-                                                    onClick={handleCancelEdit}
-                                                    variant="outline"
-                                                    className="flex-1"
-                                                    size="sm"
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                        
-                        {filteredAds.length === 0 && (
-                            <div className="bg-white border border-dashed border-slate-300 rounded-lg p-12 text-center">
-                                <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                <p className="text-slate-500 font-medium mb-2">No ads created for "{selectedAdGroup}"</p>
-                                <p className="text-sm text-slate-400">Click a button on the left to create your first ad for this ad group.</p>
                             </div>
-                        )}
-                    </div>
+
+                                {/* Edit Form - shown when editing */}
+                                {editingAdId === ad.id && (
+                                        <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+                                    {(ad.type === 'rsa' || ad.type === 'dki') && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                                    <Input
+                                                        value={ad.headline1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 2 *</Label>
+                                                    <Input
+                                                        value={ad.headline2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 2"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 3</Label>
+                                                    <Input
+                                                        value={ad.headline3 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline3', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 3"
+                                                    />
+                                                </div>
+                                                {ad.type === 'rsa' && (
+                                                    <>
+                                                        <div>
+                                                            <Label className="text-xs font-semibold text-slate-700">Headline 4</Label>
+                                                            <Input
+                                                                value={ad.headline4 || ''}
+                                                                onChange={(e) => updateAdField(ad.id, 'headline4', e.target.value)}
+                                                                className="mt-1"
+                                                                placeholder="Enter headline 4"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs font-semibold text-slate-700">Headline 5</Label>
+                                                            <Input
+                                                                value={ad.headline5 || ''}
+                                                                onChange={(e) => updateAdField(ad.id, 'headline5', e.target.value)}
+                                                                className="mt-1"
+                                                                placeholder="Enter headline 5"
+                                                            />
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                                    <Textarea
+                                                        value={ad.description1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 1"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
+                                                    <Textarea
+                                                        value={ad.description2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 2"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Final URL *</Label>
+                                                    <Input
+                                                        value={ad.finalUrl || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'finalUrl', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="www.example.com"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Path 1</Label>
+                                                    <Input
+                                                        value={ad.path1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'path1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="path1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Path 2</Label>
+                                                    <Input
+                                                        value={ad.path2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'path2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="path2"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    {ad.type === 'callonly' && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                                    <Input
+                                                        value={ad.headline1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Headline 2</Label>
+                                                    <Input
+                                                        value={ad.headline2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter headline 2"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                                    <Textarea
+                                                        value={ad.description1 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 1"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
+                                                    <Textarea
+                                                        value={ad.description2 || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Enter description 2"
+                                                        rows={2}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
+                                                    <Input
+                                                        value={ad.phone || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'phone', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="(555) 123-4567"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-xs font-semibold text-slate-700">Business Name *</Label>
+                                                    <Input
+                                                        value={ad.businessName || ''}
+                                                        onChange={(e) => updateAdField(ad.id, 'businessName', e.target.value)}
+                                                        className="mt-1"
+                                                        placeholder="Your Business"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                    
+                                    <div className="flex gap-2 pt-2 border-t border-slate-300">
+                                        <Button
+                                            onClick={() => handleSaveAd(ad.id)}
+                                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                            size="sm"
+                                        >
+                                            <Save className="w-4 h-4 mr-2" />
+                                            Save Changes
+                                        </Button>
+                                        <Button
+                                            onClick={handleCancelEdit}
+                                            variant="outline"
+                                            className="flex-1"
+                                            size="sm"
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                            </div>
+                        );
+                    })}
+                    
+                        {filteredAds.length === 0 && (
+                        <div className="bg-white border border-dashed border-slate-300 rounded-lg p-12 text-center">
+                            <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                            <p className="text-slate-500 font-medium mb-2">No ads created for "{selectedAdGroup}"</p>
+                            <p className="text-sm text-slate-400">Click a button on the left to create your first ad for this ad group.</p>
+                        </div>
+                    )}
                 </div>
-                
-                {/* Navigation */}
-                <div className="flex justify-between mt-8">
-                    <Button variant="ghost" onClick={() => setStep(2)}>
-                        <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-                        Back
-                    </Button>
+            </div>
+            
+            {/* Navigation */}
+            <div className="flex justify-between mt-8">
+                <Button variant="ghost" onClick={() => setStep(2)}>
+                    <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+                    Back
+                </Button>
                     <Button 
                         size="lg" 
                         onClick={() => setStep(4)}
@@ -2970,8 +2972,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     >
                         Next Step <ChevronRight className="ml-2 w-5 h-5" />
                     </Button>
-                </div>
             </div>
+        </div>
         );
     };
     
