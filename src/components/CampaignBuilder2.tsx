@@ -683,6 +683,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
                   setGeneratedKeywords(finalKeywords);
                   
+                  // Auto-select all generated keywords by default
+                  const allKeywordIds = finalKeywords.map(k => k.text || k.id);
+                  setSelectedKeywords(allKeywordIds);
+                  
                   // Extract keyword texts for structure-specific grouping
                   const keywordTexts = keywords.map(k => k.text || k.id);
                   
@@ -803,6 +807,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   }));
                   
                   setGeneratedKeywords(mockKeywords);
+                  
+                  // Auto-select all generated keywords by default
+                  const allMockKeywordIds = mockKeywords.map(k => k.text || k.id);
+                  setSelectedKeywords(allMockKeywordIds);
                   
                   // Dismiss loading toast
                   if (loadingToastId) {

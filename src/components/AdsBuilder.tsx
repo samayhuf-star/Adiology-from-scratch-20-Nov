@@ -949,7 +949,7 @@ export const AdsBuilder = () => {
                                 </div>
                                     );
                                 })
-                        ) : (
+                            ) : (
                             <div className="flex items-center justify-center h-[400px]">
                                 <div className="text-center">
                                         <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
@@ -965,7 +965,7 @@ export const AdsBuilder = () => {
                     </div>
                     </CardContent>
                 </Card>
-                </div>
+            </div>
 
             {/* Extension Selection Dialog */}
             <Dialog open={showExtensionDialog} onOpenChange={setShowExtensionDialog}>
