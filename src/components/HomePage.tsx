@@ -8,7 +8,8 @@ import {
   Mail, Phone, MapPin, Twitter, Linkedin, Github, Facebook,
   Menu, X, Eye, Code, Database, Cpu, Wand2, FileCheck,
   MessageSquare, Bell, CreditCard, Gift, Infinity, Timer,
-  TrendingDown, Activity, PieChart, Filter, Copy, ExternalLink, User
+  TrendingDown, Activity, PieChart, Filter, Copy, ExternalLink, User,
+  Split, Network, Funnel
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -959,6 +960,81 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                 </Button>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Prebuilt Campaign Structures Section */}
+      <section id="campaign-structures" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 px-4 py-1.5">
+              Builder 2.0
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-800 mb-4 sm:mb-6">
+              Prebuilt Super Successful Campaign Structures
+            </h2>
+            <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto mb-6">
+              Just select from the icons and we'll do the rest. Highly optimized campaigns from Day 1, Zero Wastage and tons of saving.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="font-semibold">Highly Optimized from Day 1</span>
+              </div>
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="font-semibold">Zero Wastage</span>
+              </div>
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="font-semibold">Tons of Savings</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { id: 'skag', name: 'SKAG', icon: Zap, description: 'Single Keyword Ad Group - Maximum relevance', color: 'from-yellow-400 to-orange-500' },
+              { id: 'stag', name: 'STAG', icon: TrendingUp, description: 'Single Theme Ad Group - Balanced approach', color: 'from-blue-400 to-cyan-500' },
+              { id: 'mix', name: 'MIX', icon: Layers, description: 'Hybrid Structure - Best of both worlds', color: 'from-indigo-400 to-purple-500' },
+              { id: 'stag_plus', name: 'STAG+', icon: Brain, description: 'Smart Grouping - ML-powered themes', color: 'from-purple-400 to-pink-500' },
+              { id: 'intent', name: 'IBAG', icon: Target, description: 'Intent-Based - High/Research/Brand/Competitor', color: 'from-green-400 to-emerald-500' },
+              { id: 'alpha_beta', name: 'Alpha–Beta', icon: Split, description: 'Alpha winners, Beta discovery', color: 'from-red-400 to-rose-500' },
+              { id: 'match_type', name: 'Match-Type Split', icon: Filter, description: 'Broad/Phrase/Exact separation', color: 'from-teal-400 to-cyan-500' },
+              { id: 'geo', name: 'GEO-Segmented', icon: MapPin, description: 'Location-based segmentation', color: 'from-blue-500 to-indigo-600' },
+              { id: 'funnel', name: 'Funnel-Based', icon: Funnel, description: 'TOF/MOF/BOF intent grouping', color: 'from-orange-400 to-red-500' },
+              { id: 'brand_split', name: 'Brand vs Non-Brand', icon: Users, description: 'Brand and non-brand separation', color: 'from-violet-400 to-purple-500' },
+              { id: 'competitor', name: 'Competitor Campaigns', icon: TrendingDown, description: 'Competitor brand queries', color: 'from-pink-400 to-rose-500' },
+              { id: 'ngram', name: 'Smart Cluster', icon: Network, description: 'N-Gram ML clustering', color: 'from-indigo-500 to-purple-600' },
+            ].map((structure) => {
+              const Icon = structure.icon;
+              return (
+                <Card 
+                  key={structure.id}
+                  className="border-2 border-slate-200 hover:border-indigo-400 transition-all hover:shadow-xl cursor-pointer group"
+                  onClick={onGetStarted}
+                >
+                  <CardContent className="p-6">
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${structure.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-2">{structure.name}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed">{structure.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="mt-12 text-center">
+            <Button
+              size="lg"
+              onClick={onGetStarted}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 text-lg px-8 py-6 h-auto shadow-lg"
+            >
+              Start Building with Builder 2.0 <Rocket className="w-5 h-5 ml-2" />
+            </Button>
           </div>
         </div>
       </section>
