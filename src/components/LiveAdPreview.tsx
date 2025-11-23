@@ -146,7 +146,7 @@ export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = ''
                             </div>
                         </div>
                     </div>
-                ) : null;
+                );
 
             case 'promotion':
                 return ext.promotionText ? (
