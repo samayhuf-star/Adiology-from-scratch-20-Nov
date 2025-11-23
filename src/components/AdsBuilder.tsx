@@ -372,11 +372,11 @@ export const AdsBuilder = () => {
                 <div>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
                         Adiology
-                </h1>
+                    </h1>
                     <p className="text-xs text-slate-500 mb-2">~ Samay</p>
                     <p className="text-slate-500 text-sm">
-                    Generate high-converting Google Ads with AI optimization for maximum ad rank
-                </p>
+                        Generate high-converting Google Ads with AI optimization for maximum ad rank
+                    </p>
                 </div>
             </div>
 
