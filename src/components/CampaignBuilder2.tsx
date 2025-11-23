@@ -405,25 +405,36 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   const mockKeywords: any[] = [];
                   
                   // Expanded variation lists for generating 300-600 keywords
+                  // Call/Lead focused prefixes
                   const prefixes = [
-                    'best', 'top', 'affordable', 'cheap', 'quality', 'professional', 'reliable', 
-                    'trusted', 'local', 'nearby', 'online', 'fast', 'quick', 'easy', 'simple',
-                    'affordable', 'premium', 'expert', 'certified', 'licensed', 'experienced',
-                    'affordable', 'budget', 'discount', 'deal', 'sale', 'special', 'limited'
+                    'call', 'contact', 'phone', 'reach', 'get', 'find', 'hire', 'book',
+                    'best', 'top', 'professional', 'expert', 'certified', 'licensed', 
+                    'trusted', 'reliable', 'local', 'nearby', 'fast', 'quick', 'easy',
+                    'affordable', 'quality', 'premium', 'experienced', 'free consultation',
+                    'get quote', 'request quote', 'schedule', 'book now', 'call now'
                   ];
                   
+                  // Call/Lead focused suffixes
                   const suffixes = [
-                    'near me', 'online', 'service', 'company', 'provider', 'expert', 'specialist',
-                    'professional', 'guide', 'tips', 'help', 'support', 'assistance', 'advice',
-                    'information', 'details', 'pricing', 'cost', 'price', 'rates', 'quotes',
-                    'reviews', 'ratings', 'testimonials', 'comparison', 'vs', 'alternatives',
-                    'options', 'solutions', 'how to', 'what is', 'where to', 'when to', 'why'
+                    'call', 'contact', 'phone', 'call now', 'contact us', 'get quote',
+                    'free consultation', 'schedule', 'book', 'appointment', 'near me',
+                    'service', 'company', 'provider', 'expert', 'professional',
+                    'get started', 'sign up', 'apply now', 'request info', 'learn more',
+                    'pricing', 'quotes', 'rates', 'cost', 'price', 'options', 'solutions'
                   ];
                   
-                  const intents = [
-                    'buy', 'get', 'find', 'search', 'look for', 'need', 'want', 'looking for',
-                    'hire', 'book', 'schedule', 'order', 'purchase', 'call', 'contact', 'reach'
+                  // Call/Lead Intent Keywords - Optimized for conversions
+                  const callLeadIntents = [
+                    'call', 'contact', 'reach', 'phone', 'call now', 'contact us', 'get quote',
+                    'request quote', 'free consultation', 'schedule', 'book', 'appointment',
+                    'speak with', 'talk to', 'connect with', 'reach out', 'get in touch',
+                    'call today', 'call now', 'phone number', 'contact number', 'call us',
+                    'hire', 'book now', 'schedule now', 'get started', 'sign up', 'register',
+                    'apply', 'apply now', 'get quote now', 'request info', 'get info',
+                    'learn more', 'find out more', 'get help', 'need help', 'want to know'
                   ];
+                  
+                  const intents = callLeadIntents; // Use call/lead focused intents
                   
                   const locations = [
                     'near me', 'local', 'nearby', 'in my area', 'close to me', 'nearby me',
@@ -548,7 +559,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       const data = await api.post('/generate-keywords', {
                         seeds: seedKeywords,
                         negatives: negativeKeywords,
-                        count: 500 // Request 300-600 keywords
+                        count: 500, // Request 300-600 keywords
+                        intent: 'call_lead', // Specify call/lead intent
+                        instructions: 'Generate keywords optimized for phone calls and lead generation. Focus on high-intent keywords that indicate users want to contact, call, get quotes, schedule appointments, or request information. Prioritize action-oriented keywords like "call", "contact", "get quote", "schedule", "book", "hire", etc.'
                       });
 
                       if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
@@ -1197,6 +1210,19 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       );
     }
 
+    if (selectedKeywords.length === 0) {
+      return (
+        <div className="max-w-7xl mx-auto p-8 text-center">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+          <h3 className="text-xl font-semibold text-slate-600 mb-2">No Keywords Selected</h3>
+          <p className="text-slate-500 mb-4">Please go back and select keywords before creating ads.</p>
+          <Button onClick={() => setStep(2)} variant="outline">
+            Go to Keywords
+          </Button>
+        </div>
+      );
+    }
+
     // Generate ads based on structure
     const generateAdsForStructure = () => {
       const baseAds: any[] = [];
@@ -1311,23 +1337,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     };
 
     useEffect(() => {
-      if (step === 3 && generatedAds.length === 0 && structureType && selectedKeywords.length > 0) {
-        generateAdsForStructure();
-      } else if (step === 3 && generatedAds.length === 0 && structureType) {
-        // Generate default ads even if no keywords selected yet
-        const defaultAd = {
-          id: Date.now(),
-          type: 'rsa',
-          headline1: 'Your Service - Best Deals',
-          headline2: 'Shop Now & Save',
-          headline3: 'Fast Delivery',
-          description1: 'Looking for your service? We offer competitive prices.',
-          description2: 'Get started today!',
-          finalUrl: url
-        };
-        setGeneratedAds([defaultAd]);
+      if (step === 3 && structureType && selectedKeywords.length > 0) {
+        // Always regenerate ads when step 3 is reached with valid data
+        // Check if ads need to be generated or regenerated
+        const needsRegeneration = generatedAds.length === 0 || 
+          generatedAds.some(ad => !ad.headline1 || !ad.headline2);
+        
+        if (needsRegeneration) {
+          generateAdsForStructure();
+        }
       }
-    }, [step, structureType, selectedKeywords.length, generatedAds.length]);
+    }, [step, structureType, selectedKeywords.length]);
 
     // Create extension
     const createExtension = (extensionType: string) => {
