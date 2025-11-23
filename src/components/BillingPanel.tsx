@@ -171,11 +171,36 @@ Generated on ${new Date().toLocaleDateString()}`;
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Loading billing info...</div>;
+    if (loading) {
+        return (
+            <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-slate-600">Loading billing info...</p>
+            </div>
+        );
+    }
+
+    // Ensure we have info data (fallback to default if null)
+    const billingInfo = info || {
+        plan: "Free",
+        nextBillingDate: "2025-12-01",
+        invoices: [
+            { id: "inv_1", date: "2025-11-01", amount: "$0.00", status: "Paid" },
+            { id: "inv_2", date: "2025-10-01", amount: "$0.00", status: "Paid" }
+        ]
+    };
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-             <div>
+            {error && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-600" />
+                        <p className="text-sm text-yellow-800">{error}</p>
+                    </div>
+                </div>
+            )}
+            <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     Billing & Subscription
                 </h1>
@@ -189,7 +214,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                         <div className="flex justify-between items-start">
                             <div>
                                 <CardTitle>Current Plan</CardTitle>
-                                <CardDescription>You are currently on the <span className="font-semibold text-indigo-600">{info?.plan} Plan</span></CardDescription>
+                                <CardDescription>You are currently on the <span className="font-semibold text-indigo-600">{billingInfo.plan} Plan</span></CardDescription>
                             </div>
                             <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">Active</Badge>
                         </div>
@@ -199,7 +224,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                                 <div className="text-sm text-slate-500 mb-1">Next Billing Date</div>
                                 <div className="text-lg font-semibold flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-indigo-500"/> {info?.nextBillingDate}
+                                    <Calendar className="w-4 h-4 text-indigo-500"/> {billingInfo.nextBillingDate}
                                 </div>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
@@ -321,7 +346,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-1">
-                        {info?.invoices?.map((inv: any) => (
+                        {billingInfo.invoices?.map((inv: any) => (
                             <div key={inv.id} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg transition-colors group">
                                 <div className="flex items-center gap-4">
                                     <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
@@ -357,7 +382,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                     <DialogHeader>
                         <DialogTitle>Cancel Subscription</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to cancel your subscription? You'll continue to have access until the end of your current billing period ({info?.nextBillingDate}).
+                            Are you sure you want to cancel your subscription? You'll continue to have access until the end of your current billing period ({billingInfo.nextBillingDate}).
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -430,9 +455,9 @@ Generated on ${new Date().toLocaleDateString()}`;
                                         setShowPricingDialog(false);
                                         handleSubscribe();
                                     }}
-                                    disabled={processing || info?.plan === "Lifetime Limited"}
+                                    disabled={processing || billingInfo.plan === "Lifetime Limited"}
                                 >
-                                    {info?.plan === "Lifetime Limited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
+                                    {billingInfo.plan === "Lifetime Limited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -485,9 +510,9 @@ Generated on ${new Date().toLocaleDateString()}`;
                                         setShowPricingDialog(false);
                                         handleSubscribe();
                                     }}
-                                    disabled={processing || info?.plan === "Lifetime Unlimited"}
+                                    disabled={processing || billingInfo.plan === "Lifetime Unlimited"}
                                 >
-                                    {info?.plan === "Lifetime Unlimited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
+                                    {billingInfo.plan === "Lifetime Unlimited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -537,9 +562,9 @@ Generated on ${new Date().toLocaleDateString()}`;
                                         setShowPricingDialog(false);
                                         handleSubscribe();
                                     }}
-                                    disabled={processing || info?.plan === "Monthly Limited"}
+                                    disabled={processing || billingInfo.plan === "Monthly Limited"}
                                 >
-                                    {info?.plan === "Monthly Limited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
+                                    {billingInfo.plan === "Monthly Limited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -589,9 +614,9 @@ Generated on ${new Date().toLocaleDateString()}`;
                                         setShowPricingDialog(false);
                                         handleSubscribe();
                                     }}
-                                    disabled={processing || info?.plan === "Monthly Unlimited"}
+                                    disabled={processing || billingInfo.plan === "Monthly Unlimited"}
                                 >
-                                    {info?.plan === "Monthly Unlimited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
+                                    {billingInfo.plan === "Monthly Unlimited" ? "Current Plan" : processing ? "Processing..." : "Get Started"}
                                 </Button>
                             </CardFooter>
                         </Card>
