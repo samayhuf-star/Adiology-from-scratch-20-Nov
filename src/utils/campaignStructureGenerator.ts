@@ -100,6 +100,26 @@ export function generateCampaignStructure(
 }
 
 /**
+ * Helper function to build location_target string from settings
+ */
+function buildLocationTarget(settings: StructureSettings): string | undefined {
+  const locations: string[] = [];
+  
+  if (settings.geoType === 'STATE' && settings.selectedStates && settings.selectedStates.length > 0) {
+    locations.push(...settings.selectedStates);
+  } else if (settings.geoType === 'CITY' && settings.selectedCities && settings.selectedCities.length > 0) {
+    locations.push(...settings.selectedCities);
+  } else if (settings.geoType === 'ZIP' && settings.selectedZips && settings.selectedZips.length > 0) {
+    locations.push(...settings.selectedZips);
+  } else if (settings.targetCountry && settings.geoType !== 'GEO') {
+    // Default to country if no specific locations selected (but not for GEO-segmented)
+    locations.push(settings.targetCountry);
+  }
+  
+  return locations.length > 0 ? locations.join(', ') : undefined;
+}
+
+/**
  * SKAG: Single Keyword Ad Group
  * Each keyword gets its own ad group
  */
@@ -107,13 +127,15 @@ function generateSKAG(keywords: string[], settings: StructureSettings): Campaign
   const matchTypes = getMatchTypes(settings.matchTypes);
   const ads = settings.ads || getDefaultAds(settings);
   const negativeKeywords = settings.negativeKeywords || [];
+  const locationTarget = buildLocationTarget(settings);
 
   const adgroups = keywords.slice(0, 20).map((keyword) => ({
     adgroup_name: keyword,
     keywords: matchTypes.map(mt => formatKeyword(keyword, mt)),
     match_types: matchTypes,
     ads: ads,
-    negative_keywords: negativeKeywords
+    negative_keywords: negativeKeywords,
+    location_target: locationTarget
   }));
 
   return {
@@ -132,6 +154,7 @@ function generateSTAG(keywords: string[], settings: StructureSettings): Campaign
   const matchTypes = getMatchTypes(settings.matchTypes);
   const ads = settings.ads || getDefaultAds(settings);
   const negativeKeywords = settings.negativeKeywords || [];
+  const locationTarget = buildLocationTarget(settings);
   
   // Simple thematic grouping: group by first word
   const groups: { [key: string]: string[] } = {};
@@ -148,7 +171,8 @@ function generateSTAG(keywords: string[], settings: StructureSettings): Campaign
     keywords: groupKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
     match_types: matchTypes,
     ads: ads,
-    negative_keywords: negativeKeywords
+    negative_keywords: negativeKeywords,
+    location_target: locationTarget
   }));
 
   return {
@@ -177,7 +201,8 @@ function generateMIX(keywords: string[], settings: StructureSettings): CampaignS
       keywords: matchTypes.map(mt => formatKeyword(keyword, mt)),
       match_types: matchTypes,
       ads: ads,
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   });
 
@@ -198,7 +223,8 @@ function generateMIX(keywords: string[], settings: StructureSettings): CampaignS
       keywords: groupKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: ads,
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   });
 
@@ -226,7 +252,8 @@ function generateSTAGPlus(keywords: string[], settings: StructureSettings): Camp
     keywords: clusterKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
     match_types: matchTypes,
     ads: ads,
-    negative_keywords: negativeKeywords
+    negative_keywords: negativeKeywords,
+    location_target: buildLocationTarget(settings)
   }));
 
   return {
@@ -257,7 +284,8 @@ function generateIntentStructure(keywords: string[], settings: StructureSettings
         keywords: intentKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
         match_types: matchTypes,
         ads: getIntentBasedAds(intent, settings),
-        negative_keywords: negativeKeywords
+        negative_keywords: negativeKeywords,
+    location_target: buildLocationTarget(settings)
       });
     }
   });
@@ -288,7 +316,8 @@ function generateAlphaBeta(keywords: string[], settings: StructureSettings): Cam
       keywords: betaKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: getBetaAds(settings),
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   }
   
@@ -299,7 +328,8 @@ function generateAlphaBeta(keywords: string[], settings: StructureSettings): Cam
       keywords: alphaKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: getAlphaAds(settings),
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   }
 
@@ -327,7 +357,8 @@ function generateMatchTypeSplit(keywords: string[], settings: StructureSettings)
       keywords: keywords.map(kw => formatKeyword(kw, matchType)),
       match_types: [matchType],
       ads: ads,
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   });
 
@@ -400,7 +431,8 @@ function generateGeoSegmented(keywords: string[], settings: StructureSettings): 
         keywords: keywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
         match_types: matchTypes,
         ads: ads,
-        negative_keywords: negativeKeywords
+        negative_keywords: negativeKeywords,
+    location_target: buildLocationTarget(settings)
       }]
     });
   }
@@ -427,7 +459,8 @@ function generateFunnelStructure(keywords: string[], settings: StructureSettings
         keywords: stageKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
         match_types: matchTypes,
         ads: getFunnelBasedAds(stage, settings),
-        negative_keywords: negativeKeywords
+        negative_keywords: negativeKeywords,
+    location_target: buildLocationTarget(settings)
       });
     }
   });
@@ -458,7 +491,8 @@ function generateBrandSplit(keywords: string[], settings: StructureSettings): Ca
       keywords: brandKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: ads,
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   }
   
@@ -468,7 +502,8 @@ function generateBrandSplit(keywords: string[], settings: StructureSettings): Ca
       keywords: nonBrandKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: ads,
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   }
 
@@ -500,7 +535,8 @@ function generateCompetitor(keywords: string[], settings: StructureSettings): Ca
       keywords: competitorKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: getCompetitorAds(settings),
-      negative_keywords: negativeKeywords
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
     });
   }
 
@@ -526,7 +562,8 @@ function generateNgramClusters(keywords: string[], settings: StructureSettings):
     keywords: clusterKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
     match_types: matchTypes,
     ads: ads,
-    negative_keywords: negativeKeywords
+    negative_keywords: negativeKeywords,
+    location_target: buildLocationTarget(settings)
   }));
 
   return {
