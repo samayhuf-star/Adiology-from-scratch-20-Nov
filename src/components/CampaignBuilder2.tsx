@@ -77,7 +77,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 1: Setup
   const [campaignName, setCampaignName] = useState(generateDefaultCampaignName());
   const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState('https://example.com');
   
   // Step 2: Keywords
   const [seedKeywords, setSeedKeywords] = useState('');
@@ -128,7 +128,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     if (initialData) {
       setCampaignName(initialData.campaignName || generateDefaultCampaignName());
       setStructureType(initialData.structureType || null);
-      setUrl(initialData.url || '');
+      setUrl(initialData.url || 'https://example.com');
       setSelectedKeywords(initialData.selectedKeywords || []);
       setGeneratedAds(initialData.generatedAds || []);
     }
