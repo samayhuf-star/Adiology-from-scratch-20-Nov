@@ -6,7 +6,7 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
   Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map, Funnel, 
-  Users, TrendingDown, Network, Filter
+  Users, TrendingDown, Network, Filter, Info
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -326,8 +326,24 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const commonKeywordSection = (
       <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
         <CardHeader>
-          <CardTitle>Seed Keywords</CardTitle>
-          <CardDescription>Enter your seed keywords (one per line)</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Seed Keywords</CardTitle>
+              <CardDescription>Enter your seed keywords (one per line)</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // Fill with test seed keywords
+                setSeedKeywords('call airline\nairline number\nairline phone number\ncall united number\nunited airlines phone\nairline customer service');
+              }}
+              className="gap-2"
+            >
+              <Info className="w-4 h-4" />
+              Fill Info
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Textarea
