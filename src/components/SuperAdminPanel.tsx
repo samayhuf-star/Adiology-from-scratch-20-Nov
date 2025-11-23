@@ -84,8 +84,8 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-800">Super Admin</h2>
-              <p className="text-xs text-slate-500">System Control Panel</p>
+              <h2 className="font-bold text-slate-800">Adiology</h2>
+              <p className="text-xs text-slate-500">~ Samay</p>
             </div>
           </div>
           <button

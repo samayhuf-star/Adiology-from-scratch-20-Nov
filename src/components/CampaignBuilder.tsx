@@ -3,7 +3,7 @@ import {
   ArrowRight, Check, ChevronRight, Download, FileText, Globe, 
   Layout, Layers, MapPin, Mail, Hash, TrendingUp, Zap, 
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
-  CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, 
+  CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
   Tag, Image as ImageIcon, Gift
 } from 'lucide-react';
@@ -28,6 +28,11 @@ import { KeywordPlanner } from './KeywordPlanner';
 import { KeywordPlannerSelectable } from './KeywordPlannerSelectable';
 import { LiveAdPreview } from './LiveAdPreview';
 import { CompactAdBuilder } from './CompactAdBuilder';
+import { notifications } from '../utils/notifications';
+import { rateLimiter } from '../utils/rateLimiter';
+import { usageTracker } from '../utils/usageTracker';
+import { inputValidator } from '../utils/inputValidator';
+import { adHistoryManager, type AdHistoryState } from '../utils/adHistory';
 
 // --- Constants & Mock Data ---
 
@@ -632,34 +637,105 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [selectedAdIds, setSelectedAdIds] = useState<number[]>([]); // Track selected ads for ALL AD GROUPS mode
     const [activeBuilderTab, setActiveBuilderTab] = useState<'builder' | 'history'>('builder');
     const [selectedPreviewAdId, setSelectedPreviewAdId] = useState<number | null>(null);
-    const [generatedAds, setGeneratedAds] = useState<any[]>([
-        {
-            id: 1,
-            headline: 'New Refrigerators | Online Store | Free Delivery',
-            displayUrl: 'www.appliances.com/shop/now',
-            description: 'Buy online new refrigerators. Vast collection of new refrigerators.',
-            extension: '20% OFF Today | Spring Sales',
-            extensionUrl: 'www.appliances.com/shop/now',
-            extensionDescription: 'Vast collection of new refrigerators. High quality new refrigerators available in stock.',
-            type: 'rsa'
-        },
-        {
-            id: 2,
-            headline: 'Call 123 456 789 | New Refrigerators | Online Store',
-            displayUrl: 'books.com',
-            description: 'Acme Book Shop - Get a quote for new refrigerators. Call to learn about new refrigerators.',
-            type: 'call'
-        },
-        {
-            id: 3,
-            headline: '20% OFF Today | Spring Sales',
-            displayUrl: 'www.appliances.com/shop/now',
-            description: 'High quality new refrigerators available in stock. Many new refrigerators available.',
-            extension: '20% OFF Today | Spring Sales',
-            type: 'rsa'
+    const [canUndo, setCanUndo] = useState(false);
+    const [canRedo, setCanRedo] = useState(false);
+    const [lastActionDescription, setLastActionDescription] = useState<string | null>(null);
+
+    // Helper function to get current ad state (deep copy to maintain CSV structure)
+    const getCurrentAdState = (): AdHistoryState => ({
+        generatedAds: JSON.parse(JSON.stringify(generatedAds)), // Deep copy for CSV compatibility
+        selectedAdIds: [...selectedAdIds],
+        selectedPreviewAdId,
+        timestamp: Date.now(),
+    });
+
+    // Helper function to save state before action
+    const saveStateBeforeAction = (actionType: 'create' | 'delete' | 'edit' | 'duplicate', adId?: number, description?: string) => {
+        const currentState = getCurrentAdState();
+        adHistoryManager.saveState(actionType, currentState, adId, description);
+        updateUndoRedoState();
+    };
+
+    // Update undo/redo button states
+    const updateUndoRedoState = () => {
+        setCanUndo(adHistoryManager.canUndo());
+        setCanRedo(adHistoryManager.canRedo());
+        setLastActionDescription(adHistoryManager.getLastActionDescription());
+    };
+
+    // Undo function - restores previous state while maintaining CSV structure
+    const handleUndo = () => {
+        const previousState = adHistoryManager.undo();
+        if (previousState) {
+            // Restore state - this maintains CSV export structure
+            setGeneratedAds(previousState.generatedAds);
+            setSelectedAdIds(previousState.selectedAdIds);
+            setSelectedPreviewAdId(previousState.selectedPreviewAdId);
+            setEditingAdId(null); // Clear any active editing
+            setEditingStarted(new Set()); // Clear editing tracking
+            updateUndoRedoState();
+            
+            notifications.success('Action undone', {
+                title: 'Undo Successful',
+                description: lastActionDescription || 'Last action has been undone. Your CSV export structure remains intact.',
+            });
+        } else {
+            notifications.warning('Nothing to undo', {
+                title: 'No Actions',
+                description: 'There are no previous actions to undo.',
+            });
         }
-    ]);
+    };
+
+    // Redo function - simplified for now (can be enhanced later)
+    const handleRedo = () => {
+        if (!adHistoryManager.canRedo()) {
+            notifications.warning('Nothing to redo', {
+                title: 'No Actions',
+                description: 'There are no actions to redo.',
+            });
+            return;
+        }
+        
+        // For now, just show info - redo requires storing forward states
+        notifications.info('Redo functionality', {
+            title: 'Redo',
+            description: 'Redo is coming soon. Use Undo to revert changes step by step.',
+        });
+    };
+
+    // Initialize undo/redo state
+    useEffect(() => {
+        updateUndoRedoState();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [generatedAds.length, selectedAdIds.length, selectedPreviewAdId]);
+
+    // Keyboard shortcut for undo (Ctrl+Z / Cmd+Z) - only active on Step 3
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Only handle in Step 3 (Ads Creation) and not when typing in inputs
+            if (step === 3 && (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                const target = e.target as HTMLElement;
+                // Don't trigger if user is typing in an input/textarea
+                if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && target.contentEditable !== 'true') {
+                    e.preventDefault();
+                    if (canUndo) {
+                        handleUndo();
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step, canUndo]);
+    
+    const [history, setHistory] = useState<any[]>([]);
+    const [searchHistory, setSearchHistory] = useState('');
+    const [generatedAds, setGeneratedAds] = useState<any[]>([]);
     const [editingAdId, setEditingAdId] = useState<number | null>(null);
+    const [editingStarted, setEditingStarted] = useState<Set<number>>(new Set());
 
     // Step 4: Geo Targeting
     const [targetCountry, setTargetCountry] = useState('United States');
@@ -770,7 +846,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             }, 3000);
         } catch (error) {
             console.error("Save failed", error);
-            alert('Failed to save campaign. Please try again.');
+            notifications.error('Failed to save campaign. Please try again.', {
+                title: 'Save Failed',
+                description: 'There was an error saving your campaign. Please check your connection and try again.',
+                priority: 'high',
+            });
         } finally {
             setIsSaving(false);
         }
@@ -835,24 +915,80 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // --- Handlers ---
 
     const handleGenerateKeywords = async () => {
-        if (!seedKeywords.trim()) return;
+        // Input validation
+        if (!seedKeywords.trim()) {
+            notifications.warning('Please enter seed keywords to generate suggestions', {
+                title: 'Missing Keywords',
+                description: 'Enter at least one seed keyword to start generation.',
+            });
+            return;
+        }
+
+        // Validate keywords input
+        const keywordValidation = inputValidator.validateKeywords(seedKeywords, 1, 50);
+        if (!keywordValidation.valid) {
+            notifications.error(keywordValidation.message || 'Invalid keywords', {
+                title: 'Validation Error',
+            });
+            return;
+        }
+
+        // Check rate limit
+        const rateLimit = rateLimiter.checkLimit('keyword-generation');
+        if (!rateLimit.allowed) {
+            notifications.error(rateLimit.message || 'Rate limit exceeded', {
+                title: 'Too Many Requests',
+                description: 'Please wait before generating more keywords to prevent platform abuse.',
+                priority: 'high',
+            });
+            return;
+        }
+
+        // Check usage quota
+        const usage = usageTracker.trackUsage('keyword-generation', 1);
+        if (!usage.allowed) {
+            notifications.error(usage.message || 'Usage limit exceeded', {
+                title: 'Daily Limit Reached',
+                description: 'You have reached your daily keyword generation limit. Please try again tomorrow or contact support.',
+                priority: 'high',
+            });
+            return;
+        }
+
+        // Show warning if approaching limits
+        const warning = usageTracker.checkWarnings('keyword-generation');
+        if (warning) {
+            notifications.warning(warning, {
+                title: 'Usage Warning',
+            });
+        }
+
+        // Show loading notification
+        const loadingToast = notifications.loading('Generating keywords...', {
+            title: 'AI Keyword Generation',
+            description: 'This may take a few moments. Please wait...',
+        });
+
+        setIsGeneratingKeywords(true);
         
+        try {
         if (!projectId) {
              console.warn("Project ID is missing, using mock generation");
              // Use mock generation immediately
-             setIsGeneratingKeywords(true);
              setTimeout(() => {
                  const mockKeywords = generateMockKeywords(seedKeywords, negativeKeywords);
                  setGeneratedKeywords(mockKeywords);
                  setSelectedKeywords(mockKeywords.map((k: any) => k.id));
                  setIsGeneratingKeywords(false);
+                    if (loadingToast) loadingToast();
+                    notifications.success(`Generated ${mockKeywords.length} keywords successfully`, {
+                        title: 'Keywords Generated',
+                        description: `Found ${mockKeywords.length} keyword suggestions based on your seed keywords.`,
+                    });
              }, 1500);
              return;
         }
 
-        setIsGeneratingKeywords(true);
-        
-        try {
             console.log("Attempting AI keyword generation...");
             // Using the explicit path which matches the route defined in the server
             const data = await api.post('/generate-keywords', {
@@ -864,6 +1000,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 console.log("AI generation successful:", data.keywords.length, "keywords");
                 setGeneratedKeywords(data.keywords);
                 setSelectedKeywords(data.keywords.map((k: any) => k.id));
+                if (loadingToast) loadingToast();
+                notifications.success(`Generated ${data.keywords.length} keywords successfully`, {
+                    title: 'Keywords Generated',
+                    description: `AI found ${data.keywords.length} keyword suggestions. Review and select the ones you want to use.`,
+                });
             } else {
                 throw new Error("No keywords returned from AI");
             }
@@ -873,6 +1014,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             const mockKeywords = generateMockKeywords(seedKeywords, negativeKeywords);
             setGeneratedKeywords(mockKeywords);
             setSelectedKeywords(mockKeywords.map((k: any) => k.id));
+            if (loadingToast) loadingToast();
+            notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
+                title: 'Keywords Generated (Offline Mode)',
+                description: 'Using local generation. Some features may be limited.',
+            });
         } finally {
             setIsGeneratingKeywords(false);
         }
@@ -939,12 +1085,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }, 2500);
     };
 
-    const handleSaveCampaign = () => {
-        saveToHistory();
+    const handleSaveCampaign = async () => {
+        await saveToHistory();
+        notifications.success('Campaign saved successfully', {
+            title: 'Campaign Saved',
+            description: `Your campaign "${campaignName || 'Untitled Campaign'}" has been saved. You can access it from the History tab.`,
+        });
     };
 
-    const handleSaveDraft = () => {
-        saveToHistory();
+    const handleSaveDraft = async () => {
+        await saveToHistory();
+        notifications.info('Draft saved', {
+            title: 'Draft Saved',
+            description: 'Your campaign progress has been saved as a draft. Continue working on it anytime.',
+        });
     };
 
     // Validate CSV for Google Ads Editor compatibility
@@ -1091,17 +1245,46 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
 
     const generateCSV = () => {
+        // Check rate limit
+        const rateLimit = rateLimiter.checkLimit('csv-export');
+        if (!rateLimit.allowed) {
+            notifications.error(rateLimit.message || 'Rate limit exceeded', {
+                title: 'Too Many Exports',
+                description: 'Please wait before exporting again to prevent platform abuse.',
+                priority: 'high',
+            });
+            return;
+        }
+
+        // Check usage quota
+        const usage = usageTracker.trackUsage('csv-export', 1);
+        if (!usage.allowed) {
+            notifications.error(usage.message || 'Usage limit exceeded', {
+                title: 'Daily Limit Reached',
+                description: 'You have reached your daily export limit. Please try again tomorrow.',
+                priority: 'high',
+            });
+            return;
+        }
+
         // Validate before generating
         const validation = validateCSV();
         
         if (!validation.valid) {
-            alert(`CSV validation failed:\n\n${validation.errors.join('\n')}\n\nPlease fix these issues before exporting.`);
+            notifications.error(`CSV validation failed:\n\n${validation.errors.join('\n')}`, {
+                title: 'Validation Failed',
+                description: 'Please fix these issues before exporting.',
+                priority: 'high',
+            });
             return;
         }
         
         if (validation.warnings.length > 0) {
-            const proceed = confirm(`CSV validation warnings:\n\n${validation.warnings.join('\n')}\n\nDo you want to continue anyway?`);
-            if (!proceed) return;
+            notifications.warning(`CSV validation warnings:\n\n${validation.warnings.join('\n')}`, {
+                title: 'Validation Warnings',
+                description: 'Your CSV has some warnings. Review them before exporting.',
+            });
+            // Continue with export despite warnings
         }
         
         const adGroups = getDynamicAdGroups();
@@ -1126,7 +1309,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         
         // Process each ad group
         adGroups.forEach(group => {
-            const groupAds = generatedAds.filter(ad => ad.adGroup === group.name && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
+            // Get ads for this group: either ads specifically for this group OR ads for ALL AD GROUPS
+            const groupAds = generatedAds.filter(ad => 
+                (ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE) && 
+                (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
+            );
             
             // Export Keywords as separate rows
                 group.keywords.forEach(keyword => {
@@ -1223,7 +1410,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             });
             
             // Export Extensions as separate rows
-            const groupExtensions = generatedAds.filter(ad => ad.adGroup === group.name && ad.extensionType);
+            // Include extensions for this group OR extensions for ALL AD GROUPS
+            const groupExtensions = generatedAds.filter(ad => 
+                (ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE) && 
+                ad.extensionType
+            );
             
             groupExtensions.forEach(ext => {
                 if (ext.extensionType === 'sitelink') {
@@ -1716,11 +1907,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
     
     const handleSaveAd = (adId: number) => {
+        // Save state when finishing edit if we started editing this ad
+        const ad = generatedAds.find(a => a.id === adId);
+        if (ad && editingStarted.has(adId)) {
+            saveStateBeforeAction('edit', adId, `Saved changes to ${ad.type || 'ad'} #${adId}`);
+            setEditingStarted(new Set([...editingStarted].filter(id => id !== adId)));
+        }
         setEditingAdId(null);
         // Ad is already updated in state through inline editing
+        updateUndoRedoState();
     };
     
     const handleCancelEdit = () => {
+        // If we cancel editing, we might want to undo the changes
+        // For now, just clear the editing state
+        const adId = editingAdId;
+        if (adId && editingStarted.has(adId)) {
+            // Cancel editing - remove from started tracking
+            setEditingStarted(new Set([...editingStarted].filter(id => id !== adId)));
+        }
         setEditingAdId(null);
     };
     
@@ -1731,12 +1936,45 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
     
     const handleDuplicateAd = (ad: any) => {
+        // Save state before duplication for undo
+        saveStateBeforeAction('duplicate', ad.id, `Duplicated ${ad.type || 'ad'} #${ad.id}`);
+        
         const newAd = { ...ad, id: Date.now() };
         setGeneratedAds([...generatedAds, newAd]);
+        
+        updateUndoRedoState();
+        
+        notifications.success('Ad duplicated successfully', {
+            title: 'Ad Duplicated',
+            description: 'A copy of the ad has been created. You can edit it as needed.',
+        });
     };
     
     const handleDeleteAd = (adId: number) => {
+        const adToDelete = generatedAds.find(a => a.id === adId);
+        
+        // Save state before deletion for undo
+        saveStateBeforeAction('delete', adId, `Deleted ${adToDelete?.type || 'ad'} #${adId}`);
+        
         setGeneratedAds(generatedAds.filter(a => a.id !== adId));
+        
+        // Remove from selected ads if it was selected
+        if (selectedAdIds.includes(adId)) {
+            setSelectedAdIds(selectedAdIds.filter(id => id !== adId));
+        }
+        
+        // Update preview if deleted ad was being previewed
+        if (selectedPreviewAdId === adId) {
+            const remainingAds = generatedAds.filter(a => a.id !== adId);
+            setSelectedPreviewAdId(remainingAds.length > 0 ? remainingAds[0].id : null);
+        }
+        
+        updateUndoRedoState();
+        
+        notifications.success('Ad deleted successfully', {
+            title: 'Ad Removed',
+            description: adToDelete ? `The ${adToDelete.type || 'ad'} has been removed from your campaign. Use Undo to restore it.` : 'Ad has been removed.',
+        });
     };
     
     // Generate dynamic ad groups based on structure and selected keywords
@@ -1790,15 +2028,121 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const dynamicAdGroups = getDynamicAdGroups();
     
     const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
-        // Check total ads limit (25 max, excluding snippets and callouts)
+        // Check if this is an extension type
+        const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
+        
+        // Check if we have any regular ads (rsa, dki, callonly)
+        const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+        
+        // If trying to create extension without an ad, create a DKI ad first
+        if (isExtension && !hasRegularAds) {
+            notifications.info('Creating a DKI ad first, then adding your extension', {
+                title: 'Ad Required',
+                description: 'Extensions require at least one ad. A DKI ad will be created automatically.',
+            });
+            
+            // Create DKI ad directly (bypassing the extension check)
+            // Get the current ad group context
+            const allGroups = dynamicAdGroups.length > 0 ? dynamicAdGroups : adGroups.map(name => ({ name, keywords: [] }));
+            if (allGroups.length === 0) {
+                notifications.warning('No ad groups available. Please create ad groups first by selecting keywords.', {
+                    title: 'No Ad Groups',
+                    description: 'Select keywords in Step 2 to create ad groups before adding ads.',
+                });
+                return;
+            }
+            
+            const baseUrl = url || 'www.example.com';
+            const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+            const mainKeyword = allGroups[0]?.keywords?.[0] || 'your service';
+            
+            // Create DKI ad
+            const dkiAd: any = {
+                id: Date.now(),
+                type: 'dki',
+                adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
+                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+                headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
+                headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
+                description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
+                description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                finalUrl: formattedUrl,
+                path1: 'keyword',
+                path2: 'deals'
+            };
+            
+            // Save state before creating DKI ad
+            saveStateBeforeAction('create', dkiAd.id, `Created DKI ad and ${type} extension`);
+            
+            // Add DKI ad to generatedAds immediately
+            setGeneratedAds(prev => [...prev, dkiAd]);
+            
+            // Add to selectedAdIds if ALL AD GROUPS mode
+            if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3) {
+                setSelectedAdIds(prev => [...prev, dkiAd.id]);
+            }
+            
+            updateUndoRedoState();
+            
+            notifications.success('DKI ad created automatically', {
+                title: 'Ad Created',
+                description: 'A DKI ad was created first. Your extension will be added next.',
+            });
+            
+            // Continue with extension creation - the function will proceed and create the extension
+            // The extension will be added to state below, and since we've already added the DKI ad,
+            // both will be visible to the user
+        }
+        
+        // Check rate limit
+        const rateLimit = rateLimiter.checkLimit('ad-creation');
+        if (!rateLimit.allowed) {
+            notifications.error(rateLimit.message || 'Rate limit exceeded', {
+                title: 'Too Many Requests',
+                description: 'Please wait before creating more ads to prevent platform abuse.',
+                priority: 'high',
+            });
+            return;
+        }
+
+        // Check usage quota
+        const usage = usageTracker.trackUsage('ad-creation', 1);
+        if (!usage.allowed) {
+            notifications.error(usage.message || 'Usage limit exceeded', {
+                title: 'Daily Limit Reached',
+                description: 'You have reached your daily ad creation limit. Please try again tomorrow.',
+                priority: 'high',
+            });
+            return;
+        }
+
+        // Check ads limit per ad group (max 3 ads per group)
         const regularAds = generatedAds.filter(ad => 
             ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
         );
         
         if (type === 'rsa' || type === 'dki' || type === 'callonly') {
-            if (regularAds.length >= 25) {
-                alert('Maximum limit reached: You can create up to 25 ads total (combining RSA, DKI, and Call Only ads). Please delete some ads before creating new ones.');
+            if (selectedAdGroup === ALL_AD_GROUPS_VALUE) {
+                // For ALL AD GROUPS mode, check selectedAdIds
+                if (selectedAdIds.length >= 3) {
+                    notifications.error('Maximum limit reached: You can select up to 3 ads for all ad groups.', {
+                        title: 'Ad Limit Reached',
+                        description: 'Please remove an ad from selection before adding another. Maximum 3 ads allowed per ad group.',
+                        priority: 'high',
+                    });
                 return;
+            }
+            } else {
+                // For specific group mode, check ads in that group
+                const groupAds = regularAds.filter(ad => ad.adGroup === selectedAdGroup);
+                if (groupAds.length >= 3) {
+                    notifications.error(`Maximum limit reached: You can create up to 3 ads per ad group.`, {
+                        title: 'Ad Limit Reached',
+                        description: `The selected ad group already has ${groupAds.length} ads. Please delete an ad or select another group.`,
+                        priority: 'high',
+                    });
+                    return;
+                }
             }
         }
         
@@ -1807,29 +2151,40 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             const allGroups = dynamicAdGroups.length > 0 ? dynamicAdGroups : adGroups.map(name => ({ name, keywords: [] }));
             
             if (allGroups.length === 0) {
-                alert('No ad groups available. Please create ad groups first by selecting keywords.');
+                notifications.warning('No ad groups available. Please create ad groups first by selecting keywords.', {
+                    title: 'No Ad Groups',
+                    description: 'Select keywords in Step 2 to create ad groups before adding ads.',
+                });
                 return;
             }
             
-            // Check if creating ads for all groups would exceed the limit
+            // For ALL AD GROUPS mode, we create ONE ad that applies to all groups (not one per group)
+            // Check if we've already reached the 3-ad limit
             if (type === 'rsa' || type === 'dki' || type === 'callonly') {
-                const adsToCreate = allGroups.length;
-                if (regularAds.length + adsToCreate > 25) {
-                    alert(`Cannot create ads for all groups: This would create ${adsToCreate} ads, exceeding the limit of 25 total ads. Currently have ${regularAds.length} ads, would need ${regularAds.length + adsToCreate} total.`);
+                if (selectedAdIds.length >= 3) {
+                    notifications.error(`Cannot create more ads: Maximum 3 ads allowed for all ad groups.`, {
+                        title: 'Limit Exceeded',
+                        description: `You already have ${selectedAdIds.length} ads selected. Remove one to add another.`,
+                        priority: 'high',
+                    });
                     return;
                 }
             }
             
+            // For ALL AD GROUPS mode, create ONE ad (not one per group)
+            // This single ad will be applied to all ad groups
             const newAds: any[] = [];
             const baseUrl = url || 'www.example.com';
             const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
             
-            allGroups.forEach((group, index) => {
-                const mainKeyword = group.keywords?.[0] || 'your service';
+            // Create just ONE ad that will be added to all groups
+            // (Don't loop through all groups - create one ad only)
+            // Get a representative keyword from any group (use first group's first keyword)
+            const mainKeyword = allGroups[0]?.keywords?.[0] || 'your service';
                 let baseAd: any = {
-                    id: Date.now() + index,
+                    id: Date.now(),
                     type: type,
-                    adGroup: group.name
+                    adGroup: ALL_AD_GROUPS_VALUE // Mark as ALL_AD_GROUPS ad
                 };
                 
                 // Create ad based on type
@@ -1873,7 +2228,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         ...baseAd,
                         extensionType: 'snippet',
                         header: 'Types',
-                        values: group.keywords?.slice(0, 4) || ['Option 1', 'Option 2', 'Option 3']
+                        values: allGroups[0]?.keywords?.slice(0, 4) || ['Option 1', 'Option 2', 'Option 3']
                     };
                 } else if (type === 'callout') {
                     baseAd = {
@@ -1970,12 +2325,27 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         imageName: 'Product Showcase',
                         landscapeLogoImageUrl: 'https://via.placeholder.com/600x314'
                     };
+            }
+            
+            newAds.push(baseAd);
+            
+            // Add the single ad
+            if (newAds.length > 0) {
+                const newAd = newAds[0];
+                setGeneratedAds([...generatedAds, newAd]);
+                
+                // Add to selectedAdIds if it's a regular ad (not extension)
+                if ((type === 'rsa' || type === 'dki' || type === 'callonly') && selectedAdIds.length < 3) {
+                    setSelectedAdIds([...selectedAdIds, newAd.id]);
                 }
                 
-                newAds.push(baseAd);
-            });
-            
-            setGeneratedAds([...generatedAds, ...newAds]);
+                // Success notification
+                const adTypeName = type === 'rsa' ? 'Responsive Search Ad' : type === 'dki' ? 'DKI Text Ad' : type === 'callonly' ? 'Call Only Ad' : type;
+                notifications.success(`Created ${adTypeName} for all ad groups`, {
+                    title: 'Ad Created Successfully',
+                    description: `This ad will be added to all ${allGroups.length} ad groups automatically.`,
+                });
+            }
             return;
         }
         
@@ -2133,6 +2503,26 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
         setGeneratedAds([...generatedAds, newAd]);
         
+        // Success notification
+        const adTypeName = type === 'rsa' ? 'Responsive Search Ad' : 
+                          type === 'dki' ? 'DKI Text Ad' : 
+                          type === 'callonly' ? 'Call Only Ad' : 
+                          type === 'snippet' ? 'Snippet Extension' :
+                          type === 'callout' ? 'Callout Extension' :
+                          type === 'sitelink' ? 'Sitelink Extension' :
+                          type === 'call' ? 'Call Extension' :
+                          type === 'price' ? 'Price Extension' :
+                          type === 'app' ? 'App Extension' :
+                          type === 'location' ? 'Location Extension' :
+                          type === 'message' ? 'Message Extension' :
+                          type === 'leadform' ? 'Lead Form Extension' :
+                          type === 'promotion' ? 'Promotion Extension' :
+                          type === 'image' ? 'Image Extension' : type;
+        notifications.success(`${adTypeName} created successfully`, {
+            title: 'Ad Created',
+            description: `Your ${adTypeName} has been added to "${selectedAdGroup}". You can edit it in the ad list.`,
+        });
+        
         // If ALL AD GROUPS is selected and we haven't reached max 3 ads, and this is an ad (not extension), add to selected ads
         if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3 && (type === 'rsa' || type === 'dki' || type === 'callonly')) {
             setSelectedAdIds([...selectedAdIds, newAd.id]);
@@ -2148,9 +2538,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const baseAds = generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
         const extensions = generatedAds.filter(ad => ad.extensionType);
         
+        // For ALL AD GROUPS mode: only show ads in selectedAdIds (max 3)
+        // For specific group mode: show ads in that group (max 3 per group)
         const currentGroupAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
-            ? baseAds.filter(ad => selectedAdIds.includes(ad.id)) // Show only selected ads
-            : baseAds.filter(ad => ad.adGroup === selectedAdGroup);
+            ? baseAds.filter(ad => selectedAdIds.includes(ad.id)).slice(0, 3) // Show only selected ads, max 3
+            : baseAds.filter(ad => ad.adGroup === selectedAdGroup).slice(0, 3); // Max 3 per group
         
         // Attach extensions to their corresponding ads
         const adsWithExtensions = currentGroupAds.map(ad => {
@@ -2169,48 +2561,87 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
         const extensionsList = generatedAds.filter(ad => ad.extensionType);
         
-        // Use compact builder for better UX
-        const useCompactBuilder = true;
+        // Auto-select first ad for preview if none selected
+        useEffect(() => {
+            if (!selectedPreviewAdId && adsWithExtensions.length > 0) {
+                setSelectedPreviewAdId(adsWithExtensions[0].id);
+            }
+        }, [adsWithExtensions.length]);
         
-        if (useCompactBuilder) {
-            return (
-                <div className="w-full h-full p-4">
-                    <CompactAdBuilder
-                        selectedKeywords={selectedKeywords}
-                        selectedAdGroup={selectedAdGroup}
-                        onAdGroupChange={setSelectedAdGroup}
-                        adGroups={adGroupList}
-                        generatedAds={generatedAds}
-                        extensions={extensionsList}
-                        onCreateAd={createNewAd}
-                        onUpdateAd={updateAdField}
-                        onDeleteAd={handleDeleteAd}
-                        onDuplicateAd={handleDuplicateAd}
-                        selectedAdIds={selectedAdIds}
-                        ALL_AD_GROUPS_VALUE={ALL_AD_GROUPS_VALUE}
-                    />
-                    {/* Navigation */}
-                    <div className="flex justify-between mt-6">
-                        <Button variant="ghost" onClick={() => setStep(2)}>
-                            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-                            Back
-                        </Button>
-                        <Button 
-                            size="lg" 
-                            onClick={handleNextStep}
-                            disabled={generatedAds.length === 0}
-                            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg disabled:opacity-50"
-                        >
-                            Continue to Geo Targeting
-                            <ArrowRight className="ml-2 w-5 h-5" />
-                        </Button>
-                    </div>
-                </div>
-            );
-        }
+        // Load history when tab is active
+        useEffect(() => {
+            if (activeBuilderTab === 'history') {
+                loadHistory();
+            }
+        }, [activeBuilderTab]);
+        
+        const loadHistory = async () => {
+            try {
+                const data = await historyService.getHistory();
+                setHistory(data.history || []);
+            } catch (error) {
+                console.error('Failed to load history', error);
+            }
+        };
+        
+        const selectedPreviewAd = adsWithExtensions.find(ad => ad.id === selectedPreviewAdId) || adsWithExtensions[0];
+        const filteredHistory = history.filter(item => 
+            item.name?.toLowerCase().includes(searchHistory.toLowerCase()) ||
+            item.type?.toLowerCase().includes(searchHistory.toLowerCase())
+        );
         
         return (
-        <div className="max-w-[1920px] mx-auto p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-7xl mx-auto p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Tabs for Builder and History */}
+            <Tabs value={activeBuilderTab} onValueChange={(v) => setActiveBuilderTab(v as 'builder' | 'history')} className="w-full mb-6">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                    <TabsTrigger value="builder" className="text-base font-semibold">
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Builder
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="text-base font-semibold">
+                        <Clock className="w-4 h-4 mr-2" />
+                        History ({history.length})
+                    </TabsTrigger>
+                </TabsList>
+                
+                {/* Builder Tab */}
+                <TabsContent value="builder" className="mt-6">
+            {/* Undo/Redo Toolbar */}
+            <div className="mb-4 flex items-center justify-between bg-white/80 backdrop-blur-xl border border-slate-200 rounded-lg p-3 shadow-sm">
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUndo}
+                        disabled={!canUndo}
+                        className="flex items-center gap-2"
+                        title={lastActionDescription ? `Undo: ${lastActionDescription}` : 'Undo last action'}
+                    >
+                        <RotateCcw className="w-4 h-4" />
+                        Undo
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRedo}
+                        disabled={!canRedo}
+                        className="flex items-center gap-2"
+                    >
+                        <RotateCw className="w-4 h-4" />
+                        Redo
+                    </Button>
+                    {lastActionDescription && (
+                        <span className="text-xs text-slate-500 ml-2">
+                            Last: {lastActionDescription}
+                        </span>
+                    )}
+                </div>
+                <div className="text-xs text-slate-400">
+                    Use Undo to revert your last action • Keyboard: Ctrl+Z / Cmd+Z
+                </div>
+            </div>
+            
             {/* Campaign Info Panel */}
             {selectedKeywords.length > 0 && (
                 <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6">
@@ -2308,12 +2739,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
                             {selectedAdGroup === ALL_AD_GROUPS_VALUE ? (
                                 <>
-                                    <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between">
                                         <span className="text-sm font-semibold text-slate-700">Selected Ads:</span>
                                         <span className={`text-lg font-bold ${selectedAdIds.length >= 3 ? 'text-green-600' : 'text-indigo-600'}`}>
                                             {selectedAdIds.length} / 3
-                                        </span>
-                                    </div>
+                                </span>
+                            </div>
                                     {selectedAdIds.length >= 3 && (
                                         <p className="text-xs text-slate-600 mt-1">Maximum 3 ads for all ad groups. Remove an ad to add another.</p>
                                     )}
@@ -2324,14 +2755,17 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             ) : (
                                 <>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-semibold text-slate-700">Total Ads:</span>
-                                <span className={`text-lg font-bold ${generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25 ? 'text-red-600' : 'text-indigo-600'}`}>
-                                    {generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length} / 25
+                                <span className="text-sm font-semibold text-slate-700">Ads in Group:</span>
+                                <span className={`text-lg font-bold ${currentGroupAds.length >= 3 ? 'text-green-600' : 'text-indigo-600'}`}>
+                                    {currentGroupAds.length} / 3
                                 </span>
                             </div>
-                            {generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25 && (
-                                <p className="text-xs text-red-600 mt-1">Maximum limit reached. Delete ads to create new ones.</p>
+                            {currentGroupAds.length >= 3 && (
+                                <p className="text-xs text-slate-600 mt-1">Maximum 3 ads per ad group. Delete an ad to add another.</p>
                                     )}
+                            {currentGroupAds.length < 3 && (
+                                <p className="text-xs text-slate-600 mt-1">{3 - currentGroupAds.length} more ads can be added to this group.</p>
+                            )}
                                 </>
                             )}
                         </div>
@@ -2340,7 +2774,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             onClick={() => createNewAd('rsa')}
                             disabled={
                                 selectedKeywords.length === 0 || 
-                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25)
+                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : currentGroupAds.length >= 3)
                             }
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -2350,7 +2784,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             onClick={() => createNewAd('dki')}
                             disabled={
                                 selectedKeywords.length === 0 || 
-                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25)
+                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : currentGroupAds.length >= 3)
                             }
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -2360,150 +2794,201 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             onClick={() => createNewAd('callonly')}
                             disabled={
                                 selectedKeywords.length === 0 || 
-                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly').length >= 25)
+                                (selectedAdGroup === ALL_AD_GROUPS_VALUE ? selectedAdIds.length >= 3 : currentGroupAds.length >= 3)
                             }
                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
                         </Button>
-                        <Button 
+                        {/* Extensions - Compact Card Grid */}
+                        <div className="my-4">
+                            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Extensions</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
                             onClick={() => createNewAd('snippet')}
                             disabled={selectedKeywords.length === 0}
-                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
-                        >
-                            <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
-                        </Button>
-                        <Button 
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <FileText className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Snippet</div>
+                                </button>
+                                <button
                             onClick={() => createNewAd('callout')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
-                        >
-                            <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
-                        </Button>
-                        <Button 
-                            onClick={() => createNewAd('leadform')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
-                        >
-                            <FormIcon className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
-                        </Button>
-                        <Button 
-                            onClick={() => createNewAd('promotion')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white justify-start py-6 border-2 border-indigo-600"
-                        >
-                            <Tag className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
-                        </Button>
-                        
-                        {/* Separator */}
-                        <div className="my-4 border-t border-slate-300"></div>
-                        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">More Extensions</div>
-                        
-                        <Button 
-                            onClick={() => createNewAd('call')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
-                        >
-                            <Phone className="mr-2 w-5 h-5" /> CALL EXTENSION
-                        </Button>
-                        <Button 
+                            disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <CheckCircle2 className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Callout</div>
+                                </button>
+                                <button
                             onClick={() => createNewAd('sitelink')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
-                        >
-                            <Link2 className="mr-2 w-5 h-5" /> SITELINK EXTENSION
-                        </Button>
-                        <Button 
+                            disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <Link2 className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Sitelink</div>
+                                </button>
+                                <button
+                                    onClick={() => createNewAd('call')}
+                            disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <Phone className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Call</div>
+                                </button>
+                                <button
                             onClick={() => createNewAd('price')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
-                        >
-                            <DollarSign className="mr-2 w-5 h-5" /> PRICE EXTENSION
-                        </Button>
-                        <Button 
+                            disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <DollarSign className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Price</div>
+                                </button>
+                                <button
                             onClick={() => createNewAd('app')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
-                        >
-                            <Smartphone className="mr-2 w-5 h-5" /> APP EXTENSION
-                        </Button>
-                        <Button 
+                            disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <Smartphone className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">App</div>
+                                </button>
+                                <button
                             onClick={() => createNewAd('location')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
-                        >
-                            <MapPin className="mr-2 w-5 h-5" /> LOCATION EXTENSION
-                        </Button>
-                        <Button 
+                            disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <MapPin className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Location</div>
+                                </button>
+                                <button
                             onClick={() => createNewAd('message')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
-                        >
-                            <MessageSquare className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
-                        </Button>
-                        <Button 
-                            onClick={() => createNewAd('image')}
-                            disabled={selectedKeywords.length === 0}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start py-6 border-2 border-blue-600"
-                        >
-                            <ImageIcon className="mr-2 w-5 h-5" /> IMAGE EXTENSION
-                        </Button>
+                                    disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <MessageSquare className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Message</div>
+                                </button>
+                                <button
+                                    onClick={() => createNewAd('leadform')}
+                                    disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <FormIcon className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Lead Form</div>
+                                </button>
+                                <button
+                                    onClick={() => createNewAd('promotion')}
+                                    disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <Tag className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Promotion</div>
+                                </button>
+                                <button
+                                    onClick={() => createNewAd('image')}
+                                    disabled={selectedKeywords.length === 0 || baseAds.length === 0}
+                                    className="p-3 rounded-lg bg-purple-500 hover:bg-purple-600 text-white border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left"
+                                >
+                                    <ImageIcon className="w-4 h-4 mb-1" />
+                                    <div className="text-xs font-semibold">Image</div>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                {/* Right Panel - Ad Cards */}
+                {/* Right Panel - Ad Cards with Live Preview */}
                 <div className="lg:col-span-2 space-y-4">
-                    {adsWithExtensions.map((ad: any) => {
-                        const adExtensions = ad.extensions || [];
-                        return (
-                        <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-                            {/* Ad Group Badge (shown when ALL AD GROUPS is selected) */}
-                            {selectedAdGroup === ALL_AD_GROUPS_VALUE && ad.adGroup && (
-                                <div className="mb-2">
-                                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-300 text-xs">
-                                        Ad Group: {ad.adGroup}
-                                    </Badge>
-                                </div>
-                            )}
-                            {/* Ad Type Badge */}
-                            <div className="mb-3">
+                    {/* Live Preview Section */}
+                    {selectedPreviewAd && (
+                        <div className="mb-6 bg-white border-2 border-indigo-200 rounded-lg p-4 shadow-sm">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                    <Eye className="w-4 h-4" />
+                                    Live Preview
+                                </h3>
+                                <Badge variant="outline">Ad #{selectedPreviewAd.id}</Badge>
+                            </div>
+                            <LiveAdPreview ad={selectedPreviewAd} />
+                        </div>
+                    )}
+                    
+                    {/* Ad List */}
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-semibold text-slate-700">Your Ads ({adsWithExtensions.length})</h3>
+                        {adsWithExtensions.map((ad: any) => {
+                            const adExtensions = ad.extensions || [];
+                            const isSelected = selectedPreviewAdId === ad.id;
+                            return (
+                            <div 
+                                key={ad.id} 
+                                className={`bg-white border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer ${
+                                    isSelected ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200'
+                                }`}
+                                onClick={() => setSelectedPreviewAdId(ad.id)}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
                                 <Badge className={
                                     ad.type === 'rsa' ? 'bg-blue-100 text-blue-700' :
                                     ad.type === 'dki' ? 'bg-purple-100 text-purple-700' :
                                     ad.type === 'callonly' ? 'bg-green-100 text-green-700' :
-                                    ad.extensionType === 'snippet' ? 'bg-orange-100 text-orange-700' :
-                                    ad.extensionType === 'callout' ? 'bg-pink-100 text-pink-700' :
-                                    ad.extensionType === 'call' ? 'bg-teal-100 text-teal-700' :
-                                    ad.extensionType === 'sitelink' ? 'bg-cyan-100 text-cyan-700' :
-                                    ad.extensionType === 'price' ? 'bg-yellow-100 text-yellow-700' :
-                                    ad.extensionType === 'app' ? 'bg-indigo-100 text-indigo-700' :
-                                    ad.extensionType === 'location' ? 'bg-red-100 text-red-700' :
-                                    ad.extensionType === 'message' ? 'bg-violet-100 text-violet-700' :
-                                    ad.extensionType === 'leadform' ? 'bg-emerald-100 text-emerald-700' :
-                                    ad.extensionType === 'promotion' ? 'bg-rose-100 text-rose-700' :
-                                    ad.extensionType === 'image' ? 'bg-amber-100 text-amber-700' :
                                     'bg-slate-100 text-slate-700'
                                 }>
                                     {ad.type === 'rsa' ? 'RSA' : 
                                      ad.type === 'dki' ? 'DKI' : 
-                                     ad.type === 'callonly' ? 'Call Only' : 
-                                     ad.extensionType === 'snippet' ? 'Structured Snippet' :
-                                     ad.extensionType === 'callout' ? 'Callout' :
-                                     ad.extensionType === 'call' ? 'Call Extension' :
-                                     ad.extensionType === 'sitelink' ? 'Sitelink' :
-                                     ad.extensionType === 'price' ? 'Price' :
-                                     ad.extensionType === 'app' ? 'App' :
-                                     ad.extensionType === 'location' ? 'Location' :
-                                     ad.extensionType === 'message' ? 'Message' :
-                                     ad.extensionType === 'leadform' ? 'Lead Form' :
-                                     ad.extensionType === 'promotion' ? 'Promotion' :
-                                     ad.extensionType === 'image' ? 'Image' :
-                                     'Extension'}
+                                                 ad.type === 'callonly' ? 'Call Only' : 'Ad'}
                                 </Badge>
+                                            {adExtensions && adExtensions.length > 0 && (
+                                                <Badge variant="outline" className="text-xs">
+                                                    +{adExtensions.length} extension{adExtensions.length > 1 ? 's' : ''}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-sm font-medium text-slate-800 line-clamp-2 mb-1">
+                                            {ad.headline1 || ad.type || 'Ad'}
+                                        </p>
+                                        {ad.headline2 && (
+                                            <p className="text-xs text-slate-600 line-clamp-1">
+                                                {ad.headline2}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex gap-1 ml-3" onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const wasEditing = editingAdId === ad.id;
+                                                if (!wasEditing) {
+                                                    // Starting to edit - save state before making changes
+                                                    saveStateBeforeAction('edit', ad.id, `Editing ${ad.type || 'ad'} #${ad.id}`);
+                                                    setEditingStarted(new Set([...editingStarted, ad.id]));
+                                                }
+                                                setEditingAdId(wasEditing ? null : ad.id);
+                                            }}
+                                            className="h-8 w-8 p-0"
+                                        >
+                                            <Edit3 className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteAd(ad.id);
+                                            }}
+                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                             </div>
 
-                            {/* Inline Edit Mode or Preview */}
-                            {editingAdId === ad.id ? (
+                                {/* Edit Form - shown when editing */}
+                                {editingAdId === ad.id && (
                                 // Inline Edit Form
                                 <div className="mb-4 space-y-4 p-4 bg-slate-50 rounded-lg border-2 border-indigo-300">
                                     {(ad.type === 'rsa' || ad.type === 'dki') && (
@@ -3248,9 +3733,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </Button>
                                     </div>
                                 </div>
-                            ) : (
-                                // Preview Mode
-                                <>
+                            )}
+                            
+                            {/* Preview is shown in Live Preview section above - no need to duplicate here */}
                             {(ad.type === 'rsa' || ad.type === 'dki') && (
                                 <div className="mb-4">
                                     <div className="text-blue-600 hover:underline cursor-pointer text-lg mb-1">
@@ -3350,23 +3835,21 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                                     {callout}
                                                                 </Badge>
                                                             ))}
-                                                        </div>
-                                                    )}
+                                </div>
+                                    )}
                                                     {ext.extensionType === 'snippet' && (
                                                         <div className="text-xs text-slate-600 mt-2">
                                                             <span className="font-semibold">{ext.header}:</span> {Array.isArray(ext.values) ? ext.values.join(', ') : ''}
                                                         </div>
-                                                    )}
-                                                </div>
+                            )}
+                                    </div>
                                             ))}
-                                        </div>
-                                    )}
                                 </div>
                             )}
-                                </>
+                                </div>
                             )}
-
-                            {/* Old extension display code disabled - extensions are now integrated into ad preview above via CompactAdBuilder */}
+                            
+                            {/* Preview is shown in Live Preview section above */}
                             
                             {false && ad.extensionType === 'call' && (
                                 <div className="bg-teal-50 border border-teal-200 rounded px-4 py-3 mb-3">
@@ -3467,7 +3950,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     </div>
                                 </div>
                             )}
-                            
+
                             {false && ad.extensionType === 'leadform' && (
                                 <div className="bg-emerald-50 border border-emerald-200 rounded px-4 py-3 mb-3">
                                     <div className="flex items-start gap-2">
@@ -3488,7 +3971,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                            </div>
                             )}
                             
                             {false && ad.extensionType === 'promotion' && (
@@ -3513,8 +3996,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                     <span className="text-xs text-slate-600">
                                                         {new Date(ad.startDate).toLocaleDateString()} - {new Date(ad.endDate).toLocaleDateString()}
                                                     </span>
-                                                )}
-                                            </div>
+                            )}
+                        </div>
                                         </div>
                                     </div>
                                 </div>
@@ -3539,36 +4022,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 </div>
                             )}
 
-                            {/* Action Buttons */}
-                            {editingAdId !== ad.id && (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={() => handleEditAd(ad)}
-                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
-                                    size="sm"
-                                >
-                                        <Edit3 className="w-4 h-4 mr-2" />
-                                    EDIT
-                                </Button>
-                                <Button
-                                    onClick={() => handleDuplicateAd(ad)}
-                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
-                                    size="sm"
-                                >
-                                        <Repeat className="w-4 h-4 mr-2" />
-                                    DUPLICATE
-                                </Button>
-                                <Button
-                                    onClick={() => handleDeleteAd(ad.id)}
-                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
-                                    size="sm"
-                                >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                    DELETE
-                                </Button>
                             </div>
-                            )}
-                        </div>
                         );
                     })}
                     

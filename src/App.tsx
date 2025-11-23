@@ -93,7 +93,7 @@ const App = () => {
       link.href = url;
       document.head.appendChild(link);
       
-      document.title = 'AdBuilder - Google Campaign Builder';
+      document.title = 'Adiology - Google Campaign Builder';
     };
     
     setFavicon();
@@ -291,7 +291,10 @@ const App = () => {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-slate-800">AdBuilder</span>
+              <div className="flex flex-col">
+                <span className="font-bold text-slate-800">Adiology</span>
+                <span className="text-xs text-slate-500 -mt-0.5">~ Samay</span>
+              </div>
             </div>
           )}
           <button
@@ -494,7 +497,7 @@ const DashboardView = () => (
     <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-12 border border-slate-200/60 shadow-xl text-center">
       <LayoutDashboard className="w-20 h-20 text-indigo-500 mx-auto mb-4" />
       <h2 className="text-2xl font-bold text-slate-800 mb-2">
-        Welcome to AdBuilder
+        Welcome to Adiology
       </h2>
       <p className="text-slate-600 max-w-lg mx-auto mb-4">
         Your Google Ads campaign management platform is ready. Navigate to Campaign Builder, CSV Validator, or Keyword tools to get started.

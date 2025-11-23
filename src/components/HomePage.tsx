@@ -170,7 +170,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Adiology
                 </h1>
-                <p className="text-xs text-slate-500">Professional Campaign Builder</p>
+                <p className="text-xs text-slate-500">~ Samay</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -515,7 +515,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
                   <Sparkle className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold text-white">Adiology</span>
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-white">Adiology</span>
+                  <span className="text-xs text-slate-400 -mt-0.5">~ Samay</span>
+                </div>
               </div>
               <p className="text-sm text-slate-400 mb-4 leading-relaxed">
                 Professional Google Ads campaign builder powered by AI. Transform your advertising workflow.

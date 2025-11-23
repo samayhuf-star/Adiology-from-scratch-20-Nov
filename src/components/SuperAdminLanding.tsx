@@ -28,7 +28,13 @@ export const SuperAdminLanding: React.FC<SuperAdminLandingProps> = ({
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold text-white">Super Admin Portal</h1>
+              <div>
+                <h1 className="text-4xl font-bold text-white">Super Admin Portal</h1>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-lg font-semibold text-indigo-200">Adiology</span>
+                  <span className="text-xs text-indigo-300">~ Samay</span>
+                </div>
+              </div>
             </div>
             <p className="text-indigo-200 ml-15">Choose your access level</p>
           </div>
