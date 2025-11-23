@@ -107,6 +107,13 @@ class NotificationService {
       error: messages.error,
     });
   }
+
+  dismiss(toastId: number | string) {
+    if (!this.toast || !this.toast.dismiss) {
+      return;
+    }
+    this.toast.dismiss(toastId);
+  }
 }
 
 export const notifications = new NotificationService();
