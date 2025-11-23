@@ -333,7 +333,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
         {/* Additional gradient overlays for depth */}
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-indigo-50/30 to-purple-50/30"></div>
       </div>
-      
+
       {/* Floating particles effect */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         {[...Array(20)].map((_, i) => (
@@ -444,14 +444,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </Button>
-              <Button 
-                size="lg"
-                variant="outline"
-                className="text-lg px-8 py-6 h-auto border-2 border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 transition-all w-full sm:w-auto group"
-              >
-                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                Watch Demo
-              </Button>
             </div>
 
             {/* Trust Signals */}
@@ -459,11 +451,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
               <div className="flex items-center gap-2 text-slate-600">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium">No Credit Card Required</span>
-              </div>
+                  </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium">Free Forever</span>
-              </div>
+                  </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 <span className="text-sm font-medium">Setup in 5 Minutes</span>
@@ -755,10 +747,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                     <div className="text-4xl">{testimonial.image}</div>
                     <div className="flex-1">
                       <div className="flex gap-1 mb-2">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                        ))}
-                      </div>
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
                       <Badge className="bg-green-100 text-green-700 border-green-200">{testimonial.result}</Badge>
                     </div>
                   </div>
@@ -984,17 +976,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                 <Button 
                   size="lg"
                   onClick={onGetStarted}
-                  className="bg-white text-indigo-600 hover:bg-slate-100 text-lg px-8 py-6 h-auto w-full sm:w-auto"
+                  className="bg-white text-indigo-600 hover:bg-slate-100 text-lg px-8 py-6 h-auto w-full sm:w-auto shadow-lg rounded-lg"
                 >
                   Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
                 <Button 
                   size="lg"
-                  variant="outline"
                   onClick={onLogin}
-                  className="border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-6 h-auto w-full sm:w-auto"
+                  className="bg-white text-indigo-600 hover:bg-slate-100 text-lg px-8 py-6 h-auto w-full sm:w-auto shadow-lg rounded-lg"
                 >
-                  Sign In
+                  Sign In <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </div>
             </CardContent>
@@ -1013,7 +1004,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                   <Sparkle className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-bold text-white">Adiology</span>
+                <span className="text-xl font-bold text-white">Adiology</span>
                   <span className="text-xs text-slate-400 -mt-0.5">~ Samay</span>
                 </div>
               </div>
