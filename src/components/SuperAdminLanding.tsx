@@ -29,7 +29,7 @@ export const SuperAdminLanding: React.FC<SuperAdminLandingProps> = ({
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-white">Super Admin Portal</h1>
+              <h1 className="text-4xl font-bold text-white">Super Admin Portal</h1>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-lg font-semibold text-indigo-200">Adiology</span>
                   <span className="text-xs text-indigo-300">~ Samay</span>

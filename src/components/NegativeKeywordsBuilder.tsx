@@ -73,8 +73,19 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 url,
                 coreKeywords,
                 userGoal,
-                count: 700, // Request 500-800 keywords
-                format: 'exact' // Request exact match format
+                count: 1200, // Request minimum 300, target 1000+ keywords
+                format: 'exact', // Request exact match format
+                expansionStrategies: [
+                    'synonyms',
+                    'irrelevant_intents',
+                    'informational_searches',
+                    'diy_queries',
+                    'jobs_careers',
+                    'free_cheap_searches',
+                    'competitor_terms',
+                    'related_category_mismatches'
+                ],
+                instructions: 'Generate as many negative keywords as possible (minimum 300, target 1000+). Expand using: synonyms, irrelevant intents, informational searches, DIY queries, jobs/careers, free/cheap searches, competitor terms, related category mismatches. Categorize each keyword by intent and give a reason why it should be excluded. Make sure all outputs are unique and clean.'
             });
 
             if (response.keywords && Array.isArray(response.keywords)) {
@@ -103,9 +114,24 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         } catch (error) {
             console.log('ℹ️ Backend unavailable - using local fallback generation');
             
-            // FALLBACK: Generate comprehensive negative keywords (500-800) with exact match format
+            // FALLBACK: Generate comprehensive negative keywords (1000+) with exact match format
             const mockNegatives: GeneratedKeyword[] = [];
+            const keywordSet = new Set<string>(); // Track uniqueness
             let id = 1;
+            
+            // Helper function to add keyword if unique
+            const addUniqueKeyword = (kw: string, reason: string, category: string) => {
+                const cleanKw = kw.toLowerCase().trim();
+                if (!keywordSet.has(cleanKw) && cleanKw.length > 0) {
+                    keywordSet.add(cleanKw);
+                    mockNegatives.push({
+                        id: id++,
+                        keyword: `[${kw}]`,
+                        reason,
+                        category
+                    });
+                }
+            };
 
             // Employment-related (100+ variations)
             const employmentTerms = [

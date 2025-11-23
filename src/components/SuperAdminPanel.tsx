@@ -177,13 +177,13 @@ const OverviewModule = () => {
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-8">
-        System Overview
-      </h1>
+  <div>
+    <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-8">
+      System Overview
+    </h1>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    {/* Key Metrics */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard 
           icon={Users} 
           label="Total Users" 
@@ -208,17 +208,17 @@ const OverviewModule = () => {
           value={loading ? '--' : (stats?.systemHealth?.length > 0 ? 'Operational' : 'Unknown')} 
           color="from-indigo-500 to-purple-500" 
         />
-      </div>
+    </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-        <h2 className="text-xl font-bold text-slate-800 mb-4">Recent System Activity</h2>
+    {/* Recent Activity */}
+    <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
+      <h2 className="text-xl font-bold text-slate-800 mb-4">Recent System Activity</h2>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="w-6 h-6 animate-spin text-purple-500" />
           </div>
         ) : (
-          <EmptyState icon={Activity} message="No recent activity" />
+      <EmptyState icon={Activity} message="No recent activity" />
         )}
       </div>
     </div>
@@ -312,58 +312,58 @@ const UsersModule = () => {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Users & Accounts
-        </h1>
-        <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
-          <UserPlus className="w-4 h-4" />
-          Add User
-        </button>
-      </div>
+  <div>
+    <div className="flex items-center justify-between mb-8">
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        Users & Accounts
+      </h1>
+      <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
+        <UserPlus className="w-4 h-4" />
+        Add User
+      </button>
+    </div>
 
-      {/* Search & Filters */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6 flex items-center gap-4">
-        <input
-          type="text"
-          placeholder="Search users by email, name, or ID..."
+    {/* Search & Filters */}
+    <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6 flex items-center gap-4">
+      <input
+        type="text"
+        placeholder="Search users by email, name, or ID..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-          className="flex-1 px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
+        className="flex-1 px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+      />
         <button 
           onClick={handleSearch}
           className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
         >
-          Search
-        </button>
-      </div>
+        Search
+      </button>
+    </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <ActionCard icon={Eye} label="Impersonate User" color="from-blue-500 to-cyan-500" />
-        <ActionCard icon={Ban} label="Suspend Account" color="from-red-500 to-pink-500" />
-        <ActionCard icon={Key} label="Reset Password" color="from-green-500 to-emerald-500" />
-        <ActionCard icon={UserMinus} label="Delete User" color="from-orange-500 to-red-500" />
-      </div>
+    {/* Quick Actions */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <ActionCard icon={Eye} label="Impersonate User" color="from-blue-500 to-cyan-500" />
+      <ActionCard icon={Ban} label="Suspend Account" color="from-red-500 to-pink-500" />
+      <ActionCard icon={Key} label="Reset Password" color="from-green-500 to-emerald-500" />
+      <ActionCard icon={UserMinus} label="Delete User" color="from-orange-500 to-red-500" />
+    </div>
 
-      {/* Users Table */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium">User</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Plan</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Joined</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Last Active</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+    {/* Users Table */}
+    <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-medium">User</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Plan</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Joined</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Last Active</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
@@ -374,11 +374,11 @@ const UsersModule = () => {
                   </td>
                 </tr>
               ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12">
-                    <EmptyState icon={Users} message="No users found" />
-                  </td>
-                </tr>
+            <tr>
+              <td colSpan={6} className="px-6 py-12">
+                <EmptyState icon={Users} message="No users found" />
+              </td>
+            </tr>
               ) : (
                 users.map((user) => (
                   <tr key={user.id} className="border-b border-slate-200 hover:bg-slate-50">
@@ -431,9 +431,9 @@ const UsersModule = () => {
                   </tr>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+          </tbody>
+        </table>
+      </div>
         {pagination.totalPages > 1 && (
           <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
             <div className="text-sm text-slate-600">
@@ -457,9 +457,9 @@ const UsersModule = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
-  );
+  </div>
+);
 };
 
 const BillingModule = () => (
@@ -647,14 +647,14 @@ const AuditModule = () => {
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-600 to-gray-600 bg-clip-text text-transparent mb-8">
-        Audit Logs
-      </h1>
+  <div>
+    <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-600 to-gray-600 bg-clip-text text-transparent mb-8">
+      Audit Logs
+    </h1>
 
-      {/* Filters */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    {/* Filters */}
+    <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <select 
             value={filters.action}
             onChange={(e) => setFilters({ ...filters, action: e.target.value })}
@@ -664,7 +664,7 @@ const AuditModule = () => {
             <option value="update_user">User Actions</option>
             <option value="delete_user">Admin Actions</option>
             <option value="system">System Events</option>
-          </select>
+        </select>
           <input
             type="text"
             placeholder="User ID"
@@ -672,35 +672,35 @@ const AuditModule = () => {
             onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
             className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500"
           />
-          <input
-            type="date"
-            className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500"
-          />
+        <input
+          type="date"
+          className="px-4 py-2 bg-slate-50 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-slate-500"
+        />
           <button 
             onClick={loadLogs}
             className="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
           >
-            <Filter className="w-4 h-4" />
-            Apply Filters
-          </button>
-        </div>
+          <Filter className="w-4 h-4" />
+          Apply Filters
+        </button>
       </div>
+    </div>
 
-      {/* Audit Log Table */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-slate-500 to-gray-600 text-white">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium">Timestamp</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">User</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Action</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Resource</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">IP Address</th>
-                <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+    {/* Audit Log Table */}
+    <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gradient-to-r from-slate-500 to-gray-600 text-white">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-medium">Timestamp</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">User</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Action</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Resource</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">IP Address</th>
+              <th className="px-6 py-4 text-left text-sm font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center">
@@ -708,11 +708,11 @@ const AuditModule = () => {
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12">
-                    <EmptyState icon={FileSearch} message="No audit logs found" />
-                  </td>
-                </tr>
+            <tr>
+              <td colSpan={6} className="px-6 py-12">
+                <EmptyState icon={FileSearch} message="No audit logs found" />
+              </td>
+            </tr>
               ) : (
                 logs.map((log) => (
                   <tr key={log.id} className="border-b border-slate-200 hover:bg-slate-50">
@@ -739,12 +739,12 @@ const AuditModule = () => {
                   </tr>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+          </tbody>
+        </table>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 const SupportModule = () => (

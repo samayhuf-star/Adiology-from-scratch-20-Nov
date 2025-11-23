@@ -516,7 +516,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                   <Sparkle className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-bold text-white">Adiology</span>
+                <span className="text-xl font-bold text-white">Adiology</span>
                   <span className="text-xs text-slate-400 -mt-0.5">~ Samay</span>
                 </div>
               </div>
