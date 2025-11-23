@@ -5,9 +5,14 @@ import {
   UserPlus, UserMinus, Ban, Key, Eye, TrendingUp, AlertCircle,
   CheckCircle, Clock, CreditCard, Zap, Database, Globe, Mail,
   Code, Webhook, Lock, Download, Upload, RefreshCw, Play, Pause,
-  Inbox, Filter
+  Inbox, Filter, X
 } from 'lucide-react';
 import { adminApi } from '../utils/api/admin';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Button } from './ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface SuperAdminPanelProps {
   onBackToLanding: () => void;
@@ -250,6 +255,9 @@ const UsersModule = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
+  const [showAddUserDialog, setShowAddUserDialog] = useState(false);
+  const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', subscription_plan: 'free' });
+  const [addingUser, setAddingUser] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -296,9 +304,51 @@ const UsersModule = () => {
         subscription_status: suspend ? 'suspended' : 'active' 
       });
       loadUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error suspending user:', error);
-      alert('Failed to update user status');
+      alert(error.message || 'Failed to update user status. Backend API required.');
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUser.email || !newUser.password) {
+      alert('Please fill in email and password');
+      return;
+    }
+
+    try {
+      setAddingUser(true);
+      await adminApi.createUser({
+        email: newUser.email,
+        password: newUser.password,
+        full_name: newUser.full_name,
+        subscription_plan: newUser.subscription_plan,
+      });
+      setShowAddUserDialog(false);
+      setNewUser({ email: '', password: '', full_name: '', subscription_plan: 'free' });
+      loadUsers();
+      alert('User created successfully!');
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      alert(error.message || 'Failed to create user. Backend API required.');
+    } finally {
+      setAddingUser(false);
+    }
+  };
+
+  const handleResetPassword = async (userId: string) => {
+    if (!confirm('Generate password reset link for this user?')) return;
+    
+    try {
+      const result = await adminApi.resetPassword(userId);
+      if (result.link) {
+        alert(`Password reset link: ${result.link}`);
+      } else {
+        alert('Password reset initiated. Check backend logs for the reset link.');
+      }
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      alert(error.message || 'Failed to reset password. Backend API required.');
     }
   };
 
@@ -317,7 +367,10 @@ const UsersModule = () => {
       <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
         Users & Accounts
       </h1>
-      <button className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
+      <button 
+        onClick={() => setShowAddUserDialog(true)}
+        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+      >
         <UserPlus className="w-4 h-4" />
         Add User
       </button>
@@ -341,12 +394,32 @@ const UsersModule = () => {
       </button>
     </div>
 
-    {/* Quick Actions */}
+    {/* Quick Actions - Info only, actions are in table */}
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <ActionCard icon={Eye} label="Impersonate User" color="from-blue-500 to-cyan-500" />
-      <ActionCard icon={Ban} label="Suspend Account" color="from-red-500 to-pink-500" />
-      <ActionCard icon={Key} label="Reset Password" color="from-green-500 to-emerald-500" />
-      <ActionCard icon={UserMinus} label="Delete User" color="from-orange-500 to-red-500" />
+      <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+        <div className="flex items-center gap-3">
+          <Eye className="w-5 h-5 text-blue-600" />
+          <span className="text-sm font-medium text-slate-700">Click user row to impersonate</span>
+        </div>
+      </div>
+      <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+        <div className="flex items-center gap-3">
+          <Ban className="w-5 h-5 text-red-600" />
+          <span className="text-sm font-medium text-slate-700">Use suspend button in table</span>
+        </div>
+      </div>
+      <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+        <div className="flex items-center gap-3">
+          <Key className="w-5 h-5 text-green-600" />
+          <span className="text-sm font-medium text-slate-700">Reset via user actions</span>
+        </div>
+      </div>
+      <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
+        <div className="flex items-center gap-3">
+          <UserMinus className="w-5 h-5 text-orange-600" />
+          <span className="text-sm font-medium text-slate-700">Delete via user actions</span>
+        </div>
+      </div>
     </div>
 
     {/* Users Table */}
@@ -413,6 +486,13 @@ const UsersModule = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => handleResetPassword(user.id)}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                          title="Reset Password"
+                        >
+                          <Key className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleSuspendUser(user.id, user.subscription_status !== 'suspended')}
                           className="p-1.5 text-red-600 hover:bg-red-50 rounded"
                           title={user.subscription_status === 'suspended' ? 'Activate' : 'Suspend'}
@@ -458,6 +538,78 @@ const UsersModule = () => {
           </div>
         )}
     </div>
+
+    {/* Add User Dialog */}
+    <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New User</DialogTitle>
+          <DialogDescription>
+            Create a new user account. Note: Backend API is required for this functionality.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              placeholder="user@example.com"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="password">Password *</Label>
+            <Input
+              id="password"
+              type="password"
+              value={newUser.password}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              placeholder="Minimum 6 characters"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="full_name">Full Name</Label>
+            <Input
+              id="full_name"
+              type="text"
+              value={newUser.full_name}
+              onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+              placeholder="John Doe"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="plan">Subscription Plan</Label>
+            <Select value={newUser.subscription_plan} onValueChange={(value) => setNewUser({ ...newUser, subscription_plan: value })}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+                <SelectItem value="enterprise">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleAddUser}
+            disabled={addingUser}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+          >
+            {addingUser ? 'Creating...' : 'Create User'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 );
 };
