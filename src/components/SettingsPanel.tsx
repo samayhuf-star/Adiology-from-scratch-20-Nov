@@ -15,7 +15,11 @@ import { Alert, AlertDescription } from './ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { BillingPanel } from './BillingPanel';
 
-export const SettingsPanel = () => {
+interface SettingsPanelProps {
+  defaultTab?: 'settings' | 'billing';
+}
+
+export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) => {
   const [user, setUser] = useState<any>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -206,7 +210,7 @@ export const SettingsPanel = () => {
         <p className="text-slate-500 mt-1">Manage your account settings, billing, and preferences</p>
       </div>
 
-      <Tabs defaultValue="settings" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>

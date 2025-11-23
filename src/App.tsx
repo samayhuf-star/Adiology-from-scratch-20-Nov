@@ -308,6 +308,8 @@ const App = () => {
         return <SupportHelpCombined />;
       case 'settings':
         return <SettingsPanel />;
+      case 'billing':
+        return <SettingsPanel defaultTab="billing" />;
       case 'dashboard':
       default:
         return <DashboardView />;
