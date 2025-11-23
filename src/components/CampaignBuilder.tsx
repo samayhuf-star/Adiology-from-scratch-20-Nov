@@ -3363,6 +3363,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     )}
                                 </div>
                             )}
+                                </>
+                            )}
 
                             {/* Old extension display code disabled - extensions are now integrated into ad preview above via CompactAdBuilder */}
                             
