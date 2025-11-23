@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  User, Mail, Lock, Bell, Globe, Shield, Key, 
+  User, Mail, Lock, Bell, Globe, Shield, 
   Save, Eye, EyeOff, Trash2, Download, Upload,
   CheckCircle2, AlertCircle, CreditCard
 } from 'lucide-react';
@@ -39,10 +39,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   // Privacy settings
   const [dataSharing, setDataSharing] = useState(false);
   const [analytics, setAnalytics] = useState(true);
-  
-  // API settings
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -440,45 +436,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               Save Privacy Settings
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* API Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="w-5 h-5 text-indigo-600" />
-            API Access
-          </CardTitle>
-          <CardDescription>Manage your API keys and integrations</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label>API Key</Label>
-            <div className="relative">
-              <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <Input
-                type={showApiKey ? 'text' : 'password'}
-                value={apiKey || '••••••••••••••••'}
-                readOnly
-                className="pl-10 pr-10 bg-slate-50"
-                placeholder="No API key set"
-              />
-              <button
-                type="button"
-                onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <p className="text-xs text-slate-500">API access is available for Pro plans. Upgrade to generate an API key.</p>
-          </div>
-          <Button variant="outline" disabled>
-            <Key className="w-4 h-4 mr-2" />
-            Generate API Key
-            <Badge className="ml-2" variant="secondary">Pro</Badge>
-          </Button>
         </CardContent>
       </Card>
 

@@ -200,7 +200,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                     </div>
                 </div>
             )}
-            <div>
+             <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     Billing & Subscription
                 </h1>
@@ -238,7 +238,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {[
                                     "Unlimited Campaigns", "Advanced Keyword Planner", "CSV Export", 
-                                    "Priority Support", "Team Collaboration", "API Access"
+                                    "Priority Support", "Team Collaboration"
                                 ].map((feature, i) => (
                                     <div key={i} className="flex items-center gap-2 text-sm text-slate-600">
                                         <CheckCircle className="w-4 h-4 text-green-500" /> {feature}
@@ -282,7 +282,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                                                 }`}>
                                                     {card.brand?.toUpperCase() || 'CARD'}
                                                 </div>
-                                                <div>
+                                <div>
                                                     <div className="text-sm font-medium">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
                                                     <div className="text-xs text-slate-500">Expires {card.expMonth}/{card.expYear}</div>
                                                 </div>
@@ -298,7 +298,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     <CreditCard className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                                     <p className="text-sm mb-4">No payment method added yet</p>
                                     <p className="text-xs text-slate-400">Add a card to enable upgrades</p>
-                                </div>
+                            </div>
                             )}
                             <div className="flex gap-2 mt-4">
                                 <Button 
@@ -311,14 +311,14 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     {savedCards.length > 0 ? 'Add New Card' : 'Add Payment Card'}
                                 </Button>
                                 {savedCards.length > 0 && (
-                                    <Button 
-                                        variant="outline" 
+                            <Button 
+                                variant="outline" 
                                         className="flex-1"
-                                        onClick={() => setShowPaymentDialog(true)}
-                                        disabled={processing}
-                                    >
-                                        Update Payment Method
-                                    </Button>
+                                onClick={() => setShowPaymentDialog(true)}
+                                disabled={processing}
+                            >
+                                Update Payment Method
+                            </Button>
                                 )}
                             </div>
                         </CardContent>
@@ -795,7 +795,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                                                 <Badge className="bg-green-100 text-green-700 border-green-200">Default</Badge>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
                                             <div className={`w-10 h-6 rounded flex items-center justify-center text-white text-[8px] font-mono ${
                                                 card.brand === 'visa' ? 'bg-slate-800' :
                                                 card.brand === 'mastercard' ? 'bg-red-600' :
@@ -804,19 +804,19 @@ Generated on ${new Date().toLocaleDateString()}`;
                                             }`}>
                                                 {card.brand?.toUpperCase() || 'CARD'}
                                             </div>
-                                            <div>
+                                <div>
                                                 <div className="text-sm font-medium">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
                                                 <div className="text-xs text-slate-500">Expires {card.expMonth}/{card.expYear}</div>
                                             </div>
                                         </div>
-                                    </div>
+                                </div>
                                 ))}
                             </div>
                         ) : (
                             <div className="p-4 border border-slate-200 rounded-lg bg-slate-50">
                                 <div className="text-sm font-medium mb-2">No Payment Methods</div>
                                 <div className="text-xs text-slate-500">Add a payment card to enable plan upgrades.</div>
-                            </div>
+                        </div>
                         )}
                         <div className="text-sm text-slate-600">
                             Clicking "Update Payment Method" will redirect you to our secure payment processor to add or update your payment information.
