@@ -323,25 +323,43 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 relative overflow-hidden">
+      {/* Enhanced Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-        <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-blob animation-delay-6000"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob"></div>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-6000"></div>
+        {/* Additional gradient overlays for depth */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-indigo-50/30 to-purple-50/30"></div>
+      </div>
+      
+      {/* Floating particles effect */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 bg-indigo-300 rounded-full opacity-20"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
       </div>
 
-      {/* Navigation */}
-      <nav className="relative z-50 backdrop-blur-lg bg-white/90 border-b border-slate-200/50 sticky top-0 shadow-sm">
+      {/* Enhanced Navigation */}
+      <nav className="relative z-50 backdrop-blur-xl bg-white/95 border-b border-slate-200/60 sticky top-0 shadow-lg shadow-indigo-100/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg">
-                <Sparkle className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-110">
+                <Sparkle className="w-6 h-6 text-white animate-pulse" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                   Adiology
                 </h1>
                 <p className="text-xs text-slate-500">~ Samay</p>
@@ -400,11 +418,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             </Badge>
             
             <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-gradient">
                 Build Winning Google Ads
               </span>
               <br />
-              <span className="text-slate-800">Campaigns in Minutes</span>
+              <span className="text-slate-800 relative">
+                Campaigns in Minutes
+                <span className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full opacity-50"></span>
+              </span>
             </h1>
             
             <p className="text-lg sm:text-xl md:text-2xl text-slate-600 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed px-4">
@@ -416,16 +437,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
               <Button 
                 size="lg"
                 onClick={onGetStarted}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg px-8 py-6 h-auto shadow-2xl hover:shadow-indigo-500/50 transition-all hover:scale-105 w-full sm:w-auto"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg px-8 py-6 h-auto shadow-2xl hover:shadow-indigo-500/50 transition-all hover:scale-105 w-full sm:w-auto group relative overflow-hidden"
               >
-                Start Building Campaigns Free <Rocket className="w-5 h-5 ml-2" />
+                <span className="relative z-10 flex items-center">
+                  Start Building Campaigns Free <Rocket className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </Button>
               <Button 
                 size="lg"
                 variant="outline"
-                className="text-lg px-8 py-6 h-auto border-2 border-slate-300 hover:border-indigo-400 w-full sm:w-auto"
+                className="text-lg px-8 py-6 h-auto border-2 border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 transition-all w-full sm:w-auto group"
               >
-                <Play className="w-5 h-5 mr-2" />
+                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                 Watch Demo
               </Button>
             </div>
@@ -751,57 +775,196 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gradient-to-br from-indigo-50 to-purple-50">
-        <div className="max-w-5xl mx-auto">
+      <section id="pricing" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 sm:mb-16">
             <Badge className="mb-4 bg-indigo-100 text-indigo-700 border-indigo-200 px-4 py-1.5">
-              Simple Pricing
+              Choose Your Plan
             </Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-800 mb-4 sm:mb-6">
-              Free Forever. No Hidden Fees.
+              Simple, Transparent Pricing
             </h2>
-            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
-              All core features are completely free. Start building campaigns today.
+            <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto">
+              Pick the perfect plan for your business needs. All plans include access to our powerful campaign building tools.
             </p>
           </div>
 
-          <Card className="border-2 border-indigo-200 shadow-2xl">
-            <CardContent className="p-8 sm:p-12">
-              <div className="text-center mb-8">
-                <div className="text-5xl font-bold text-indigo-600 mb-2">$0</div>
-                <div className="text-slate-600 mb-6">Forever Free</div>
-                <Badge className="bg-green-100 text-green-700 border-green-200 px-4 py-1.5">
-                  No Credit Card Required
-                </Badge>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {[
-                  'Unlimited campaigns',
-                  'Unlimited keywords',
-                  'Unlimited ads',
-                  'AI-powered keyword generation',
-                  'Campaign builder (all structures)',
-                  'CSV validation & export',
-                  'Ad extensions manager',
-                  'Campaign history & templates',
-                  'Geo-targeting',
-                  '24/7 support'
-                ].map((feature, idx) => (
-                  <li key={idx} className="flex items-center gap-3">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {/* Lifetime Limited Plan */}
+            <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
+              <CardContent className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <Badge className="mb-3 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
+                  <div className="text-4xl font-bold text-slate-800 mb-1">$99.99</div>
+                  <div className="text-sm text-slate-600 mb-4">One-time payment</div>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-slate-700">{feature}</span>
+                    <span className="text-sm text-slate-700">15 campaigns/month</span>
                   </li>
-                ))}
-              </ul>
-              <Button 
-                onClick={onGetStarted}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg py-6"
-                size="lg"
-              >
-                Get Started Free <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">All features included</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">AI keyword generation</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">Campaign builder</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">CSV validation & export</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">24/7 support</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={onGetStarted}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                >
+                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Lifetime Unlimited Plan */}
+            <Card className="border-2 border-indigo-400 hover:border-indigo-500 transition-all hover:shadow-2xl relative bg-gradient-to-br from-indigo-50 to-purple-50">
+              <div className="absolute top-4 right-4">
+                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0">Popular</Badge>
+              </div>
+              <CardContent className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <Badge className="mb-3 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
+                  <div className="text-4xl font-bold text-slate-800 mb-1">$199</div>
+                  <div className="text-sm text-slate-600 mb-4">One-time payment</div>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 font-semibold">Unlimited access to all tools</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">AI keyword generation</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">Campaign builder</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">CSV validation & export</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">Priority support</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={onGetStarted}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+                >
+                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Monthly Limited Plan */}
+            <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
+              <CardContent className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <Badge className="mb-3 bg-green-100 text-green-700 border-green-200">Monthly</Badge>
+                  <div className="text-4xl font-bold text-slate-800 mb-1">$49.99</div>
+                  <div className="text-sm text-slate-600 mb-4">per month</div>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">25 campaigns/month</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">Access to other tools</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">AI keyword generation</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">Campaign builder</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">CSV validation & export</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">24/7 support</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={onGetStarted}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                >
+                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Monthly Unlimited Plan */}
+            <Card className="border-2 border-purple-300 hover:border-purple-400 transition-all hover:shadow-xl relative">
+              <CardContent className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <Badge className="mb-3 bg-purple-100 text-purple-700 border-purple-200">Monthly</Badge>
+                  <div className="text-4xl font-bold text-slate-800 mb-1">$99.99</div>
+                  <div className="text-sm text-slate-600 mb-4">per month</div>
+                </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700 font-semibold">Full access to all tools</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">AI keyword generation</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">Campaign builder</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">CSV validation & export</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-slate-700">Priority support</span>
+                  </li>
+                </ul>
+                <Button 
+                  onClick={onGetStarted}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                >
+                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
