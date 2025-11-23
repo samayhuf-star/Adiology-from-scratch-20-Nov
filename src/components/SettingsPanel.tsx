@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, Lock, Bell, Globe, Shield, Key, 
   Save, Eye, EyeOff, Trash2, Download, Upload,
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, CreditCard
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -12,6 +12,8 @@ import { Switch } from './ui/switch';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { BillingPanel } from './BillingPanel';
 
 export const SettingsPanel = () => {
   const [user, setUser] = useState<any>(null);
@@ -201,8 +203,16 @@ export const SettingsPanel = () => {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
           Settings
         </h1>
-        <p className="text-slate-500 mt-1">Manage your account settings and preferences</p>
+        <p className="text-slate-500 mt-1">Manage your account settings, billing, and preferences</p>
       </div>
+
+      <Tabs defaultValue="settings" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="settings" className="space-y-8 mt-0">
 
       {saveMessage && (
         <Alert variant={saveMessage.type === 'success' ? 'default' : 'destructive'}>
@@ -490,6 +500,12 @@ export const SettingsPanel = () => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+        
+        <TabsContent value="billing" className="mt-0">
+          <BillingPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

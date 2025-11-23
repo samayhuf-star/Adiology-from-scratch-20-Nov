@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, FileText
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,7 +26,7 @@ import { SuperAdminPanel } from './components/SuperAdminPanel';
 import { HomePage } from './components/HomePage';
 import { Auth } from './components/Auth';
 import { SettingsPanel } from './components/SettingsPanel';
-import { LogsPanel } from './components/LogsPanel';
+import { SupportHelpCombined } from './components/SupportHelpCombined';
 
 type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel';
 
@@ -232,11 +232,8 @@ const App = () => {
     { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
     { id: 'csv-validator', label: 'CSV Validator', icon: FileCheck },
     { id: 'history', label: 'History', icon: FileCheck }, // Using FileCheck as placeholder for History icon if needed, or import History
-    { id: 'logs', label: 'Logs', icon: FileText },
-    { id: 'billing', label: 'Billing', icon: Settings },
     { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'support', label: 'Support', icon: Shield },
-    { id: 'help', label: 'Help', icon: HelpCircle },
+    { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
 
   const renderContent = () => {
@@ -258,14 +255,8 @@ const App = () => {
         return <AdsBuilder />;
       case 'history':
         return <HistoryPanel onLoadItem={handleLoadHistory} />;
-      case 'logs':
-        return <LogsPanel />;
-      case 'billing':
-        return <BillingPanel />;
-      case 'support':
-        return <SupportPanel />;
-      case 'help':
-        return <HelpSupport />;
+      case 'support-help':
+        return <SupportHelpCombined />;
       case 'settings':
         return <SettingsPanel />;
       case 'dashboard':
