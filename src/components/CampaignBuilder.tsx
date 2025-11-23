@@ -1992,46 +1992,46 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             if (!structure) return [];
             
             if (structure === 'SKAG') {
-            // Each keyword is its own ad group
-            return selectedKeywords.slice(0, 20).map(kw => ({
-                name: kw,
-                keywords: [kw]
-            }));
-        } else if (structure === 'STAG') {
-            // Group keywords thematically (simplified grouping)
-            const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
-            const groups = [];
-            for (let i = 0; i < selectedKeywords.length; i += groupSize) {
-                const groupKeywords = selectedKeywords.slice(i, i + groupSize);
-                groups.push({
-                    name: `Ad Group ${groups.length + 1}`,
-                    keywords: groupKeywords
-                });
-            }
-            return groups.slice(0, 10);
-        } else {
-            // Mix: Some SKAG, some STAG
-            const groups = [];
-            // First 5 as SKAG
-            selectedKeywords.slice(0, 5).forEach(kw => {
-                groups.push({
+                // Each keyword is its own ad group
+                return selectedKeywords.slice(0, 20).map(kw => ({
                     name: kw,
                     keywords: [kw]
-                });
-            });
-            // Rest grouped
-            const remaining = selectedKeywords.slice(5);
-            if (remaining.length > 0) {
-                const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
-                for (let i = 0; i < remaining.length; i += groupSize) {
-                    const groupKeywords = remaining.slice(i, i + groupSize);
+                }));
+            } else if (structure === 'STAG') {
+                // Group keywords thematically (simplified grouping)
+                const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
+                const groups = [];
+                for (let i = 0; i < selectedKeywords.length; i += groupSize) {
+                    const groupKeywords = selectedKeywords.slice(i, i + groupSize);
                     groups.push({
-                        name: `Mixed Group ${groups.length - 4}`,
+                        name: `Ad Group ${groups.length + 1}`,
                         keywords: groupKeywords
                     });
                 }
-            }
-            return groups.slice(0, 10);
+                return groups.slice(0, 10);
+            } else {
+                // Mix: Some SKAG, some STAG
+                const groups = [];
+                // First 5 as SKAG
+                selectedKeywords.slice(0, 5).forEach(kw => {
+                    groups.push({
+                        name: kw,
+                        keywords: [kw]
+                    });
+                });
+                // Rest grouped
+                const remaining = selectedKeywords.slice(5);
+                if (remaining.length > 0) {
+                    const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
+                    for (let i = 0; i < remaining.length; i += groupSize) {
+                        const groupKeywords = remaining.slice(i, i + groupSize);
+                        groups.push({
+                            name: `Mixed Group ${groups.length - 4}`,
+                            keywords: groupKeywords
+                        });
+                    }
+                }
+                return groups.slice(0, 10);
             }
         } catch (error) {
             console.error('Error generating dynamic ad groups:', error);
