@@ -497,8 +497,8 @@ const faqItems = [
         answer: "Yes! All data is encrypted in transit and stored securely in your account only. We never share your campaign data with third parties. You can delete your campaigns from history at any time."
     },
     {
-        question: "Do I need an API key?",
-        answer: "No API key is required! The platform handles all AI integrations behind the scenes. If you're self-hosting, the system prompts you to add your Gemini API key securely through environment variables."
+        question: "How does the AI integration work?",
+        answer: "The platform handles all AI integrations behind the scenes. All AI-powered features like keyword generation and ad creation work automatically without requiring any API keys from users."
     }
 ];
 

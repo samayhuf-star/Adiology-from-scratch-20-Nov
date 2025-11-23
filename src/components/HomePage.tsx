@@ -277,7 +277,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       title: 'Enterprise',
       description: 'Enterprise-grade features for large-scale campaign management. Built for scale.',
       icon: '🏛️',
-      features: ['Advanced analytics', 'Team collaboration', 'API access']
+      features: ['Advanced analytics', 'Team collaboration']
     }
   ];
 

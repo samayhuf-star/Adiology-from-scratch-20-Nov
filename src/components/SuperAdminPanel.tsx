@@ -914,7 +914,6 @@ const SupportModule = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <ActionCard icon={Eye} label="Impersonate User" color="from-blue-500 to-cyan-500" />
       <ActionCard icon={RefreshCw} label="Reset User Cache" color="from-purple-500 to-pink-500" />
-      <ActionCard icon={Key} label="Generate API Key" color="from-green-500 to-emerald-500" />
     </div>
 
     {/* Recent Tickets */}
