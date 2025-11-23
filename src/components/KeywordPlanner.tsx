@@ -22,9 +22,31 @@ interface SavedList {
     createdAt: string;
 }
 
+// Default negative keywords list
+const DEFAULT_NEGATIVE_KEYWORDS = [
+    'cheap',
+    'discount',
+    'reviews',
+    'job',
+    'headquater',
+    'apply',
+    'free',
+    'best',
+    'company',
+    'information',
+    'when',
+    'why',
+    'where',
+    'how',
+    'career',
+    'hiring',
+    'scam',
+    'feedback'
+].join('\n');
+
 export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     const [seedKeywords, setSeedKeywords] = useState('');
-    const [negativeKeywords, setNegativeKeywords] = useState('');
+    const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
     const [generatedKeywords, setGeneratedKeywords] = useState<string[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -44,7 +66,8 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     useEffect(() => {
         if (initialData) {
             setSeedKeywords(initialData.seedKeywords || '');
-            setNegativeKeywords(initialData.negativeKeywords || '');
+            // Use initialData negative keywords if provided, otherwise use defaults
+            setNegativeKeywords(initialData.negativeKeywords || DEFAULT_NEGATIVE_KEYWORDS);
             setGeneratedKeywords(initialData.generatedKeywords || []);
             setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
         }
