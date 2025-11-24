@@ -1483,40 +1483,181 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     });
   };
 
+  // Helper function to create extension object
+  const createExtensionObject = (extType: string, currentGroup: any, formattedUrl: string, mainKeyword: string): any => {
+    const extension: any = { extensionType: extType };
+    
+    switch (extType) {
+      case 'snippet':
+        extension.header = 'Types';
+        extension.values = currentGroup?.keywords?.slice(0, 4) || ['Option 1', 'Option 2', 'Option 3'];
+        break;
+      case 'callout':
+        extension.callouts = ['Free Shipping', '24/7 Support', 'Best Price Guarantee', 'Expert Installation'];
+        break;
+      case 'call':
+        extension.phone = '(555) 123-4567';
+        extension.callTrackingEnabled = false;
+        extension.callOnly = false;
+        break;
+      case 'sitelink':
+        extension.sitelinks = [
+          { text: 'Shop Now', description: 'Browse our collection', url: formattedUrl + '/shop' },
+          { text: 'About Us', description: 'Learn more about us', url: formattedUrl + '/about' },
+          { text: 'Contact', description: 'Get in touch', url: formattedUrl + '/contact' },
+          { text: 'Support', description: 'Customer support', url: formattedUrl + '/support' }
+        ];
+        break;
+      case 'price':
+        extension.priceQualifier = 'From';
+        extension.price = '$99';
+        extension.currency = 'USD';
+        extension.unit = 'per service';
+        extension.description = 'Starting price';
+        break;
+      case 'app':
+        extension.appStore = 'GOOGLE_PLAY';
+        extension.appId = 'com.example.app';
+        extension.appLinkText = 'Download Now';
+        extension.appFinalUrl = 'https://play.google.com/store/apps/details?id=com.example.app';
+        break;
+      case 'location':
+        extension.businessName = 'Your Business Name';
+        extension.addressLine1 = '123 Main St';
+        extension.city = 'City';
+        extension.state = 'State';
+        extension.postalCode = '12345';
+        extension.country = 'United States';
+        extension.phone = '(555) 123-4567';
+        break;
+      case 'message':
+        extension.messageText = 'Message us for quick answers';
+        extension.businessName = 'Your Business';
+        extension.phone = '(555) 123-4567';
+        break;
+      case 'leadform':
+        extension.formName = 'Get Started';
+        extension.formDescription = 'Fill out this form to get in touch';
+        extension.formType = 'CONTACT';
+        extension.formUrl = formattedUrl;
+        extension.privacyPolicyUrl = formattedUrl + '/privacy';
+        break;
+      case 'promotion':
+        extension.promotionText = 'Special Offer';
+        extension.promotionDescription = 'Get 20% off your first order';
+        extension.occasion = 'SALE';
+        extension.startDate = new Date().toISOString().split('T')[0];
+        extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        break;
+      case 'image':
+        extension.imageUrl = 'https://via.placeholder.com/1200x628';
+        extension.imageAltText = 'Product Image';
+        extension.imageName = 'Product Showcase';
+        extension.landscapeLogoImageUrl = 'https://via.placeholder.com/600x314';
+        break;
+    }
+    
+    return extension;
+  };
+
   const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
     const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
     const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
     
-    if (isExtension && !hasRegularAds) {
-      notifications.info('Creating a default ad first, then adding your extension', {
-        title: 'Ad Required',
-        description: 'Extensions require at least one ad. A DKI ad will be created automatically.',
-      });
-      
-      const dynamicAdGroups = getDynamicAdGroups();
-      const currentGroup = dynamicAdGroups.length > 0 ? dynamicAdGroups[0] : null;
-      const baseUrl = url || 'www.example.com';
-      const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
-      const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
-      
-      const dkiAd: any = {
-        id: Date.now(),
-        type: 'dki',
-        adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
-        headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-        headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-        headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-        description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-        description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
-        finalUrl: formattedUrl,
-        path1: 'keyword',
-        path2: 'deals'
-      };
-      
-      setGeneratedAds(prev => [...prev, dkiAd]);
-      
-      if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3) {
-        setSelectedAdIds(prev => [...prev, dkiAd.id]);
+    // Handle extensions - attach to existing ads
+    if (isExtension) {
+      if (!hasRegularAds) {
+        notifications.info('Creating a default ad first, then adding your extension', {
+          title: 'Ad Required',
+          description: 'Extensions require at least one ad. A DKI ad will be created automatically.',
+        });
+        
+        const dynamicAdGroups = getDynamicAdGroups();
+        const currentGroup = dynamicAdGroups.length > 0 ? dynamicAdGroups[0] : null;
+        const baseUrl = url || 'www.example.com';
+        const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+        const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+        
+        const dkiAd: any = {
+          id: Date.now(),
+          type: 'dki',
+          adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
+          headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+          headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
+          headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
+          description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
+          description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+          finalUrl: formattedUrl,
+          path1: 'keyword',
+          path2: 'deals',
+          extensions: []
+        };
+        
+        // Create and attach extension
+        const extension = createExtensionObject(type, currentGroup, formattedUrl, mainKeyword);
+        dkiAd.extensions = [extension];
+        
+        setGeneratedAds(prev => [...prev, dkiAd]);
+        
+        if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3) {
+          setSelectedAdIds(prev => [...prev, dkiAd.id]);
+        }
+        
+        const extName = type === 'snippet' ? 'Snippet Extension' :
+                       type === 'callout' ? 'Callout Extension' :
+                       type === 'sitelink' ? 'Sitelink Extension' :
+                       type === 'call' ? 'Call Extension' :
+                       type === 'price' ? 'Price Extension' :
+                       type === 'app' ? 'App Extension' :
+                       type === 'location' ? 'Location Extension' :
+                       type === 'message' ? 'Message Extension' :
+                       type === 'leadform' ? 'Lead Form Extension' :
+                       type === 'promotion' ? 'Promotion Extension' :
+                       type === 'image' ? 'Image Extension' : 'Extension';
+        
+        notifications.success(`${extName} added successfully`, {
+          title: 'Extension Added',
+          description: `Your ${extName} has been attached to the ad.`,
+        });
+        return;
+      } else {
+        // Attach extension to all existing ads
+        const dynamicAdGroups = getDynamicAdGroups();
+        const baseUrl = url || 'www.example.com';
+        const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+        
+        const updatedAds = generatedAds.map(ad => {
+          if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
+            const currentGroup = dynamicAdGroups.find(g => g.name === ad.adGroup) || dynamicAdGroups[0];
+            const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+            const extension = createExtensionObject(type, currentGroup, formattedUrl, mainKeyword);
+            return {
+              ...ad,
+              extensions: [...(ad.extensions || []), extension]
+            };
+          }
+          return ad;
+        });
+        
+        setGeneratedAds(updatedAds);
+        
+        const extName = type === 'snippet' ? 'Snippet Extension' :
+                       type === 'callout' ? 'Callout Extension' :
+                       type === 'sitelink' ? 'Sitelink Extension' :
+                       type === 'call' ? 'Call Extension' :
+                       type === 'price' ? 'Price Extension' :
+                       type === 'app' ? 'App Extension' :
+                       type === 'location' ? 'Location Extension' :
+                       type === 'message' ? 'Message Extension' :
+                       type === 'leadform' ? 'Lead Form Extension' :
+                       type === 'promotion' ? 'Promotion Extension' :
+                       type === 'image' ? 'Image Extension' : 'Extension';
+        
+        notifications.success(`${extName} added to all ads`, {
+          title: 'Extension Added',
+          description: `Your ${extName} has been attached to all ads.`,
+        });
+        return;
       }
     }
 
@@ -1568,108 +1709,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         businessName: 'Your Business',
         finalUrl: formattedUrl
       };
-    } else if (type === 'snippet') {
-      newAd = {
-        ...newAd,
-        extensionType: 'snippet',
-        header: 'Types',
-        values: currentGroup?.keywords.slice(0, 4) || ['Option 1', 'Option 2', 'Option 3']
-      };
-    } else if (type === 'callout') {
-      newAd = {
-        ...newAd,
-        extensionType: 'callout',
-        callouts: ['Free Shipping', '24/7 Support', 'Best Price Guarantee', 'Expert Installation']
-      };
-    } else if (type === 'call') {
-      newAd = {
-        ...newAd,
-        extensionType: 'call',
-        phone: '(555) 123-4567',
-        callTrackingEnabled: false,
-        callOnly: false
-      };
-    } else if (type === 'sitelink') {
-      newAd = {
-        ...newAd,
-        extensionType: 'sitelink',
-        sitelinks: [
-          { text: 'Shop Now', description: 'Browse our collection', url: formattedUrl + '/shop' },
-          { text: 'About Us', description: 'Learn more about us', url: formattedUrl + '/about' },
-          { text: 'Contact', description: 'Get in touch', url: formattedUrl + '/contact' },
-          { text: 'Support', description: 'Customer support', url: formattedUrl + '/support' }
-        ]
-      };
-    } else if (type === 'price') {
-      newAd = {
-        ...newAd,
-        extensionType: 'price',
-        type: 'SERVICES',
-        priceQualifier: 'From',
-        price: '$99',
-        currency: 'USD',
-        unit: 'per service',
-        description: 'Starting price'
-      };
-    } else if (type === 'app') {
-      newAd = {
-        ...newAd,
-        extensionType: 'app',
-        appStore: 'GOOGLE_PLAY',
-        appId: 'com.example.app',
-        appLinkText: 'Download Now',
-        appFinalUrl: 'https://play.google.com/store/apps/details?id=com.example.app'
-      };
-    } else if (type === 'location') {
-      newAd = {
-        ...newAd,
-        extensionType: 'location',
-        businessName: 'Your Business Name',
-        addressLine1: '123 Main St',
-        addressLine2: '',
-        city: 'City',
-        state: 'State',
-        postalCode: '12345',
-        country: 'United States',
-        phone: '(555) 123-4567'
-      };
-    } else if (type === 'message') {
-      newAd = {
-        ...newAd,
-        extensionType: 'message',
-        messageText: 'Message us for quick answers',
-        businessName: 'Your Business',
-        phone: '(555) 123-4567'
-      };
-    } else if (type === 'leadform') {
-      newAd = {
-        ...newAd,
-        extensionType: 'leadform',
-        formName: 'Get Started',
-        formDescription: 'Fill out this form to get in touch',
-        formType: 'CONTACT',
-        formUrl: formattedUrl,
-        privacyPolicyUrl: formattedUrl + '/privacy'
-      };
-    } else if (type === 'promotion') {
-      newAd = {
-        ...newAd,
-        extensionType: 'promotion',
-        promotionText: 'Special Offer',
-        promotionDescription: 'Get 20% off your first order',
-        occasion: 'SALE',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      };
-    } else if (type === 'image') {
-      newAd = {
-        ...newAd,
-        extensionType: 'image',
-        imageUrl: 'https://via.placeholder.com/1200x628',
-        imageAltText: 'Product Image',
-        imageName: 'Product Showcase',
-        landscapeLogoImageUrl: 'https://via.placeholder.com/600x314'
-      };
+    }
+    
+    // Initialize extensions array for regular ads
+    if (!newAd.extensions) {
+      newAd.extensions = [];
     }
 
     setGeneratedAds([...generatedAds, newAd]);
@@ -1733,85 +1777,28 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
 
     const dynamicAdGroups = getDynamicAdGroups();
-    const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
-    const mainKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
     const baseUrl = url || 'www.example.com';
     const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
 
-    const newExtensions: any[] = [];
-
-    selectedExtensions.forEach(extType => {
-      const extId = Date.now() + Math.random();
-      let extension: any = {
-        id: extId,
-        extensionType: extType,
-        adGroup: selectedAdGroup
-      };
-
-      if (extType === 'callout') {
-        extension.callouts = [
-          `Free ${mainKeyword} Consultation`,
-          '24/7 Expert Support',
-          'Best Price Guarantee',
-          'Fast & Reliable Service'
-        ];
-      } else if (extType === 'sitelink') {
-        extension.sitelinks = [
-          { text: `Shop ${mainKeyword}`, description: 'Browse our collection', url: `${formattedUrl}/shop` },
-          { text: 'About Us', description: 'Learn more about us', url: `${formattedUrl}/about` },
-          { text: 'Contact', description: 'Get in touch', url: `${formattedUrl}/contact` },
-          { text: 'Support', description: 'Customer support', url: `${formattedUrl}/support` }
-        ];
-      } else if (extType === 'call') {
-        extension.phone = '(555) 123-4567';
-        extension.callTrackingEnabled = true;
-      } else if (extType === 'snippet') {
-        extension.header = 'Services';
-        extension.values = currentGroup?.keywords.slice(0, 4) || [mainKeyword, 'Expert Service', 'Quality Products', 'Fast Delivery'];
-      } else if (extType === 'price') {
-        extension.priceQualifier = 'From';
-        extension.price = '$99';
-        extension.currency = 'USD';
-        extension.unit = 'per service';
-        extension.description = 'Competitive pricing';
-      } else if (extType === 'location') {
-        extension.businessName = 'Your Business Name';
-        extension.addressLine1 = '123 Main St';
-        extension.city = 'City';
-        extension.state = 'State';
-        extension.postalCode = '12345';
-        extension.phone = '(555) 123-4567';
-      } else if (extType === 'message') {
-        extension.messageText = `Message us about ${mainKeyword}`;
-        extension.businessName = 'Your Business';
-        extension.phone = '(555) 123-4567';
-      } else if (extType === 'promotion') {
-        extension.promotionText = 'Special Offer';
-        extension.promotionDescription = `Get 20% off ${mainKeyword}`;
-        extension.occasion = 'SALE';
-        extension.startDate = new Date().toISOString().split('T')[0];
-        extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Attach extensions to all existing ads
+    const updatedAds = generatedAds.map(ad => {
+      if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
+        const currentGroup = dynamicAdGroups.find(g => g.name === ad.adGroup) || dynamicAdGroups[0];
+        const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+        
+        const newExtensions = selectedExtensions.map(extType => 
+          createExtensionObject(extType, currentGroup, formattedUrl, mainKeyword)
+        );
+        
+        return {
+          ...ad,
+          extensions: [...(ad.extensions || []), ...newExtensions]
+        };
       }
-
-      newExtensions.push(extension);
+      return ad;
     });
 
-    const firstAd = generatedAds.find(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
-    if (firstAd) {
-      const updatedAds = generatedAds.map(ad => {
-        if (ad.id === firstAd.id) {
-          return {
-            ...ad,
-            extensions: [...(ad.extensions || []), ...newExtensions]
-          };
-        }
-        return ad;
-      });
-      setGeneratedAds(updatedAds);
-    } else {
-      setGeneratedAds([...generatedAds, ...newExtensions]);
-    }
-
+    setGeneratedAds(updatedAds);
     setShowExtensionDialog(false);
     setSelectedExtensions([]);
     
