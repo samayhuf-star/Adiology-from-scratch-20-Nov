@@ -208,13 +208,24 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
             )}
 
             {email && (
-              <div className="text-center p-4 bg-slate-50 rounded-lg">
+              <div className="text-center p-4 bg-slate-50 rounded-lg space-y-3">
                 <p className="text-sm text-slate-700 mb-2">
                   <strong>Email:</strong> {email}
                 </p>
                 <p className="text-xs text-slate-500">
                   Check your inbox (or spam folder) for the verification link.
                 </p>
+                {verificationToken && (
+                  <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <p className="text-xs text-indigo-700 font-semibold mb-2">For Testing (Mailinator):</p>
+                    <p className="text-xs text-indigo-600 break-all font-mono">
+                      {window.location.origin}/verify-email?token={verificationToken}&email={encodeURIComponent(email)}
+                    </p>
+                    <p className="text-xs text-indigo-500 mt-2">
+                      Copy this link to test email verification
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
