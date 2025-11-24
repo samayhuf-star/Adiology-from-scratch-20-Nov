@@ -145,29 +145,72 @@ test.describe('Paid Signup Flow', () => {
     expect(hasPlanInfo).toBeTruthy();
 
     // Step 9: Fill out payment form (using Stripe test card)
-    // Look for Stripe Elements iframe or payment form
-    const stripeFrame = page.frameLocator('iframe[title*="stripe"], iframe[name*="stripe"]').first();
+    // Wait for Stripe Elements to load (Stripe uses iframes for security)
+    await page.waitForTimeout(2000); // Give Stripe time to initialize
     
-    // Try to find card input in iframe
-    const cardInput = stripeFrame.locator('input[name="cardNumber"], input[placeholder*="card number" i]').first();
+    // Look for Stripe Elements iframe - Stripe uses multiple iframes
+    // Try different Stripe iframe selectors
+    const stripeIframeSelectors = [
+      'iframe[src*="js.stripe.com"]',
+      'iframe[name*="__privateStripeFrame"]',
+      'iframe[title*="stripe"]',
+      'iframe[id*="stripe"]',
+      'iframe[data-testid*="stripe"]',
+    ];
     
-    if (await cardInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      // Fill Stripe test card: 4242 4242 4242 4242
-      await cardInput.fill('4242 4242 4242 4242');
-      
-      // Fill expiry date
-      const expiryInput = stripeFrame.locator('input[name="expiry"], input[placeholder*="expiry" i]').first();
-      if (await expiryInput.isVisible().catch(() => false)) {
-        await expiryInput.fill('12/25');
+    let stripeFrameFound = false;
+    for (const selector of stripeIframeSelectors) {
+      try {
+        const iframe = page.locator(selector).first();
+        if (await iframe.isVisible({ timeout: 3000 }).catch(() => false)) {
+          const stripeFrame = page.frameLocator(selector).first();
+          
+          // Wait for Stripe inputs to be ready
+          await page.waitForTimeout(1000);
+          
+          // Try to find card input in iframe (Stripe uses various input names)
+          const cardInputSelectors = [
+            'input[name="cardNumber"]',
+            'input[placeholder*="card number" i]',
+            'input[placeholder*="1234" i]',
+            'input[autocomplete="cc-number"]',
+            'input[type="tel"]',
+          ];
+          
+          for (const inputSelector of cardInputSelectors) {
+            try {
+              const cardInput = stripeFrame.locator(inputSelector).first();
+              if (await cardInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await cardInput.fill('4242 4242 4242 4242');
+                stripeFrameFound = true;
+                
+                // Fill expiry date
+                const expiryInput = stripeFrame.locator('input[name="expiry"], input[placeholder*="expiry" i], input[autocomplete="cc-exp"]').first();
+                if (await expiryInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+                  await expiryInput.fill('12/25');
+                }
+                
+                // Fill CVC
+                const cvcInput = stripeFrame.locator('input[name="cvc"], input[placeholder*="cvc" i], input[autocomplete="cc-csc"]').first();
+                if (await cvcInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+                  await cvcInput.fill('123');
+                }
+                break;
+              }
+            } catch (e) {
+              // Continue to next selector
+            }
+          }
+          
+          if (stripeFrameFound) break;
+        }
+      } catch (e) {
+        // Continue to next selector
       }
-      
-      // Fill CVC
-      const cvcInput = stripeFrame.locator('input[name="cvc"], input[placeholder*="cvc" i]').first();
-      if (await cvcInput.isVisible().catch(() => false)) {
-        await cvcInput.fill('123');
-      }
-    } else {
-      // Fallback: Look for payment form inputs outside iframe
+    }
+    
+    // Fallback: Look for payment form inputs outside iframe (for non-Stripe Elements implementations)
+    if (!stripeFrameFound) {
       const cardNumberInput = page.locator('input[name="cardNumber"], input[placeholder*="card" i]').first();
       if (await cardNumberInput.isVisible({ timeout: 2000 }).catch(() => false)) {
         await cardNumberInput.fill('4242 4242 4242 4242');

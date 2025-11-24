@@ -148,6 +148,28 @@ Vite only exposes variables prefixed with `VITE_` to the browser. Make sure:
 - Development server was restarted after adding variables
 - Variables are in `.env` file (not `.env.local` unless configured)
 
+### Stripe Payment Forms Not Loading in Tests
+
+The configuration includes capabilities to handle Stripe's cross-origin iframes:
+
+**Capabilities Added:**
+- `allowCrossOriginIframes: true` - Allows Stripe's iframe-based payment forms
+- `disableWebSecurity: true` - Disables web security for testing (allows cross-origin iframes)
+- `thirdPartyCookiesEnabled: true` - Enables third-party cookies (required for Stripe)
+- `acceptInsecureCerts: true` - Accepts insecure certificates for testing
+
+**If Stripe iframes still don't load:**
+1. Verify the test waits for Stripe Elements to initialize (2-3 seconds)
+2. Check that Stripe publishable key is correctly configured
+3. Ensure the test uses Stripe test card numbers (4242 4242 4242 4242)
+4. Check LambdaTest session logs for iframe loading errors
+5. Verify the application URL is accessible from LambdaTest's cloud infrastructure
+
+**Test File Enhancements:**
+- The test file includes multiple Stripe iframe selectors for better detection
+- Enhanced iframe interaction with fallback strategies
+- Proper waiting for Stripe Elements to load before interaction
+
 ## Getting Help
 
 - LambdaTest Documentation: https://www.lambdatest.com/support/docs/

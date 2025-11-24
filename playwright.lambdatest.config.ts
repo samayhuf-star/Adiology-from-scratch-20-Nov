@@ -22,6 +22,13 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  * - Cost efficient (completes tests faster, reducing total execution time)
  * - Better resource utilization (multiple LambdaTest sessions run concurrently)
  * 
+ * STRIPE PAYMENT HANDLING:
+ * - Cross-origin iframe support enabled for Stripe payment forms
+ * - Web security disabled for testing (allows Stripe iframes to load)
+ * - Third-party cookies enabled (required for Stripe)
+ * - HTTPS certificate errors ignored (for testing environments)
+ * - Test file includes enhanced Stripe iframe detection and interaction
+ * 
  * Setup:
  * 1. Create a .env file with your LambdaTest credentials:
  *    - LT_USERNAME: Your LambdaTest username

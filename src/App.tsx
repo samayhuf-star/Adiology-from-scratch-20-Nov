@@ -509,7 +509,6 @@ const App = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-slate-800">Adiology</span>
-                <span className="text-xs text-slate-500 -mt-0.5">~ Samay</span>
               </div>
             </div>
           )}
@@ -547,22 +546,6 @@ const App = () => {
           })}
         </nav>
 
-        {/* Super Admin Access Hint (Bottom of sidebar) */}
-        {sidebarOpen && (
-          <div className="absolute bottom-4 left-4 right-4">
-            <button
-              onClick={() => setAppView('admin-login')}
-              className="w-full p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl hover:from-purple-500/20 hover:to-pink-500/20 transition-all group"
-            >
-              <div className="flex items-center gap-2 justify-center">
-                <Shield className="w-4 h-4 text-purple-500 group-hover:text-purple-600" />
-                <span className="text-xs text-purple-600 group-hover:text-purple-700 font-medium">
-                  Super Admin
-                </span>
-              </div>
-            </button>
-          </div>
-        )}
       </aside>
 
       {/* Main Content */}
