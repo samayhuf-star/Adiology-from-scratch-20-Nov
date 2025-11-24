@@ -17,6 +17,7 @@ import { Badge } from './ui/badge';
 import { Label } from './ui/label';
 import { getStripe, PLAN_PRICE_IDS } from '../utils/stripe';
 import { notifications } from '../utils/notifications';
+import { getCurrentAuthUser } from '../utils/auth';
 
 interface PaymentPageProps {
   planName: string;
@@ -156,26 +157,22 @@ const PaymentForm: React.FC<{
 
   const createPaymentIntent = async () => {
     try {
-      // In production, this would call your backend API
-      // For now, we'll use Stripe's client-side approach
-      // The backend should create a PaymentIntent and return client_secret
-      
-      // Simulate API call - in production, replace with actual API
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-          body: JSON.stringify({
-            priceId: plan.priceId,
-            planName: plan.name,
-            amount: plan.amount,
-            isSubscription: plan.isSubscription,
-          }),
+      // Get current user ID from Supabase
+      const { getCurrentAuthUser } = await import('../utils/auth');
+      const user = await getCurrentAuthUser();
+      const userId = user?.id;
+
+      // Call backend API to create payment intent
+      const { api } = await import('../utils/api');
+      const data = await api.post('/stripe/create-payment-intent', {
+        priceId: plan.priceId,
+        planName: plan.name,
+        amount: plan.amount,
+        isSubscription: plan.isSubscription,
+        userId: userId,
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (data.clientSecret) {
         setClientSecret(data.clientSecret);
       } else {
         // Fallback: Use Stripe Checkout instead
@@ -183,7 +180,7 @@ const PaymentForm: React.FC<{
       }
     } catch (err) {
       // Fallback: Use Stripe Checkout instead
-      console.log('Payment Intent API not available, will use Checkout');
+      console.log('Payment Intent API not available, will use Checkout:', err);
     }
   };
 
@@ -219,23 +216,32 @@ const PaymentForm: React.FC<{
     }));
 
     try {
+      // Get user email from Supabase
+      let userEmail: string | undefined;
+      try {
+        const { getCurrentAuthUser } = await import('../utils/auth');
+        const user = await getCurrentAuthUser();
+        userEmail = user?.email;
+      } catch (e) {
+        console.error('Error getting user email:', e);
+      }
+
+      // Get user email from Supabase
+      let userEmail: string | undefined;
+      try {
+        const user = await getCurrentAuthUser();
+        userEmail = user?.email;
+      } catch (e) {
+        console.error('Error getting user email:', e);
+      }
+
       // If we have clientSecret, use PaymentIntent (supports 3D Secure)
       if (clientSecret) {
         const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
           payment_method: {
             card: cardElement,
             billing_details: {
-              // Get user email from auth
-              email: (() => {
-                try {
-                  const authUser = localStorage.getItem('auth_user');
-                  if (authUser) {
-                    return JSON.parse(authUser).email;
-                  }
-                } catch (e) {
-                  return undefined;
-                }
-              })(),
+              email: userEmail,
             },
           },
         });
@@ -316,23 +322,19 @@ const PaymentForm: React.FC<{
         }
       } else {
         // Fallback: Use Stripe Checkout
-        // Create checkout session and redirect
-        const response = await fetch('/api/create-checkout-session', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            priceId: plan.priceId,
-            planName: plan.name,
-          }),
+        // Get current user ID from Supabase
+        const { getCurrentAuthUser } = await import('../utils/auth');
+        const user = await getCurrentAuthUser();
+        const userId = user?.id;
+
+        // Create checkout session via backend API
+        const { api } = await import('../utils/api');
+        const { sessionId } = await api.post('/stripe/create-checkout-session', {
+          priceId: plan.priceId,
+          planName: plan.name,
+          userId: userId,
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to create checkout session');
-        }
-
-        const { sessionId } = await response.json();
         const { error: redirectError } = await stripe.redirectToCheckout({ sessionId });
 
         if (redirectError) {
@@ -360,45 +362,30 @@ const PaymentForm: React.FC<{
   };
 
   const handlePaymentSuccess = async () => {
-    // Update user subscription status in localStorage (in production, this would be done by backend webhook)
+    // Update user subscription status in database via Supabase
+    // Note: The webhook will also update this, but we update here for immediate UI feedback
     try {
-      const authUser = localStorage.getItem('auth_user');
-      if (authUser) {
-        const user = JSON.parse(authUser);
-        const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-        const userIndex = savedUsers.findIndex((u: any) => u.email === user.email);
-        
-        if (userIndex !== -1) {
-          // Update user plan in savedUsers
-          savedUsers[userIndex].plan = plan.name;
-          savedUsers[userIndex].subscriptionStatus = 'active';
-          savedUsers[userIndex].subscribedAt = new Date().toISOString();
-          
-          // Calculate next billing date for subscriptions
-          if (plan.isSubscription) {
-            const nextBillingDate = new Date();
-            nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-            savedUsers[userIndex].nextBillingDate = nextBillingDate.toISOString();
-          } else {
-            // Lifetime plans don't have next billing date
-            savedUsers[userIndex].nextBillingDate = null;
-          }
-          
-          localStorage.setItem('adiology_users', JSON.stringify(savedUsers));
-          
-          // Also update auth_user object to reflect plan
-          const updatedAuthUser = {
-            ...user,
-            plan: plan.name,
-            subscriptionStatus: 'active',
-            subscribedAt: new Date().toISOString(),
-            nextBillingDate: plan.isSubscription ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
-          };
-          localStorage.setItem('auth_user', JSON.stringify(updatedAuthUser));
-        }
+      const { getCurrentAuthUser } = await import('../utils/auth');
+      const { userHelpers } = await import('../utils/supabase');
+      const user = await getCurrentAuthUser();
+      
+      if (user) {
+        // Map plan name to subscription plan format
+        const planMap: Record<string, string> = {
+          'Lifetime Limited': 'lifetime_limited',
+          'Lifetime Unlimited': 'lifetime_unlimited',
+          'Monthly Limited': 'monthly_limited',
+          'Monthly Unlimited': 'monthly_unlimited',
+        };
+
+        await userHelpers.updateUserSubscription(user.id, {
+          plan: planMap[plan.name] || plan.name.toLowerCase().replace(/\s+/g, '_'),
+          status: 'active',
+        });
       }
     } catch (e) {
       console.error('Error updating subscription:', e);
+      // Continue even if update fails - webhook will handle it
     }
 
     notifications.success('Payment successful!', {

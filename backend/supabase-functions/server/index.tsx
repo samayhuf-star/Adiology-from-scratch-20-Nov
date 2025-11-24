@@ -1976,4 +1976,482 @@ app.post("/email/test", async (c) => {
   }
 });
 
+// ========== STRIPE PAYMENT ENDPOINTS ==========
+
+/**
+ * Create a Stripe Payment Intent for one-time payments
+ */
+app.post("/stripe/create-payment-intent", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { priceId, planName, amount, isSubscription, userId } = body;
+
+    if (!amount || amount <= 0) {
+      return c.json({ error: "Invalid amount" }, 400);
+    }
+
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is not configured");
+      return c.json({ error: "Payment service not configured" }, 500);
+    }
+
+    // Import Stripe SDK
+    const Stripe = (await import("npm:stripe@^17.0.0")).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2024-12-18.acacia",
+    });
+
+    // Get user email from Supabase if userId provided
+    let customerEmail: string | undefined;
+    if (userId) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (supabaseUrl && supabaseServiceKey) {
+        const { createClient } = await import("npm:@supabase/supabase-js@2");
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: userData } = await supabase
+          .from("users")
+          .select("email")
+          .eq("id", userId)
+          .single();
+        if (userData) {
+          customerEmail = userData.email;
+        }
+      }
+    }
+
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: "usd",
+      metadata: {
+        planName: planName || "Unknown",
+        priceId: priceId || "",
+        isSubscription: isSubscription ? "true" : "false",
+        userId: userId || "",
+      },
+      receipt_email: customerEmail,
+    });
+
+    return c.json({
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
+  } catch (err) {
+    console.error("Create payment intent error:", err);
+    return c.json(
+      { error: err instanceof Error ? err.message : "Failed to create payment intent" },
+      500
+    );
+  }
+});
+
+/**
+ * Create a Stripe Checkout Session for subscriptions
+ */
+app.post("/stripe/create-checkout-session", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { priceId, planName, userId } = body;
+
+    if (!priceId) {
+      return c.json({ error: "Price ID is required" }, 400);
+    }
+
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is not configured");
+      return c.json({ error: "Payment service not configured" }, 500);
+    }
+
+    // Import Stripe SDK
+    const Stripe = (await import("npm:stripe@^17.0.0")).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2024-12-18.acacia",
+    });
+
+    // Get user email and create/get Stripe customer
+    let customerId: string | undefined;
+    let customerEmail: string | undefined;
+
+    if (userId) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (supabaseUrl && supabaseServiceKey) {
+        const { createClient } = await import("npm:@supabase/supabase-js@2");
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: userData } = await supabase
+          .from("users")
+          .select("email, subscription_id")
+          .eq("id", userId)
+          .single();
+
+        if (userData) {
+          customerEmail = userData.email;
+
+          // Check if user has existing Stripe customer ID
+          if (userData.subscription_id) {
+            const { data: subscriptionData } = await supabase
+              .from("subscriptions")
+              .select("stripe_customer_id")
+              .eq("user_id", userId)
+              .single();
+
+            if (subscriptionData?.stripe_customer_id) {
+              customerId = subscriptionData.stripe_customer_id;
+            }
+          }
+
+          // Create Stripe customer if doesn't exist
+          if (!customerId && customerEmail) {
+            const customer = await stripe.customers.create({
+              email: customerEmail,
+              metadata: {
+                userId: userId,
+                planName: planName || "Unknown",
+              },
+            });
+            customerId = customer.id;
+          }
+        }
+      }
+    }
+
+    const frontendUrl = Deno.env.get("FRONTEND_URL") || "https://adiology.online";
+    const successUrl = `${frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${frontendUrl}/payment?plan=${encodeURIComponent(planName || "")}`;
+
+    // Create checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: customerId ? undefined : customerEmail,
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: "subscription",
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        userId: userId || "",
+        planName: planName || "Unknown",
+      },
+    });
+
+    return c.json({
+      sessionId: session.id,
+      url: session.url,
+    });
+  } catch (err) {
+    console.error("Create checkout session error:", err);
+    return c.json(
+      { error: err instanceof Error ? err.message : "Failed to create checkout session" },
+      500
+    );
+  }
+});
+
+/**
+ * Create a Stripe Customer Portal session
+ */
+app.post("/stripe/create-portal-session", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { customerEmail, returnUrl } = body;
+
+    if (!customerEmail) {
+      return c.json({ error: "Customer email is required" }, 400);
+    }
+
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is not configured");
+      return c.json({ error: "Payment service not configured" }, 500);
+    }
+
+    // Import Stripe SDK
+    const Stripe = (await import("npm:stripe@^17.0.0")).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2024-12-18.acacia",
+    });
+
+    // Find customer by email
+    const customers = await stripe.customers.list({
+      email: customerEmail,
+      limit: 1,
+    });
+
+    if (customers.data.length === 0) {
+      return c.json({ error: "Customer not found" }, 404);
+    }
+
+    const customerId = customers.data[0].id;
+
+    // Create portal session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl || `${Deno.env.get("FRONTEND_URL") || "https://adiology.online"}/billing`,
+    });
+
+    return c.json({
+      url: session.url,
+    });
+  } catch (err) {
+    console.error("Create portal session error:", err);
+    return c.json(
+      { error: err instanceof Error ? err.message : "Failed to create portal session" },
+      500
+    );
+  }
+});
+
+/**
+ * Stripe Webhook Handler
+ * Handles subscription events and updates database
+ */
+app.post("/stripe/webhook", async (c) => {
+  try {
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is not configured");
+      return c.json({ error: "Payment service not configured" }, 500);
+    }
+
+    // Import Stripe SDK
+    const Stripe = (await import("npm:stripe@^17.0.0")).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2024-12-18.acacia",
+    });
+
+    const signature = c.req.header("stripe-signature");
+    if (!signature) {
+      return c.json({ error: "Missing signature" }, 400);
+    }
+
+    const body = await c.req.text();
+
+    // Verify webhook signature
+    let event;
+    try {
+      event = webhookSecret
+        ? stripe.webhooks.constructEvent(body, signature, webhookSecret)
+        : JSON.parse(body); // For testing without webhook secret
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err);
+      return c.json({ error: "Invalid signature" }, 400);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Supabase credentials missing");
+      return c.json({ error: "Database not configured" }, 500);
+    }
+
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Handle different event types
+    switch (event.type) {
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object;
+        const userId = paymentIntent.metadata?.userId;
+        const planName = paymentIntent.metadata?.planName;
+        const isSubscription = paymentIntent.metadata?.isSubscription === "true";
+
+        if (userId && planName) {
+          // Update user subscription
+          await supabase
+            .from("users")
+            .update({
+              subscription_plan: planName.toLowerCase().replace(/\s+/g, "_"),
+              subscription_status: "active",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+
+          // Create invoice record
+          await supabase.from("invoices").insert({
+            user_id: userId,
+            stripe_invoice_id: paymentIntent.id,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            status: "paid",
+            paid_at: new Date().toISOString(),
+          });
+        }
+        break;
+      }
+
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer as string;
+
+        // Find user by Stripe customer ID
+        const { data: subscriptionData } = await supabase
+          .from("subscriptions")
+          .select("user_id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (subscriptionData) {
+          const userId = subscriptionData.user_id;
+
+          // Update subscription record
+          await supabase
+            .from("subscriptions")
+            .upsert(
+              {
+                user_id: userId,
+                stripe_subscription_id: subscription.id,
+                stripe_customer_id: customerId,
+                plan: subscription.metadata?.planName || "unknown",
+                status: subscription.status,
+                current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                cancel_at_period_end: subscription.cancel_at_period_end,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "stripe_subscription_id" }
+            );
+
+          // Update user record
+          await supabase
+            .from("users")
+            .update({
+              subscription_plan: subscription.metadata?.planName?.toLowerCase().replace(/\s+/g, "_") || "free",
+              subscription_status: subscription.status === "active" ? "active" : "inactive",
+              subscription_id: subscription.id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+        }
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object;
+        const customerId = subscription.customer as string;
+
+        // Find user by Stripe customer ID
+        const { data: subscriptionData } = await supabase
+          .from("subscriptions")
+          .select("user_id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (subscriptionData) {
+          const userId = subscriptionData.user_id;
+
+          // Update subscription status
+          await supabase
+            .from("subscriptions")
+            .update({
+              status: "canceled",
+              canceled_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("stripe_subscription_id", subscription.id);
+
+          // Update user record
+          await supabase
+            .from("users")
+            .update({
+              subscription_status: "canceled",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+        }
+        break;
+      }
+
+      case "invoice.paid": {
+        const invoice = event.data.object;
+        const customerId = invoice.customer as string;
+
+        // Find user by Stripe customer ID
+        const { data: subscriptionData } = await supabase
+          .from("subscriptions")
+          .select("user_id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (subscriptionData) {
+          const userId = subscriptionData.user_id;
+
+          // Create invoice record
+          await supabase.from("invoices").upsert(
+            {
+              user_id: userId,
+              stripe_invoice_id: invoice.id,
+              amount: invoice.amount_paid,
+              currency: invoice.currency,
+              status: "paid",
+              invoice_pdf_url: invoice.invoice_pdf || null,
+              hosted_invoice_url: invoice.hosted_invoice_url || null,
+              due_date: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
+              paid_at: new Date().toISOString(),
+            },
+            { onConflict: "stripe_invoice_id" }
+          );
+        }
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        const customerId = invoice.customer as string;
+
+        // Find user by Stripe customer ID
+        const { data: subscriptionData } = await supabase
+          .from("subscriptions")
+          .select("user_id")
+          .eq("stripe_customer_id", customerId)
+          .single();
+
+        if (subscriptionData) {
+          const userId = subscriptionData.user_id;
+
+          // Update subscription status
+          await supabase
+            .from("subscriptions")
+            .update({
+              status: "past_due",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("stripe_customer_id", customerId);
+
+          // Update user record
+          await supabase
+            .from("users")
+            .update({
+              subscription_status: "past_due",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+        }
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    return c.json({ received: true });
+  } catch (err) {
+    console.error("Webhook error:", err);
+    return c.json(
+      { error: err instanceof Error ? err.message : "Webhook processing failed" },
+      500
+    );
+  }
+});
+
 Deno.serve(app.fetch);

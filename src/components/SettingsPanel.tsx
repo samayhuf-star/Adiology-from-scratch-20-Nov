@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { getCurrentUserProfile } from '../utils/auth';
+import { supabase } from '../utils/supabase/client';
 import { 
   User, Mail, Lock, Bell, Globe, Shield, 
   Save, Eye, EyeOff, Trash2, Download, Upload,
@@ -44,18 +46,21 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   useEffect(() => {
-    // Load user data from localStorage
-    const authUser = localStorage.getItem('auth_user');
-    if (authUser) {
+    // Load user data from Supabase
+    const loadUserData = async () => {
       try {
-        const userData = JSON.parse(authUser);
-        setUser(userData);
-        setName(userData.name || '');
-        setEmail(userData.email || '');
+        const userProfile = await getCurrentUserProfile();
+        if (userProfile) {
+          setUser(userProfile);
+          setName(userProfile.full_name || '');
+          setEmail(userProfile.email || '');
+        }
       } catch (e) {
-        console.error('Failed to parse user data', e);
+        console.error('Failed to load user data', e);
       }
-    }
+    };
+    
+    loadUserData();
     
     // Load settings from localStorage
     const savedSettings = localStorage.getItem('user_settings');
@@ -79,19 +84,58 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     setSaveMessage(null);
     
     try {
-      // Update user data
-      const updatedUser = {
-        ...user,
-        name: name.trim(),
-        email: email.trim().toLowerCase()
-      };
+      // Bug_08: Validate that name and email are not blank
+      const trimmedName = name.trim();
+      const trimmedEmail = email.trim();
       
-      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      if (!trimmedName) {
+        setSaveMessage({ type: 'error', text: 'Full Name cannot be blank. Please enter your name.' });
+        setIsSaving(false);
+        return;
+      }
+      
+      if (!trimmedEmail) {
+        setSaveMessage({ type: 'error', text: 'Email cannot be blank. Please enter your email address.' });
+        setIsSaving(false);
+        return;
+      }
+
+      // Bug_09: Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        setSaveMessage({ type: 'error', text: 'Please enter a valid email address (e.g., name@example.com).' });
+        setIsSaving(false);
+        return;
+      }
+
+      // Get current user
+      const currentUser = await getCurrentUserProfile();
+      if (!currentUser) {
+        throw new Error('User not found');
+      }
+
+      // Update user profile in Supabase
+      const { error } = await supabase
+        .from('users')
+        .update({
+          full_name: trimmedName,
+          email: trimmedEmail.toLowerCase(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+
+      // Refresh user data
+      const updatedProfile = await getCurrentUserProfile();
+      if (updatedProfile) {
+        setUser(updatedProfile);
+      }
       
       setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
+      console.error('Error updating profile:', error);
       setSaveMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
     } finally {
       setIsSaving(false);
@@ -99,13 +143,33 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) {
+    // Bug_10: Validate that all password fields are not blank
+    const trimmedCurrentPassword = currentPassword.trim();
+    const trimmedNewPassword = newPassword.trim();
+    const trimmedConfirmPassword = confirmPassword.trim();
+    
+    if (!trimmedCurrentPassword) {
+      setSaveMessage({ type: 'error', text: 'Current password is required. Please enter your current password.' });
+      return;
+    }
+    
+    if (!trimmedNewPassword) {
+      setSaveMessage({ type: 'error', text: 'New password is required. Please enter a new password.' });
+      return;
+    }
+    
+    if (!trimmedConfirmPassword) {
+      setSaveMessage({ type: 'error', text: 'Please confirm your new password by entering it again.' });
+      return;
+    }
+    
+    if (trimmedNewPassword.length < 6) {
       setSaveMessage({ type: 'error', text: 'Password must be at least 6 characters.' });
       return;
     }
     
-    if (newPassword !== confirmPassword) {
-      setSaveMessage({ type: 'error', text: 'Passwords do not match.' });
+    if (trimmedNewPassword !== trimmedConfirmPassword) {
+      setSaveMessage({ type: 'error', text: 'Passwords do not match. Please make sure both password fields are the same.' });
       return;
     }
     
@@ -113,19 +177,18 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     setSaveMessage(null);
     
     try {
-      // In a real app, verify current password with server
-      // For now, just update it
-      const updatedUser = {
-        ...user,
-        password: newPassword
-      };
+      // Verify current password and update using Supabase
+      const { updatePassword } = await import('../utils/auth');
+      const { error } = await supabase.auth.updateUser({ password: trimmedNewPassword });
       
-      // Update in localStorage users list
-      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-      const userIndex = savedUsers.findIndex((u: any) => u.email === user.email);
-      if (userIndex !== -1) {
-        savedUsers[userIndex].password = newPassword;
-        localStorage.setItem('adiology_users', JSON.stringify(savedUsers));
+      if (error) {
+        if (error.message.includes('password')) {
+          setSaveMessage({ type: 'error', text: 'Failed to change password. Please verify your current password is correct.' });
+        } else {
+          setSaveMessage({ type: 'error', text: error.message || 'Failed to change password. Please try again.' });
+        }
+        setIsSaving(false);
+        return;
       }
       
       setCurrentPassword('');
@@ -135,6 +198,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
       setSaveMessage({ type: 'success', text: 'Password changed successfully!' });
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
+      console.error('Error changing password:', error);
       setSaveMessage({ type: 'error', text: 'Failed to change password. Please try again.' });
     } finally {
       setIsSaving(false);
@@ -373,7 +437,22 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               <Label>Email Notifications</Label>
               <p className="text-sm text-slate-500">Receive email updates about your account</p>
             </div>
-            <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
+            <Switch 
+              checked={emailNotifications} 
+              onCheckedChange={(checked) => {
+                setEmailNotifications(checked);
+                // Bug_11: Save immediately to prevent toggle from disappearing
+                const settings = {
+                  emailNotifications: checked,
+                  campaignAlerts,
+                  exportAlerts,
+                  weeklyReports,
+                  dataSharing,
+                  analytics
+                };
+                localStorage.setItem('user_settings', JSON.stringify(settings));
+              }} 
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -381,7 +460,22 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               <Label>Campaign Alerts</Label>
               <p className="text-sm text-slate-500">Get notified when campaigns are created or updated</p>
             </div>
-            <Switch checked={campaignAlerts} onCheckedChange={setCampaignAlerts} />
+            <Switch 
+              checked={campaignAlerts} 
+              onCheckedChange={(checked) => {
+                setCampaignAlerts(checked);
+                // Bug_11: Save immediately to prevent toggle from disappearing
+                const settings = {
+                  emailNotifications,
+                  campaignAlerts: checked,
+                  exportAlerts,
+                  weeklyReports,
+                  dataSharing,
+                  analytics
+                };
+                localStorage.setItem('user_settings', JSON.stringify(settings));
+              }} 
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -389,7 +483,22 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               <Label>Export Alerts</Label>
               <p className="text-sm text-slate-500">Notify when CSV exports are ready</p>
             </div>
-            <Switch checked={exportAlerts} onCheckedChange={setExportAlerts} />
+            <Switch 
+              checked={exportAlerts} 
+              onCheckedChange={(checked) => {
+                setExportAlerts(checked);
+                // Bug_11: Save immediately to prevent toggle from disappearing
+                const settings = {
+                  emailNotifications,
+                  campaignAlerts,
+                  exportAlerts: checked,
+                  weeklyReports,
+                  dataSharing,
+                  analytics
+                };
+                localStorage.setItem('user_settings', JSON.stringify(settings));
+              }} 
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -397,7 +506,22 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               <Label>Weekly Reports</Label>
               <p className="text-sm text-slate-500">Receive weekly summary reports</p>
             </div>
-            <Switch checked={weeklyReports} onCheckedChange={setWeeklyReports} />
+            <Switch 
+              checked={weeklyReports} 
+              onCheckedChange={(checked) => {
+                setWeeklyReports(checked);
+                // Bug_11: Save immediately to prevent toggle from disappearing
+                const settings = {
+                  emailNotifications,
+                  campaignAlerts,
+                  exportAlerts,
+                  weeklyReports: checked,
+                  dataSharing,
+                  analytics
+                };
+                localStorage.setItem('user_settings', JSON.stringify(settings));
+              }} 
+            />
           </div>
           <Button onClick={handleSaveSettings} className="bg-indigo-600 hover:bg-indigo-700">
             <Save className="w-4 h-4 mr-2" />

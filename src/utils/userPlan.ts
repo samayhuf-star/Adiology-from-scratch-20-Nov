@@ -3,54 +3,60 @@
  * Centralized functions to check user plan status and access rights
  */
 
+import { getCurrentUserProfile } from './auth';
+
 /**
  * Check if user has a paid plan
  */
-export function isPaidUser(): boolean {
+export async function isPaidUser(): Promise<boolean> {
   try {
-    const authUser = localStorage.getItem('auth_user');
-    const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+    const userProfile = await getCurrentUserProfile();
+    if (!userProfile) return false;
     
-    if (authUser) {
-      const user = JSON.parse(authUser);
-      const userData = savedUsers.find((u: any) => u.email === user.email);
-      
-      const plan = userData?.plan || user.plan || 'Free';
-      return plan !== 'Free' && plan !== null && plan !== undefined;
-    }
+    const plan = userProfile.subscription_plan || 'free';
+    return plan !== 'free' && plan !== null && plan !== undefined;
   } catch (e) {
     console.error('Error checking user plan:', e);
+    return false;
   }
-  return false;
 }
 
 /**
  * Get user's current plan name
  */
-export function getUserPlan(): string {
+export async function getUserPlan(): Promise<string> {
   try {
-    const authUser = localStorage.getItem('auth_user');
-    const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+    const userProfile = await getCurrentUserProfile();
+    if (!userProfile) return 'Free';
     
-    if (authUser) {
-      const user = JSON.parse(authUser);
-      const userData = savedUsers.find((u: any) => u.email === user.email);
-      
-      return userData?.plan || user.plan || 'Free';
-    }
+    const plan = userProfile.subscription_plan || 'free';
+    
+    // Map database plan to display format
+    const planMap: Record<string, string> = {
+      'free': 'Free',
+      'starter': 'Monthly Limited',
+      'professional': 'Monthly Unlimited',
+      'enterprise': 'Lifetime Unlimited',
+      'lifetime_limited': 'Lifetime Limited',
+      'lifetime_unlimited': 'Lifetime Unlimited',
+      'monthly_limited': 'Monthly Limited',
+      'monthly_unlimited': 'Monthly Unlimited',
+    };
+    
+    return planMap[plan] || plan.charAt(0).toUpperCase() + plan.slice(1);
   } catch (e) {
     console.error('Error getting user plan:', e);
+    return 'Free';
   }
-  return 'Free';
 }
 
 /**
  * Check if user has access to a feature
  * For now, all paid users have access to all features
  */
-export function hasFeatureAccess(feature: string): boolean {
+export async function hasFeatureAccess(feature: string): Promise<boolean> {
   // All paid users have access to all features
-  if (isPaidUser()) {
+  if (await isPaidUser()) {
     return true;
   }
   

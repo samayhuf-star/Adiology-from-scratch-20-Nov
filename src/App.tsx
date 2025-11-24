@@ -33,15 +33,20 @@ import { PaymentPage } from './components/PaymentPage';
 import { PaymentSuccess } from './components/PaymentSuccess';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
+import { ResetPassword } from './components/ResetPassword';
+import { supabase } from './utils/supabase/client';
+import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import './utils/createUser'; // Auto-create test user
 
-type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'payment' | 'payment-success';
+type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
 const App = () => {
   const [appView, setAppView] = useState<AppView>('home');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [historyData, setHistoryData] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Campaign Created', message: 'Your campaign "Summer Sale" has been created successfully', time: '2 hours ago', read: false },
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
@@ -55,6 +60,14 @@ const App = () => {
 
   const handleMarkNotificationAsRead = (id: number) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    setUser(null);
+    window.history.pushState({}, '', '/');
+    setAppView('home');
+    setActiveTab('dashboard');
   };
 
   const handleNotificationClick = (notification: typeof notifications[0]) => {
@@ -91,9 +104,11 @@ const App = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm('Are you sure you want to logout?')) {
-      localStorage.removeItem('auth_user');
+      await signOut();
+      setUser(null);
+      window.history.pushState({}, '', '/');
       setAppView('home');
       setActiveTab('dashboard');
     }
@@ -153,10 +168,70 @@ const App = () => {
     }
   }, []);
 
+  // Initialize auth state and listen for changes
+  useEffect(() => {
+    // Check initial session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          const userProfile = await getCurrentUserProfile();
+          setUser(userProfile);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const userProfile = await getCurrentUserProfile();
+        setUser(userProfile);
+      } else {
+        setUser(null);
+      }
+
+      // Handle password recovery
+      if (event === 'PASSWORD_RECOVERY') {
+        setAppView('reset-password');
+      }
+
+      // Handle email verification
+      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+        // User just verified email, redirect to pricing/home
+        if (window.location.pathname.includes('/verify-email')) {
+          window.history.pushState({}, '', '/');
+          setAppView('home');
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   // Check URL path and authentication on mount
   useEffect(() => {
+    if (loading) return; // Wait for auth to initialize
+
     const path = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check if user is accessing /reset-password route
+    if (path === '/reset-password' || path.startsWith('/reset-password')) {
+      setAppView('reset-password');
+      return;
+    }
     
     // Check if user is accessing /payment-success route
     if (path === '/payment-success' || path.startsWith('/payment-success')) {
@@ -183,8 +258,7 @@ const App = () => {
       const isSubscription = urlParams.get('subscription') === 'true';
       
       // Check if user is logged in
-      const authUser = localStorage.getItem('auth_user');
-      if (!authUser) {
+      if (!user) {
         // Redirect to signup
         window.history.pushState({}, '', '/');
         setAppView('auth');
@@ -209,48 +283,50 @@ const App = () => {
     
     // Check if user is accessing /superadmin route
     if (path === '/superadmin' || path.startsWith('/superadmin/')) {
-      const authUser = localStorage.getItem('auth_user');
-      if (authUser) {
-        try {
-          const user = JSON.parse(authUser);
-          if (user.role === 'superadmin') {
+      if (user) {
+        const checkSuperAdmin = async () => {
+          const isAdmin = await isSuperAdmin();
+          if (isAdmin) {
             setAppView('admin-landing');
-            return;
+          } else {
+            setAppView('admin-login');
           }
-        } catch (e) {
-          // Invalid auth data
-        }
+        };
+        checkSuperAdmin();
+      } else {
+        setAppView('admin-login');
       }
-      // Not authenticated or not superadmin, show login
-      setAppView('admin-login');
       return;
     }
 
     // Regular routes
-    const authUser = localStorage.getItem('auth_user');
-    if (authUser) {
-      try {
-        const user = JSON.parse(authUser);
-        if (user.role === 'superadmin') {
+    if (user) {
+      // Check if superadmin
+      const checkSuperAdmin = async () => {
+        const isAdmin = await isSuperAdmin();
+        if (isAdmin) {
           // Super admin accessing regular routes, redirect to superadmin
           window.history.pushState({}, '', '/superadmin');
           setAppView('admin-landing');
         } else {
           setAppView('user');
         }
-      } catch (e) {
-        // Invalid auth data, show homepage
-        setAppView('home');
-      }
+      };
+      checkSuperAdmin();
     } else {
       setAppView('home');
     }
-  }, []);
+  }, [loading, user]);
 
   // Handle browser back/forward navigation
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = async () => {
       const path = window.location.pathname;
+      
+      if (path === '/reset-password' || path.startsWith('/reset-password')) {
+        setAppView('reset-password');
+        return;
+      }
       
       if (path === '/verify-email' || path.startsWith('/verify-email')) {
         setAppView('verify-email');
@@ -258,32 +334,24 @@ const App = () => {
       }
       
       if (path === '/superadmin' || path.startsWith('/superadmin/')) {
-        const authUser = localStorage.getItem('auth_user');
-        if (authUser) {
-          try {
-            const user = JSON.parse(authUser);
-            if (user.role === 'superadmin') {
-              setAppView('admin-landing');
-              return;
-            }
-          } catch (e) {
-            // Invalid auth data
+        if (user) {
+          const isAdmin = await isSuperAdmin();
+          if (isAdmin) {
+            setAppView('admin-landing');
+          } else {
+            setAppView('admin-login');
           }
+        } else {
+          setAppView('admin-login');
         }
-        setAppView('admin-login');
       } else {
-        const authUser = localStorage.getItem('auth_user');
-        if (authUser) {
-          try {
-            const user = JSON.parse(authUser);
-            if (user.role === 'superadmin') {
-              window.history.pushState({}, '', '/superadmin');
-              setAppView('admin-landing');
-            } else {
-              setAppView('user');
-            }
-          } catch (e) {
-            setAppView('home');
+        if (user) {
+          const isAdmin = await isSuperAdmin();
+          if (isAdmin) {
+            window.history.pushState({}, '', '/superadmin');
+            setAppView('admin-landing');
+          } else {
+            setAppView('user');
           }
         } else {
           setAppView('home');
@@ -293,46 +361,13 @@ const App = () => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Function to redirect to pricing page
-  const handleRedirectToPricing = () => {
-    // Set user as logged in (verified)
-    const urlParams = new URLSearchParams(window.location.search);
-    const email = urlParams.get('email');
-    
-    if (email) {
-      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-      const user = savedUsers.find((u: any) => u.email === email);
-      
-      if (user && user.verified) {
-        localStorage.setItem('auth_user', JSON.stringify({ 
-          email: user.email, 
-          role: 'user',
-          name: user.name,
-          verified: true
-        }));
-        
-        // Redirect to homepage and scroll to pricing
-        window.history.pushState({}, '', '/');
-        setAppView('home');
-        
-        // Scroll to pricing section after a brief delay
-        setTimeout(() => {
-          const pricingSection = document.getElementById('pricing');
-          if (pricingSection) {
-            pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 100);
-      }
-    }
-  };
+  }, [user]);
 
   // Function to handle plan selection
-  const handleSelectPlan = (planName: string, priceId: string, amount: number, isSubscription: boolean) => {
+  const handleSelectPlan = async (planName: string, priceId: string, amount: number, isSubscription: boolean) => {
     // Check if user is logged in
-    const authUser = localStorage.getItem('auth_user');
-    if (!authUser) {
+    const authenticated = await isAuthenticated();
+    if (!authenticated || !user) {
       // User not logged in, redirect to signup
       setAppView('auth');
       return;
@@ -394,10 +429,10 @@ const App = () => {
       <PaymentSuccess
         planName={selectedPlan.name}
         amount={`$${selectedPlan.amount.toFixed(2)}${selectedPlan.isSubscription ? '/month' : ''}`}
-        onGoToDashboard={() => {
+        onGoToDashboard={async () => {
           // Ensure user is logged in
-          const authUser = localStorage.getItem('auth_user');
-          if (authUser) {
+          const authenticated = await isAuthenticated();
+          if (authenticated && user) {
             window.history.pushState({}, '', '/');
             setAppView('user');
             setActiveTab('dashboard');
@@ -410,12 +445,50 @@ const App = () => {
     );
   }
 
+  if (appView === 'verify-email') {
+    return (
+      <EmailVerification
+        onVerificationSuccess={() => {
+          // Redirect to homepage and scroll to pricing
+          window.history.pushState({}, '', '/');
+          setAppView('home');
+          
+          // Scroll to pricing section after a brief delay
+          setTimeout(() => {
+            const pricingSection = document.getElementById('pricing');
+            if (pricingSection) {
+              pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        }}
+        onBackToHome={() => setAppView('home')}
+      />
+    );
+  }
+
+  if (appView === 'reset-password') {
+    return (
+      <ResetPassword
+        onSuccess={async () => {
+          // Password reset successful, redirect to login
+          window.history.pushState({}, '', '/');
+          setAppView('auth');
+        }}
+        onBackToHome={() => setAppView('home')}
+      />
+    );
+  }
+
   if (appView === 'auth') {
     return (
       <Auth
-        onLoginSuccess={() => {
+        onLoginSuccess={async () => {
+          // Refresh user profile after login
+          const userProfile = await getCurrentUserProfile();
+          setUser(userProfile);
+          
           // Directly go to dashboard - no admin/user selection
-            setAppView('user');
+          setAppView('user');
         }}
         onBackToHome={() => setAppView('home')}
       />
@@ -435,8 +508,9 @@ const App = () => {
       <SuperAdminLanding
         onSelectUserView={() => setAppView('user')}
         onSelectAdminPanel={() => setAppView('admin-panel')}
-        onLogout={() => {
-          localStorage.removeItem('auth_user');
+        onLogout={async () => {
+          await signOut();
+          setUser(null);
           window.history.pushState({}, '', '/');
           setAppView('home');
           setActiveTab('dashboard');
@@ -454,14 +528,25 @@ const App = () => {
   }
 
   // Protect user view - require authentication
-  const authUser = localStorage.getItem('auth_user');
-  if (!authUser && appView === 'user') {
+  if (!user && appView === 'user' && !loading) {
     // Redirect to auth if not authenticated
     return (
       <HomePage
         onGetStarted={() => setAppView('auth')}
         onLogin={() => setAppView('auth')}
       />
+    );
+  }
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
     );
   }
 
@@ -677,83 +762,39 @@ const App = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium shadow-lg hover:shadow-xl transition-all cursor-pointer">
-                  {(() => {
-                    const authUser = localStorage.getItem('auth_user');
-                    if (authUser) {
-                      try {
-                        const user = JSON.parse(authUser);
-                        const name = user.name || user.email || 'U';
-                        return name.charAt(0).toUpperCase() + (name.split(' ')[1]?.charAt(0) || '');
-                      } catch (e) {
-                        return 'U';
-                      }
-                    }
-                    return 'U';
-                  })()}
+                  {user 
+                    ? (() => {
+                        const name = user.full_name || user.email || 'U';
+                        const parts = name.split(' ');
+                        return (parts[0]?.charAt(0) || '').toUpperCase() + (parts[1]?.charAt(0) || '').toUpperCase() || 'U';
+                      })()
+                    : 'U'
+                  }
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-2">
-                    {(() => {
-                      const authUser = localStorage.getItem('auth_user');
-                      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-                      let userName = 'User';
-                      let userEmail = 'user@example.com';
-                      let userPlan = 'Free';
-                      let nextBillingDate = null;
-                      
-                      if (authUser) {
-                        try {
-                          const user = JSON.parse(authUser);
-                          userName = user.name || user.email?.split('@')[0] || 'User';
-                          userEmail = user.email || 'user@example.com';
-                          
-                          // Get plan from user data
-                          const userData = savedUsers.find((u: any) => u.email === user.email);
-                          if (userData && userData.plan) {
-                            userPlan = userData.plan;
-                            nextBillingDate = userData.nextBillingDate;
-                          } else if (user.plan) {
-                            userPlan = user.plan;
-                            nextBillingDate = user.nextBillingDate;
-                          }
-                        } catch (e) {
-                          console.error('Error parsing user data:', e);
-                        }
-                      }
-                      
-                      return (
-                        <>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium">{userName}</p>
-                              <p className="text-xs text-slate-500">{userEmail}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between pt-1 border-t border-slate-200">
-                            <div>
-                              <p className="text-xs text-slate-500">Plan</p>
-                              <Badge className={`mt-1 ${
-                                userPlan === 'Free' ? 'bg-slate-100 text-slate-700' :
-                                userPlan.includes('Lifetime') ? 'bg-indigo-100 text-indigo-700' :
-                                'bg-purple-100 text-purple-700'
-                              }`}>
-                                {userPlan}
-                              </Badge>
-                            </div>
-                            {nextBillingDate && (
-                              <div className="text-right">
-                                <p className="text-xs text-slate-500">Next billing</p>
-                                <p className="text-xs font-medium text-slate-700 mt-1">
-                                  {new Date(nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      );
-                    })()}
+                    {user ? (
+                      <>
+                        <div className="font-semibold text-slate-900">
+                          {user.full_name || user.email?.split('@')[0] || 'User'}
+                        </div>
+                        <div className="text-xs text-slate-600">
+                          {user.email || 'user@example.com'}
+                        </div>
+                        {user.subscription_plan && user.subscription_plan !== 'free' && (
+                          <Badge className="w-fit bg-indigo-100 text-indigo-700 border-indigo-200">
+                            {user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1)}
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-semibold text-slate-900">User</div>
+                        <div className="text-xs text-slate-600">user@example.com</div>
+                      </>
+                    )}
             </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

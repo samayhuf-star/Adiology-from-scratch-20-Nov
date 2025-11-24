@@ -3,6 +3,8 @@
  * Centralized logging for production environment
  */
 
+import { getCurrentAuthUser } from './auth';
+
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 interface LogEntry {
@@ -22,35 +24,32 @@ class ProductionLogger {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private getUserId(): string | undefined {
+  private async getUserId(): Promise<string | undefined> {
     try {
-      const authUser = localStorage.getItem('auth_user');
-      if (authUser) {
-        const user = JSON.parse(authUser);
-        return user.email || user.id;
-      }
+      const user = await getCurrentAuthUser();
+      return user?.id || user?.email;
     } catch (e) {
       // Ignore errors
+      return undefined;
     }
-    return undefined;
   }
 
-  private createLogEntry(
+  private async createLogEntry(
     level: LogLevel,
     message: string,
     context?: Record<string, any>
-  ): LogEntry {
+  ): Promise<LogEntry> {
     return {
       level,
       message,
       timestamp: new Date().toISOString(),
       context,
-      userId: this.getUserId(),
+      userId: await this.getUserId(),
       sessionId: this.sessionId,
     };
   }
 
-  private log(entry: LogEntry) {
+  private async log(entry: LogEntry) {
     // In production, send to logging service
     if (this.isProduction) {
       // TODO: Send to your logging service (e.g., Sentry, LogRocket, etc.)
@@ -69,15 +68,17 @@ class ProductionLogger {
     }
   }
 
-  info(message: string, context?: Record<string, any>) {
-    this.log(this.createLogEntry('info', message, context));
+  async info(message: string, context?: Record<string, any>) {
+    const entry = await this.createLogEntry('info', message, context);
+    await this.log(entry);
   }
 
-  warn(message: string, context?: Record<string, any>) {
-    this.log(this.createLogEntry('warn', message, context));
+  async warn(message: string, context?: Record<string, any>) {
+    const entry = await this.createLogEntry('warn', message, context);
+    await this.log(entry);
   }
 
-  error(message: string, error?: Error | unknown, context?: Record<string, any>) {
+  async error(message: string, error?: Error | unknown, context?: Record<string, any>) {
     const errorContext = {
       ...context,
       error: error instanceof Error ? {
@@ -86,35 +87,37 @@ class ProductionLogger {
         name: error.name,
       } : error,
     };
-    this.log(this.createLogEntry('error', message, errorContext));
+    const entry = await this.createLogEntry('error', message, errorContext);
+    await this.log(entry);
   }
 
-  debug(message: string, context?: Record<string, any>) {
+  async debug(message: string, context?: Record<string, any>) {
     if (!this.isProduction) {
-      this.log(this.createLogEntry('debug', message, context));
+      const entry = await this.createLogEntry('debug', message, context);
+      await this.log(entry);
     }
   }
 
   // Track user actions
-  trackAction(action: string, properties?: Record<string, any>) {
-    this.info(`User action: ${action}`, {
+  async trackAction(action: string, properties?: Record<string, any>) {
+    await this.info(`User action: ${action}`, {
       action,
       ...properties,
     });
   }
 
   // Track feature usage
-  trackFeature(feature: string, properties?: Record<string, any>) {
-    this.info(`Feature used: ${feature}`, {
+  async trackFeature(feature: string, properties?: Record<string, any>) {
+    await this.info(`Feature used: ${feature}`, {
       feature,
       ...properties,
     });
   }
 
   // Track errors with context
-  trackError(error: Error | unknown, context?: Record<string, any>) {
+  async trackError(error: Error | unknown, context?: Record<string, any>) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    this.error(message, error, context);
+    await this.error(message, error, context);
   }
 }
 

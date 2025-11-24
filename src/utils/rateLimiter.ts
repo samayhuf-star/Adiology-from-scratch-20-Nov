@@ -3,6 +3,8 @@
  * Prevents abuse and bulk misuse of the platform
  */
 
+import { getCurrentUserProfile } from './auth';
+
 export interface RateLimitConfig {
   maxRequests: number;
   windowMs: number;
@@ -29,32 +31,27 @@ class RateLimiter {
   /**
    * Check if user has a paid plan
    */
-  private isPaidUser(): boolean {
+  private async isPaidUser(): Promise<boolean> {
     try {
-      const authUser = localStorage.getItem('auth_user');
-      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+      const userProfile = await getCurrentUserProfile();
+      if (!userProfile) return false;
       
-      if (authUser) {
-        const user = JSON.parse(authUser);
-        const userData = savedUsers.find((u: any) => u.email === user.email);
-        
-        const plan = userData?.plan || user.plan || 'Free';
-        return plan !== 'Free' && plan !== null && plan !== undefined;
-      }
+      const plan = userProfile.subscription_plan || 'free';
+      return plan !== 'free' && plan !== null && plan !== undefined;
     } catch (e) {
       console.error('Error checking user plan:', e);
+      return false;
     }
-    return false;
   }
 
   /**
    * Get rate limit config (higher limits for paid users)
    */
-  private getConfig(key: string, customConfig?: RateLimitConfig): RateLimitConfig | undefined {
+  private async getConfig(key: string, customConfig?: RateLimitConfig): Promise<RateLimitConfig | undefined> {
     const config = customConfig || this.defaultLimits.get(key);
     
     // Paid users get 10x rate limits or no limits
-    if (config && this.isPaidUser()) {
+    if (config && await this.isPaidUser()) {
       return {
         ...config,
         maxRequests: Infinity, // Unlimited for paid users
@@ -67,11 +64,11 @@ class RateLimiter {
   /**
    * Check if an action is allowed based on rate limits
    */
-  checkLimit(
+  async checkLimit(
     key: string,
     customConfig?: RateLimitConfig
-  ): RateLimitResult {
-    const config = this.getConfig(key, customConfig);
+  ): Promise<RateLimitResult> {
+    const config = await this.getConfig(key, customConfig);
     
     if (!config) {
       // No limit configured, allow
@@ -83,7 +80,8 @@ class RateLimiter {
     }
 
     // Paid users bypass rate limits
-    if (this.isPaidUser() && config.maxRequests === Infinity) {
+    const isPaid = await this.isPaidUser();
+    if (isPaid && config.maxRequests === Infinity) {
       return {
         allowed: true,
         remaining: Infinity,

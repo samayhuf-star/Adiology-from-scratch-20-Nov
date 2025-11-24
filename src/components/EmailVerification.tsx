@@ -4,7 +4,8 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { notifications } from '../utils/notifications';
-import { api } from '../utils/api';
+import { supabase } from '../utils/supabase/client';
+import { resendVerificationEmail } from '../utils/auth';
 
 interface EmailVerificationProps {
   onVerificationSuccess: () => void;
@@ -19,95 +20,47 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState('');
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check URL for verification token
+    // Check URL for email parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
     const emailParam = urlParams.get('email');
-
-    if (token && emailParam) {
-      setVerificationToken(token);
+    
+    if (emailParam) {
       setEmail(emailParam);
-      // Auto-verify if token is present
-      handleVerify(token, emailParam);
-    } else {
-      // Check if user just signed up
-      const pendingVerification = localStorage.getItem('pending_verification');
-      if (pendingVerification) {
-        const data = JSON.parse(pendingVerification);
-        setEmail(data.email);
-      }
-    }
-  }, []);
-
-  const handleVerify = async (token?: string, emailParam?: string) => {
-    const verifyToken = token || verificationToken;
-    const verifyEmail = emailParam || email;
-
-    if (!verifyToken || !verifyEmail) {
-      setError('Invalid verification link. Please check your email.');
-      return;
     }
 
-    setIsVerifying(true);
-    setError('');
+    // Handle email verification from Supabase
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // User has verified their email
+        if (session.user.email_confirmed_at) {
+          setIsVerified(true);
+          notifications.success('Email verified successfully!', {
+            title: 'Verification Complete',
+            description: 'Your email has been verified. Redirecting to pricing...',
+          });
 
-    try {
-      // Simulate API call to verify email
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Verify token (in production, this would be an API call)
-      const pendingVerification = localStorage.getItem('pending_verification');
-      if (pendingVerification) {
-        const data = JSON.parse(pendingVerification);
-        
-        if (data.email === verifyEmail && data.token === verifyToken) {
-          // Mark user as verified
-          const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-          const userIndex = savedUsers.findIndex((u: any) => u.email === verifyEmail);
-          
-          if (userIndex !== -1) {
-            savedUsers[userIndex].verified = true;
-            savedUsers[userIndex].verifiedAt = new Date().toISOString();
-            localStorage.setItem('adiology_users', JSON.stringify(savedUsers));
-            
-            // Remove pending verification
-            localStorage.removeItem('pending_verification');
-            
-            // Set user as logged in (verified)
-            localStorage.setItem('auth_user', JSON.stringify({ 
-              email: verifyEmail, 
-              role: 'user',
-              name: savedUsers[userIndex].name,
-              verified: true
-            }));
-            
-            setIsVerified(true);
-            notifications.success('Email verified successfully!', {
-              title: 'Verification Complete',
-              description: 'Your email has been verified. Redirecting to pricing...',
-            });
-
-            // Redirect to pricing after 1.5 seconds
-            setTimeout(() => {
-              onVerificationSuccess();
-            }, 1500);
-          } else {
-            throw new Error('User not found');
-          }
-        } else {
-          throw new Error('Invalid verification token');
+          setTimeout(() => {
+            onVerificationSuccess();
+          }, 1500);
         }
-      } else {
-        throw new Error('Verification session expired');
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
-      setIsVerifying(false);
-    }
-  };
+    });
+
+    // Check if user is already verified
+    const checkVerification = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email_confirmed_at) {
+        setIsVerified(true);
+        if (user.email) setEmail(user.email);
+      } else if (user?.email && !email) {
+        setEmail(user.email);
+      }
+    };
+
+    checkVerification();
+  }, [onVerificationSuccess]);
 
   const handleResendEmail = async () => {
     if (!email) {
@@ -119,59 +72,21 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     setError('');
 
     try {
-      // Generate new token
-      const token = `verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await resendVerificationEmail(email);
 
-      // Store pending verification
-      localStorage.setItem('pending_verification', JSON.stringify({
-        email,
-        token,
-        createdAt: new Date().toISOString(),
-      }));
-
-      // Send verification email via API
-      try {
-        const baseUrl = window.location.origin;
-        await api.post('/email/send-verification', {
-          email,
-          token,
-          baseUrl: baseUrl,
-        });
-
-        notifications.success('Verification email sent!', {
-          title: 'Email Sent',
-          description: 'Please check your email inbox (and spam folder) for the verification link.',
-        });
-
-        // Update the token in state so the UI updates
-        setVerificationToken(token);
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        
-        // Fallback: show URL for testing
-        const verificationUrl = `${window.location.origin}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
-        console.log('Verification URL (fallback):', verificationUrl);
-        
-        notifications.warning('Email service unavailable', {
-          title: 'Email Could Not Be Sent',
-          description: 'Please use the verification link shown in the console for testing.',
-        });
-
-        // For testing: Show URL in console and toast
-        if (import.meta.env.DEV) {
-          notifications.info(`For testing: Use this verification link:\n\n${verificationUrl}\n\n(Email service is unavailable)`, {
-            title: 'Verification Link',
-            duration: 10000
-          });
-        }
-
-        // Still update token so user can verify manually
-        setVerificationToken(token);
+      notifications.success('Verification email sent!', {
+        title: 'Email Sent',
+        description: 'Please check your email inbox (and spam folder) for the verification link.',
+      });
+    } catch (err: any) {
+      let errorMessage = 'Failed to resend verification email. Please try again.';
+      
+      if (err.message) {
+        errorMessage = err.message;
       }
-
-      setIsVerifying(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend email');
+      
+      setError(errorMessage);
+    } finally {
       setIsVerifying(false);
     }
   };
@@ -238,57 +153,34 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
                   <strong>Email:</strong> {email}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Check your inbox (or spam folder) for the verification link.
+                  Check your inbox (or spam folder) for the verification link. Click the link in the email to verify your account.
                 </p>
-                {verificationToken && (
-                  <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <p className="text-xs text-indigo-700 font-semibold mb-2">For Testing (Mailinator):</p>
-                    <p className="text-xs text-indigo-600 break-all font-mono">
-                      {window.location.origin}/verify-email?token={verificationToken}&email={encodeURIComponent(email)}
-                    </p>
-                    <p className="text-xs text-indigo-500 mt-2">
-                      Copy this link to test email verification
-                    </p>
-                  </div>
-                )}
               </div>
             )}
 
-            {verificationToken ? (
-              <div className="space-y-4">
-                <Button
-                  onClick={() => handleVerify()}
-                  disabled={isVerifying}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                >
-                  {isVerifying ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Verifying...
-                    </span>
-                  ) : (
-                    'Verify Email'
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-slate-600 text-center">
-                  Didn't receive the email? Check your spam folder or resend.
-                </p>
-                <Button
-                  onClick={handleResendEmail}
-                  disabled={isVerifying || !email}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Resend Verification Email
-                </Button>
-              </div>
-            )}
+            <div className="space-y-4">
+              <p className="text-sm text-slate-600 text-center">
+                Didn't receive the email? Check your spam folder or resend.
+              </p>
+              <Button
+                onClick={handleResendEmail}
+                disabled={isVerifying || !email}
+                variant="outline"
+                className="w-full"
+              >
+                {isVerifying ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </span>
+                ) : (
+                  'Resend Verification Email'
+                )}
+              </Button>
+            </div>
 
             <div className="pt-4 border-t border-slate-200">
               <Button

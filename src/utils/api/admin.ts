@@ -17,6 +17,11 @@ async function getAuthToken(): Promise<string | null> {
 // Helper to make authenticated requests
 async function authenticatedFetch(endpoint: string, options: RequestInit = {}) {
   const token = await getAuthToken();
+  
+  if (!token) {
+    throw new Error('Not authenticated. Please log in.');
+  }
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
@@ -26,12 +31,42 @@ async function authenticatedFetch(endpoint: string, options: RequestInit = {}) {
     },
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || 'Request failed');
+  // Handle non-JSON responses
+  const responseText = await response.text();
+  let errorData;
+  
+  try {
+    errorData = JSON.parse(responseText);
+  } catch (e) {
+    // Not JSON - might be HTML error page
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+    }
   }
 
-  return response.json();
+  if (!response.ok) {
+    const errorMessage = errorData?.error || `Request failed: ${response.status}`;
+    
+    // Check for specific error types
+    if (response.status === 401) {
+      throw new Error('Unauthorized. Please check your credentials and try again.');
+    } else if (response.status === 403) {
+      throw new Error('Access denied. Superadmin role required.');
+    } else if (response.status === 404) {
+      throw new Error('Endpoint not found. Please ensure the Edge Function is deployed.');
+    } else if (response.status === 500) {
+      throw new Error('Server error. Please check backend logs.');
+    }
+    
+    throw new Error(errorMessage);
+  }
+
+  // Parse response if it's JSON
+  try {
+    return JSON.parse(responseText);
+  } catch (e) {
+    return responseText;
+  }
 }
 
 // Super Admin API functions

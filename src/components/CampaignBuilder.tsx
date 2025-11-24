@@ -566,6 +566,17 @@ const generateMockKeywords = (seeds: string, negatives: string) => {
     // Filter out negatives
     results = results.filter(r => !negativeList.some(n => r.text.includes(n)));
 
+    // Bug_17: Remove duplicate keywords by text (case-insensitive)
+    const seenTexts = new Set<string>();
+    results = results.filter(kw => {
+        const normalizedText = kw.text.toLowerCase().trim();
+        if (seenTexts.has(normalizedText)) {
+            return false; // Duplicate, skip
+        }
+        seenTexts.add(normalizedText);
+        return true; // Unique, keep
+    });
+
     // Ensure constraints: 500 <= Count <= 1000
     // If less than 500, duplicate with slight variation
     if (results.length < 500) {
@@ -609,6 +620,20 @@ const generateMockKeywords = (seeds: string, negatives: string) => {
     return results;
 };
 
+// Bug_17: Helper function to remove duplicate keywords by text (case-insensitive)
+const removeDuplicateKeywords = (keywords: any[]): any[] => {
+    const seenTexts = new Map<string, any>();
+    
+    keywords.forEach(kw => {
+        const normalizedText = (kw.text || '').toLowerCase().trim();
+        if (normalizedText && !seenTexts.has(normalizedText)) {
+            seenTexts.set(normalizedText, kw);
+        }
+    });
+    
+    return Array.from(seenTexts.values());
+};
+
 export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // --- State ---
     const [step, setStep] = useState(1);
@@ -619,6 +644,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
     const [url, setUrl] = useState('');
     const [urlError, setUrlError] = useState('');
+    const [campaignNameError, setCampaignNameError] = useState('');
 
     // Step 2: Keywords
     const [seedKeywords, setSeedKeywords] = useState('Call airline\nairline number\ncall united. number\ndelta phone number');
@@ -880,8 +906,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // useEffect removed - we want to stay on ALL AD GROUPS by default
 
     const saveToHistory = async () => {
-        // Use date/time as default name if campaign name is empty
-        const nameToSave = campaignName.trim() || `Campaign ${new Date().toLocaleString('en-US', { 
+        // Bug_55: Validate campaign name - check if it's only blank spaces
+        const trimmedName = campaignName.trim();
+        if (!trimmedName) {
+            setCampaignNameError('Campaign name is required');
+            notifications.error('Campaign name cannot be empty or contain only blank spaces', {
+                title: 'Validation Error',
+                description: 'Please enter a valid campaign name.',
+            });
+            return;
+        }
+        setCampaignNameError('');
+        
+        // Use date/time as default name if campaign name is empty (shouldn't happen after validation, but keeping for safety)
+        const nameToSave = trimmedName || `Campaign ${new Date().toLocaleString('en-US', { 
             month: 'short', 
             day: 'numeric', 
             year: 'numeric', 
@@ -890,7 +928,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         })}`;
         
         // Update campaign name if it was empty
-        if (!campaignName.trim()) {
+        if (!trimmedName) {
             setCampaignName(nameToSave);
         }
 
@@ -1016,7 +1054,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
 
         // Check rate limit
-        const rateLimit = rateLimiter.checkLimit('keyword-generation');
+        const rateLimit = await rateLimiter.checkLimit('keyword-generation');
         if (!rateLimit.allowed) {
             notifications.error(rateLimit.message || 'Rate limit exceeded', {
                 title: 'Too Many Requests',
@@ -1027,7 +1065,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
 
         // Check usage quota
-        const usage = usageTracker.trackUsage('keyword-generation', 1);
+        const usage = await usageTracker.trackUsage('keyword-generation', 1);
         if (!usage.allowed) {
             notifications.error(usage.message || 'Usage limit exceeded', {
                 title: 'Daily Limit Reached',
@@ -1059,8 +1097,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
              // Use mock generation immediately
              // Generate immediately without delay for faster response
                  const mockKeywords = generateMockKeywords(seedKeywords, negativeKeywords);
-                 setGeneratedKeywords(mockKeywords);
-                 setSelectedKeywords(mockKeywords.map((k: any) => k.id));
+                 // Bug_17: Remove duplicates by text (case-insensitive) before setting state
+                 const deduplicatedKeywords = removeDuplicateKeywords(mockKeywords);
+                 setGeneratedKeywords(deduplicatedKeywords);
+                 setSelectedKeywords(deduplicatedKeywords.map((k: any) => k.id));
                  setIsGeneratingKeywords(false);
                     if (loadingToast) loadingToast();
                     notifications.success(`Generated ${mockKeywords.length} keywords successfully`, {
@@ -1080,9 +1120,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             });
 
             if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
-                console.log("Google Ads API generation successful:", data.keywords.length, "keywords");                                                                     
-                setGeneratedKeywords(data.keywords);
-                setSelectedKeywords(data.keywords.map((k: any) => k.id));
+                console.log("Google Ads API generation successful:", data.keywords.length, "keywords");
+                // Bug_17: Remove duplicates by text (case-insensitive) before setting state
+                const deduplicatedKeywords = removeDuplicateKeywords(data.keywords);
+                setGeneratedKeywords(deduplicatedKeywords);
+                setSelectedKeywords(deduplicatedKeywords.map((k: any) => k.id));
                 if (loadingToast) loadingToast();
                 notifications.success(`Generated ${data.keywords.length} keywords successfully`, {
                     title: 'Keywords Generated',
@@ -1095,8 +1137,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             console.log('ℹ️ Backend unavailable - using local fallback generation');
             // Fallback to mock generation
             const mockKeywords = generateMockKeywords(seedKeywords, negativeKeywords);
-            setGeneratedKeywords(mockKeywords);
-            setSelectedKeywords(mockKeywords.map((k: any) => k.id));
+            // Bug_17: Remove duplicates by text (case-insensitive) before setting state
+            const deduplicatedKeywords = removeDuplicateKeywords(mockKeywords);
+            setGeneratedKeywords(deduplicatedKeywords);
+            setSelectedKeywords(deduplicatedKeywords.map((k: any) => k.id));
             if (loadingToast) loadingToast();
             notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
                 title: 'Keywords Generated (Offline Mode)',
@@ -1171,6 +1215,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         
         // Increment step only once
         setStep(nextStep);
+        
+        // Bug_56: Scroll to top when navigating to next step
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const runValidation = () => {
@@ -1183,10 +1230,22 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
 
     const handleSaveCampaign = async () => {
+        // Bug_55: Validate campaign name before saving
+        const trimmedName = campaignName.trim();
+        if (!trimmedName) {
+            setCampaignNameError('Campaign name is required');
+            notifications.error('Campaign name cannot be empty or contain only blank spaces', {
+                title: 'Validation Error',
+                description: 'Please enter a valid campaign name.',
+            });
+            return;
+        }
+        setCampaignNameError('');
+        
         await saveToHistory();
         notifications.success('Campaign saved successfully', {
             title: 'Campaign Saved',
-            description: `Your campaign "${campaignName || 'Untitled Campaign'}" has been saved. You can access it from the History tab.`,
+            description: `Your campaign "${trimmedName || 'Untitled Campaign'}" has been saved. You can access it from the History tab.`,
         });
     };
 
@@ -1341,9 +1400,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         return formatted;
     };
 
-    const generateCSV = () => {
+    const generateCSV = async () => {
         // Check rate limit
-        const rateLimit = rateLimiter.checkLimit('csv-export');
+        const rateLimit = await rateLimiter.checkLimit('csv-export');
         if (!rateLimit.allowed) {
             notifications.error(rateLimit.message || 'Rate limit exceeded', {
                 title: 'Too Many Exports',
@@ -1354,7 +1413,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
 
         // Check usage quota
-        const usage = usageTracker.trackUsage('csv-export', 1);
+        const usage = await usageTracker.trackUsage('csv-export', 1);
         if (!usage.allowed) {
             notifications.error(usage.message || 'Usage limit exceeded', {
                 title: 'Daily Limit Reached',
@@ -1635,11 +1694,21 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     <div className="relative">
                         <Input
                             value={campaignName}
-                            onChange={(e) => setCampaignName(e.target.value)}
+                            onChange={(e) => {
+                                setCampaignName(e.target.value);
+                                // Clear validation error when user starts typing
+                                if (campaignNameError) setCampaignNameError('');
+                            }}
                             placeholder="Enter campaign name"
-                            className="text-lg py-6 bg-white border-slate-300 focus:border-indigo-500"
+                            className={`text-lg py-6 bg-white border-slate-300 focus:border-indigo-500 ${campaignNameError ? 'border-red-500 focus:border-red-500' : ''}`}
                         />
                     </div>
+                    {campaignNameError && (
+                        <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
+                            <AlertCircle className="w-4 h-4" />
+                            {campaignNameError}
+                        </p>
+                    )}
                     <p className="text-xs text-slate-500 mt-2">
                         This name will be used when saving and exporting your campaign
                     </p>
@@ -2299,7 +2368,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
         
         // Check rate limit
-        const rateLimit = rateLimiter.checkLimit('ad-creation');
+        const rateLimit = await rateLimiter.checkLimit('ad-creation');
         if (!rateLimit.allowed) {
             notifications.error(rateLimit.message || 'Rate limit exceeded', {
                 title: 'Too Many Requests',
@@ -2310,7 +2379,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
 
         // Check usage quota
-        const usage = usageTracker.trackUsage('ad-creation', 1);
+        const usage = await usageTracker.trackUsage('ad-creation', 1);
         if (!usage.allowed) {
             notifications.error(usage.message || 'Usage limit exceeded', {
                 title: 'Daily Limit Reached',

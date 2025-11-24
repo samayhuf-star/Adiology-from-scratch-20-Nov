@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
-import { api } from '../utils/api';
+import { signUpWithEmail, signInWithEmail, resetPassword } from '../utils/auth';
 import { notifications } from '../utils/notifications';
 
 interface AuthProps {
@@ -15,6 +15,7 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,36 +33,49 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
     setError('');
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
       const trimmedEmail = email.trim().toLowerCase();
       const trimmedPassword = password.trim();
 
-      if (isLogin) {
-        // Login logic - Super admin should use /superadmin route
-        if (trimmedEmail === 'sam@sam.com' && trimmedPassword === 'sam@sam.com') {
-          setError('Super admin access is available at /superadmin');
+      if (isForgotPassword) {
+        // Handle password reset
+        if (!trimmedEmail) {
+          setError('Please enter your email address');
           setIsLoading(false);
           return;
         }
 
-        // Regular user login (demo - in production, check against database)
-        const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-        const user = savedUsers.find((u: any) => 
-          u.email.toLowerCase() === trimmedEmail && u.password === trimmedPassword
-        );
+        await resetPassword(trimmedEmail);
+        notifications.success('Password reset email sent!', {
+          title: 'Check Your Email',
+          description: 'We\'ve sent a password reset link to your email address. Please check your inbox and spam folder.',
+        });
+        setIsForgotPassword(false);
+        setIsLoading(false);
+        return;
+      }
 
-        if (user) {
-          localStorage.setItem('auth_user', JSON.stringify({ 
-            email: user.email, 
-            role: 'user',
-            name: user.name
-          }));
+      if (isLogin) {
+        // Login with Supabase Auth
+        try {
+          await signInWithEmail(trimmedEmail, trimmedPassword);
+          notifications.success('Welcome back!', {
+            title: 'Login Successful',
+          });
           setIsLoading(false);
-          // Directly go to dashboard - no admin/user selection
           onLoginSuccess();
-        } else {
-          setError('Invalid email or password. Please try again.');
+        } catch (err: any) {
+          let errorMessage = 'Invalid email or password. Please try again.';
+          
+          if (err.message.includes('Invalid login credentials')) {
+            errorMessage = 'Invalid email or password. Please try again.';
+          } else if (err.message.includes('Email not confirmed')) {
+            errorMessage = 'Please verify your email before signing in. Check your inbox for the verification link.';
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          
+          setError(errorMessage);
           setIsLoading(false);
         }
       } else {
@@ -84,48 +98,41 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
           return;
         }
 
-        // Check if user already exists
-        const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-        const userExists = savedUsers.some((u: any) => u.email.toLowerCase() === trimmedEmail);
+        // Sign up with Supabase Auth
+        try {
+          const { user } = await signUpWithEmail(trimmedEmail, trimmedPassword, name.trim());
+          
+          if (user) {
+            notifications.success('Account created successfully!', {
+              title: 'Check Your Email',
+              description: 'We\'ve sent a verification link to your email. Please verify your email to continue.',
+            });
 
-        if (userExists) {
-          setError('An account with this email already exists');
+            // Redirect to verification page
+            setIsLoading(false);
+            window.location.href = `/verify-email?email=${encodeURIComponent(trimmedEmail)}`;
+          }
+        } catch (err: any) {
+          let errorMessage = 'Failed to create account. Please try again.';
+          
+          if (err.message.includes('User already registered')) {
+            errorMessage = 'An account with this email already exists. Please sign in instead.';
+          } else if (err.message.includes('Invalid email')) {
+            errorMessage = 'Please enter a valid email address.';
+          } else if (err.message.includes('Password')) {
+            errorMessage = err.message;
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          
+          setError(errorMessage);
           setIsLoading(false);
-          return;
         }
-
-        // Create new user (not verified yet)
-        const newUser = {
-          email: trimmedEmail,
-          password: trimmedPassword,
-          name: name.trim(),
-          createdAt: new Date().toISOString(),
-          verified: false
-        };
-
-        savedUsers.push(newUser);
-        localStorage.setItem('adiology_users', JSON.stringify(savedUsers));
-        
-        // Generate verification token
-        const verificationToken = `verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Store pending verification
-        localStorage.setItem('pending_verification', JSON.stringify({
-          email: trimmedEmail,
-          token: verificationToken,
-          createdAt: new Date().toISOString(),
-        }));
-
-        // In production, send verification email via API
-        // For now, redirect directly to verification page
-        setIsLoading(false);
-        
-        // Redirect to verification page
-        const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
-        console.log('Verification URL:', verificationUrl);
-        window.location.href = verificationUrl;
       }
-    }, 1000);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -158,14 +165,22 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               <p className="text-xs text-slate-500 -mt-0.5">~ Samay</p>
             </div>
             <CardTitle className="text-xl font-bold text-center text-slate-900">
-              {isLogin ? 'Welcome Back' : SIGNUP_DISABLED ? 'Sign Up Disabled' : 'Create Account'}
+              {isForgotPassword 
+                ? 'Reset Password' 
+                : isLogin 
+                  ? 'Welcome Back' 
+                  : SIGNUP_DISABLED 
+                    ? 'Sign Up Disabled' 
+                    : 'Create Account'}
             </CardTitle>
             <CardDescription className="text-center text-slate-600">
-              {isLogin 
-                ? 'Sign in to your Adiology account' 
-                : SIGNUP_DISABLED 
-                  ? 'New signups are currently disabled until production launch'
-                : 'Start building winning campaigns today'}
+              {isForgotPassword
+                ? 'Enter your email to receive a password reset link'
+                : isLogin 
+                  ? 'Sign in to your Adiology account' 
+                  : SIGNUP_DISABLED 
+                    ? 'New signups are currently disabled until production launch'
+                    : 'Start building winning campaigns today'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -212,30 +227,34 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-900 font-semibold">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={isLogin ? 'Enter your password' : 'Create a password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+              {!isForgotPassword && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-slate-900 font-semibold">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
+                      <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder={isLogin ? 'Enter your password' : 'Create a password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                        required={!isForgotPassword}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
-              {!isLogin && !SIGNUP_DISABLED && (
+              {!isLogin && !SIGNUP_DISABLED && !isForgotPassword && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword" className="text-slate-900 font-semibold">Confirm Password</Label>
                   <div className="relative">
@@ -261,7 +280,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 </div>
               )}
 
-              {isLogin && (
+              {isLogin && !isForgotPassword && (
                 <div className="flex items-center justify-between text-sm">
                   <label className="flex items-center space-x-2 cursor-pointer">
                     <input type="checkbox" className="rounded border-slate-300" />
@@ -271,12 +290,30 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                     type="button"
                     onClick={() => {
                       setError('');
-                      // TODO: Implement forgot password functionality
-                      setError('Forgot password feature coming soon. Please contact support for assistance.');
+                      setIsForgotPassword(true);
                     }}
                     className="text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer"
                   >
                     Forgot password?
+                  </button>
+                </div>
+              )}
+
+              {isForgotPassword && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 mb-2">
+                    Enter your email address and we'll send you a link to reset your password.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError('');
+                      setIsForgotPassword(false);
+                      setEmail('');
+                    }}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    ← Back to login
                   </button>
                 </div>
               )}
@@ -292,10 +329,18 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    {isLogin ? 'Signing in...' : 'Creating account...'}
+                    {isForgotPassword 
+                      ? 'Sending reset link...' 
+                      : isLogin 
+                        ? 'Signing in...' 
+                        : 'Creating account...'}
                   </span>
                 ) : (
-                  isLogin ? 'Sign In' : (SIGNUP_DISABLED ? 'Sign Up Disabled' : 'Create Account')
+                  isForgotPassword 
+                    ? 'Send Reset Link' 
+                    : isLogin 
+                      ? 'Sign In' 
+                      : (SIGNUP_DISABLED ? 'Sign Up Disabled' : 'Create Account')
                 )}
               </Button>
 
@@ -304,37 +349,41 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                   Sign up is currently disabled. Please contact support for access.
                 </div>
               ) : (
-              <div className="text-center text-sm text-slate-700">
-                {isLogin ? (
-                  <>
-                    Don't have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLogin(false);
-                        setError('');
-                      }}
-                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      Sign up
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLogin(true);
-                        setError('');
-                      }}
-                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      Sign in
-                    </button>
-                  </>
-                )}
-              </div>
+              {!isForgotPassword && (
+                <div className="text-center text-sm text-slate-700">
+                  {isLogin ? (
+                    <>
+                      Don't have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLogin(false);
+                          setError('');
+                          setIsForgotPassword(false);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      >
+                        Sign up
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLogin(true);
+                          setError('');
+                          setIsForgotPassword(false);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
               )}
             </form>
 

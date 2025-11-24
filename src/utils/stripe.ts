@@ -78,16 +78,14 @@ export async function createCustomerPortalSession() {
     }
 
     // Get user email for customer identification
-    const authUser = localStorage.getItem('auth_user');
     let customerEmail = '';
     
-    if (authUser) {
-      try {
-        const user = JSON.parse(authUser);
-        customerEmail = user.email || '';
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-      }
+    try {
+      const { getCurrentAuthUser } = await import('./auth');
+      const user = await getCurrentAuthUser();
+      customerEmail = user?.email || '';
+    } catch (e) {
+      console.error('Error getting user email:', e);
     }
 
     // Try Supabase Edge Function first

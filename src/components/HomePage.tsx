@@ -145,15 +145,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       highlights: ['11 extension types', 'Sitelink management', 'Callout creation', 'Structured snippets', 'Call extensions'],
       stats: '40% More Clicks'
     },
-    {
-      icon: Database,
-      title: 'Campaign History & Templates',
-      description: 'Save and reuse successful campaigns with our history system. Build a library of proven templates to accelerate future campaign creation.',
-      color: 'from-teal-400 to-cyan-500',
-      image: '💾',
-      highlights: ['Campaign history', 'Template library', 'Quick reload', 'Version tracking', 'Bulk operations'],
-      stats: 'Unlimited Storage'
-    }
   ];
 
   const stats = [
@@ -198,9 +189,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
     },
     {
       icon: Gift,
-      title: 'Free Forever',
-      description: 'Access all core features completely free. No credit card required, no hidden fees, no limits',
-      metric: '100% Free'
+      title: 'Forever',
+      description: 'Access all core features. No credit card required, no hidden fees, no limits',
+      metric: '100%'
     }
   ];
 
@@ -285,7 +276,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
   const howItWorks = [
     {
       step: '01',
-      title: 'Sign Up Free',
+      title: 'Sign Up',
       desc: 'Create your account in seconds. No credit card required.',
       icon: User,
       color: 'from-blue-500 to-cyan-500'
@@ -444,7 +435,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg px-8 py-6 h-auto shadow-2xl hover:shadow-indigo-500/50 transition-all hover:scale-105 w-full sm:w-auto group relative overflow-hidden"
               >
                 <span className="relative z-10 flex items-center">
-                  Start Building Campaigns Free <Rocket className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  Start Building Campaigns <Rocket className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </Button>
@@ -458,7 +449,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                   </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium">Free Forever</span>
+                <span className="text-sm font-medium">Forever</span>
                   </div>
               <div className="flex items-center gap-2 text-slate-600">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -519,18 +510,102 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 mb-16">
               {[
-                { id: 'skag', name: 'SKAG', icon: Zap, description: 'Single Keyword Ad Group - Maximum relevance', color: 'from-yellow-400 to-orange-500' },
-                { id: 'stag', name: 'STAG', icon: TrendingUp, description: 'Single Theme Ad Group - Balanced approach', color: 'from-blue-400 to-cyan-500' },
-                { id: 'mix', name: 'MIX', icon: Layers, description: 'Hybrid Structure - Best of both worlds', color: 'from-indigo-400 to-purple-500' },
-                { id: 'stag_plus', name: 'STAG+', icon: Brain, description: 'Smart Grouping - ML-powered themes', color: 'from-purple-400 to-pink-500' },
-                { id: 'intent', name: 'IBAG', icon: Target, description: 'Intent-Based - High/Research/Brand/Competitor', color: 'from-green-400 to-emerald-500' },
-                { id: 'alpha_beta', name: 'Alpha–Beta', icon: Split, description: 'Alpha winners, Beta discovery', color: 'from-red-400 to-rose-500' },
-                { id: 'match_type', name: 'Match-Type Split', icon: Filter, description: 'Broad/Phrase/Exact separation', color: 'from-teal-400 to-cyan-500' },
-                { id: 'geo', name: 'GEO-Segmented', icon: MapPin, description: 'Location-based segmentation', color: 'from-blue-500 to-indigo-600' },
-                { id: 'funnel', name: 'Funnel-Based', icon: Funnel, description: 'TOF/MOF/BOF intent grouping', color: 'from-orange-400 to-red-500' },
-                { id: 'brand_split', name: 'Brand vs Non-Brand', icon: Users, description: 'Brand and non-brand separation', color: 'from-violet-400 to-purple-500' },
-                { id: 'competitor', name: 'Competitor Campaigns', icon: TrendingDown, description: 'Competitor brand queries', color: 'from-pink-400 to-rose-500' },
-                { id: 'ngram', name: 'Smart Cluster', icon: Network, description: 'N-Gram ML clustering', color: 'from-indigo-500 to-purple-600' },
+                { 
+                  id: 'skag', 
+                  name: 'SKAG', 
+                  icon: Zap, 
+                  description: 'Single Keyword Ad Group - Maximum relevance', 
+                  detailedDescription: 'Each ad group contains only one keyword with all match types (Broad, Phrase, Exact). This structure maximizes keyword relevance and Quality Score by ensuring perfect alignment between keywords, ads, and landing pages. Ideal for high-value keywords that need precise control.',
+                  color: 'from-yellow-400 to-orange-500' 
+                },
+                { 
+                  id: 'stag', 
+                  name: 'STAG', 
+                  icon: TrendingUp, 
+                  description: 'Single Theme Ad Group - Balanced approach', 
+                  detailedDescription: 'Groups related keywords by theme or topic into single ad groups. Multiple keywords share the same ad group, allowing for better budget distribution while maintaining thematic relevance. Perfect for scaling campaigns with related keyword variations.',
+                  color: 'from-blue-400 to-cyan-500' 
+                },
+                { 
+                  id: 'mix', 
+                  name: 'MIX', 
+                  icon: Layers, 
+                  description: 'Hybrid Structure - Best of both worlds', 
+                  detailedDescription: 'Combines SKAG for high-performing keywords and STAG for long-tail variations. High-value keywords get dedicated ad groups for maximum control, while related keywords are grouped thematically for efficiency. Optimizes both performance and scale.',
+                  color: 'from-indigo-400 to-purple-500' 
+                },
+                { 
+                  id: 'stag_plus', 
+                  name: 'STAG+', 
+                  icon: Brain, 
+                  description: 'Smart Grouping - ML-powered themes', 
+                  detailedDescription: 'Uses machine learning to intelligently group keywords by semantic similarity and search intent. Automatically identifies related keywords and creates optimized ad groups based on performance patterns. Advanced AI ensures maximum relevance and efficiency.',
+                  color: 'from-purple-400 to-pink-500' 
+                },
+                { 
+                  id: 'intent', 
+                  name: 'IBAG', 
+                  icon: Target, 
+                  description: 'Intent-Based - High/Research/Brand/Competitor', 
+                  detailedDescription: 'Organizes keywords by search intent: High Intent (ready to buy), Research (gathering information), Brand (searching your brand), and Competitor (comparing alternatives). Each intent type gets separate ad groups with tailored ad copy and landing pages for maximum conversion.',
+                  color: 'from-green-400 to-emerald-500' 
+                },
+                { 
+                  id: 'alpha_beta', 
+                  name: 'Alpha–Beta', 
+                  icon: Split, 
+                  description: 'Alpha winners, Beta discovery', 
+                  detailedDescription: 'Separates proven high-performing keywords (Alpha) from experimental keywords (Beta). Alpha ad groups receive higher budgets and optimized ads, while Beta groups test new keywords and variations. Allows continuous optimization while protecting proven winners.',
+                  color: 'from-red-400 to-rose-500' 
+                },
+                { 
+                  id: 'match_type', 
+                  name: 'Match-Type Split', 
+                  icon: Filter, 
+                  description: 'Broad/Phrase/Exact separation', 
+                  detailedDescription: 'Creates separate ad groups for each match type (Broad, Phrase, Exact) of the same keyword. This structure allows precise bid control and performance tracking for each match type. Enables optimization of bids and ad copy based on match type performance.',
+                  color: 'from-teal-400 to-cyan-500' 
+                },
+                { 
+                  id: 'geo', 
+                  name: 'GEO-Segmented', 
+                  icon: MapPin, 
+                  description: 'Location-based segmentation', 
+                  detailedDescription: 'Organizes campaigns by geographic location (cities, states, countries, or ZIP codes). Each location gets dedicated ad groups with location-specific ad copy and landing pages. Perfect for businesses targeting multiple markets with different messaging or offers.',
+                  color: 'from-blue-500 to-indigo-600' 
+                },
+                { 
+                  id: 'funnel', 
+                  name: 'Funnel-Based', 
+                  icon: Funnel, 
+                  description: 'TOF/MOF/BOF intent grouping', 
+                  detailedDescription: 'Structures campaigns by funnel stage: Top of Funnel (awareness), Middle of Funnel (consideration), and Bottom of Funnel (conversion). Each stage has tailored keywords, ad copy, and landing pages matching user intent. Optimizes the entire customer journey from discovery to purchase.',
+                  color: 'from-orange-400 to-red-500' 
+                },
+                { 
+                  id: 'brand_split', 
+                  name: 'Brand vs Non-Brand', 
+                  icon: Users, 
+                  description: 'Brand and non-brand separation', 
+                  detailedDescription: 'Separates brand keywords (searches including your brand name) from non-brand keywords (generic searches). Brand keywords typically have higher conversion rates and lower CPCs, so they get separate ad groups with different bids and budgets. Protects brand visibility while scaling non-brand reach.',
+                  color: 'from-violet-400 to-purple-500' 
+                },
+                { 
+                  id: 'competitor', 
+                  name: 'Competitor Campaigns', 
+                  icon: TrendingDown, 
+                  description: 'Competitor brand queries', 
+                  detailedDescription: 'Targets searches for competitor brand names and products. Captures users searching for alternatives or comparing options. Uses competitor brand names as keywords with strategic ad copy highlighting your advantages. Requires careful monitoring to maintain quality and compliance.',
+                  color: 'from-pink-400 to-rose-500' 
+                },
+                { 
+                  id: 'ngram', 
+                  name: 'Smart Cluster', 
+                  icon: Network, 
+                  description: 'N-Gram ML clustering', 
+                  detailedDescription: 'Uses N-gram analysis and machine learning to identify keyword patterns and automatically cluster similar keywords. Groups keywords based on shared word sequences and semantic meaning. Creates highly relevant ad groups that maximize Quality Score and ad relevance through intelligent keyword clustering.',
+                  color: 'from-indigo-500 to-purple-600' 
+                },
               ].map((structure) => {
                 const Icon = structure.icon;
                 return (
@@ -544,21 +619,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                         <Icon className="w-7 h-7 text-white" />
                       </div>
                       <h3 className="text-xl font-bold text-slate-800 mb-3">{structure.name}</h3>
-                      <p className="text-sm text-slate-600 leading-relaxed">{structure.description}</p>
+                      <p className="text-sm text-slate-600 leading-relaxed mb-3">{structure.description}</p>
+                      {structure.detailedDescription && (
+                        <p className="text-xs text-slate-500 leading-relaxed mt-2">{structure.detailedDescription}</p>
+                      )}
                     </CardContent>
                   </Card>
                 );
               })}
-            </div>
-
-            <div className="mt-16 sm:mt-20 text-center">                                  
-              <Button
-                size="lg"
-                onClick={onGetStarted}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 text-lg px-8 py-6 h-auto shadow-lg"
-              >
-                Start Building with Builder 2.0 <Rocket className="w-5 h-5 ml-2" />
-              </Button>
             </div>
           </div>
 
@@ -688,7 +756,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                   ))}
                 </ul>
                 <Button onClick={onGetStarted} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-                  Try It Free <ArrowRight className="w-4 h-4 ml-2" />
+                  Try It <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
               <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl p-8 sm:p-12 border border-indigo-200">

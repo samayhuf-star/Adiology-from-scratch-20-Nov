@@ -3,6 +3,8 @@
  * Tracks user usage and enforces quotas to prevent bulk misuse
  */
 
+import { getCurrentUserProfile } from './auth';
+
 export interface UsageQuota {
   daily: number;
   monthly: number;
@@ -28,35 +30,30 @@ class UsageTracker {
   /**
    * Check if user has a paid plan
    */
-  private isPaidUser(): boolean {
+  private async isPaidUser(): Promise<boolean> {
     try {
-      const authUser = localStorage.getItem('auth_user');
-      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+      const userProfile = await getCurrentUserProfile();
+      if (!userProfile) return false;
       
-      if (authUser) {
-        const user = JSON.parse(authUser);
-        const userData = savedUsers.find((u: any) => u.email === user.email);
-        
-        const plan = userData?.plan || user.plan || 'Free';
-        return plan !== 'Free' && plan !== null && plan !== undefined;
-      }
+      const plan = userProfile.subscription_plan || 'free';
+      return plan !== 'free' && plan !== null && plan !== undefined;
     } catch (e) {
       console.error('Error checking user plan:', e);
+      return false;
     }
-    return false;
   }
 
   /**
    * Get quota for action (higher limits for paid users)
    */
-  private getQuota(action: string): UsageQuota {
+  private async getQuota(action: string): Promise<UsageQuota> {
     const baseQuota = this.quotas.get(action);
     if (!baseQuota) {
       return { daily: Infinity, monthly: Infinity, perAction: Infinity };
     }
 
     // Paid users get 10x limits or unlimited
-    if (this.isPaidUser()) {
+    if (await this.isPaidUser()) {
       return {
         daily: Infinity, // Unlimited daily for paid users
         monthly: Infinity, // Unlimited monthly for paid users
@@ -76,11 +73,12 @@ class UsageTracker {
   /**
    * Track usage of an action
    */
-  trackUsage(action: string, amount: number = 1): { allowed: boolean; stats: UsageStats; message?: string } {
-    const quota = this.getQuota(action);
+  async trackUsage(action: string, amount: number = 1): Promise<{ allowed: boolean; stats: UsageStats; message?: string }> {
+    const quota = await this.getQuota(action);
+    const isPaid = await this.isPaidUser();
     
     // Paid users bypass limits
-    if (this.isPaidUser()) {
+    if (isPaid) {
       return {
         allowed: true,
         stats: {
@@ -145,8 +143,8 @@ class UsageTracker {
   /**
    * Get current usage stats
    */
-  getUsage(action: string): UsageStats | null {
-    const quota = this.getQuota(action);
+  async getUsage(action: string): Promise<UsageStats | null> {
+    const quota = await this.getQuota(action);
     if (!quota || (quota.daily === Infinity && quota.monthly === Infinity)) {
       return {
         today: 0,
@@ -184,9 +182,9 @@ class UsageTracker {
   /**
    * Check if user is approaching limits
    */
-  checkWarnings(action: string): string | null {
+  async checkWarnings(action: string): Promise<string | null> {
     // Paid users don't get warnings
-    if (this.isPaidUser()) {
+    if (await this.isPaidUser()) {
       return null;
     }
 

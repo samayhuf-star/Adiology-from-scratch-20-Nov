@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Shield, Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { signInWithEmail } from '../utils/auth';
+import { supabase } from '../utils/supabase/client';
+import { notifications } from '../utils/notifications';
 
 interface SuperAdminLoginProps {
   onLoginSuccess: () => void;
@@ -17,36 +20,63 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
     setError('');
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Valid super admin credentials
-      const validAdmins = [
-        { email: 'sam@sam.com', password: 'sam@sam.com' },
-      ];
-
-      // Trim and compare (case-insensitive for email)
+    try {
       const trimmedEmail = email.trim().toLowerCase();
       const trimmedPassword = password.trim();
 
-      const isValidAdmin = validAdmins.some(
-        admin => admin.email.toLowerCase() === trimmedEmail && admin.password === trimmedPassword
-      );
+      // Sign in with Supabase Auth
+      const { data, error: authError } = await signInWithEmail(trimmedEmail, trimmedPassword);
 
-      if (isValidAdmin) {
-        // Save super admin auth
-        localStorage.setItem('auth_user', JSON.stringify({ 
-          email: trimmedEmail, 
-          role: 'superadmin',
-          name: 'Super Admin'
-        }));
-        // Update URL to /superadmin
-        window.history.pushState({}, '', '/superadmin');
-        onLoginSuccess();
-      } else {
-        setError('Invalid credentials. Only superadmin can access this portal.');
+      if (authError) {
+        throw authError;
       }
+
+      if (!data?.user) {
+        throw new Error('Authentication failed');
+      }
+
+      // Verify user has superadmin role
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (userError || !userData) {
+        throw new Error('User profile not found');
+      }
+
+      if (userData.role !== 'superadmin') {
+        // Sign out if not superadmin
+        await supabase.auth.signOut();
+        throw new Error('Access denied. Superadmin role required.');
+      }
+
+      // Update URL to /superadmin
+      window.history.pushState({}, '', '/superadmin');
+      
+      notifications.success('Welcome, Super Admin!', {
+        title: 'Login Successful',
+      });
+      
+      onLoginSuccess();
+    } catch (err: any) {
+      console.error('Super admin login error:', err);
+      
+      let errorMessage = 'Invalid credentials. Only superadmin can access this portal.';
+      
+      if (err.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password.';
+      } else if (err.message?.includes('Access denied')) {
+        errorMessage = err.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
