@@ -1643,4 +1643,337 @@ app.put("/make-server-6757d0ca/admin/pricing-plans/:id", async (c) => {
   }
 });
 
+// ========== EMAIL FUNCTIONALITY WITH POSTMARK ==========
+
+/**
+ * Send email using Postmark API
+ */
+async function sendEmailViaPostmark(
+  to: string,
+  subject: string,
+  htmlBody: string,
+  textBody?: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const postmarkApiKey = Deno.env.get("POSTMARK_API_KEY");
+  const postmarkFromEmail = Deno.env.get("POSTMARK_FROM_EMAIL") || "noreply@adiology.online";
+
+  if (!postmarkApiKey) {
+    console.error("POSTMARK_API_KEY is not configured");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  try {
+    const response = await fetch("https://api.postmarkapp.com/email", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-Postmark-Server-Token": postmarkApiKey,
+      },
+      body: JSON.stringify({
+        From: postmarkFromEmail,
+        To: to,
+        Subject: subject,
+        HtmlBody: htmlBody,
+        TextBody: textBody || htmlBody.replace(/<[^>]*>/g, ""), // Strip HTML for text version
+        MessageStream: "outbound",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Postmark API Error:", data);
+      return {
+        success: false,
+        error: data.Message || `HTTP ${response.status}`,
+      };
+    }
+
+    console.log("Email sent successfully via Postmark:", data.MessageID);
+    return {
+      success: true,
+      messageId: data.MessageID,
+    };
+  } catch (error) {
+    console.error("Error sending email via Postmark:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Generate email verification HTML template
+ */
+function generateVerificationEmailHtml(
+  email: string,
+  verificationUrl: string,
+  token: string
+): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email - Adiology</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">Adiology</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0;">~ Samay</p>
+  </div>
+  
+  <div style="background: #ffffff; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <h2 style="color: #1a202c; margin-top: 0;">Verify Your Email Address</h2>
+    
+    <p style="color: #4a5568; font-size: 16px;">
+      Hi there,
+    </p>
+    
+    <p style="color: #4a5568; font-size: 16px;">
+      Thank you for signing up for Adiology! Please verify your email address by clicking the button below:
+    </p>
+    
+    <div style="text-align: center; margin: 40px 0;">
+      <a href="${verificationUrl}" 
+         style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        Verify Email Address
+      </a>
+    </div>
+    
+    <p style="color: #718096; font-size: 14px; margin-top: 30px;">
+      Or copy and paste this link into your browser:
+    </p>
+    <p style="color: #667eea; font-size: 12px; word-break: break-all; background: #f7fafc; padding: 15px; border-radius: 6px; font-family: monospace;">
+      ${verificationUrl}
+    </p>
+    
+    <p style="color: #718096; font-size: 14px; margin-top: 30px;">
+      This verification link will expire in 24 hours. If you didn't create an account with Adiology, you can safely ignore this email.
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+    
+    <p style="color: #a0aec0; font-size: 12px; text-align: center; margin: 0;">
+      © ${new Date().getFullYear()} Adiology. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Generate activation email HTML template
+ */
+function generateActivationEmailHtml(
+  email: string,
+  activationUrl: string
+): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activate Your Account - Adiology</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">Adiology</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0;">~ Samay</p>
+  </div>
+  
+  <div style="background: #ffffff; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <h2 style="color: #1a202c; margin-top: 0;">Activate Your Account</h2>
+    
+    <p style="color: #4a5568; font-size: 16px;">
+      Hi there,
+    </p>
+    
+    <p style="color: #4a5568; font-size: 16px;">
+      Welcome to Adiology! Your account has been created. Please activate your account by clicking the button below:
+    </p>
+    
+    <div style="text-align: center; margin: 40px 0;">
+      <a href="${activationUrl}" 
+         style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        Activate Account
+      </a>
+    </div>
+    
+    <p style="color: #718096; font-size: 14px; margin-top: 30px;">
+      Or copy and paste this link into your browser:
+    </p>
+    <p style="color: #667eea; font-size: 12px; word-break: break-all; background: #f7fafc; padding: 15px; border-radius: 6px; font-family: monospace;">
+      ${activationUrl}
+    </p>
+    
+    <p style="color: #718096; font-size: 14px; margin-top: 30px;">
+      This activation link will expire in 24 hours. If you didn't create an account with Adiology, you can safely ignore this email.
+    </p>
+    
+    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+    
+    <p style="color: #a0aec0; font-size: 12px; text-align: center; margin: 0;">
+      © ${new Date().getFullYear()} Adiology. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+// ========== EMAIL API ENDPOINTS ==========
+
+/**
+ * Send verification email endpoint
+ */
+app.post("/make-server-6757d0ca/email/send-verification", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { email, token, baseUrl } = body;
+
+    if (!email || !token) {
+      return c.json({ error: "Email and token are required" }, 400);
+    }
+
+    const frontendUrl = baseUrl || Deno.env.get("FRONTEND_URL") || "https://adiology.online";
+    const verificationUrl = `${frontendUrl}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+
+    const htmlBody = generateVerificationEmailHtml(email, verificationUrl, token);
+    const textBody = `Verify your email address by visiting: ${verificationUrl}`;
+
+    const result = await sendEmailViaPostmark(
+      email,
+      "Verify Your Email - Adiology",
+      htmlBody,
+      textBody
+    );
+
+    if (!result.success) {
+      console.error("Failed to send verification email:", result.error);
+      return c.json(
+        { error: result.error || "Failed to send email" },
+        500
+      );
+    }
+
+    console.log(`Verification email sent to ${email}, MessageID: ${result.messageId}`);
+
+    return c.json({
+      success: true,
+      messageId: result.messageId,
+      message: "Verification email sent successfully",
+    });
+  } catch (err) {
+    console.error("Send verification email error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+/**
+ * Send activation email endpoint
+ */
+app.post("/make-server-6757d0ca/email/send-activation", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { email, token, baseUrl } = body;
+
+    if (!email || !token) {
+      return c.json({ error: "Email and token are required" }, 400);
+    }
+
+    const frontendUrl = baseUrl || Deno.env.get("FRONTEND_URL") || "https://adiology.online";
+    const activationUrl = `${frontendUrl}/verify-email?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+
+    const htmlBody = generateActivationEmailHtml(email, activationUrl);
+    const textBody = `Activate your account by visiting: ${activationUrl}`;
+
+    const result = await sendEmailViaPostmark(
+      email,
+      "Activate Your Account - Adiology",
+      htmlBody,
+      textBody
+    );
+
+    if (!result.success) {
+      console.error("Failed to send activation email:", result.error);
+      return c.json(
+        { error: result.error || "Failed to send email" },
+        500
+      );
+    }
+
+    console.log(`Activation email sent to ${email}, MessageID: ${result.messageId}`);
+
+    return c.json({
+      success: true,
+      messageId: result.messageId,
+      message: "Activation email sent successfully",
+    });
+  } catch (err) {
+    console.error("Send activation email error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+/**
+ * Test email endpoint (for testing Postmark configuration)
+ */
+app.post("/make-server-6757d0ca/email/test", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { email } = body;
+
+    if (!email) {
+      return c.json({ error: "Email is required" }, 400);
+    }
+
+    const testHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test Email - Adiology</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+  <h2>Test Email from Adiology</h2>
+  <p>This is a test email to verify Postmark integration is working correctly.</p>
+  <p>If you received this email, the email service is configured properly!</p>
+  <p style="color: #666; font-size: 12px; margin-top: 30px;">
+    Sent at: ${new Date().toISOString()}
+  </p>
+</body>
+</html>
+    `.trim();
+
+    const result = await sendEmailViaPostmark(
+      email,
+      "Test Email - Adiology Postmark Integration",
+      testHtml,
+      "This is a test email to verify Postmark integration is working correctly."
+    );
+
+    if (!result.success) {
+      return c.json(
+        { error: result.error || "Failed to send test email" },
+        500
+      );
+    }
+
+    return c.json({
+      success: true,
+      messageId: result.messageId,
+      message: "Test email sent successfully",
+    });
+  } catch (err) {
+    console.error("Test email error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

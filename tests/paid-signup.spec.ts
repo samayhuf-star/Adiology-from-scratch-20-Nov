@@ -18,9 +18,13 @@ test.describe('Paid Signup Flow', () => {
   const testPassword = 'TestPassword123!';
   const testName = 'Test User';
 
+  // Production URL for LambdaTest cloud testing
+  const PRODUCTION_URL = 'https://adiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app';
+
   test.beforeEach(async ({ page }) => {
     // Clear localStorage and cookies before each test
-    await page.goto('/');
+    // Use production URL for LambdaTest cloud testing
+    await page.goto(PRODUCTION_URL);
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();
@@ -29,8 +33,8 @@ test.describe('Paid Signup Flow', () => {
 
   test('Complete paid signup flow - Lifetime Unlimited Plan', async ({ page }) => {
     // Step 1: Navigate to homepage
-    await page.goto('/');
-    await expect(page).toHaveURL('/');
+    await page.goto(PRODUCTION_URL);
+    await expect(page).toHaveURL(new RegExp(PRODUCTION_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
     // Step 2: Click "Get Started" or navigate to signup
     const getStartedButton = page.getByRole('button', { name: /get started|sign up/i }).first();
@@ -84,7 +88,7 @@ test.describe('Paid Signup Flow', () => {
     expect(isLoggedIn).toBeTruthy();
 
     // Step 6: Navigate to homepage and select a plan
-    await page.goto('/');
+    await page.goto(PRODUCTION_URL);
     await page.waitForLoadState('networkidle');
 
     // Look for plan selection buttons - targeting "Lifetime Unlimited" plan
@@ -111,7 +115,7 @@ test.describe('Paid Signup Flow', () => {
       await lifetimeUnlimitedButton.click();
     } else {
       // Fallback: Navigate directly to payment page with plan parameters
-      await page.goto('/payment?plan=Lifetime Unlimited&priceId=price_lifetime_unlimited&amount=199&subscription=false');
+      await page.goto(`${PRODUCTION_URL}/payment?plan=Lifetime Unlimited&priceId=price_lifetime_unlimited&amount=199&subscription=false`);
     }
 
     // Step 7: Wait for payment page to load
@@ -125,7 +129,7 @@ test.describe('Paid Signup Flow', () => {
     
     // If not on payment page, try navigating directly
     if (!(await paymentPageIndicator.isVisible({ timeout: 3000 }))) {
-      await page.goto('/payment?plan=Lifetime Unlimited&priceId=price_lifetime_unlimited&amount=199&subscription=false');
+      await page.goto(`${PRODUCTION_URL}/payment?plan=Lifetime Unlimited&priceId=price_lifetime_unlimited&amount=199&subscription=false`);
       await page.waitForTimeout(2000);
     }
 
@@ -190,14 +194,15 @@ test.describe('Paid Signup Flow', () => {
     expect(userData.email).toBe(testEmail.toLowerCase());
   });
 
-  test('Paid signup flow - Monthly Limited Plan', async ({ page }) => {
+  test('Paid signup flow - Monthly Limited Plan', async ({ page, baseURL }) => {
     const timestamp = Date.now();
     const testEmail = `test-monthly-${timestamp}@example.com`;
     const testPassword = 'TestPassword123!';
     const testName = 'Test User Monthly';
 
     // Navigate and sign up
-    await page.goto('/');
+    const url = baseURL || 'https://adiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app';
+    await page.goto(url);
     await page.evaluate(() => localStorage.clear());
 
     // Navigate to signup
@@ -235,7 +240,7 @@ test.describe('Paid Signup Flow', () => {
     await page.waitForTimeout(2000);
 
     // Navigate to payment with Monthly Limited plan
-    await page.goto('/payment?plan=Monthly Limited&priceId=price_monthly_25&amount=49.99&subscription=true');
+    await page.goto(`${url}/payment?plan=Monthly Limited&priceId=price_monthly_25&amount=49.99&subscription=true`);
     await page.waitForTimeout(2000);
 
     // Verify payment page loaded
@@ -245,13 +250,14 @@ test.describe('Paid Signup Flow', () => {
     expect(paymentLoaded).toBeTruthy();
   });
 
-  test('Verify signup redirects to payment when plan is selected', async ({ page }) => {
+  test('Verify signup redirects to payment when plan is selected', async ({ page, baseURL }) => {
     const timestamp = Date.now();
     const testEmail = `test-redirect-${timestamp}@example.com`;
     const testPassword = 'TestPassword123!';
 
     // Sign up user
-    await page.goto('/');
+    const url = baseURL || 'https://adiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app';
+    await page.goto(url);
     await page.evaluate(() => localStorage.clear());
 
     // Quick signup
@@ -286,7 +292,7 @@ test.describe('Paid Signup Flow', () => {
     expect(isLoggedIn).toBeTruthy();
 
     // Navigate to payment page directly
-    await page.goto('/payment?plan=Lifetime Unlimited&priceId=price_lifetime_unlimited&amount=199&subscription=false');
+    await page.goto(`${url}/payment?plan=Lifetime Unlimited&priceId=price_lifetime_unlimited&amount=199&subscription=false`);
     
     // Verify payment page is accessible for logged-in user
     await page.waitForTimeout(2000);

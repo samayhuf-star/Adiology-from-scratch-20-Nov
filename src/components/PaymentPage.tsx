@@ -107,11 +107,52 @@ const PaymentForm: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentAttemptId, setPaymentAttemptId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check if there's a pending payment attempt (prevent duplicate charges on refresh)
+    const pendingPayment = sessionStorage.getItem('pending_payment');
+    if (pendingPayment) {
+      const paymentData = JSON.parse(pendingPayment);
+      const timeElapsed = Date.now() - paymentData.timestamp;
+      
+      // If payment attempt is older than 5 minutes, clear it
+      if (timeElapsed > 5 * 60 * 1000) {
+        sessionStorage.removeItem('pending_payment');
+      } else {
+        // Show warning about pending payment
+        setError('A payment attempt was in progress. Please wait a moment before trying again.');
+        setIsProcessing(false);
+        // Clear after showing warning
+        setTimeout(() => {
+          sessionStorage.removeItem('pending_payment');
+          setError(null);
+        }, 5000);
+        return;
+      }
+    }
+
     // Create payment intent on mount
     createPaymentIntent();
-  }, []);
+
+    // Handle page refresh/unload
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isProcessing) {
+        // Store payment attempt info
+        sessionStorage.setItem('pending_payment', JSON.stringify({
+          timestamp: Date.now(),
+          planName: plan.name,
+        }));
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isProcessing, plan.name]);
 
   const createPaymentIntent = async () => {
     try {
@@ -168,6 +209,15 @@ const PaymentForm: React.FC<{
     setIsProcessing(true);
     setError(null);
 
+    // Store payment attempt to prevent duplicate charges on refresh
+    const attemptId = `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setPaymentAttemptId(attemptId);
+    sessionStorage.setItem('pending_payment', JSON.stringify({
+      id: attemptId,
+      timestamp: Date.now(),
+      planName: plan.name,
+    }));
+
     try {
       // If we have clientSecret, use PaymentIntent (supports 3D Secure)
       if (clientSecret) {
@@ -191,12 +241,41 @@ const PaymentForm: React.FC<{
         });
 
         if (confirmError) {
-          setError(confirmError.message || 'Payment failed');
+          // Clear pending payment attempt
+          sessionStorage.removeItem('pending_payment');
+          
+          // Handle specific error types
+          let errorMessage = confirmError.message || 'Payment failed';
+          
+          // Check for declined card (4000 0000 0000 0002)
+          if (confirmError.type === 'card_error' || confirmError.code === 'card_declined') {
+            errorMessage = 'Your card was declined. Please check your card details or use a different payment method.';
+          } else if (confirmError.code === 'insufficient_funds') {
+            errorMessage = 'Insufficient funds. Please use a different payment method.';
+          } else if (confirmError.code === 'expired_card') {
+            errorMessage = 'Your card has expired. Please use a different payment method.';
+          } else if (confirmError.code === 'incorrect_cvc') {
+            errorMessage = 'Your card\'s security code is incorrect. Please check and try again.';
+          } else if (confirmError.code === 'processing_error') {
+            errorMessage = 'An error occurred while processing your payment. Please try again.';
+          }
+          
+          setError(errorMessage);
           setIsProcessing(false);
+          
+          // Show notification
+          notifications.error('Payment Failed', {
+            title: 'Payment Declined',
+            description: errorMessage,
+          });
+          
           return;
         }
 
         if (paymentIntent?.status === 'succeeded') {
+          // Clear pending payment attempt
+          sessionStorage.removeItem('pending_payment');
+          
           // Payment succeeded
           handlePaymentSuccess();
           return;
@@ -207,6 +286,9 @@ const PaymentForm: React.FC<{
           const { error: actionError } = await stripe.handleCardAction(clientSecret);
           
           if (actionError) {
+            // Clear pending payment attempt
+            sessionStorage.removeItem('pending_payment');
+            
             setError(actionError.message || '3D Secure authentication failed');
             setIsProcessing(false);
             return;
@@ -216,12 +298,18 @@ const PaymentForm: React.FC<{
           const { error: retryError, paymentIntent: retryPaymentIntent } = await stripe.confirmCardPayment(clientSecret);
           
           if (retryError) {
+            // Clear pending payment attempt
+            sessionStorage.removeItem('pending_payment');
+            
             setError(retryError.message || 'Payment failed after authentication');
             setIsProcessing(false);
             return;
           }
 
           if (retryPaymentIntent?.status === 'succeeded') {
+            // Clear pending payment attempt
+            sessionStorage.removeItem('pending_payment');
+            
             handlePaymentSuccess();
             return;
           }
@@ -255,9 +343,19 @@ const PaymentForm: React.FC<{
         return;
       }
     } catch (err) {
+      // Clear pending payment attempt
+      sessionStorage.removeItem('pending_payment');
+      
       console.error('Payment error:', err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
+      setError(errorMessage);
       setIsProcessing(false);
+      
+      // Show notification
+      notifications.error('Payment Error', {
+        title: 'Payment Failed',
+        description: errorMessage,
+      });
     }
   };
 
@@ -382,12 +480,12 @@ const PaymentForm: React.FC<{
 
       {/* Test Card Info */}
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-xs font-semibold text-blue-900 mb-2">Test Card (Stripe Test Mode):</p>
+        <p className="text-xs font-semibold text-blue-900 mb-2">Test Cards (Stripe Test Mode):</p>
         <div className="text-xs text-blue-700 space-y-1 font-mono">
-          <div>Card: 4242 4242 4242 4242</div>
-          <div>Expiry: Any future date (e.g., 12/34)</div>
-          <div>CVC: Any 3 digits (e.g., 123)</div>
-          <div className="mt-2 text-blue-600">For 3D Secure: Use card 4000 0025 0000 3155</div>
+          <div>✅ Success: 4242 4242 4242 4242</div>
+          <div>❌ Decline: 4000 0000 0000 0002</div>
+          <div>🔐 3D Secure: 4000 0025 0000 3155</div>
+          <div className="mt-2 text-blue-600">Expiry: Any future date (e.g., 12/34) • CVC: Any 3 digits</div>
         </div>
       </div>
 
@@ -466,12 +564,16 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onBack}
+                onClick={() => {
+                  // Clear any pending payment attempts
+                  sessionStorage.removeItem('pending_payment');
+                  onBack();
+                }}
                 className="text-slate-700 hover:text-indigo-600 font-medium"
-                disabled={false}
+                disabled={isProcessing}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+                Back to Pricing
               </Button>
             </div>
             <div className="flex flex-col items-center justify-center mb-4">

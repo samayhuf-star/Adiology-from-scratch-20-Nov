@@ -333,10 +333,25 @@ const App = () => {
         amount={selectedPlan.amount}
         isSubscription={selectedPlan.isSubscription}
         onBack={() => {
+          // Clear any pending payment attempts
+          sessionStorage.removeItem('pending_payment');
+          
+          // Go back to pricing page (homepage with pricing section)
           window.history.pushState({}, '', '/');
           setAppView('home');
+          
+          // Scroll to pricing section after a brief delay
+          setTimeout(() => {
+            const pricingSection = document.getElementById('pricing');
+            if (pricingSection) {
+              pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
         }}
         onSuccess={() => {
+          // Clear pending payment attempts
+          sessionStorage.removeItem('pending_payment');
+          
           window.history.pushState({}, '', `/payment-success?plan=${encodeURIComponent(selectedPlan.name)}&amount=$${selectedPlan.amount.toFixed(2)}${selectedPlan.isSubscription ? '/month' : ''}&subscription=${selectedPlan.isSubscription}&priceId=${encodeURIComponent(selectedPlan.priceId)}`);
           setAppView('payment-success');
         }}
