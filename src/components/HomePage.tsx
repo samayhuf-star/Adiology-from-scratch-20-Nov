@@ -487,12 +487,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 px-4 py-1.5">
               Powerful Features
             </Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-800 mb-4 sm:mb-6">
-              Everything You Need to Succeed
-            </h2>
-            <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-              Built with 20 years of digital marketing expertise, Adiology provides all the tools you need to create winning campaigns.
-            </p>
           </div>
 
           {/* Prebuilt Campaign Structures Section */}
