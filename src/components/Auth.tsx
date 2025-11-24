@@ -92,26 +92,40 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
           return;
         }
 
-        // Create new user
+        // Create new user (not verified yet)
         const newUser = {
           email: trimmedEmail,
           password: trimmedPassword,
           name: name.trim(),
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          verified: false
         };
 
         savedUsers.push(newUser);
         localStorage.setItem('adiology_users', JSON.stringify(savedUsers));
         
-        // Auto-login after signup
-        localStorage.setItem('auth_user', JSON.stringify({ 
-          email: newUser.email, 
-          role: 'user',
-          name: newUser.name
+        // Generate verification token
+        const verificationToken = `verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
+        
+        // Store pending verification
+        localStorage.setItem('pending_verification', JSON.stringify({
+          email: trimmedEmail,
+          token: verificationToken,
+          createdAt: new Date().toISOString(),
         }));
+
+        // In production, send email via API
+        // For now, show the verification URL (for testing)
+        console.log('Verification URL:', verificationUrl);
         
         setIsLoading(false);
-        onLoginSuccess();
+        
+        // Show verification message and redirect to verification page
+        alert(`Account created! Please verify your email.\n\nFor testing, use this link:\n${verificationUrl}\n\n(In production, this would be sent via email)`);
+        
+        // Redirect to verification page
+        window.location.href = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
       }
     }, 1000);
   };

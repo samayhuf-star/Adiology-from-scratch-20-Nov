@@ -27,11 +27,12 @@ import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
 import { HomePage } from './components/HomePage';
 import { Auth } from './components/Auth';
+import { EmailVerification } from './components/EmailVerification';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
 import './utils/createUser'; // Auto-create test user
 
-type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel';
+type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email';
 
 const App = () => {
   const [appView, setAppView] = useState<AppView>('home');
@@ -123,6 +124,12 @@ const App = () => {
   useEffect(() => {
     const path = window.location.pathname;
     
+    // Check if user is accessing /verify-email route
+    if (path === '/verify-email' || path.startsWith('/verify-email')) {
+      setAppView('verify-email');
+      return;
+    }
+    
     // Check if user is accessing /superadmin route
     if (path === '/superadmin' || path.startsWith('/superadmin/')) {
       const authUser = localStorage.getItem('auth_user');
@@ -167,6 +174,12 @@ const App = () => {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
+      
+      if (path === '/verify-email' || path.startsWith('/verify-email')) {
+        setAppView('verify-email');
+        return;
+      }
+      
       if (path === '/superadmin' || path.startsWith('/superadmin/')) {
         const authUser = localStorage.getItem('auth_user');
         if (authUser) {
@@ -204,6 +217,39 @@ const App = () => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Function to redirect to pricing page
+  const handleRedirectToPricing = () => {
+    // Set user as logged in (verified)
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get('email');
+    
+    if (email) {
+      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+      const user = savedUsers.find((u: any) => u.email === email);
+      
+      if (user && user.verified) {
+        localStorage.setItem('auth_user', JSON.stringify({ 
+          email: user.email, 
+          role: 'user',
+          name: user.name,
+          verified: true
+        }));
+        
+        // Redirect to homepage and scroll to pricing
+        window.history.pushState({}, '', '/');
+        setAppView('home');
+        
+        // Scroll to pricing section after a brief delay
+        setTimeout(() => {
+          const pricingSection = document.getElementById('pricing');
+          if (pricingSection) {
+            pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      }
+    }
+  };
 
   // Render based on app view
   if (appView === 'home') {
