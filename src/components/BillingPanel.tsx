@@ -13,6 +13,7 @@ import { Label } from './ui/label';
 import { api } from '../utils/api';
 import { createCheckoutSession, createCustomerPortalSession, PLAN_PRICE_IDS } from '../utils/stripe';
 import { notifications } from '../utils/notifications';
+import { isPaidUser } from '../utils/userPlan';
 
 export const BillingPanel = () => {
     const [info, setInfo] = useState<any>(null);
@@ -452,18 +453,21 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </CardContent>
                     </Card>
 
-                    <div className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
-                        <Zap className="w-8 h-8 mb-4 text-yellow-300" />
-                        <h3 className="font-bold text-lg mb-2">Go Pro Today</h3>
-                        <p className="text-indigo-100 text-sm mb-4">Get access to AI-powered keyword suggestions and advanced analytics.</p>
-                        <Button 
-                            variant="secondary" 
-                            className="w-full bg-white text-indigo-600 hover:bg-indigo-50"
-                            onClick={handleViewPricing}
-                        >
-                            View Pricing
-                        </Button>
-                    </div>
+                    {/* Only show "Go Pro" banner for free users */}
+                    {!isPaidUser() && (
+                        <div className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
+                            <Zap className="w-8 h-8 mb-4 text-yellow-300" />
+                            <h3 className="font-bold text-lg mb-2">Go Pro Today</h3>
+                            <p className="text-indigo-100 text-sm mb-4">Get access to AI-powered keyword suggestions and advanced analytics.</p>
+                            <Button 
+                                variant="secondary" 
+                                className="w-full bg-white text-indigo-600 hover:bg-indigo-50"
+                                onClick={handleViewPricing}
+                            >
+                                View Pricing
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
