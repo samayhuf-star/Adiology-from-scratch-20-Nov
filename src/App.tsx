@@ -29,6 +29,7 @@ import { HomePage } from './components/HomePage';
 import { Auth } from './components/Auth';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
+import './utils/createUser'; // Auto-create test user
 
 type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel';
 

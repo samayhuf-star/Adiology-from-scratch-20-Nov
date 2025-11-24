@@ -1030,4 +1030,617 @@ app.put("/make-server-6757d0ca/admin/feature-flags/:id", async (c) => {
   }
 });
 
+// Create user (Super Admin only)
+app.post("/make-server-6757d0ca/admin/users", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid || !auth.userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await c.req.json();
+    const { email, password, full_name, subscription_plan = "free" } = body;
+
+    if (!email || !password) {
+      return c.json({ error: "Email and password are required" }, 400);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Create auth user
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: full_name || "",
+        subscription_plan,
+      },
+    });
+
+    if (authError) {
+      console.error("Error creating auth user:", authError);
+      return c.json({ error: "Failed to create user: " + authError.message }, 500);
+    }
+
+    // Create user record in users table
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .insert({
+        id: authUser.user.id,
+        email,
+        full_name: full_name || null,
+        subscription_plan,
+        subscription_status: "active",
+        role: "user",
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      console.error("Error creating user record:", userError);
+      // Try to clean up auth user if user record creation fails
+      await supabase.auth.admin.deleteUser(authUser.user.id);
+      return c.json({ error: "Failed to create user record" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "create_user",
+      resource_type: "user",
+      resource_id: authUser.user.id,
+      metadata: { email, subscription_plan },
+    });
+
+    return c.json({ user: userData });
+  } catch (err) {
+    console.error("Create user error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Reset password (Super Admin only)
+app.post("/make-server-6757d0ca/admin/users/:id/reset-password", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid || !auth.userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const userId = c.req.param("id");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get user email first
+    const { data: userData } = await supabase
+      .from("users")
+      .select("email")
+      .eq("id", userId)
+      .single();
+
+    if (!userData) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "recovery",
+      email: userData.email,
+    });
+
+    if (linkError) {
+      console.error("Error generating reset link:", linkError);
+      return c.json({ error: "Failed to generate reset link" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "reset_password",
+      resource_type: "user",
+      resource_id: userId,
+    });
+
+    return c.json({ 
+      link: linkData.properties?.action_link || linkData.properties?.recovery_link,
+      message: "Password reset link generated"
+    });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Support Tickets endpoints
+app.get("/make-server-6757d0ca/admin/support/tickets", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { page = "1", limit = "50", status, priority } = c.req.query();
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 50;
+    const offset = (pageNum - 1) * limitNum;
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    let query = supabase
+      .from("support_tickets")
+      .select("*, users(email, full_name)", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limitNum - 1);
+
+    if (status) query = query.eq("status", status);
+    if (priority) query = query.eq("priority", priority);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error("Error fetching support tickets:", error);
+      return c.json({ error: "Failed to fetch support tickets" }, 500);
+    }
+
+    return c.json({
+      tickets: data || [],
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limitNum),
+      },
+    });
+  } catch (err) {
+    console.error("Get support tickets error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.put("/make-server-6757d0ca/admin/support/tickets/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const ticketId = c.req.param("id");
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const updateData: any = { ...body };
+    if (body.status === "resolved" && !body.resolved_at) {
+      updateData.resolved_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .update(updateData)
+      .eq("id", ticketId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating support ticket:", error);
+      return c.json({ error: "Failed to update ticket" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "update_support_ticket",
+      resource_type: "support_ticket",
+      resource_id: ticketId,
+      metadata: { changes: body },
+    });
+
+    return c.json({ ticket: data });
+  } catch (err) {
+    console.error("Update support ticket error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Announcements endpoints
+app.get("/make-server-6757d0ca/admin/announcements", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("announcements")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching announcements:", error);
+      return c.json({ error: "Failed to fetch announcements" }, 500);
+    }
+
+    return c.json({ announcements: data || [] });
+  } catch (err) {
+    console.error("Get announcements error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.post("/make-server-6757d0ca/admin/announcements", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("announcements")
+      .insert({
+        ...body,
+        created_by: auth.userId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating announcement:", error);
+      return c.json({ error: "Failed to create announcement" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "create_announcement",
+      resource_type: "announcement",
+      resource_id: data.id,
+    });
+
+    return c.json({ announcement: data });
+  } catch (err) {
+    console.error("Create announcement error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.put("/make-server-6757d0ca/admin/announcements/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const announcementId = c.req.param("id");
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("announcements")
+      .update(body)
+      .eq("id", announcementId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating announcement:", error);
+      return c.json({ error: "Failed to update announcement" }, 500);
+    }
+
+    return c.json({ announcement: data });
+  } catch (err) {
+    console.error("Update announcement error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.delete("/make-server-6757d0ca/admin/announcements/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const announcementId = c.req.param("id");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { error } = await supabase
+      .from("announcements")
+      .delete()
+      .eq("id", announcementId);
+
+    if (error) {
+      console.error("Error deleting announcement:", error);
+      return c.json({ error: "Failed to delete announcement" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "delete_announcement",
+      resource_type: "announcement",
+      resource_id: announcementId,
+    });
+
+    return c.json({ success: true });
+  } catch (err) {
+    console.error("Delete announcement error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Email Templates endpoints
+app.get("/make-server-6757d0ca/admin/email-templates", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("email_templates")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching email templates:", error);
+      return c.json({ error: "Failed to fetch email templates" }, 500);
+    }
+
+    return c.json({ templates: data || [] });
+  } catch (err) {
+    console.error("Get email templates error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.post("/make-server-6757d0ca/admin/email-templates", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("email_templates")
+      .insert({
+        ...body,
+        created_by: auth.userId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating email template:", error);
+      return c.json({ error: "Failed to create email template" }, 500);
+    }
+
+    return c.json({ template: data });
+  } catch (err) {
+    console.error("Create email template error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.put("/make-server-6757d0ca/admin/email-templates/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const templateId = c.req.param("id");
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("email_templates")
+      .update(body)
+      .eq("id", templateId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating email template:", error);
+      return c.json({ error: "Failed to update email template" }, 500);
+    }
+
+    return c.json({ template: data });
+  } catch (err) {
+    console.error("Update email template error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Configuration endpoints
+app.get("/make-server-6757d0ca/admin/config", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { category } = c.req.query();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    let query = supabase.from("config_settings").select("*");
+
+    if (category) {
+      query = query.eq("category", category);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching config:", error);
+      return c.json({ error: "Failed to fetch config" }, 500);
+    }
+
+    return c.json({ settings: data || [] });
+  } catch (err) {
+    console.error("Get config error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.put("/make-server-6757d0ca/admin/config/:key", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const configKey = c.req.param("key");
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("config_settings")
+      .update({
+        ...body,
+        updated_by: auth.userId,
+      })
+      .eq("key", configKey)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating config:", error);
+      return c.json({ error: "Failed to update config" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "update_config",
+      resource_type: "config",
+      resource_id: configKey,
+      metadata: { changes: body },
+    });
+
+    return c.json({ setting: data });
+  } catch (err) {
+    console.error("Update config error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Pricing Plans endpoints
+app.get("/make-server-6757d0ca/admin/pricing-plans", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("pricing_plans")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching pricing plans:", error);
+      return c.json({ error: "Failed to fetch pricing plans" }, 500);
+    }
+
+    return c.json({ plans: data || [] });
+  } catch (err) {
+    console.error("Get pricing plans error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+app.put("/make-server-6757d0ca/admin/pricing-plans/:id", async (c) => {
+  try {
+    const auth = await verifySuperAdmin(c);
+    if (!auth.valid) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const planId = c.req.param("id");
+    const body = await c.req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = await import("npm:@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data, error } = await supabase
+      .from("pricing_plans")
+      .update(body)
+      .eq("id", planId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating pricing plan:", error);
+      return c.json({ error: "Failed to update pricing plan" }, 500);
+    }
+
+    // Log audit
+    await supabase.from("audit_logs").insert({
+      user_id: auth.userId,
+      action: "update_pricing_plan",
+      resource_type: "pricing_plan",
+      resource_id: planId,
+      metadata: { changes: body },
+    });
+
+    return c.json({ plan: data });
+  } catch (err) {
+    console.error("Update pricing plan error:", err);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

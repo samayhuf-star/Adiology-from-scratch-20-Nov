@@ -216,5 +216,119 @@ export const adminApi = {
       body: JSON.stringify(data),
     });
   },
+
+  // Support Tickets
+  async getSupportTickets(params?: { page?: number; limit?: number; status?: string; priority?: string }) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.priority) queryParams.append('priority', params.priority);
+
+      return await authenticatedFetch(`/admin/support/tickets?${queryParams}`);
+    } catch (error) {
+      console.error('Error fetching support tickets:', error);
+      return { tickets: [], pagination: { total: 0, totalPages: 0 } };
+    }
+  },
+
+  async updateSupportTicket(id: string, data: any) {
+    return authenticatedFetch(`/admin/support/tickets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Announcements
+  async getAnnouncements() {
+    try {
+      return await authenticatedFetch('/admin/announcements');
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+      return { announcements: [] };
+    }
+  },
+
+  async createAnnouncement(data: any) {
+    return authenticatedFetch('/admin/announcements', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateAnnouncement(id: string, data: any) {
+    return authenticatedFetch(`/admin/announcements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteAnnouncement(id: string) {
+    return authenticatedFetch(`/admin/announcements/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Email Templates
+  async getEmailTemplates() {
+    try {
+      return await authenticatedFetch('/admin/email-templates');
+    } catch (error) {
+      console.error('Error fetching email templates:', error);
+      return { templates: [] };
+    }
+  },
+
+  async createEmailTemplate(data: any) {
+    return authenticatedFetch('/admin/email-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateEmailTemplate(id: string, data: any) {
+    return authenticatedFetch(`/admin/email-templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Configuration
+  async getConfig(category?: string) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (category) queryParams.append('category', category);
+
+      return await authenticatedFetch(`/admin/config?${queryParams}`);
+    } catch (error) {
+      console.error('Error fetching config:', error);
+      return { settings: [] };
+    }
+  },
+
+  async updateConfig(key: string, data: any) {
+    return authenticatedFetch(`/admin/config/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Pricing Plans
+  async getPricingPlans() {
+    try {
+      return await authenticatedFetch('/admin/pricing-plans');
+    } catch (error) {
+      console.error('Error fetching pricing plans:', error);
+      return { plans: [] };
+    }
+  },
+
+  async updatePricingPlan(id: string, data: any) {
+    return authenticatedFetch(`/admin/pricing-plans/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
