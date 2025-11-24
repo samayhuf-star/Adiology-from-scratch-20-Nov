@@ -349,8 +349,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                   Sign up is currently disabled. Please contact support for access.
                 </div>
               ) : (
-              {!isForgotPassword && (
-                <div className="text-center text-sm text-slate-700">
+                !isForgotPassword && (
+                  <div className="text-center text-sm text-slate-700">
                   {isLogin ? (
                     <>
                       Don't have an account?{' '}
