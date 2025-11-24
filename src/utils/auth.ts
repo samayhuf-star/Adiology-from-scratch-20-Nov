@@ -20,6 +20,7 @@ export async function getCurrentAuthUser(): Promise<User | null> {
 
 /**
  * Get current user profile from users table
+ * Auto-creates profile if it doesn't exist
  */
 export async function getCurrentUserProfile() {
   try {
@@ -31,6 +32,22 @@ export async function getCurrentUserProfile() {
       .select('*')
       .eq('id', user.id)
       .single();
+
+    // If profile doesn't exist, create it
+    if (error && error.code === 'PGRST116') {
+      console.log('User profile not found, creating one...');
+      try {
+        const newProfile = await createUserProfile(
+          user.id,
+          user.email || '',
+          user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+        );
+        return newProfile;
+      } catch (createError) {
+        console.error('Error creating user profile:', createError);
+        return null;
+      }
+    }
 
     if (error) {
       console.error('Error fetching user profile:', error);
@@ -50,11 +67,16 @@ export async function getCurrentUserProfile() {
 export async function createUserProfile(userId: string, email: string, fullName: string) {
   try {
     // Check if user profile already exists
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: checkError } = await supabase
       .from('users')
       .select('id')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+
+    // If error is not "not found", log it but continue
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.warn('Error checking for existing user:', checkError);
+    }
 
     if (existingUser) {
       // Update existing profile
@@ -86,7 +108,21 @@ export async function createUserProfile(userId: string, email: string, fullName:
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If it's a duplicate key error, try to fetch the existing profile
+        if (error.code === '23505') {
+          console.log('Profile already exists, fetching it...');
+          const { data: existingData, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+          
+          if (fetchError) throw fetchError;
+          return existingData;
+        }
+        throw error;
+      }
       return data;
     }
   } catch (error) {

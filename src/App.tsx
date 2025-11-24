@@ -189,8 +189,17 @@ const App = () => {
       if (session?.user) {
         const userProfile = await getCurrentUserProfile();
         setUser(userProfile);
+        
+        // If user just signed in and we're on auth view, navigate to user view
+        if (event === 'SIGNED_IN' && appView === 'auth') {
+          setAppView('user');
+        }
       } else {
         setUser(null);
+        // If user signed out and we're on user view, go to home
+        if (event === 'SIGNED_OUT' && appView === 'user') {
+          setAppView('home');
+        }
       }
 
       // Handle password recovery
@@ -478,17 +487,29 @@ const App = () => {
         onLoginSuccess={async () => {
           try {
             // Wait a moment for auth state to propagate
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Refresh user profile after login
+            // Refresh user profile after login (will auto-create if missing)
             const userProfile = await getCurrentUserProfile();
-            setUser(userProfile);
+            
+            if (userProfile) {
+              setUser(userProfile);
+              console.log('✅ User profile loaded:', userProfile);
+            } else {
+              console.warn('⚠️ User profile is null, but proceeding with login');
+              // Try to get auth user at least
+              const { data: { user: authUser } } = await supabase.auth.getUser();
+              if (authUser) {
+                setUser({ id: authUser.id, email: authUser.email });
+              }
+            }
             
             // Directly go to dashboard - no admin/user selection
             setAppView('user');
           } catch (error) {
             console.error('Error in onLoginSuccess:', error);
             // Still navigate to user view even if profile fetch fails
+            // The auth state change listener will handle profile creation
             setAppView('user');
           }
         }}
