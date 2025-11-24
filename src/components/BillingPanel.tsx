@@ -176,6 +176,44 @@ export const BillingPanel = () => {
         setShowPricingDialog(true);
     };
 
+    // Validate card form
+    const isCardFormValid = (): boolean => {
+        // Check if all fields are filled
+        if (!cardNumber.trim() || !cardName.trim() || !cardExpiry.trim() || !cardCVV.trim()) {
+            return false;
+        }
+
+        // Check if there are any errors
+        if (Object.keys(cardErrors).length > 0 && Object.values(cardErrors).some(err => err !== undefined && err !== '')) {
+            return false;
+        }
+
+        // Basic validation
+        const cardNumberClean = cardNumber.replace(/\s/g, '');
+        if (cardNumberClean.length < 13 || cardNumberClean.length > 19) {
+            return false;
+        }
+
+        // Validate expiry date format (MM/YY)
+        const expiryMatch = cardExpiry.match(/^(\d{2})\/(\d{2})$/);
+        if (!expiryMatch) {
+            return false;
+        }
+
+        const month = parseInt(expiryMatch[1], 10);
+        const year = parseInt(expiryMatch[2], 10);
+        if (month < 1 || month > 12) {
+            return false;
+        }
+
+        // Validate CVV (3-4 digits)
+        if (cardCVV.length < 3 || cardCVV.length > 4) {
+            return false;
+        }
+
+        return true;
+    };
+
     const handleDownloadInvoice = async (invoiceId: string, invoiceDate: string, invoiceAmount: string) => {
         try {
             // Try to fetch invoice PDF from API using fetch directly for blob response

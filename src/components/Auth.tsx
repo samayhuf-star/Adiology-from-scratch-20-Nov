@@ -165,7 +165,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 ? 'Sign in to your Adiology account' 
                 : SIGNUP_DISABLED 
                   ? 'New signups are currently disabled until production launch'
-                  : 'Start building winning campaigns today'}
+                : 'Start building winning campaigns today'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -296,37 +296,37 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                   Sign up is currently disabled. Please contact support for access.
                 </div>
               ) : (
-                <div className="text-center text-sm text-slate-700">
-                  {isLogin ? (
-                    <>
-                      Don't have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsLogin(false);
-                          setError('');
-                        }}
-                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                      >
-                        Sign up
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsLogin(true);
-                          setError('');
-                        }}
-                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                      >
-                        Sign in
-                      </button>
-                    </>
-                  )}
-                </div>
+              <div className="text-center text-sm text-slate-700">
+                {isLogin ? (
+                  <>
+                    Don't have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLogin(false);
+                        setError('');
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                    >
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLogin(true);
+                        setError('');
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                    >
+                      Sign in
+                    </button>
+                  </>
+                )}
+              </div>
               )}
             </form>
 

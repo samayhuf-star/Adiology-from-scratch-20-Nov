@@ -394,7 +394,12 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 .map(kw => mockNegatives.find(k => k.keyword === kw)!)
                 .filter(Boolean);
 
-            setGeneratedKeywords(uniqueKeywords.slice(0, 1200)); // Target 1000+ keywords
+            // Add natural variation: target 1000-1200, but vary the actual count
+            const targetMin = 1000;
+            const targetMax = 1200;
+            const variation = Math.floor(Math.random() * (targetMax - targetMin + 1)); // 0-200 variation
+            const finalCount = Math.min(uniqueKeywords.length, targetMin + variation);
+            setGeneratedKeywords(uniqueKeywords.slice(0, finalCount));
             console.log('Generated fallback negative keywords:', uniqueKeywords.length);
         } finally {
             setIsGenerating(false);

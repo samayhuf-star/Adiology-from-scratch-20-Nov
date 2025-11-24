@@ -6,6 +6,8 @@
  * with Sentry, LogRocket, or other error tracking services.
  */
 
+import { productionLogger } from './productionLogger';
+
 interface ErrorContext {
   userId?: string;
   module?: string;
@@ -73,8 +75,15 @@ class ErrorTracker {
       timestamp,
     });
 
-    // Use production logger
-    productionLogger.trackError(errorObj, context);
+    // Use production logger (if available)
+    try {
+      if (typeof productionLogger !== 'undefined' && productionLogger.trackError) {
+        productionLogger.trackError(errorObj, context);
+      }
+    } catch (e) {
+      // Production logger not available, continue without it
+      console.warn('Production logger not available:', e);
+    }
 
     // TODO: Integrate with Sentry
     // if (this.sentryDsn) {
