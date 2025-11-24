@@ -45,14 +45,51 @@ export const BillingPanel = () => {
                     const data = await api.get('/billing/info');
                     setInfo(data);
                 } catch (apiError) {
-                    // Fallback to mock data if API fails
-                    console.log('ℹ️ Using mock billing data (API unavailable)');
+                    // Fallback: Read from localStorage user data
+                    console.log('ℹ️ Using localStorage billing data (API unavailable)');
+                    
+                    // Get user from auth_user
+                    const authUser = localStorage.getItem('auth_user');
+                    const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+                    
+                    let userPlan = "Free";
+                    let nextBillingDate = null;
+                    let subscriptionStatus = "inactive";
+                    
+                    if (authUser) {
+                        try {
+                            const user = JSON.parse(authUser);
+                            const userData = savedUsers.find((u: any) => u.email === user.email);
+                            
+                            if (userData && userData.plan) {
+                                userPlan = userData.plan;
+                                subscriptionStatus = userData.subscriptionStatus || "active";
+                                nextBillingDate = userData.nextBillingDate || null;
+                            } else if (user.plan) {
+                                // Check auth_user object itself
+                                userPlan = user.plan;
+                                subscriptionStatus = user.subscriptionStatus || "active";
+                                nextBillingDate = user.nextBillingDate || null;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing user data:', e);
+                        }
+                    }
+                    
+                    // Calculate next billing date if subscription and not set
+                    if (nextBillingDate === null && (userPlan.includes('Monthly') || userPlan.includes('month'))) {
+                        const nextDate = new Date();
+                        nextDate.setMonth(nextDate.getMonth() + 1);
+                        nextBillingDate = nextDate.toISOString().split('T')[0];
+                    }
+                    
                     setInfo({
-                        plan: "Free",
-                        nextBillingDate: "2025-12-01",
+                        plan: userPlan,
+                        nextBillingDate: nextBillingDate || (userPlan.includes('Lifetime') ? null : "2025-12-01"),
+                        subscriptionStatus: subscriptionStatus,
                         invoices: [
-                            { id: "inv_1", date: "2025-11-01", amount: "$0.00", status: "Paid" },
-                            { id: "inv_2", date: "2025-10-01", amount: "$0.00", status: "Paid" }
+                            { id: "inv_1", date: new Date().toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" },
+                            { id: "inv_2", date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" }
                         ]
                     });
                 }
@@ -203,15 +240,48 @@ Generated on ${new Date().toLocaleDateString()}`;
         );
     }
 
-    // Ensure we have info data (fallback to default if null)
-    const billingInfo = info || {
-        plan: "Free",
-        nextBillingDate: "2025-12-01",
-        invoices: [
-            { id: "inv_1", date: "2025-11-01", amount: "$0.00", status: "Paid" },
-            { id: "inv_2", date: "2025-10-01", amount: "$0.00", status: "Paid" }
-        ]
-    };
+    // Ensure we have info data (fallback to localStorage if null)
+    const billingInfo = info || (() => {
+        // Read from localStorage user data
+        const authUser = localStorage.getItem('auth_user');
+        const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+        
+        let userPlan = "Free";
+        let nextBillingDate = null;
+        
+        if (authUser) {
+            try {
+                const user = JSON.parse(authUser);
+                const userData = savedUsers.find((u: any) => u.email === user.email);
+                
+                if (userData && userData.plan) {
+                    userPlan = userData.plan;
+                    nextBillingDate = userData.nextBillingDate || null;
+                } else if (user.plan) {
+                    userPlan = user.plan;
+                    nextBillingDate = user.nextBillingDate || null;
+                }
+            } catch (e) {
+                console.error('Error parsing user data:', e);
+            }
+        }
+        
+        // Calculate next billing date if subscription and not set
+        if (nextBillingDate === null && (userPlan.includes('Monthly') || userPlan.includes('month'))) {
+            const nextDate = new Date();
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            nextBillingDate = nextDate.toISOString().split('T')[0];
+        }
+        
+        return {
+            plan: userPlan,
+            nextBillingDate: nextBillingDate || (userPlan.includes('Lifetime') ? null : "2025-12-01"),
+            invoices: [
+                { id: "inv_1", date: new Date().toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" },
+                { id: "inv_2", date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" }
+            ]
+        };
+    })();
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -247,7 +317,16 @@ Generated on ${new Date().toLocaleDateString()}`;
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
                                 <div className="text-sm text-slate-500 mb-1">Next Billing Date</div>
                                 <div className="text-lg font-semibold flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-indigo-500"/> {billingInfo.nextBillingDate}
+                                    <Calendar className="w-4 h-4 text-indigo-500"/> 
+                                    {billingInfo.nextBillingDate 
+                                        ? new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', { 
+                                            month: 'short', 
+                                            day: 'numeric', 
+                                            year: 'numeric' 
+                                          })
+                                        : billingInfo.plan.includes('Lifetime') 
+                                          ? 'Never (Lifetime)' 
+                                          : 'N/A'}
                                 </div>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">

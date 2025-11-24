@@ -271,10 +271,32 @@ const PaymentForm: React.FC<{
         const userIndex = savedUsers.findIndex((u: any) => u.email === user.email);
         
         if (userIndex !== -1) {
+          // Update user plan in savedUsers
           savedUsers[userIndex].plan = plan.name;
           savedUsers[userIndex].subscriptionStatus = 'active';
           savedUsers[userIndex].subscribedAt = new Date().toISOString();
+          
+          // Calculate next billing date for subscriptions
+          if (plan.isSubscription) {
+            const nextBillingDate = new Date();
+            nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+            savedUsers[userIndex].nextBillingDate = nextBillingDate.toISOString();
+          } else {
+            // Lifetime plans don't have next billing date
+            savedUsers[userIndex].nextBillingDate = null;
+          }
+          
           localStorage.setItem('adiology_users', JSON.stringify(savedUsers));
+          
+          // Also update auth_user object to reflect plan
+          const updatedAuthUser = {
+            ...user,
+            plan: plan.name,
+            subscriptionStatus: 'active',
+            subscribedAt: new Date().toISOString(),
+            nextBillingDate: plan.isSubscription ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
+          };
+          localStorage.setItem('auth_user', JSON.stringify(updatedAuthUser));
         }
       }
     } catch (e) {

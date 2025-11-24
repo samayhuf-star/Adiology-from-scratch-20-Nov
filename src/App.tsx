@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './components/ui/dropdown-menu';
+import { Badge } from './components/ui/badge';
 import { CampaignBuilder } from './components/CampaignBuilder';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
 import { CSVValidator } from './components/CSVValidator';
@@ -643,15 +644,84 @@ const App = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium shadow-lg hover:shadow-xl transition-all cursor-pointer">
-              JD
+                  {(() => {
+                    const authUser = localStorage.getItem('auth_user');
+                    if (authUser) {
+                      try {
+                        const user = JSON.parse(authUser);
+                        const name = user.name || user.email || 'U';
+                        return name.charAt(0).toUpperCase() + (name.split(' ')[1]?.charAt(0) || '');
+                      } catch (e) {
+                        return 'U';
+                      }
+                    }
+                    return 'U';
+                  })()}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">John Doe</p>
-                    <p className="text-xs text-slate-500">john.doe@example.com</p>
-            </div>
+                  <div className="flex flex-col space-y-2">
+                    {(() => {
+                      const authUser = localStorage.getItem('auth_user');
+                      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+                      let userName = 'User';
+                      let userEmail = 'user@example.com';
+                      let userPlan = 'Free';
+                      let nextBillingDate = null;
+                      
+                      if (authUser) {
+                        try {
+                          const user = JSON.parse(authUser);
+                          userName = user.name || user.email?.split('@')[0] || 'User';
+                          userEmail = user.email || 'user@example.com';
+                          
+                          // Get plan from user data
+                          const userData = savedUsers.find((u: any) => u.email === user.email);
+                          if (userData && userData.plan) {
+                            userPlan = userData.plan;
+                            nextBillingDate = userData.nextBillingDate;
+                          } else if (user.plan) {
+                            userPlan = user.plan;
+                            nextBillingDate = user.nextBillingDate;
+                          }
+                        } catch (e) {
+                          console.error('Error parsing user data:', e);
+                        }
+                      }
+                      
+                      return (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">{userName}</p>
+                              <p className="text-xs text-slate-500">{userEmail}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+                            <div>
+                              <p className="text-xs text-slate-500">Plan</p>
+                              <Badge className={`mt-1 ${
+                                userPlan === 'Free' ? 'bg-slate-100 text-slate-700' :
+                                userPlan.includes('Lifetime') ? 'bg-indigo-100 text-indigo-700' :
+                                'bg-purple-100 text-purple-700'
+                              }`}>
+                                {userPlan}
+                              </Badge>
+                            </div>
+                            {nextBillingDate && (
+                              <div className="text-right">
+                                <p className="text-xs text-slate-500">Next billing</p>
+                                <p className="text-xs font-medium text-slate-700 mt-1">
+                                  {new Date(nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setActiveTab('settings')}>
