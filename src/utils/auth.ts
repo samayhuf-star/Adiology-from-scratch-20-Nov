@@ -141,25 +141,38 @@ export async function signInWithEmail(email: string, password: string) {
       password,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase auth error:', error);
+      throw error;
+    }
 
-    // Update last_login_at in user profile
+    if (!data || !data.user) {
+      throw new Error('Authentication failed: No user data returned');
+    }
+
+    // Update last_login_at in user profile (non-blocking)
     if (data.user) {
-      try {
-        await supabase
-          .from('users')
-          .update({ last_login_at: new Date().toISOString() })
-          .eq('id', data.user.id);
-      } catch (profileError) {
-        console.error('Error updating last login:', profileError);
-        // Don't throw - login was successful
-      }
+      supabase
+        .from('users')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', data.user.id)
+        .then(() => {
+          console.log('Last login updated successfully');
+        })
+        .catch((profileError) => {
+          console.warn('Error updating last login (non-critical):', profileError);
+          // Don't throw - login was successful, profile update is optional
+        });
     }
 
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing in:', error);
-    throw error;
+    // Re-throw with a more user-friendly message if needed
+    if (error?.message) {
+      throw error;
+    }
+    throw new Error(error?.message || 'Failed to sign in. Please try again.');
   }
 }
 

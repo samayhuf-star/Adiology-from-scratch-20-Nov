@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ import { PaymentSuccess } from './components/PaymentSuccess';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
+import { CampaignPresets } from './components/CampaignPresets';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import './utils/createUser'; // Auto-create test user
@@ -475,12 +476,21 @@ const App = () => {
     return (
       <Auth
         onLoginSuccess={async () => {
-          // Refresh user profile after login
-          const userProfile = await getCurrentUserProfile();
-          setUser(userProfile);
-          
-          // Directly go to dashboard - no admin/user selection
-          setAppView('user');
+          try {
+            // Wait a moment for auth state to propagate
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Refresh user profile after login
+            const userProfile = await getCurrentUserProfile();
+            setUser(userProfile);
+            
+            // Directly go to dashboard - no admin/user selection
+            setAppView('user');
+          } catch (error) {
+            console.error('Error in onLoginSuccess:', error);
+            // Still navigate to user view even if profile fetch fails
+            setAppView('user');
+          }
         }}
         onBackToHome={() => setAppView('home')}
       />
@@ -545,6 +555,7 @@ const App = () => {
   // Default: User view (protected)
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
     { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },
     { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
     { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
@@ -563,6 +574,11 @@ const App = () => {
     // This is a simplification; for robust app, manage state more carefully
     
     switch (activeTab) {
+      case 'campaign-presets':
+        return <CampaignPresets onLoadPreset={(presetData) => {
+          setHistoryData(presetData);
+          setActiveTab('campaign-builder');
+        }} />;
       case 'campaign-builder':
         return <CampaignBuilder initialData={activeTab === 'campaign-builder' ? historyData : null} />;
       case 'builder-2':

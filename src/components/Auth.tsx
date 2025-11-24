@@ -58,18 +58,24 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
       if (isLogin) {
         // Login with Supabase Auth
         try {
-          await signInWithEmail(trimmedEmail, trimmedPassword);
+          const result = await signInWithEmail(trimmedEmail, trimmedPassword);
+          
+          // Wait a bit for auth state to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           notifications.success('Welcome back!', {
             title: 'Login Successful',
           });
           setIsLoading(false);
-          onLoginSuccess();
+          
+          // Call onLoginSuccess and await it if it's async
+          await onLoginSuccess();
         } catch (err: any) {
           let errorMessage = 'Invalid email or password. Please try again.';
           
-          if (err.message.includes('Invalid login credentials')) {
+          if (err.message?.includes('Invalid login credentials') || err.message?.includes('invalid_credentials')) {
             errorMessage = 'Invalid email or password. Please try again.';
-          } else if (err.message.includes('Email not confirmed')) {
+          } else if (err.message?.includes('Email not confirmed') || err.message?.includes('email_not_confirmed')) {
             errorMessage = 'Please verify your email before signing in. Check your inbox for the verification link.';
           } else if (err.message) {
             errorMessage = err.message;
