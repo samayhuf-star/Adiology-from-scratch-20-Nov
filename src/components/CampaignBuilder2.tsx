@@ -30,6 +30,433 @@ import { exportCampaignToCSV } from '../utils/csvExporter';
 import { api } from '../utils/api';
 import { projectId } from '../utils/supabase/info';
 
+// Geo Targeting Constants
+const COUNTRIES = [
+    "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "India"
+];
+
+// Top cities by income per capita (ranked highest to lowest)
+const TOP_CITIES_BY_INCOME: Record<string, string[]> = {
+    "United States": [
+        "San Francisco, CA", "San Jose, CA", "Washington, DC", "Seattle, WA", "Boston, MA",
+        "Arlington, VA", "Denver, CO", "Austin, TX", "New York, NY", "Minneapolis, MN",
+        "Portland, OR", "Raleigh, NC", "Atlanta, GA", "Charlotte, NC", "San Diego, CA",
+        "Dallas, TX", "Nashville, TN", "Phoenix, AZ", "Miami, FL", "Los Angeles, CA",
+        "Chicago, IL", "Houston, TX", "Philadelphia, PA", "San Antonio, TX", "Jacksonville, FL",
+        "Columbus, OH", "Fort Worth, TX", "Indianapolis, IN", "Las Vegas, NV", "Memphis, TN",
+        "Louisville, KY", "Detroit, MI", "Oklahoma City, OK", "Milwaukee, WI", "Tucson, AZ",
+        "Fresno, CA", "Sacramento, CA", "Kansas City, MO", "Mesa, AZ", "Virginia Beach, VA",
+        "Omaha, NE", "Oakland, CA", "Tulsa, OK", "Tampa, FL", "New Orleans, LA",
+        "Wichita, KS", "Cleveland, OH", "Bakersfield, CA", "Aurora, CO", "Honolulu, HI",
+        "Anaheim, CA", "Santa Ana, CA", "St. Louis, MO", "Corpus Christi, TX", "Riverside, CA",
+        "Lexington, KY", "Pittsburgh, PA", "Anchorage, AK", "Stockton, CA", "Cincinnati, OH",
+        "St. Paul, MN", "Toledo, OH", "Greensboro, NC", "Newark, NJ", "Plano, TX",
+        "Henderson, NV", "Lincoln, NE", "Buffalo, NY", "Jersey City, NJ", "Chula Vista, CA",
+        "Fort Wayne, IN", "Orlando, FL", "St. Petersburg, FL", "Chandler, AZ", "Laredo, TX",
+        "Norfolk, VA", "Durham, NC", "Madison, WI", "Lubbock, TX", "Irvine, CA",
+        "Winston-Salem, NC", "Glendale, AZ", "Garland, TX", "Hialeah, FL", "Reno, NV",
+        "Chesapeake, VA", "Gilbert, AZ", "Baton Rouge, LA", "Irving, TX", "Scottsdale, AZ",
+        "North Las Vegas, NV", "Fremont, CA", "Boise, ID", "Richmond, VA", "Spokane, WA",
+        "Birmingham, AL", "Rochester, NY", "Des Moines, IA", "Modesto, CA", "Fayetteville, NC",
+        "Tacoma, WA", "Oxnard, CA", "Fontana, CA", "Columbus, GA", "Montgomery, AL",
+        "Moreno Valley, CA", "Shreveport, LA", "Aurora, IL", "Yonkers, NY", "Akron, OH",
+        "Huntington Beach, CA", "Little Rock, AR", "Amarillo, TX", "Glendale, CA", "Grand Rapids, MI",
+        "Salt Lake City, UT", "Tallahassee, FL", "Huntsville, AL", "Grand Prairie, TX", "Knoxville, TN",
+        "Worcester, MA", "Newport News, VA", "Brownsville, TX", "Overland Park, KS", "Santa Clarita, CA",
+        "Providence, RI", "Garden Grove, CA", "Chattanooga, TN", "Oceanside, CA", "Jackson, MS",
+        "Fort Lauderdale, FL", "Santa Rosa, CA", "Rancho Cucamonga, CA", "Port St. Lucie, FL", "Tempe, AZ",
+        "Ontario, CA", "Vancouver, WA", "Sioux Falls, SD", "Springfield, MO", "Peoria, AZ",
+        "Pembroke Pines, FL", "Elk Grove, CA", "Salem, OR", "Lancaster, CA", "Corona, CA",
+        "Eugene, OR", "Palmdale, CA", "Salinas, CA", "Springfield, MA", "Pasadena, TX",
+        "Fort Collins, CO", "Hayward, CA", "Pomona, CA", "Cary, NC", "Rockford, IL",
+        "Alexandria, VA", "Escondido, CA", "McKinney, TX", "Kansas City, KS", "Joliet, IL",
+        "Sunnyvale, CA", "Torrance, CA", "Bridgeport, CT", "Lakewood, CO", "Hollywood, FL",
+        "Paterson, NJ", "Naperville, IL", "Syracuse, NY", "Mesquite, TX", "Dayton, OH",
+        "Savannah, GA", "Clarksville, TN", "Orange, CA", "Pasadena, CA", "Fullerton, CA",
+        "Killeen, TX", "Frisco, TX", "Hampton, VA", "McAllen, TX", "Warren, MI",
+        "Bellevue, WA", "West Valley City, UT", "Columbia, SC", "Olathe, KS", "Sterling Heights, MI",
+        "New Haven, CT", "Miramar, FL", "Waco, TX", "Thousand Oaks, CA", "Cedar Rapids, IA",
+        "Charleston, SC", "Visalia, CA", "Topeka, KS", "Elizabeth, NJ", "Gainesville, FL",
+        "Thornton, CO", "Roseville, CA", "Carrollton, TX", "Coral Springs, FL", "Stamford, CT",
+        "Simi Valley, CA", "Concord, CA", "Hartford, CT", "Kent, WA", "Lafayette, LA",
+        "Midland, TX", "Surprise, AZ", "Denton, TX", "Victorville, CA", "Evansville, IN",
+        "Santa Clara, CA", "Abilene, TX", "Athens, GA", "Vallejo, CA", "Allentown, PA",
+        "Norman, OK", "Beaumont, TX", "Independence, MO", "Murfreesboro, TN", "Ann Arbor, MI",
+        "Berkeley, CA", "Provo, UT", "El Monte, CA", "Lansing, MI", "Fargo, ND",
+        "Downey, CA", "Costa Mesa, CA", "Wilmington, NC", "Arvada, CO", "Inglewood, CA",
+        "Miami Gardens, FL", "Carlsbad, CA", "Westminster, CO", "Rochester, MN", "Odessa, TX",
+        "Manchester, NH", "Elgin, IL", "West Jordan, UT", "Round Rock, TX", "Clearwater, FL",
+        "Waterbury, CT", "Gresham, OR", "Fairfield, CA", "Billings, MT", "Lowell, MA",
+        "San Buenaventura, CA", "Pueblo, CO", "High Point, NC", "West Covina, CA", "Richmond, CA",
+        "Murrieta, CA", "Cambridge, MA", "Antioch, CA", "Temecula, CA", "Norwalk, CA",
+        "Centennial, CO", "Everett, WA", "Palm Bay, FL", "Wichita Falls, TX", "Green Bay, WI",
+        "Daly City, CA", "Burbank, CA", "Richardson, TX", "Pompano Beach, FL", "North Charleston, SC",
+        "Broken Arrow, OK", "Boulder, CO", "West Palm Beach, FL", "Santa Maria, CA", "El Cajon, CA",
+        "Davenport, IA", "Rialto, CA", "Las Cruces, NM", "San Mateo, CA", "Lewisville, TX",
+        "South Bend, IN", "Lakeland, FL", "Erie, PA", "Tyler, TX", "Pearland, TX",
+        "College Station, TX", "Kenosha, WI", "Sandy Springs, GA", "Clovis, CA", "Flint, MI",
+        "Roanoke, VA", "Albany, NY", "Jurupa Valley, CA", "Compton, CA", "San Angelo, TX",
+        "Hillsboro, OR", "Lawton, OK", "Renton, WA", "Vista, CA", "Davie, FL",
+        "Greeley, CO", "Mission Viejo, CA", "Portsmouth, VA", "Dearborn, MI", "South Gate, CA",
+        "Tuscaloosa, AL", "Livonia, MI", "New Bedford, MA", "Vacaville, CA", "Brockton, MA",
+        "Roswell, GA", "Beaverton, OR", "Quincy, MA", "Sparks, NV", "Yakima, WA",
+        "Lee's Summit, MO", "Federal Way, WA", "Carson, CA", "Santa Monica, CA", "Hesperia, CA",
+        "Allen, TX", "Rio Rancho, NM", "Yuma, AZ", "Westminster, CA", "Orem, UT",
+        "Lynn, MA", "Redding, CA", "Spokane Valley, WA", "Miami Beach, FL", "League City, TX",
+        "Lawrence, KS", "Santa Barbara, CA", "Plantation, FL", "Sandy, UT", "Bend, OR",
+        "Hillsboro, OR", "Southaven, MS", "Boca Raton, FL", "Cape Coral, FL", "Boulder, CO",
+        "Greenville, SC", "Waco, TX", "Dothan, AL", "San Luis Obispo, CA", "Bellingham, WA",
+        "Prescott, AZ", "Flagstaff, AZ", "Asheville, NC", "Fort Myers, FL", "Santa Fe, NM",
+        "Eugene, OR", "Olympia, WA", "Eau Claire, WI", "Bismarck, ND", "Rapid City, SD",
+        "Fargo, ND", "Grand Forks, ND", "Sioux Falls, SD", "Rochester, MN", "Duluth, MN",
+        "St. Cloud, MN", "Mankato, MN", "Winona, MN", "Moorhead, MN"
+    ],
+    "United Kingdom": [
+        "London", "Edinburgh", "Manchester", "Birmingham", "Bristol",
+        "Leeds", "Glasgow", "Liverpool", "Newcastle", "Sheffield",
+        "Cardiff", "Belfast", "Nottingham", "Leicester", "Coventry",
+        "Reading", "Southampton", "Portsmouth", "Brighton", "Oxford",
+        "Cambridge", "York", "Norwich", "Exeter", "Bath",
+        "Canterbury", "Durham", "St. Albans", "Winchester", "Truro",
+        "Wells", "Ely", "Ripon", "Chichester", "Hereford",
+        "Lichfield", "Salisbury", "Worcester", "Peterborough", "Gloucester",
+        "Chelmsford", "Ipswich", "Colchester", "Norwich", "King's Lynn",
+        "Great Yarmouth", "Lowestoft", "Bury St Edmunds", "Newmarket", "Thetford",
+        "Diss", "Harleston", "Attleborough", "Watton", "Swaffham",
+        "Fakenham", "Holt", "Cromer", "Sheringham", "Wells-next-the-Sea",
+        "Hunstanton", "Downham Market", "Wisbech", "March", "Chatteris",
+        "St. Ives", "Huntingdon", "St. Neots", "Biggleswade", "Sandy",
+        "Potton", "Gamlingay", "Bourn", "Caxton", "Elsworth",
+        "Conington", "Fenstanton", "Hilton", "Papworth Everard", "Sawston",
+        "Duxford", "Linton", "Haverhill", "Clare", "Sudbury",
+        "Long Melford", "Lavenham", "Bildeston", "Hadleigh", "Ipswich",
+        "Woodbridge", "Felixstowe", "Framlingham", "Saxmundham", "Aldeburgh",
+        "Southwold", "Lowestoft", "Beccles", "Bungay", "Halesworth",
+        "Eye", "Debenham", "Stowmarket", "Needham Market", "Ipswich",
+        "Colchester", "Maldon", "Witham", "Kelvedon", "Coggeshall",
+        "Braintree", "Halstead", "Saffron Walden", "Thaxted", "Great Dunmow",
+        "Bishop's Stortford", "Sawbridgeworth", "Harlow", "Epping", "Chigwell",
+        "Loughton", "Waltham Abbey", "Cheshunt", "Hoddesdon", "Ware",
+        "Hertford", "Welwyn Garden City", "Hatfield", "St. Albans", "Harpenden",
+        "Redbourn", "Wheathampstead", "Kimpton", "Codicote", "Knebworth",
+        "Stevenage", "Letchworth", "Baldock", "Royston", "Melbourn",
+        "Meldreth", "Shepreth", "Foxton", "Barrington", "Haslingfield",
+        "Comberton", "Barton", "Grantchester", "Trumpington", "Cambridge",
+        "Milton", "Histon", "Impington", "Cottenham", "Waterbeach",
+        "Landbeach", "Chittering", "Stretham", "Witcham", "Mepal",
+        "Sutton", "Ely", "Littleport", "Pymore", "Soham",
+        "Isleham", "Fordham", "Chippenham", "Snailwell", "Newmarket",
+        "Moulton", "Kentford", "Gazeley", "Dalham", "Kirtling",
+        "Cheveley", "Woodditton", "Stetchworth", "Dullingham", "Burwell",
+        "Swaffham Prior", "Reach", "Upware", "Wicken", "Soham"
+    ],
+    "Canada": [
+        "Toronto, ON", "Vancouver, BC", "Calgary, AB", "Montreal, QC", "Ottawa, ON",
+        "Edmonton, AB", "Winnipeg, MB", "Quebec City, QC", "Hamilton, ON", "Kitchener, ON",
+        "London, ON", "Victoria, BC", "Halifax, NS", "Oshawa, ON", "Windsor, ON",
+        "Saskatoon, SK", "Regina, SK", "Sherbrooke, QC", "Kelowna, BC", "Barrie, ON",
+        "Abbotsford, BC", "Sudbury, ON", "Kingston, ON", "Saguenay, QC", "Trois-Rivieres, QC",
+        "Guelph, ON", "Cambridge, ON", "Thunder Bay, ON", "Saint John, NB", "Moncton, NB",
+        "Brantford, ON", "Peterborough, ON", "Red Deer, AB", "Lethbridge, AB", "Nanaimo, BC",
+        "Kamloops, BC", "Chilliwack, BC", "Prince George, BC", "Victoria, BC", "Surrey, BC",
+        "Burnaby, BC", "Richmond, BC", "Coquitlam, BC", "Langley, BC", "Delta, BC",
+        "New Westminster, BC", "North Vancouver, BC", "West Vancouver, BC", "Port Coquitlam, BC", "Maple Ridge, BC",
+        "White Rock, BC", "Port Moody, BC", "Anmore, BC", "Belcarra, BC", "Bowen Island, BC",
+        "Lions Bay, BC", "North Saanich, BC", "Oak Bay, BC", "Saanich, BC", "Esquimalt, BC",
+        "View Royal, BC", "Colwood, BC", "Langford, BC", "Highlands, BC", "Metchosin, BC",
+        "Sooke, BC", "Sidney, BC", "Central Saanich, BC", "North Cowichan, BC", "Duncan, BC",
+        "Ladysmith, BC", "Parksville, BC", "Qualicum Beach, BC", "Courtenay, BC", "Comox, BC",
+        "Campbell River, BC", "Port Alberni, BC", "Tofino, BC", "Ucluelet, BC", "Bamfield, BC",
+        "Tahsis, BC", "Zeballos, BC", "Gold River, BC", "Sayward, BC", "Woss, BC",
+        "Woss Lake, BC", "Telegraph Cove, BC", "Alert Bay, BC", "Sointula, BC", "Port McNeill, BC",
+        "Port Hardy, BC", "Fort Rupert, BC", "Quatsino, BC", "Holberg, BC", "Winter Harbour, BC",
+        "Coal Harbour, BC", "Port Alice, BC", "Kyuquot, BC", "Fair Harbour, BC", "Zeballos, BC",
+        "Tahsis, BC", "Gold River, BC", "Sayward, BC", "Woss, BC", "Woss Lake, BC",
+        "Telegraph Cove, BC", "Alert Bay, BC", "Sointula, BC", "Port McNeill, BC", "Port Hardy, BC",
+        "Fort Rupert, BC", "Quatsino, BC", "Holberg, BC", "Winter Harbour, BC", "Coal Harbour, BC",
+        "Port Alice, BC", "Kyuquot, BC", "Fair Harbour, BC", "Zeballos, BC", "Tahsis, BC",
+        "Gold River, BC", "Sayward, BC", "Woss, BC", "Woss Lake, BC", "Telegraph Cove, BC"
+    ],
+    "Australia": [
+        "Sydney, NSW", "Melbourne, VIC", "Brisbane, QLD", "Perth, WA", "Adelaide, SA",
+        "Gold Coast, QLD", "Newcastle, NSW", "Canberra, ACT", "Sunshine Coast, QLD", "Wollongong, NSW",
+        "Hobart, TAS", "Geelong, VIC", "Townsville, QLD", "Cairns, QLD", "Toowoomba, QLD",
+        "Darwin, NT", "Ballarat, VIC", "Bendigo, VIC", "Albury, NSW", "Launceston, TAS",
+        "Mackay, QLD", "Rockhampton, QLD", "Bunbury, WA", "Bundaberg, QLD", "Coffs Harbour, NSW",
+        "Wagga Wagga, NSW", "Hervey Bay, QLD", "Port Macquarie, NSW", "Mildura, VIC", "Tamworth, NSW",
+        "Orange, NSW", "Dubbo, NSW", "Shepparton, VIC", "Gladstone, QLD", "Nowra, NSW",
+        "Warrnambool, VIC", "Mount Gambier, SA", "Kalgoorlie, WA", "Lismore, NSW", "Bathurst, NSW",
+        "Geraldton, WA", "Whyalla, SA", "Broken Hill, NSW", "Mount Isa, QLD", "Alice Springs, NT",
+        "Katherine, NT", "Darwin, NT", "Palmerston, NT", "Alice Springs, NT", "Katherine, NT",
+        "Tennant Creek, NT", "Nhulunbuy, NT", "Yulara, NT", "Alyangula, NT", "Gove, NT",
+        "Jabiru, NT", "Kununurra, WA", "Broome, WA", "Port Hedland, WA", "Karratha, WA",
+        "Newman, WA", "Tom Price, WA", "Paraburdoo, WA", "Exmouth, WA", "Carnarvon, WA",
+        "Denham, WA", "Shark Bay, WA", "Geraldton, WA", "Northampton, WA", "Morawa, WA",
+        "Mullewa, WA", "Perenjori, WA", "Paynes Find, WA", "Mount Magnet, WA", "Cue, WA",
+        "Meekatharra, WA", "Wiluna, WA", "Leinster, WA", "Laverton, WA", "Leonora, WA",
+        "Menzie, WA", "Norseman, WA", "Esperance, WA", "Ravensthorpe, WA", "Hopetoun, WA",
+        "Ongerup, WA", "Jerramungup, WA", "Gnowangerup, WA", "Katanning, WA", "Kojonup, WA",
+        "Bridgetown, WA", "Manjimup, WA", "Pemberton, WA", "Northcliffe, WA", "Walpole, WA",
+        "Denmark, WA", "Albany, WA", "Mount Barker, WA", "Kendenup, WA", "Cranbrook, WA",
+        "Tambellup, WA", "Gnowangerup, WA", "Ongerup, WA", "Jerramungup, WA", "Ravensthorpe, WA",
+        "Hopetoun, WA", "Esperance, WA", "Norseman, WA", "Menzie, WA", "Leonora, WA",
+        "Laverton, WA", "Leinster, WA", "Wiluna, WA", "Meekatharra, WA", "Cue, WA",
+        "Mount Magnet, WA", "Paynes Find, WA", "Perenjori, WA", "Mullewa, WA", "Morawa, WA",
+        "Northampton, WA", "Geraldton, WA", "Shark Bay, WA", "Denham, WA", "Carnarvon, WA",
+        "Exmouth, WA", "Paraburdoo, WA", "Tom Price, WA", "Newman, WA", "Karratha, WA",
+        "Port Hedland, WA", "Broome, WA", "Kununurra, WA", "Jabiru, NT", "Gove, NT",
+        "Alyangula, NT", "Yulara, NT", "Nhulunbuy, NT", "Tennant Creek, NT", "Katherine, NT",
+        "Alice Springs, NT", "Palmerston, NT", "Darwin, NT", "Katherine, NT", "Alice Springs, NT"
+    ],
+    "Germany": [
+        "Munich", "Stuttgart", "Hamburg", "Frankfurt", "Düsseldorf",
+        "Berlin", "Cologne", "Dresden", "Leipzig", "Nuremberg",
+        "Hannover", "Bremen", "Duisburg", "Essen", "Bochum",
+        "Wuppertal", "Bielefeld", "Bonn", "Münster", "Karlsruhe",
+        "Mannheim", "Augsburg", "Wiesbaden", "Gelsenkirchen", "Mönchengladbach",
+        "Braunschweig", "Chemnitz", "Kiel", "Aachen", "Halle",
+        "Magdeburg", "Freiburg", "Krefeld", "Lübeck", "Oberhausen",
+        "Erfurt", "Mainz", "Rostock", "Kassel", "Hagen",
+        "Hamm", "Saarbrücken", "Mülheim", "Potsdam", "Ludwigshafen",
+        "Oldenburg", "Leverkusen", "Osnabrück", "Solingen", "Heidelberg",
+        "Herne", "Neuss", "Darmstadt", "Paderborn", "Regensburg",
+        "Ingolstadt", "Würzburg", "Fürth", "Wolfsburg", "Offenbach",
+        "Ulm", "Heilbronn", "Pforzheim", "Göttingen", "Bottrop",
+        "Trier", "Recklinghausen", "Reutlingen", "Bremerhaven", "Koblenz",
+        "Bergisch Gladbach", "Jena", "Remscheid", "Erlangen", "Moers",
+        "Siegen", "Hildesheim", "Salzgitter", "Cottbus", "Kaiserslautern",
+        "Gütersloh", "Schwerin", "Witten", "Gera", "Iserlohn",
+        "Lünen", "Düren", "Esslingen", "Marl", "Ratingen",
+        "Tübingen", "Villingen-Schwenningen", "Konstanz", "Flensburg", "Minden",
+        "Velbert", "Neumünster", "Delmenhorst", "Wilhelmshaven", "Viersen",
+        "Gladbeck", "Dorsten", "Rheine", "Detmold", "Castrop-Rauxel",
+        "Arnsberg", "Lüneburg", "Lippstadt", "Dinslaken", "Soest",
+        "Neubrandenburg", "Dormagen", "Brandenburg", "Sindelfingen", "Aschaffenburg",
+        "Neuwied", "Plauen", "Fulda", "Bergheim", "Schwäbisch Gmünd",
+        "Landshut", "Rosenheim", "Frankenthal", "Stralsund", "Friedrichshafen",
+        "Offenburg", "Suhl", "Görlitz", "Sankt Augustin", "Hürth",
+        "Grevenbroich", "Unna", "Euskirchen", "Stolberg", "Hameln",
+        "Meerbusch", "Gießen", "Sankt Ingbert", "Garbsen", "Bayreuth",
+        "Weiden", "Lörrach", "Celle", "Kleve", "Homburg",
+        "Neustadt", "Freising", "Lüdenscheid", "Eisenach", "Weimar",
+        "Speyer", "Passau", "Ravensburg", "Kempten", "Goslar",
+        "Willich", "Emden", "Bad Homburg", "Bad Salzuflen", "Langenfeld",
+        "Greifswald", "Rastatt", "Tuttlingen", "Baden-Baden", "Weinheim",
+        "Oberursel", "Bad Kreuznach", "Böblingen", "Starnberg", "Germering",
+        "Fürstenfeldbruck", "Gauting", "Gröbenzell", "Olching", "Puchheim",
+        "Eichenau", "Gilching", "Wörthsee", "Inning", "Seefeld",
+        "Andechs", "Herrsching", "Steinebach", "Wessling", "Seeshaupt",
+        "Bernried", "Tutzing", "Feldafing", "Pöcking", "Starnberg",
+        "Percha", "Feldafing", "Tutzing", "Bernried", "Seeshaupt",
+        "Wessling", "Steinebach", "Herrsching", "Andechs", "Seefeld",
+        "Inning", "Wörthsee", "Gilching", "Eichenau", "Puchheim",
+        "Olching", "Gröbenzell", "Gauting", "Fürstenfeldbruck", "Starnberg",
+        "Böblingen", "Bad Kreuznach", "Oberursel", "Weinheim", "Baden-Baden",
+        "Tuttlingen", "Rastatt", "Greifswald", "Langenfeld", "Bad Salzuflen",
+        "Bad Homburg", "Emden", "Willich", "Goslar", "Kempten",
+        "Ravensburg", "Passau", "Speyer", "Weimar", "Eisenach",
+        "Lüdenscheid", "Freising", "Neustadt", "Homburg", "Kleve",
+        "Celle", "Lörrach", "Bayreuth", "Garbsen", "Sankt Ingbert",
+        "Gießen", "Meerbusch", "Hameln", "Stolberg", "Euskirchen",
+        "Unna", "Grevenbroich", "Hürth", "Sankt Augustin", "Görlitz",
+        "Suhl", "Offenburg", "Friedrichshafen", "Stralsund", "Frankenthal",
+        "Rosenheim", "Landshut", "Schwäbisch Gmünd", "Bergheim", "Fulda",
+        "Plauen", "Neuwied", "Aschaffenburg", "Sindelfingen", "Brandenburg",
+        "Dormagen", "Neubrandenburg", "Soest", "Dinslaken", "Lippstadt",
+        "Lüneburg", "Arnsberg", "Castrop-Rauxel", "Detmold", "Rheine",
+        "Dorsten", "Gladbeck", "Viersen", "Wilhelmshaven", "Delmenhorst",
+        "Neumünster", "Velbert", "Minden", "Flensburg", "Konstanz",
+        "Villingen-Schwenningen", "Tübingen", "Ratingen", "Marl", "Esslingen",
+        "Düren", "Lünen", "Iserlohn", "Gera", "Witten",
+        "Schwerin", "Gütersloh", "Kaiserslautern", "Cottbus", "Salzgitter",
+        "Hildesheim", "Siegen", "Moers", "Erlangen", "Remscheid",
+        "Jena", "Bergisch Gladbach", "Koblenz", "Bremerhaven", "Reutlingen",
+        "Recklinghausen", "Trier", "Bottrop", "Göttingen", "Pforzheim",
+        "Heilbronn", "Ulm", "Offenbach", "Wolfsburg", "Fürth",
+        "Würzburg", "Ingolstadt", "Regensburg", "Paderborn", "Darmstadt",
+        "Neuss", "Herne", "Heidelberg", "Solingen", "Osnabrück",
+        "Leverkusen", "Oldenburg", "Ludwigshafen", "Potsdam", "Mülheim",
+        "Saarbrücken", "Hamm", "Hagen", "Kassel", "Rostock",
+        "Mainz", "Erfurt", "Oberhausen", "Lübeck", "Krefeld",
+        "Freiburg", "Magdeburg", "Halle", "Aachen", "Kiel",
+        "Chemnitz", "Braunschweig", "Mönchengladbach", "Gelsenkirchen", "Wiesbaden",
+        "Augsburg", "Mannheim", "Karlsruhe", "Münster", "Bonn",
+        "Bielefeld", "Wuppertal", "Bochum", "Essen", "Duisburg",
+        "Bremen", "Hannover", "Nuremberg", "Leipzig", "Dresden",
+        "Cologne", "Berlin", "Düsseldorf", "Frankfurt", "Hamburg",
+        "Stuttgart", "Munich"
+    ],
+    "France": [
+        "Paris", "Lyon", "Marseille", "Toulouse", "Nice",
+        "Nantes", "Strasbourg", "Montpellier", "Bordeaux", "Lille",
+        "Rennes", "Reims", "Saint-Étienne", "Toulon", "Le Havre",
+        "Grenoble", "Dijon", "Angers", "Nîmes", "Villeurbanne",
+        "Saint-Denis", "Aix-en-Provence", "Clermont-Ferrand", "Brest", "Limoges",
+        "Tours", "Amiens", "Perpignan", "Metz", "Besançon",
+        "Boulogne-Billancourt", "Orléans", "Mulhouse", "Caen", "Rouen",
+        "Nancy", "Argenteuil", "Montreuil", "Saint-Denis", "Roubaix",
+        "Tourcoing", "Nanterre", "Avignon", "Créteil", "Dunkirk",
+        "Poitiers", "Asnières-sur-Seine", "Courbevoie", "Vitry-sur-Seine", "Colombes",
+        "Aulnay-sous-Bois", "La Rochelle", "Rueil-Malmaison", "Champigny-sur-Marne", "Antibes",
+        "Bourges", "Cannes", "Calais", "Béziers", "Mérignac",
+        "Saint-Maur-des-Fossés", "Drancy", "Massy", "Meaux", "Évry",
+        "Noisy-le-Grand", "Pessac", "Valence", "Antony", "La Seyne-sur-Mer",
+        "Clichy", "Vénissieux", "Troyes", "Montauban", "Pantin",
+        "Neuilly-sur-Seine", "Niort", "Sarcelles", "Le Blanc-Mesnil", "Haguenau",
+        "Cholet", "Cergy", "Bastia", "Bobigny", "Angoulême",
+        "Laval", "Bayonne", "Brive-la-Gaillarde", "Cannes", "Annecy",
+        "Lorient", "Thionville", "Chambéry", "Fréjus", "Villeneuve-d'Ascq",
+        "Sète", "Arles", "Chartres", "Belfort", "Épinal",
+        "Mâcon", "Auxerre", "Nevers", "Chalon-sur-Saône", "Vesoul",
+        "Lons-le-Saunier", "Bourg-en-Bresse", "Montbéliard", "Valenciennes", "Douai",
+        "Lens", "Arras", "Béthune", "Calais", "Boulogne-sur-Mer",
+        "Dunkerque", "Saint-Omer", "Hazebrouck", "Aire-sur-la-Lys", "Bailleul",
+        "Cassel", "Steenvoorde", "Wormhout", "Bergues", "Gravelines",
+        "Grand-Fort-Philippe", "Petit-Fort-Philippe", "Oye-Plage", "Marck", "Coudekerque-Branche",
+        "Téteghem", "Uxem", "Ghyvelde", "Leffrinckoucke", "Bray-Dunes",
+        "Zuydcoote", "Ghyvelde", "Uxem", "Téteghem", "Coudekerque-Branche",
+        "Marck", "Oye-Plage", "Petit-Fort-Philippe", "Grand-Fort-Philippe", "Gravelines",
+        "Bergues", "Wormhout", "Steenvoorde", "Cassel", "Bailleul",
+        "Aire-sur-la-Lys", "Hazebrouck", "Saint-Omer", "Dunkerque", "Boulogne-sur-Mer",
+        "Calais", "Béthune", "Arras", "Lens", "Douai",
+        "Valenciennes", "Montbéliard", "Bourg-en-Bresse", "Lons-le-Saunier", "Vesoul",
+        "Chalon-sur-Saône", "Nevers", "Auxerre", "Mâcon", "Épinal",
+        "Belfort", "Chartres", "Arles", "Sète", "Villeneuve-d'Ascq",
+        "Fréjus", "Chambéry", "Thionville", "Lorient", "Annecy",
+        "Cannes", "Brive-la-Gaillarde", "Bayonne", "Laval", "Angoulême",
+        "Bobigny", "Bastia", "Cergy", "Cholet", "Haguenau",
+        "Le Blanc-Mesnil", "Sarcelles", "Niort", "Neuilly-sur-Seine", "Pantin",
+        "Montauban", "Troyes", "Vénissieux", "Clichy", "La Seyne-sur-Mer",
+        "Antony", "Valence", "Pessac", "Noisy-le-Grand", "Évry",
+        "Meaux", "Massy", "Drancy", "Saint-Maur-des-Fossés", "Mérignac",
+        "Béziers", "Calais", "Cannes", "Bourges", "Antibes",
+        "Champigny-sur-Marne", "Rueil-Malmaison", "La Rochelle", "Aulnay-sous-Bois", "Colombes",
+        "Vitry-sur-Seine", "Courbevoie", "Asnières-sur-Seine", "Poitiers", "Dunkirk",
+        "Créteil", "Avignon", "Nanterre", "Tourcoing", "Roubaix",
+        "Saint-Denis", "Montreuil", "Argenteuil", "Nancy", "Rouen",
+        "Caen", "Mulhouse", "Orléans", "Boulogne-Billancourt", "Besançon",
+        "Metz", "Perpignan", "Amiens", "Tours", "Limoges",
+        "Brest", "Clermont-Ferrand", "Aix-en-Provence", "Saint-Denis", "Villeurbanne",
+        "Nîmes", "Angers", "Dijon", "Grenoble", "Le Havre",
+        "Toulon", "Saint-Étienne", "Reims", "Rennes", "Lille",
+        "Bordeaux", "Montpellier", "Strasbourg", "Nantes", "Nice",
+        "Toulouse", "Marseille", "Lyon", "Paris"
+    ],
+    "India": [
+        "Mumbai, Maharashtra", "Delhi", "Bangalore, Karnataka", "Hyderabad, Telangana", "Chennai, Tamil Nadu",
+        "Kolkata, West Bengal", "Pune, Maharashtra", "Ahmedabad, Gujarat", "Jaipur, Rajasthan", "Surat, Gujarat",
+        "Lucknow, Uttar Pradesh", "Kanpur, Uttar Pradesh", "Nagpur, Maharashtra", "Indore, Madhya Pradesh", "Thane, Maharashtra",
+        "Bhopal, Madhya Pradesh", "Visakhapatnam, Andhra Pradesh", "Patna, Bihar", "Vadodara, Gujarat", "Ghaziabad, Uttar Pradesh",
+        "Ludhiana, Punjab", "Agra, Uttar Pradesh", "Nashik, Maharashtra", "Faridabad, Haryana", "Meerut, Uttar Pradesh",
+        "Rajkot, Gujarat", "Srinagar, Jammu and Kashmir", "Amritsar, Punjab", "Chandigarh", "Jabalpur, Madhya Pradesh",
+        "Gwalior, Madhya Pradesh", "Jodhpur, Rajasthan", "Raipur, Chhattisgarh", "Allahabad, Uttar Pradesh", "Coimbatore, Tamil Nadu",
+        "Vijayawada, Andhra Pradesh", "Jamshedpur, Jharkhand", "Madurai, Tamil Nadu", "Varanasi, Uttar Pradesh", "Srinagar, Jammu and Kashmir",
+        "Aurangabad, Maharashtra", "Dhanbad, Jharkhand", "Amritsar, Punjab", "Navi Mumbai, Maharashtra", "Allahabad, Uttar Pradesh",
+        "Ranchi, Jharkhand", "Howrah, West Bengal", "Jabalpur, Madhya Pradesh", "Gwalior, Madhya Pradesh", "Jodhpur, Rajasthan",
+        "Raipur, Chhattisgarh", "Kota, Rajasthan", "Guwahati, Assam", "Chandigarh", "Solapur, Maharashtra",
+        "Tiruchirappalli, Tamil Nadu", "Bareilly, Uttar Pradesh", "Moradabad, Uttar Pradesh", "Mysore, Karnataka", "Tiruppur, Tamil Nadu",
+        "Gurgaon, Haryana", "Aligarh, Uttar Pradesh", "Jalandhar, Punjab", "Bhubaneswar, Odisha", "Salem, Tamil Nadu",
+        "Warangal, Telangana", "Guntur, Andhra Pradesh", "Bhiwandi, Maharashtra", "Saharanpur, Uttar Pradesh", "Gorakhpur, Uttar Pradesh",
+        "Bikaner, Rajasthan", "Amravati, Maharashtra", "Noida, Uttar Pradesh", "Jamshedpur, Jharkhand", "Bhilai, Chhattisgarh",
+        "Cuttack, Odisha", "Firozabad, Uttar Pradesh", "Kochi, Kerala", "Nellore, Andhra Pradesh", "Bhavnagar, Gujarat",
+        "Dehradun, Uttarakhand", "Durgapur, West Bengal", "Asansol, West Bengal", "Rourkela, Odisha", "Nanded, Maharashtra",
+        "Kolhapur, Maharashtra", "Ajmer, Rajasthan", "Gulbarga, Karnataka", "Jamnagar, Gujarat", "Ujjain, Madhya Pradesh",
+        "Loni, Uttar Pradesh", "Siliguri, West Bengal", "Jhansi, Uttar Pradesh", "Ulhasnagar, Maharashtra", "Jammu, Jammu and Kashmir",
+        "Sangli-Miraj-Kupwad, Maharashtra", "Mangalore, Karnataka", "Erode, Tamil Nadu", "Belgaum, Karnataka", "Ambattur, Tamil Nadu",
+        "Tirunelveli, Tamil Nadu", "Malegaon, Maharashtra", "Gaya, Bihar", "Jalgaon, Maharashtra", "Udaipur, Rajasthan",
+        "Maheshtala, West Bengal", "Tirupati, Andhra Pradesh", "Davanagere, Karnataka", "Kozhikode, Kerala", "Akola, Maharashtra",
+        "Kurnool, Andhra Pradesh", "Rajpur Sonarpur, West Bengal", "Bokaro Steel City, Jharkhand", "South Dumdum, West Bengal", "Bellary, Karnataka",
+        "Patiala, Punjab", "Gopalpur, West Bengal", "Agartala, Tripura", "Bhagalpur, Bihar", "Muzaffarnagar, Uttar Pradesh",
+        "Bhatpara, West Bengal", "Panihati, West Bengal", "Latur, Maharashtra", "Dhule, Maharashtra", "Rohtak, Haryana",
+        "Korba, Chhattisgarh", "Bhilwara, Rajasthan", "Berhampur, Odisha", "Muzaffarpur, Bihar", "Ahmednagar, Maharashtra",
+        "Mathura, Uttar Pradesh", "Kollam, Kerala", "Avadi, Tamil Nadu", "Kadapa, Andhra Pradesh", "Anantapur, Andhra Pradesh",
+        "Kamarhati, West Bengal", "Sambalpur, Odisha", "Bilaspur, Chhattisgarh", "Shahjahanpur, Uttar Pradesh", "Satara, Maharashtra",
+        "Bijapur, Karnataka", "Rampur, Uttar Pradesh", "Shimoga, Karnataka", "Chandrapur, Maharashtra", "Junagadh, Gujarat",
+        "Thrissur, Kerala", "Alwar, Rajasthan", "Bardhaman, West Bengal", "Kulti, West Bengal", "Nizamabad, Telangana",
+        "Parbhani, Maharashtra", "Tumkur, Karnataka", "Khammam, Telangana", "Ozhukarai, Puducherry", "Bihar Sharif, Bihar",
+        "Panipat, Haryana", "Darbhanga, Bihar", "Bally, West Bengal", "Aizawl, Mizoram", "Dewas, Madhya Pradesh",
+        "Ichalkaranji, Maharashtra", "Karnal, Haryana", "Bathinda, Punjab", "Jalna, Maharashtra", "Barasat, West Bengal",
+        "Kirari Suleman Nagar, Delhi", "Purnia, Bihar", "Satna, Madhya Pradesh", "Mau, Uttar Pradesh", "Sonipat, Haryana",
+        "Farrukhabad, Uttar Pradesh", "Sagar, Madhya Pradesh", "Rourkela, Odisha", "Durg, Chhattisgarh", "Imphal, Manipur",
+        "Ratlam, Madhya Pradesh", "Hapur, Uttar Pradesh", "Arrah, Bihar", "Karimnagar, Telangana", "Anantnag, Jammu and Kashmir",
+        "Etawah, Uttar Pradesh", "Ambarnath, Maharashtra", "North Dumdum, West Bengal", "Bharatpur, Rajasthan", "Begusarai, Bihar",
+        "New Delhi", "Gandhinagar, Gujarat", "Baroda, Gujarat", "Kalyan-Dombivli, Maharashtra", "Udaipur, Rajasthan",
+        "Mangalore, Karnataka", "Kozhikode, Kerala", "Nashik, Maharashtra", "Hubli-Dharwad, Karnataka", "Mysore, Karnataka",
+        "Gulbarga, Karnataka", "Belgaum, Karnataka", "Davangere, Karnataka", "Bellary, Karnataka", "Bijapur, Karnataka",
+        "Shimoga, Karnataka", "Tumkur, Karnataka", "Raichur, Karnataka", "Bidar, Karnataka", "Hassan, Karnataka",
+        "Mandya, Karnataka", "Chitradurga, Karnataka", "Kolar, Karnataka", "Chamrajnagar, Karnataka", "Kodagu, Karnataka",
+        "Udupi, Karnataka", "Dakshina Kannada, Karnataka", "Uttara Kannada, Karnataka", "Chikkamagaluru, Karnataka", "Chikkaballapur, Karnataka",
+        "Ramanagara, Karnataka", "Bangalore Urban, Karnataka", "Bangalore Rural, Karnataka", "Tumakuru, Karnataka", "Chitradurga, Karnataka",
+        "Davangere, Karnataka", "Shivamogga, Karnataka", "Haveri, Karnataka", "Gadag, Karnataka", "Bagalkot, Karnataka",
+        "Vijayapura, Karnataka", "Kalaburagi, Karnataka", "Yadgir, Karnataka", "Raichur, Karnataka", "Koppal, Karnataka",
+        "Ballari, Karnataka", "Vijayanagara, Karnataka", "Chamarajanagar, Karnataka", "Mysuru, Karnataka", "Mandya, Karnataka",
+        "Hassan, Karnataka", "Chikkamagaluru, Karnataka", "Udupi, Karnataka", "Dakshina Kannada, Karnataka", "Uttara Kannada, Karnataka",
+        "Chikkaballapur, Karnataka", "Kolar, Karnataka", "Ramanagara, Karnataka", "Bangalore Urban, Karnataka", "Bangalore Rural, Karnataka"
+    ]
+};
+
+// Get top N cities by income per capita for a country
+const getTopCitiesByIncome = (country: string, count: number): string[] => {
+    const cities = TOP_CITIES_BY_INCOME[country] || TOP_CITIES_BY_INCOME["United States"];
+    if (count === 0) return cities; // All cities
+    return cities.slice(0, count);
+};
+
+// Top states/provinces by population (ranked highest to lowest)
+const TOP_STATES_BY_POPULATION: Record<string, string[]> = {
+    "United States": [
+        "California", "Texas", "Florida", "New York", "Pennsylvania",
+        "Illinois", "Ohio", "Georgia", "North Carolina", "Michigan",
+        "New Jersey", "Virginia", "Washington", "Arizona", "Massachusetts",
+        "Tennessee", "Indiana", "Missouri", "Maryland", "Wisconsin",
+        "Colorado", "Minnesota", "South Carolina", "Alabama", "Louisiana",
+        "Kentucky", "Oregon", "Oklahoma", "Connecticut", "Utah",
+        "Iowa", "Nevada", "Arkansas", "Mississippi", "Kansas",
+        "New Mexico", "Nebraska", "West Virginia", "Idaho", "Hawaii",
+        "New Hampshire", "Maine", "Montana", "Rhode Island", "Delaware",
+        "South Dakota", "North Dakota", "Alaska", "Vermont", "Wyoming",
+        "District of Columbia"
+    ],
+    "United Kingdom": [
+        "England", "Scotland", "Wales", "Northern Ireland"
+    ],
+    "Canada": [
+        "Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba",
+        "Saskatchewan", "Nova Scotia", "New Brunswick", "Newfoundland and Labrador",
+        "Prince Edward Island", "Northwest Territories", "Yukon", "Nunavut"
+    ],
+    "Australia": [
+        "New South Wales", "Victoria", "Queensland", "Western Australia",
+        "South Australia", "Tasmania", "Australian Capital Territory", "Northern Territory"
+    ],
+    "Germany": [
+        "North Rhine-Westphalia", "Bavaria", "Baden-Württemberg", "Lower Saxony",
+        "Hesse", "Saxony", "Rhineland-Palatinate", "Berlin", "Schleswig-Holstein",
+        "Brandenburg", "Saxony-Anhalt", "Thuringia", "Hamburg", "Mecklenburg-Vorpommern",
+        "Saarland", "Bremen"
+    ],
+    "France": [
+        "Île-de-France", "Auvergne-Rhône-Alpes", "Nouvelle-Aquitaine", "Occitanie",
+        "Hauts-de-France", "Grand Est", "Provence-Alpes-Côte d'Azur", "Pays de la Loire",
+        "Normandy", "Brittany", "Bourgogne-Franche-Comté", "Centre-Val de Loire",
+        "Corsica"
+    ],
+    "India": [
+        "Uttar Pradesh", "Maharashtra", "Bihar", "West Bengal", "Madhya Pradesh",
+        "Tamil Nadu", "Rajasthan", "Karnataka", "Gujarat", "Odisha",
+        "Kerala", "Jharkhand", "Assam", "Punjab", "Chhattisgarh",
+        "Haryana", "Delhi", "Jammu and Kashmir", "Uttarakhand", "Himachal Pradesh",
+        "Tripura", "Meghalaya", "Manipur", "Nagaland", "Goa",
+        "Arunachal Pradesh", "Mizoram", "Sikkim"
+    ]
+};
+
+const getTopStatesByPopulation = (country: string, count: number): string[] => {
+    const states = TOP_STATES_BY_POPULATION[country] || TOP_STATES_BY_POPULATION["United States"];
+    if (count === 0) return states; // All states
+    return states.slice(0, count);
+};
+
 // Structure Types
 type StructureType = 
   | 'skag' 
@@ -200,8 +627,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
   }, [selectedKeywords, structureType, selectedIntents, intentGroups, alphaKeywords, betaKeywords, funnelGroups, brandKeywords, nonBrandKeywords, competitorKeywords]);
   
-  // Step 4: Geo
+  // Step 4: Geo Targeting
   const [targetCountry, setTargetCountry] = useState('United States');
+  const [targetType, setTargetType] = useState('ZIP');
+  const [manualGeoInput, setManualGeoInput] = useState('');
+  const [zipPreset, setZipPreset] = useState<string | null>(null);
+  const [cityPreset, setCityPreset] = useState<string | null>(null);
+  const [statePreset, setStatePreset] = useState<string | null>(null);
   const [geoType, setGeoType] = useState('STANDARD');
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
@@ -2476,28 +2908,44 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     );
   };
 
-  // Step 4: Geo Targeting (Dynamic based on structure)
+  // Step 4: Geo Targeting
   const renderStep4 = () => {
     const isGeoSegmented = structureType === 'geo';
     
     // Calculate number of campaigns for GEO-Segmented structure
     const getCampaignCount = () => {
       if (!isGeoSegmented) return 1;
-      if (geoType === 'STATE' && selectedStates.length > 0) return selectedStates.length;
-      if (geoType === 'CITY' && selectedCities.length > 0) return selectedCities.length;
-      if (geoType === 'ZIP' && selectedZips.length > 0) return selectedZips.length;
+      if (targetType === 'STATE' && manualGeoInput) {
+        const states = manualGeoInput.split(',').filter(s => s.trim());
+        return statePreset === '0' ? getTopStatesByPopulation(targetCountry, 0).length : states.length;
+      }
+      if (targetType === 'CITY' && manualGeoInput) {
+        const cities = manualGeoInput.split(',').filter(c => c.trim());
+        return cityPreset === '0' ? getTopCitiesByIncome(targetCountry, 0).length : cities.length;
+      }
+      if (targetType === 'ZIP' && manualGeoInput) {
+        const zips = manualGeoInput.split(',').filter(z => z.trim());
+        return zips.length;
+      }
       return 0;
     };
 
     const campaignCount = getCampaignCount();
-    const geoUnitName = geoType === 'STATE' ? 'states' : geoType === 'CITY' ? 'cities' : geoType === 'ZIP' ? 'ZIPs' : 'locations';
-    const geoUnitCount = geoType === 'STATE' ? selectedStates.length : geoType === 'CITY' ? selectedCities.length : geoType === 'ZIP' ? selectedZips.length : 0;
+    const geoUnitName = targetType === 'STATE' ? 'states' : targetType === 'CITY' ? 'cities' : targetType === 'ZIP' ? 'ZIPs' : 'locations';
+    let geoUnitCount = 0;
+    if (targetType === 'STATE' && manualGeoInput) {
+      geoUnitCount = manualGeoInput.split(',').filter(s => s.trim()).length;
+    } else if (targetType === 'CITY' && manualGeoInput) {
+      geoUnitCount = manualGeoInput.split(',').filter(c => c.trim()).length;
+    } else if (targetType === 'ZIP' && manualGeoInput) {
+      geoUnitCount = manualGeoInput.split(',').filter(z => z.trim()).length;
+    }
 
     return (
       <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">Geo Targeting</h2>
-          <p className="text-slate-600">Select target locations</p>
+          <h2 className="text-2xl font-bold text-slate-800">Geo Targeting Configuration</h2>
+          <p className="text-slate-500">Select the specific locations where your ads will be shown.</p>
         </div>
 
         {/* GEO-Segmented Structure Warning */}
@@ -2520,7 +2968,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       Select geo-units below to see campaign count.
                     </p>
                   )}
-                  {campaignCount > 0 && (
+                  {campaignCount > 0 && geoUnitCount > 0 && (
                     <p className="text-sm text-indigo-700 mt-2">
                       {geoUnitCount} {geoUnitName} = {campaignCount} campaign{campaignCount !== 1 ? 's' : ''}
                     </p>
@@ -2531,158 +2979,214 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </Card>
         )}
 
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Target Country</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select value={targetCountry} onValueChange={setTargetCountry}>
-              <SelectTrigger className="max-w-md">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="United States">United States</SelectItem>
-                <SelectItem value="Canada">Canada</SelectItem>
-                <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                <SelectItem value="Australia">Australia</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+        <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+          <CardContent className="p-8 space-y-8">
+            
+            {/* Country Selector */}
+            <div className="space-y-4">
+              <Label className="text-lg font-semibold flex items-center gap-2">
+                <Globe className="w-5 h-5 text-indigo-600"/> Target Country
+              </Label>
+              <Select value={targetCountry} onValueChange={(value) => {
+                setTargetCountry(value);
+                // Reset presets when country changes
+                if (targetType === 'CITY' && cityPreset) {
+                  setCityPreset(null);
+                  setManualGeoInput('');
+                }
+                if (targetType === 'STATE' && statePreset) {
+                  setStatePreset(null);
+                  setManualGeoInput('');
+                }
+              }}>
+                <SelectTrigger className="w-full text-lg py-6 bg-white/80">
+                  <SelectValue placeholder="Select Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map(country => (
+                    <SelectItem key={country} value={country}>{country}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Geo Type Selection */}
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Geo Segmentation Type</CardTitle>
-            <CardDescription>Choose how to segment your geo targeting</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { id: 'STANDARD', label: 'Standard', icon: Hash },
-                { id: 'STATE', label: 'States', icon: MapPin },
-                { id: 'CITY', label: 'Cities', icon: Layout },
-                { id: 'ZIP', label: 'ZIPs', icon: Mail }
-              ].map((type) => {
-                const Icon = type.icon;
-                const isSelected = geoType === type.id;
-                return (
-                  <Card
-                    key={type.id}
-                    onClick={() => setGeoType(type.id as any)}
-                    className={`cursor-pointer transition-all hover:shadow-lg ${
-                      isSelected 
-                        ? 'border-2 border-indigo-500 bg-indigo-50' 
-                        : 'border border-slate-200 hover:border-indigo-300'
-                    }`}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <Icon className={`w-6 h-6 mx-auto mb-2 ${isSelected ? 'text-indigo-600' : 'text-slate-600'}`} />
-                      <p className={`text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
-                        {type.label}
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <Separator className="bg-slate-200" />
+
+            {/* Location Detail */}
+            <div className="space-y-4">
+              <Label className="text-lg font-semibold flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-600"/> Specific Locations
+              </Label>
+              
+              <Tabs value={targetType} onValueChange={setTargetType} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
+                  <TabsTrigger value="CITY">Cities</TabsTrigger>
+                  <TabsTrigger value="ZIP">Zip Codes</TabsTrigger>
+                  <TabsTrigger value="STATE">States/Provinces</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="ZIP" className="space-y-4">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    {['5000', '10000', '15000', '30000'].map(count => (
+                      <Button 
+                        key={count}
+                        variant={zipPreset === count ? "default" : "outline"}
+                        onClick={() => {
+                          setZipPreset(count);
+                          setManualGeoInput('');
+                        }}
+                        className="flex-1"
+                      >
+                        {count} ZIPs
+                      </Button>
+                    ))}
+                    <Button 
+                      variant={zipPreset === null && manualGeoInput ? "default" : "outline"}
+                      onClick={() => {
+                        setZipPreset(null);
+                        if (!manualGeoInput) {
+                          setManualGeoInput('');
+                        }
+                      }}
+                      className="flex-1 border-dashed"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Manual Entry
+                    </Button>
+                  </div>
+                  <Textarea 
+                    placeholder="Enter ZIP codes manually (comma-separated, e.g., 10001, 10002, 90210)..."
+                    value={manualGeoInput}
+                    onChange={(e) => {
+                      setManualGeoInput(e.target.value);
+                      setZipPreset(null);
+                    }}
+                    rows={6}
+                    className="bg-white/80"
+                  />
+                  {manualGeoInput && !zipPreset && (
+                    <p className="text-xs text-slate-500">
+                      Manual entry: {manualGeoInput.split(',').filter(z => z.trim()).length} ZIP code(s) entered
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="CITY" className="space-y-4">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    {['20', '50', '100', '200', '0'].map(count => (
+                      <Button 
+                        key={count}
+                        variant={cityPreset === count ? "default" : "outline"}
+                        onClick={() => {
+                          setCityPreset(count);
+                          const cities = getTopCitiesByIncome(targetCountry, count === '0' ? 0 : parseInt(count));
+                          setManualGeoInput(cities.join(', '));
+                        }}
+                        className="flex-1 min-w-[120px]"
+                      >
+                        {count === '0' ? 'All Cities' : `Top ${count} Cities`}
+                      </Button>
+                    ))}
+                    <Button 
+                      variant={cityPreset === null && manualGeoInput ? "default" : "outline"}
+                      onClick={() => {
+                        setCityPreset(null);
+                        if (!manualGeoInput) {
+                          setManualGeoInput('');
+                        }
+                      }}
+                      className="flex-1 border-dashed"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Manual Entry
+                    </Button>
+                  </div>
+                  <Textarea 
+                    placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
+                    value={manualGeoInput}
+                    onChange={(e) => {
+                      setManualGeoInput(e.target.value);
+                      setCityPreset(null);
+                    }}
+                    rows={6}
+                    className="bg-white/80"
+                  />
+                  {cityPreset && (
+                    <p className="text-xs text-slate-500">
+                      Showing {cityPreset === '0' ? 'all' : `top ${cityPreset}`} cities by income per capita for {targetCountry}
+                    </p>
+                  )}
+                  {manualGeoInput && !cityPreset && (
+                    <p className="text-xs text-slate-500">
+                      Manual entry: {manualGeoInput.split(',').filter(c => c.trim()).length} city/cities entered
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="STATE" className="space-y-4">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    {['10', '20', '30', '0'].map(count => (
+                      <Button 
+                        key={count}
+                        variant={statePreset === count ? "default" : "outline"}
+                        onClick={() => {
+                          setStatePreset(count);
+                          const states = getTopStatesByPopulation(targetCountry, count === '0' ? 0 : parseInt(count));
+                          setManualGeoInput(states.join(', '));
+                        }}
+                        className="flex-1 min-w-[120px]"
+                      >
+                        {count === '0' ? 'All States' : `Top ${count} States`}
+                      </Button>
+                    ))}
+                    <Button 
+                      variant={statePreset === null && manualGeoInput ? "default" : "outline"}
+                      onClick={() => {
+                        setStatePreset(null);
+                        if (!manualGeoInput) {
+                          setManualGeoInput('');
+                        }
+                      }}
+                      className="flex-1 border-dashed"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Manual Entry
+                    </Button>
+                  </div>
+                  <Textarea 
+                    placeholder="Enter states/provinces manually (comma-separated, e.g., California, New York, Texas, Florida)..."
+                    value={manualGeoInput}
+                    onChange={(e) => {
+                      setManualGeoInput(e.target.value);
+                      setStatePreset(null);
+                    }}
+                    rows={6}
+                    className="bg-white/80"
+                  />
+                  {statePreset && (
+                    <p className="text-xs text-slate-500">
+                      Showing {statePreset === '0' ? 'all' : `top ${statePreset}`} states/provinces by population for {targetCountry}
+                    </p>
+                  )}
+                  {manualGeoInput && !statePreset && (
+                    <p className="text-xs text-slate-500">
+                      Manual entry: {manualGeoInput.split(',').filter(s => s.trim()).length} state(s)/province(s) entered
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           </CardContent>
         </Card>
 
-        {/* Geo Selection based on type */}
-        {geoType === 'STATE' && (
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardHeader>
-              <CardTitle>Select States</CardTitle>
-              <CardDescription>Choose states to target (each state = 1 campaign for GEO-Segmented)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {['California', 'Texas', 'Florida', 'New York', 'Illinois'].map((state) => (
-                  <div key={state} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`state-${state}`}
-                      checked={selectedStates.includes(state)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedStates([...selectedStates, state]);
-                        } else {
-                          setSelectedStates(selectedStates.filter(s => s !== state));
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`state-${state}`} className="cursor-pointer">{state}</Label>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {geoType === 'CITY' && (
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardHeader>
-              <CardTitle>Select Cities</CardTitle>
-              <CardDescription>Choose cities to target (each city = 1 campaign for GEO-Segmented)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose'].map((city) => (
-                  <div key={city} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`city-${city}`}
-                      checked={selectedCities.includes(city)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedCities([...selectedCities, city]);
-                        } else {
-                          setSelectedCities(selectedCities.filter(c => c !== city));
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`city-${city}`} className="cursor-pointer">{city}</Label>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {geoType === 'ZIP' && (
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardHeader>
-              <CardTitle>Select ZIP Codes</CardTitle>
-              <CardDescription>Enter ZIP codes (each ZIP = 1 campaign for GEO-Segmented)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={selectedZips.join('\n')}
-                onChange={(e) => {
-                  const zips = e.target.value.split('\n').filter(z => z.trim());
-                  setSelectedZips(zips);
-                }}
-                placeholder="10001&#10;10002&#10;10003"
-                rows={6}
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-slate-500 mt-2">
-                Enter one ZIP code per line. {selectedZips.length > 0 && `${selectedZips.length} ZIP${selectedZips.length !== 1 ? 's' : ''} = ${selectedZips.length} campaign${selectedZips.length !== 1 ? 's' : ''}`}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex justify-between">
-          <Button variant="ghost" onClick={() => setStep(3)}>
-            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-            Back
-          </Button>
-          <Button
-            size="lg"
+        <div className="flex justify-between mt-8">
+          <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
+          <Button 
+            size="lg" 
             onClick={() => setStep(5)}
             className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
           >
-            Next: Review <ArrowRight className="ml-2 w-5 h-5" />
+            Review Campaign <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
         </div>
       </div>
