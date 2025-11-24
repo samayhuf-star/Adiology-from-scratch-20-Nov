@@ -360,6 +360,38 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
     );
   }
 
+  if (showLandingPagePreview && selectedPreset) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold">Landing Page Preview: {selectedPreset.title}</h2>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => window.open(selectedPreset.final_url, '_blank')}
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Open in New Tab
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowLandingPagePreview(false);
+                setShowReview(true);
+              }}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Close Preview
+            </Button>
+          </div>
+        </div>
+        <div className="max-w-full">
+          <LandingPageTemplate preset={selectedPreset} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
