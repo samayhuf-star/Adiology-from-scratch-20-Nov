@@ -878,25 +878,32 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                               ? 'bg-indigo-50 border-2 border-indigo-500' 
                               : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100'
                           }`}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedKeywords(selectedKeywords.filter(k => k !== keywordText));
-                            } else {
-                              setSelectedKeywords([...selectedKeywords, keywordText]);
-                            }
+                          onClick={(e) => {
+                            // Prevent double-triggering from checkbox click
+                            e.stopPropagation();
+                            setSelectedKeywords(prev => {
+                              if (prev.includes(keywordText)) {
+                                return prev.filter(k => k !== keywordText);
+                              } else {
+                                return [...prev, keywordText];
+                              }
+                            });
                           }}
                         >
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedKeywords([...selectedKeywords, keywordText]);
-                              } else {
-                                setSelectedKeywords(selectedKeywords.filter(k => k !== keywordText));
-                              }
+                              setSelectedKeywords(prev => {
+                                if (checked) {
+                                  return prev.includes(keywordText) ? prev : [...prev, keywordText];
+                                } else {
+                                  return prev.filter(k => k !== keywordText);
+                                }
+                              });
                             }}
+                            onClick={(e) => e.stopPropagation()}
                           />
-                          <Label className="cursor-pointer flex-1">{keywordText}</Label>
+                          <Label className="cursor-pointer flex-1" onClick={(e) => e.stopPropagation()}>{keywordText}</Label>
                           {keyword.volume && (
                             <Badge variant="secondary" className="text-xs">{keyword.volume}</Badge>
                           )}
@@ -918,25 +925,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         case 'skag':
         case 'stag':
         case 'mix':
-          // Standard keyword selection
-          return (
-            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-              <CardHeader>
-                <CardTitle>Select Keywords</CardTitle>
-                <CardDescription>Choose keywords for your campaign</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <KeywordPlannerSelectable
-                  initialData={{
-                    seedKeywords,
-                    negativeKeywords,
-                    selectedKeywords
-                  }}
-                  onKeywordsSelected={(keywords) => setSelectedKeywords(keywords)}
-                />
-              </CardContent>
-            </Card>
-          );
+          // Standard keyword selection - no additional UI needed, keywords are shown in commonKeywordSection
+          return null;
 
         case 'stag_plus':
           // Smart Grouping
