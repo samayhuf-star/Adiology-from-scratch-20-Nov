@@ -351,39 +351,39 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               ) : (
                 !isForgotPassword && (
                   <div className="text-center text-sm text-slate-700">
-                  {isLogin ? (
-                    <>
-                      Don't have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsLogin(false);
-                          setError('');
-                          setIsForgotPassword(false);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                      >
-                        Sign up
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{' '}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsLogin(true);
-                          setError('');
-                          setIsForgotPassword(false);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                      >
-                        Sign in
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
+                    {isLogin ? (
+                      <>
+                        Don't have an account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsLogin(false);
+                            setError('');
+                            setIsForgotPassword(false);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                        >
+                          Sign up
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        Already have an account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsLogin(true);
+                            setError('');
+                            setIsForgotPassword(false);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                        >
+                          Sign in
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )
               )}
             </form>
 
