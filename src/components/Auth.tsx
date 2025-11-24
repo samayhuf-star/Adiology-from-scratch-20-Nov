@@ -5,6 +5,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
+import { api } from '../utils/api';
+import { notifications } from '../utils/notifications';
 
 interface AuthProps {
   onLoginSuccess: () => void;
@@ -106,7 +108,6 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
         
         // Generate verification token
         const verificationToken = `verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
         
         // Store pending verification
         localStorage.setItem('pending_verification', JSON.stringify({
@@ -115,14 +116,41 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
           createdAt: new Date().toISOString(),
         }));
 
-        // In production, send email via API
-        // For now, log the verification URL (for testing with Mailinator)
-        console.log('Verification URL:', verificationUrl);
-        
-        setIsLoading(false);
-        
-        // Redirect to verification page
-        window.location.href = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
+        // Send verification email via API
+        try {
+          const baseUrl = window.location.origin;
+          await api.post('/email/send-verification', {
+            email: trimmedEmail,
+            token: verificationToken,
+            baseUrl: baseUrl,
+          });
+
+          notifications.success('Verification email sent!', {
+            title: 'Account Created',
+            description: 'Please check your email to verify your account.',
+          });
+
+          setIsLoading(false);
+          
+          // Redirect to verification page
+          window.location.href = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
+        } catch (emailError) {
+          console.error('Failed to send verification email:', emailError);
+          
+          // Still allow signup to proceed, but show warning
+          const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
+          console.log('Verification URL (fallback):', verificationUrl);
+          
+          notifications.warning('Account created, but email could not be sent', {
+            title: 'Email Service Unavailable',
+            description: 'Please use the verification link shown in the console for testing.',
+          });
+
+          setIsLoading(false);
+          
+          // Redirect to verification page
+          window.location.href = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
+        }
       }
     }, 1000);
   };

@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { notifications } from '../utils/notifications';
+import { api } from '../utils/api';
 
 interface EmailVerificationProps {
   onVerificationSuccess: () => void;
@@ -120,7 +121,6 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     try {
       // Generate new token
       const token = `verify_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const verificationUrl = `${window.location.origin}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
       // Store pending verification
       localStorage.setItem('pending_verification', JSON.stringify({
@@ -129,19 +129,41 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
         createdAt: new Date().toISOString(),
       }));
 
-      // In production, send email via API
-      // For now, show the verification URL (for testing with Mailinator)
-      console.log('Verification URL:', verificationUrl);
-      
-      // Show success message
-      notifications.success('Verification email sent!', {
-        title: 'Email Sent',
-        description: 'Please check your email inbox (and spam folder) for the verification link.',
-      });
-      
-      // For testing: Show URL in console and alert
-      if (import.meta.env.DEV) {
-        alert(`For testing: Use this verification link:\n\n${verificationUrl}\n\n(In production, this would be sent via email)`);
+      // Send verification email via API
+      try {
+        const baseUrl = window.location.origin;
+        await api.post('/email/send-verification', {
+          email,
+          token,
+          baseUrl: baseUrl,
+        });
+
+        notifications.success('Verification email sent!', {
+          title: 'Email Sent',
+          description: 'Please check your email inbox (and spam folder) for the verification link.',
+        });
+
+        // Update the token in state so the UI updates
+        setVerificationToken(token);
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        
+        // Fallback: show URL for testing
+        const verificationUrl = `${window.location.origin}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+        console.log('Verification URL (fallback):', verificationUrl);
+        
+        notifications.warning('Email service unavailable', {
+          title: 'Email Could Not Be Sent',
+          description: 'Please use the verification link shown in the console for testing.',
+        });
+
+        // For testing: Show URL in console and alert
+        if (import.meta.env.DEV) {
+          alert(`For testing: Use this verification link:\n\n${verificationUrl}\n\n(Email service is unavailable)`);
+        }
+
+        // Still update token so user can verify manually
+        setVerificationToken(token);
       }
 
       setIsVerifying(false);

@@ -125,12 +125,12 @@ const PaymentForm: React.FC<{
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          priceId: plan.priceId,
-          planName: plan.name,
-          amount: parseFloat(plan.price.replace('$', '')),
-          isSubscription: plan.isSubscription,
-        }),
+          body: JSON.stringify({
+            priceId: plan.priceId,
+            planName: plan.name,
+            amount: plan.amount,
+            isSubscription: plan.isSubscription,
+          }),
       });
 
       if (response.ok) {
