@@ -557,7 +557,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
               })}
             </div>
 
-            <div className="mt-16 sm:mt-20 text-center">
+            <div className="mt-16 sm:mt-20 text-center">                                  
               <Button
                 size="lg"
                 onClick={onGetStarted}

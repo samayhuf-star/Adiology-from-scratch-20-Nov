@@ -22,8 +22,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Disable signup - only allow login
-  const SIGNUP_DISABLED = true;
+  // Signup is enabled for production
+  const SIGNUP_DISABLED = false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -23,6 +23,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { api } from '../utils/api';
+import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { historyService } from '../utils/historyService';
 import { KeywordPlanner } from './KeywordPlanner';
 import { KeywordPlannerSelectable } from './KeywordPlannerSelectable';
@@ -1053,24 +1054,26 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
              return;
         }
 
-            console.log("Attempting AI keyword generation...");
-            // Using the explicit path which matches the route defined in the server
-            const data = await api.post('/generate-keywords', {
-                seeds: seedKeywords,
-                negatives: negativeKeywords
+            console.log("Attempting Google Ads API keyword generation...");
+            // Use Google Ads API with AI fallback
+            const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
+            const data = await generateKeywordsFromGoogleAds({
+                seedKeywords: seedKeywordsArray,
+                negativeKeywords: negativeKeywords.split(',').map(k => k.trim()).filter(Boolean),
+                maxResults: 500
             });
 
-            if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
-                console.log("AI generation successful:", data.keywords.length, "keywords");
+            if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {                                                                    
+                console.log("Google Ads API generation successful:", data.keywords.length, "keywords");                                                                     
                 setGeneratedKeywords(data.keywords);
                 setSelectedKeywords(data.keywords.map((k: any) => k.id));
                 if (loadingToast) loadingToast();
-                notifications.success(`Generated ${data.keywords.length} keywords successfully`, {
+                notifications.success(`Generated ${data.keywords.length} keywords successfully`, {                                                              
                     title: 'Keywords Generated',
-                    description: `AI found ${data.keywords.length} keyword suggestions. Review and select the ones you want to use.`,
+                    description: `Google Ads API found ${data.keywords.length} keyword suggestions. Review and select the ones you want to use.`,                           
                 });
             } else {
-                throw new Error("No keywords returned from AI");
+                throw new Error("No keywords returned from Google Ads API");
             }
         } catch (error) {
             console.log('ℹ️ Backend unavailable - using local fallback generation');

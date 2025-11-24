@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { api } from '../utils/api';
+import { createCheckoutSession, createCustomerPortalSession, PLAN_PRICE_IDS } from '../utils/stripe';
+import { notifications } from '../utils/notifications';
 
 export const BillingPanel = () => {
     const [info, setInfo] = useState<any>(null);
@@ -64,31 +66,47 @@ export const BillingPanel = () => {
         fetchInfo();
     }, []);
 
-    const handleSubscribe = async () => {
+    const handleSubscribe = async (planName?: string, priceId?: string) => {
         setProcessing(true);
         try {
-            await api.post('/billing/subscribe', {});
-            alert("Redirecting to payment provider...");
-            setProcessing(false);
+            // Determine plan and price ID
+            const selectedPlan = planName || 'Lifetime Unlimited';
+            const selectedPriceId = priceId || PLAN_PRICE_IDS.lifetime_unlimited;
+            
+            // Create Stripe Checkout session
+            await createCheckoutSession(selectedPriceId, selectedPlan);
+            
+            notifications.success('Redirecting to secure checkout...', {
+                title: 'Processing Payment',
+                description: 'You will be redirected to complete your subscription.',
+            });
         } catch (error) {
             console.error("Subscription error", error);
+            notifications.error('Failed to initiate checkout. Please try again.', {
+                title: 'Payment Error',
+                description: error instanceof Error ? error.message : 'Unknown error occurred',
+            });
+        } finally {
             setProcessing(false);
-            // Fallback: Show success message even if API fails (for demo purposes)
-            alert("Subscription initiated successfully! You will be redirected to complete payment.");
         }
     };
 
     const handleCancelSubscription = async () => {
         setProcessing(true);
         try {
-            await api.post('/billing/cancel', {});
-            alert("Your subscription has been cancelled. You'll continue to have access until the end of your billing period.");
+            // Open Stripe Customer Portal for subscription cancellation
+            await createCustomerPortalSession();
             setShowCancelDialog(false);
-            // Refresh billing info
-            const data = await api.get('/billing/info');
-            setInfo(data);
+            notifications.info('Redirecting to subscription management...', {
+                title: 'Subscription Management',
+                description: 'You can cancel or modify your subscription in the portal.',
+            });
         } catch (error) {
-            alert("Failed to cancel subscription. Please contact support.");
+            console.error("Cancel subscription error", error);
+            notifications.error('Failed to open subscription portal. Please contact support.', {
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Unknown error occurred',
+            });
         } finally {
             setProcessing(false);
         }
@@ -97,14 +115,15 @@ export const BillingPanel = () => {
     const handleUpdatePaymentMethod = async () => {
         setProcessing(true);
         try {
-            // In a real app, this would open Stripe's payment method update flow
-            await api.post('/billing/update-payment-method', {});
-            alert("Redirecting to update payment method...");
+            // Open Stripe Customer Portal for payment method management
+            await createCustomerPortalSession();
             setShowPaymentDialog(false);
         } catch (error) {
             console.error("Payment method update error", error);
-            // Fallback: Show success message even if API fails (for demo purposes)
-            alert("Redirecting to secure payment processor...");
+            notifications.error('Failed to open payment portal. Please try again.', {
+                title: 'Payment Portal Error',
+                description: error instanceof Error ? error.message : 'Unknown error occurred',
+            });
             setShowPaymentDialog(false);
         } finally {
             setProcessing(false);
@@ -453,7 +472,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
                                     onClick={() => {
                                         setShowPricingDialog(false);
-                                        handleSubscribe();
+                                        handleSubscribe("Lifetime Limited", PLAN_PRICE_IDS.lifetime_limited);
                                     }}
                                     disabled={processing || billingInfo.plan === "Lifetime Limited"}
                                 >
@@ -508,7 +527,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
                                     onClick={() => {
                                         setShowPricingDialog(false);
-                                        handleSubscribe();
+                                        handleSubscribe("Lifetime Unlimited", PLAN_PRICE_IDS.lifetime_unlimited);
                                     }}
                                     disabled={processing || billingInfo.plan === "Lifetime Unlimited"}
                                 >
@@ -560,7 +579,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
                                     onClick={() => {
                                         setShowPricingDialog(false);
-                                        handleSubscribe();
+                                        handleSubscribe("Monthly Limited", PLAN_PRICE_IDS.monthly_25);
                                     }}
                                     disabled={processing || billingInfo.plan === "Monthly Limited"}
                                 >
@@ -612,7 +631,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
                                     onClick={() => {
                                         setShowPricingDialog(false);
-                                        handleSubscribe();
+                                        handleSubscribe("Monthly Unlimited", PLAN_PRICE_IDS.monthly_unlimited);
                                     }}
                                     disabled={processing || billingInfo.plan === "Monthly Unlimited"}
                                 >

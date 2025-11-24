@@ -28,6 +28,7 @@ import { notifications } from '../utils/notifications';
 import { generateCampaignStructure, type StructureSettings } from '../utils/campaignStructureGenerator';
 import { exportCampaignToCSV } from '../utils/csvExporter';
 import { api } from '../utils/api';
+import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { projectId } from '../utils/supabase/info';
 
 // Geo Targeting Constants
@@ -1080,38 +1081,31 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     mockKeywords.splice(600);
                   }
                   
-                  // Try API call, but don't fail if it doesn't work
-                  if (projectId) {
-                    try {
-                      console.log("Attempting AI keyword generation...");
-                      const data = await api.post('/generate-keywords', {
-                        seeds: seedKeywords,
-                        negatives: negativeKeywords,
-                        count: 500, // Request 300-600 keywords
-                        intent: 'call_lead', // Specify call/lead intent
-                        instructions: 'Generate keywords optimized for phone calls and lead generation. Focus on high-intent keywords that indicate users want to contact, call, get quotes, schedule appointments, or request information. Prioritize action-oriented keywords like "call", "contact", "get quote", "schedule", "book", "hire", etc.'
-                      });
+                  // Try Google Ads API first, then fallback to AI, then mock
+                  try {
+                    console.log("Attempting Google Ads API keyword generation...");
+                    const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
+                    const data = await generateKeywordsFromGoogleAds({
+                      seedKeywords: seedKeywordsArray,
+                      negativeKeywords: negativeList,
+                      maxResults: 500 // Request 300-600 keywords
+                    });
 
-                      if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
-                        console.log("AI generation successful:", data.keywords.length, "keywords");
-                        // Filter out keywords containing negative keywords
-                        const filteredKeywords = data.keywords.filter((k: any) => {
-                          const keywordText = (k.text || k.id || '').toLowerCase();
-                          return !negativeList.some(neg => keywordText.includes(neg));
-                        });
-                        keywords = filteredKeywords.length > 0 ? filteredKeywords : mockKeywords;
-                      } else {
-                        console.log("No keywords from API, using mock generation");
-                        keywords = mockKeywords;
-                      }
-                    } catch (apiError: any) {
-                      console.log('ℹ️ API unavailable (CORS or network issue) - using enhanced local generation', apiError);
-                      // Use mock keywords as fallback
+                    if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {                                                          
+                      console.log("Google Ads API generation successful:", data.keywords.length, "keywords");                                                             
+                      // Filter out keywords containing negative keywords
+                      const filteredKeywords = data.keywords.filter((k: any) => {                                                                             
+                        const keywordText = (k.text || k.keyword || k.id || '').toLowerCase();                                                                             
+                        return !negativeList.some(neg => keywordText.includes(neg.toLowerCase()));                                                                          
+                      });
+                      keywords = filteredKeywords.length > 0 ? filteredKeywords : mockKeywords;                                                               
+                    } else {
+                      console.log("No keywords from Google Ads API, using mock generation");                                                                             
                       keywords = mockKeywords;
                     }
-                  } else {
-                    console.warn("Project ID is missing, using mock generation");
-                    await new Promise(resolve => setTimeout(resolve, 1500));
+                  } catch (apiError: any) {
+                    console.log('ℹ️ Google Ads API unavailable - using enhanced local generation', apiError);                                     
+                    // Use mock keywords as fallback
                     keywords = mockKeywords;
                   }
 

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
 import { api } from '../utils/api';
+import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { historyService } from '../utils/historyService';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { copyToClipboard } from '../utils/clipboard';
@@ -82,18 +83,21 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
         setIsGenerating(true);
 
         try {
-            console.log('Calling API with:', { seeds: seedKeywords, negatives: negativeKeywords });
+            console.log('Calling Google Ads API with:', { seeds: seedKeywords, negatives: negativeKeywords });                                                             
             
-            const response = await api.post('/generate-keywords', {
-                seeds: seedKeywords,
-                negatives: negativeKeywords
+            // Use Google Ads API with AI fallback
+            const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
+            const response = await generateKeywordsFromGoogleAds({
+                seedKeywords: seedKeywordsArray,
+                negativeKeywords: negativeKeywords.split(',').map(k => k.trim()).filter(Boolean),
+                maxResults: 500
             });
 
-            console.log('API Response:', response);
+            console.log('Google Ads API Response:', response);
 
             if (response.keywords && Array.isArray(response.keywords)) {
                 // Extract keyword text and apply match type formatting
-                const keywordTexts = response.keywords.map((k: any) => k.text || k.keyword || k);
+                const keywordTexts = response.keywords.map((k: any) => k.text || k.keyword || k);                                                               
                 const formattedKeywords: string[] = [];
                 
                 keywordTexts.forEach((keyword: string) => {
@@ -109,14 +113,14 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                 });
 
                 if (isAppend) {
-                    setGeneratedKeywords(prev => [...prev, ...formattedKeywords]);
+                    setGeneratedKeywords(prev => [...prev, ...formattedKeywords]);                                                                              
                 } else {
                     setGeneratedKeywords(formattedKeywords);
                 }
                 setApiStatus('ok');
             } else {
                 console.error('Invalid response format:', response);
-                alert('Invalid response from server. Check console for details.');
+                alert('Invalid response from Google Ads API. Check console for details.');                                                                              
                 setApiStatus('error');
             }
         } catch (error: any) {
