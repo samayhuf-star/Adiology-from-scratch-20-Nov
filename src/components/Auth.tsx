@@ -116,13 +116,10 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
         }));
 
         // In production, send email via API
-        // For now, show the verification URL (for testing)
+        // For now, log the verification URL (for testing with Mailinator)
         console.log('Verification URL:', verificationUrl);
         
         setIsLoading(false);
-        
-        // Show verification message and redirect to verification page
-        alert(`Account created! Please verify your email.\n\nFor testing, use this link:\n${verificationUrl}\n\n(In production, this would be sent via email)`);
         
         // Redirect to verification page
         window.location.href = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
