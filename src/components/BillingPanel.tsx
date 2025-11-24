@@ -349,18 +349,44 @@ Generated on ${new Date().toLocaleDateString()}`;
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-6">
-                        <Button onClick={handleSubscribe} disabled={processing} className="bg-slate-900 text-white hover:bg-slate-800">
+                    <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-6 flex flex-col sm:flex-row gap-3">
+                        <Button 
+                            onClick={async () => {
+                                setProcessing(true);
+                                try {
+                                    await createCustomerPortalSession();
+                                    notifications.info('Redirecting to subscription management...', {
+                                        title: 'Manage Subscription',
+                                        description: 'You can view your plan, update payment methods, and manage your subscription.',
+                                    });
+                                } catch (error) {
+                                    console.error("Manage subscription error", error);
+                                    notifications.error('Failed to open subscription portal. Please contact support.', {
+                                        title: 'Error',
+                                        description: error instanceof Error ? error.message : 'Unknown error occurred',
+                                    });
+                                } finally {
+                                    setProcessing(false);
+                                }
+                            }}
+                            disabled={processing || billingInfo.plan === 'Free'}
+                            className="bg-indigo-600 text-white hover:bg-indigo-700 flex-1"
+                        >
+                            {processing ? "Processing..." : "Manage Subscription"}
+                        </Button>
+                        <Button onClick={handleSubscribe} disabled={processing} variant="outline" className="flex-1">
                             {processing ? "Processing..." : "Upgrade Plan"}
                         </Button>
-                        <Button 
-                            variant="link" 
-                            className="text-slate-500 ml-4"
-                            onClick={() => setShowCancelDialog(true)}
-                            disabled={processing}
-                        >
-                            Cancel Subscription
-                        </Button>
+                        {billingInfo.plan !== 'Free' && !billingInfo.plan.includes('Lifetime') && (
+                            <Button 
+                                variant="link" 
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => setShowCancelDialog(true)}
+                                disabled={processing}
+                            >
+                                Cancel Subscription
+                            </Button>
+                        )}
                     </CardFooter>
                 </Card>
 

@@ -92,7 +92,8 @@ const config = defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL for your application
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    // Use production URL for LambdaTest, or localhost if running locally
+    baseURL: process.env.BASE_URL || process.env.VITE_BASE_URL || 'https://adiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app',
     
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
@@ -100,8 +101,8 @@ const config = defineConfig({
     // Screenshot on failure
     screenshot: 'only-on-failure',
     
-    // Video on failure
-    video: 'retain-on-failure',
+    // Video on failure (disabled for cloud - LambdaTest handles video recording)
+    video: 'off',
   },
 
   // Configure projects for major browsers on LambdaTest
@@ -109,7 +110,7 @@ const config = defineConfig({
     {
       name: 'chromium-lt',
       use: {
-        ...devices['Desktop Chrome'],
+        // Don't use devices when connecting to cloud - use connectOptions directly
         connectOptions: {
           wsEndpoint: getLambdaTestEndpoint({
             browserName: 'Chrome',
@@ -128,7 +129,6 @@ const config = defineConfig({
     {
       name: 'firefox-lt',
       use: {
-        ...devices['Desktop Firefox'],
         connectOptions: {
           wsEndpoint: getLambdaTestEndpoint({
             browserName: 'Firefox',
@@ -147,7 +147,6 @@ const config = defineConfig({
     {
       name: 'webkit-lt',
       use: {
-        ...devices['Desktop Safari'],
         connectOptions: {
           wsEndpoint: getLambdaTestEndpoint({
             browserName: 'Safari',

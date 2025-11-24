@@ -77,26 +77,83 @@ export async function createCustomerPortalSession() {
       throw new Error('Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.');
     }
 
-    const response = await fetch('/api/create-portal-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Failed to create portal session: ${response.statusText}`);
+    // Get user email for customer identification
+    const authUser = localStorage.getItem('auth_user');
+    let customerEmail = '';
+    
+    if (authUser) {
+      try {
+        const user = JSON.parse(authUser);
+        customerEmail = user.email || '';
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
     }
 
-    const { url } = await response.json();
+    // Try Supabase Edge Function first
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'kkdnnrwhzofttzajnwlj';
+    const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
     
-    if (!url) {
-      throw new Error('No portal URL returned from server');
+    let response: Response;
+    let portalUrl: string | null = null;
+
+    try {
+      // Try Supabase Edge Function
+      response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-6757d0ca/create-portal-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({
+            customerEmail,
+            returnUrl: window.location.origin + '/billing',
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        portalUrl = data.url;
+      }
+    } catch (e) {
+      console.warn('Supabase Edge Function unavailable, trying direct API:', e);
+    }
+
+    // Fallback: Try direct API endpoint
+    if (!portalUrl) {
+      try {
+        response = await fetch('/api/create-portal-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            customerEmail,
+            returnUrl: window.location.origin + '/billing',
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          portalUrl = data.url;
+        }
+      } catch (e) {
+        console.warn('Direct API unavailable:', e);
+      }
+    }
+
+    if (!portalUrl) {
+      // If no backend available, show instructions
+      throw new Error(
+        'Stripe Customer Portal is not available. Please contact support at support@adiology.com to manage your subscription.'
+      );
     }
     
     // Redirect to Stripe Customer Portal
-    window.location.href = url;
+    window.location.href = portalUrl;
   } catch (error) {
     console.error('Error creating portal session:', error);
     // Re-throw with user-friendly message
