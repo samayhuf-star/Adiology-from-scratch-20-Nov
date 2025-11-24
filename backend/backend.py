@@ -52,9 +52,16 @@ celery_app.conf.update(
 app = FastAPI(title="AI Keyword Planner - Backend")
 
 # CORS middleware
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=[
+        FRONTEND_URL,
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://www.adiology.online",
+        "https://adiology.online"
+    ],  # Add your production domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
