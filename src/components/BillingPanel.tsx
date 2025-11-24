@@ -73,20 +73,24 @@ export const BillingPanel = () => {
             const selectedPlan = planName || 'Lifetime Unlimited';
             const selectedPriceId = priceId || PLAN_PRICE_IDS.lifetime_unlimited;
             
-            // Create Stripe Checkout session
-            await createCheckoutSession(selectedPriceId, selectedPlan);
+            // Get plan amount
+            const planAmounts: Record<string, number> = {
+                'Lifetime Limited': 99.99,
+                'Lifetime Unlimited': 199,
+                'Monthly Limited': 49.99,
+                'Monthly Unlimited': 99.99,
+            };
+            const amount = planAmounts[selectedPlan] || 199;
+            const isSubscription = selectedPlan.includes('Monthly');
             
-            notifications.success('Redirecting to secure checkout...', {
-                title: 'Processing Payment',
-                description: 'You will be redirected to complete your subscription.',
-            });
+            // Redirect to payment page
+            window.location.href = `/payment?plan=${encodeURIComponent(selectedPlan)}&priceId=${encodeURIComponent(selectedPriceId)}&amount=${amount}&subscription=${isSubscription}`;
         } catch (error) {
             console.error("Subscription error", error);
             notifications.error('Failed to initiate checkout. Please try again.', {
                 title: 'Payment Error',
                 description: error instanceof Error ? error.message : 'Unknown error occurred',
             });
-        } finally {
             setProcessing(false);
         }
     };

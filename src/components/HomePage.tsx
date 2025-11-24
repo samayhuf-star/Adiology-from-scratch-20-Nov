@@ -21,9 +21,10 @@ import { Label } from './ui/label';
 interface HomePageProps {
   onGetStarted: () => void;
   onLogin: () => void;
+  onSelectPlan?: (planName: string, priceId: string, amount: number, isSubscription: boolean) => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => {
+export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSelectPlan }) => {
   const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -934,7 +935,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                   </li>
                 </ul>
                 <Button 
-                  onClick={onGetStarted}
+                  onClick={() => {
+                    if (onSelectPlan) {
+                      onSelectPlan('Lifetime Unlimited', 'price_lifetime_unlimited', 199, false);
+                    } else {
+                      onGetStarted();
+                    }
+                  }}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
                 >
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />
@@ -977,7 +984,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                   </li>
                 </ul>
                 <Button 
-                  onClick={onGetStarted}
+                  onClick={() => {
+                    if (onSelectPlan) {
+                      onSelectPlan('Monthly Limited', 'price_monthly_25', 49.99, true);
+                    } else {
+                      onGetStarted();
+                    }
+                  }}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
                 >
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />
@@ -1020,7 +1033,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                   </li>
                 </ul>
                 <Button 
-                  onClick={onGetStarted}
+                  onClick={() => {
+                    if (onSelectPlan) {
+                      onSelectPlan('Monthly Unlimited', 'price_monthly_unlimited', 99.99, true);
+                    } else {
+                      onGetStarted();
+                    }
+                  }}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
                 >
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />

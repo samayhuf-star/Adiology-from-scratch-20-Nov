@@ -28,11 +28,13 @@ import { SuperAdminPanel } from './components/SuperAdminPanel';
 import { HomePage } from './components/HomePage';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
+import { PaymentPage } from './components/PaymentPage';
+import { PaymentSuccess } from './components/PaymentSuccess';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
 import './utils/createUser'; // Auto-create test user
 
-type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email';
+type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'payment' | 'payment-success';
 
 const App = () => {
   const [appView, setAppView] = useState<AppView>('home');
@@ -123,6 +125,50 @@ const App = () => {
   // Check URL path and authentication on mount
   useEffect(() => {
     const path = window.location.pathname;
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check if user is accessing /payment-success route
+    if (path === '/payment-success' || path.startsWith('/payment-success')) {
+      const planName = urlParams.get('plan') || 'Selected Plan';
+      const amountParam = urlParams.get('amount') || '0.00';
+      const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
+      const isSubscription = urlParams.get('subscription') === 'true';
+      
+      setSelectedPlan({
+        name: planName,
+        priceId: urlParams.get('priceId') || '',
+        amount,
+        isSubscription
+      });
+      setAppView('payment-success');
+      return;
+    }
+    
+    // Check if user is accessing /payment route
+    if (path === '/payment' || path.startsWith('/payment')) {
+      const planName = urlParams.get('plan') || 'Lifetime Unlimited';
+      const priceId = urlParams.get('priceId') || '';
+      const amount = parseFloat(urlParams.get('amount') || '199');
+      const isSubscription = urlParams.get('subscription') === 'true';
+      
+      // Check if user is logged in
+      const authUser = localStorage.getItem('auth_user');
+      if (!authUser) {
+        // Redirect to signup
+        window.history.pushState({}, '', '/');
+        setAppView('auth');
+        return;
+      }
+      
+      setSelectedPlan({
+        name: planName,
+        priceId,
+        amount,
+        isSubscription
+      });
+      setAppView('payment');
+      return;
+    }
     
     // Check if user is accessing /verify-email route
     if (path === '/verify-email' || path.startsWith('/verify-email')) {
@@ -251,12 +297,69 @@ const App = () => {
     }
   };
 
+  // Function to handle plan selection
+  const handleSelectPlan = (planName: string, priceId: string, amount: number, isSubscription: boolean) => {
+    // Check if user is logged in
+    const authUser = localStorage.getItem('auth_user');
+    if (!authUser) {
+      // User not logged in, redirect to signup
+      setAppView('auth');
+      return;
+    }
+
+    // User is logged in, redirect to payment page
+    setSelectedPlan({ name: planName, priceId, amount, isSubscription });
+    window.history.pushState({}, '', `/payment?plan=${encodeURIComponent(planName)}&priceId=${encodeURIComponent(priceId)}&amount=${amount}&subscription=${isSubscription}`);
+    setAppView('payment');
+  };
+
   // Render based on app view
   if (appView === 'home') {
     return (
       <HomePage
         onGetStarted={() => setAppView('auth')}
         onLogin={() => setAppView('auth')}
+        onSelectPlan={handleSelectPlan}
+      />
+    );
+  }
+
+  if (appView === 'payment' && selectedPlan) {
+    return (
+      <PaymentPage
+        planName={selectedPlan.name}
+        priceId={selectedPlan.priceId}
+        amount={selectedPlan.amount}
+        isSubscription={selectedPlan.isSubscription}
+        onBack={() => {
+          window.history.pushState({}, '', '/');
+          setAppView('home');
+        }}
+        onSuccess={() => {
+          window.history.pushState({}, '', `/payment-success?plan=${encodeURIComponent(selectedPlan.name)}&amount=$${selectedPlan.amount.toFixed(2)}${selectedPlan.isSubscription ? '/month' : ''}&subscription=${selectedPlan.isSubscription}&priceId=${encodeURIComponent(selectedPlan.priceId)}`);
+          setAppView('payment-success');
+        }}
+      />
+    );
+  }
+
+  if (appView === 'payment-success' && selectedPlan) {
+    return (
+      <PaymentSuccess
+        planName={selectedPlan.name}
+        amount={`$${selectedPlan.amount.toFixed(2)}${selectedPlan.isSubscription ? '/month' : ''}`}
+        onGoToDashboard={() => {
+          // Ensure user is logged in
+          const authUser = localStorage.getItem('auth_user');
+          if (authUser) {
+            window.history.pushState({}, '', '/');
+            setAppView('user');
+            setActiveTab('dashboard');
+          } else {
+            window.history.pushState({}, '', '/');
+            setAppView('home');
+          }
+        }}
       />
     );
   }
