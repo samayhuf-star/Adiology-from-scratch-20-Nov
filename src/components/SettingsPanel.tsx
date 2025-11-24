@@ -206,7 +206,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         <p className="text-slate-500 mt-1">Manage your account settings, billing, and preferences</p>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs key={defaultTab} defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -215,13 +215,18 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         <TabsContent value="settings" className="space-y-8 mt-0">
 
       {saveMessage && (
-        <Alert variant={saveMessage.type === 'success' ? 'default' : 'destructive'}>
+        <Alert 
+          variant={saveMessage.type === 'success' ? 'default' : 'destructive'}
+          className={saveMessage.type === 'success' ? 'border-green-500 bg-green-50' : ''}
+        >
           {saveMessage.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4" />
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
           ) : (
             <AlertCircle className="w-4 h-4" />
           )}
-          <AlertDescription>{saveMessage.text}</AlertDescription>
+          <AlertDescription className={saveMessage.type === 'success' ? 'text-green-700 font-medium' : ''}>
+            {saveMessage.text}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -427,10 +432,13 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <Switch checked={analytics} onCheckedChange={setAnalytics} />
           </div>
           <div className="flex gap-4">
-            <Button onClick={handleExportData} variant="outline">
-              <Download className="w-4 h-4 mr-2" />
-              Export My Data
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button onClick={handleExportData} variant="outline" title="Exports your data in JSON format">
+                <Download className="w-4 h-4 mr-2" />
+                Export My Data (JSON)
+              </Button>
+              <p className="text-xs text-slate-500">Downloads your account data in JSON format</p>
+            </div>
             <Button onClick={handleSaveSettings} className="bg-indigo-600 hover:bg-indigo-700">
               <Save className="w-4 h-4 mr-2" />
               Save Privacy Settings

@@ -9,6 +9,7 @@ import { api } from '../utils/api';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { generateComprehensiveNegativeKeywords } from '../utils/negativeKeywords';
 import { historyService } from '../utils/historyService';
+import { notifications } from '../utils/notifications';
 
 interface KeywordPlannerSelectableProps {
     initialData?: any;
@@ -80,7 +81,34 @@ export const KeywordPlannerSelectable = ({
         console.log('🚫 negativeKeywords (first 100 chars):', negativeKeywords.substring(0, 100));
         
         if (!seedKeywords.trim()) {
-            alert('Please enter seed keywords');
+            notifications.warning('Please enter seed keywords', {
+                title: 'Seed Keywords Required'
+            });
+            return;
+        }
+
+        // Bug_44: Validate minimum character length for keywords
+        const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        const MIN_KEYWORD_LENGTH = 3;
+        const invalidKeywords = seedKeywordsArray.filter(k => k.length < MIN_KEYWORD_LENGTH);
+        
+        if (invalidKeywords.length > 0) {
+            notifications.error(
+                `Each keyword must be at least ${MIN_KEYWORD_LENGTH} characters long. Please check: ${invalidKeywords.slice(0, 3).join(', ')}${invalidKeywords.length > 3 ? '...' : ''}`,
+                { 
+                    title: 'Invalid Keywords',
+                    description: `Keywords must be at least ${MIN_KEYWORD_LENGTH} characters long.`
+                }
+            );
+            return;
+        }
+
+        // Bug_19: Validate that at least one match type is selected
+        if (!matchTypes.broad && !matchTypes.phrase && !matchTypes.exact) {
+            notifications.warning('Please select at least one match type (Broad, Phrase, or Exact)', {
+                title: 'Match Type Required',
+                description: 'You must select at least one match type checkbox before generating keywords.'
+            });
             return;
         }
 
@@ -145,7 +173,9 @@ export const KeywordPlannerSelectable = ({
                 console.error('Invalid response format:', response);
                 console.error('Response keys:', Object.keys(response));
                 console.error('Full response:', JSON.stringify(response));
-                alert(`Invalid response from server.\n\nResponse keys: ${Object.keys(response).join(', ')}\n\nCheck console for full details.`);
+                notifications.error(`Invalid response from server. Response keys: ${Object.keys(response).join(', ')}. Check console for full details.`, {
+                    title: 'API Error'
+                });
                 setApiStatus('error');
                 setErrorMessage('Invalid response format from server');
             }
@@ -242,6 +272,19 @@ export const KeywordPlannerSelectable = ({
         }
     };
 
+    const handleClearAllKeywords = () => {
+        setGeneratedKeywords([]);
+        setSelectedKeywords([]);
+    };
+
+    const handleRemoveDuplicateKeywords = () => {
+        const uniqueKeywords = Array.from(new Set(generatedKeywords));
+        setGeneratedKeywords(uniqueKeywords);
+        // Also update selected keywords to remove duplicates
+        const uniqueSelected = selectedKeywords.filter(k => uniqueKeywords.includes(k));
+        setSelectedKeywords(uniqueSelected);
+    };
+
     const toggleKeyword = (keyword: string) => {
         setSelectedKeywords(prev => {
             if (prev.includes(keyword)) {
@@ -254,6 +297,16 @@ export const KeywordPlannerSelectable = ({
 
     const handleSave = async () => {
         if (generatedKeywords.length === 0) return;
+        
+        // Bug_31: Validate that plan name is not empty or whitespace-only
+        const planName = seedKeywords.trim();
+        if (!planName || planName.length === 0) {
+            notifications.warning('Please enter seed keywords before saving the plan', {
+                title: 'Invalid Plan Name'
+            });
+            return;
+        }
+        
         setIsSaving(true);
         try {
             await historyService.save(
@@ -261,10 +314,16 @@ export const KeywordPlannerSelectable = ({
                 `Plan: ${seedKeywords.substring(0, 30)}...`,
                 { seedKeywords, negativeKeywords, generatedKeywords, matchTypes, selectedKeywords }
             );
-                alert("Keyword plan saved!");
+            // Bug_43: Use toast notification instead of alert
+            notifications.success('Keyword plan saved successfully!', {
+                title: 'Saved',
+                description: 'Your keyword plan has been saved.'
+            });
         } catch (error) {
             console.error("Save failed", error);
-            alert("Failed to save. Please try again.");
+            notifications.error('Failed to save. Please try again.', {
+                title: 'Save Failed'
+            });
         } finally {
             setIsSaving(false);
         }
@@ -502,24 +561,42 @@ export const KeywordPlannerSelectable = ({
                                         </span>
                                     )}
                                 </span>
-                                <Button
-                                    onClick={handleSelectAll}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    {allSelected ? (
-                                        <>
-                                            <Square className="w-4 h-4" />
-                                            Deselect All
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckSquare className="w-4 h-4" />
-                                            Select All
-                                        </>
-                                    )}
-                                </Button>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={handleRemoveDuplicateKeywords}
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs"
+                                    >
+                                        Remove Duplicates
+                                    </Button>
+                                    <Button
+                                        onClick={handleSelectAll}
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        {allSelected ? (
+                                            <>
+                                                <Square className="w-4 h-4" />
+                                                Deselect All
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckSquare className="w-4 h-4" />
+                                                Select All
+                                            </>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        onClick={handleClearAllKeywords}
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs text-red-600 hover:text-red-700"
+                                    >
+                                        Clear All
+                                    </Button>
+                                </div>
                             </div>
 
                             {selectedKeywords.length === 0 && (

@@ -12,6 +12,7 @@ import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/
 import { historyService } from '../utils/historyService';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { copyToClipboard } from '../utils/clipboard';
+import { notifications } from '../utils/notifications';
 
 interface SavedList {
     id: string;
@@ -76,7 +77,25 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
 
     const handleGenerate = async (isAppend: boolean = false) => {
         if (!seedKeywords.trim()) {
-            alert('Please enter seed keywords');
+            notifications.warning('Please enter seed keywords', {
+                title: 'Seed Keywords Required'
+            });
+            return;
+        }
+
+        // Bug_44: Validate minimum character length for keywords
+        const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        const MIN_KEYWORD_LENGTH = 3;
+        const invalidKeywords = seedKeywordsArray.filter(k => k.length < MIN_KEYWORD_LENGTH);
+        
+        if (invalidKeywords.length > 0) {
+            notifications.error(
+                `Each keyword must be at least ${MIN_KEYWORD_LENGTH} characters long. Please check: ${invalidKeywords.slice(0, 3).join(', ')}${invalidKeywords.length > 3 ? '...' : ''}`,
+                { 
+                    title: 'Invalid Keywords',
+                    description: `Keywords must be at least ${MIN_KEYWORD_LENGTH} characters long.`
+                }
+            );
             return;
         }
 
@@ -120,7 +139,9 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                 setApiStatus('ok');
             } else {
                 console.error('Invalid response format:', response);
-                alert('Invalid response from Google Ads API. Check console for details.');                                                                              
+                notifications.error('Invalid response from Google Ads API. Check console for details.', {
+                    title: 'API Error'
+                });                                                                              
                 setApiStatus('error');
             }
         } catch (error: any) {
@@ -192,7 +213,9 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
 
     const handleGenerateNegatives = async () => {
         if (!seedKeywords.trim()) {
-            alert('Please enter seed keywords');
+            notifications.warning('Please enter seed keywords', {
+                title: 'Seed Keywords Required'
+            });
             return;
         }
 
@@ -229,7 +252,9 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                 setApiStatus('ok');
             } else {
                 console.error('Invalid response format:', response);
-                alert('Invalid response from server. Check console for details.');
+                notifications.error('Invalid response from server. Check console for details.', {
+                    title: 'API Error'
+                });
                 setApiStatus('error');
             }
         } catch (error: any) {
@@ -299,9 +324,13 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
         const text = generatedKeywords.join('\n');
         const success = await copyToClipboard(text);
         if (success) {
-            alert('Keywords copied to clipboard!');
+            notifications.success('Keywords copied to clipboard!', {
+                title: 'Copied'
+            });
         } else {
-            alert('Please manually copy the text from the visible text area.');
+            notifications.warning('Please manually copy the text from the visible text area.', {
+                title: 'Copy Failed'
+            });
         }
     };
 
@@ -314,10 +343,14 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                 `Plan: ${seedKeywords.substring(0, 30)}...`,
                 { seedKeywords, negativeKeywords, generatedKeywords, matchTypes }
             );
-            alert("Keyword plan saved!");
+            notifications.success('Keyword plan saved!', {
+                title: 'Saved Successfully'
+            });
         } catch (error) {
             console.error("Save failed", error);
-            alert("Failed to save. Please try again.");
+            notifications.error('Failed to save. Please try again.', {
+                title: 'Save Failed'
+            });
         } finally {
             setIsSaving(false);
         }
@@ -333,20 +366,38 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
 
     const handleSaveWithCustomName = async () => {
         if (generatedKeywords.length === 0) return;
+        
+        // Bug_42: Validate that listName is not empty or whitespace-only
+        const trimmedName = listName.trim();
+        if (!trimmedName || trimmedName.length === 0) {
+            notifications.warning('Please enter a plan name', {
+                title: 'Plan Name Required',
+                description: 'The plan name cannot be empty.'
+            });
+            return;
+        }
+        
         setIsSaving(true);
         try {
             await historyService.save(
                 'keyword-planner',
-                listName || `Plan: ${seedKeywords.substring(0, 30)}...`,
+                trimmedName || `Plan: ${seedKeywords.substring(0, 30)}...`,
                 { seedKeywords, negativeKeywords, generatedKeywords, matchTypes }
             );
-            alert("Keyword plan saved!");
+            // Bug_43: Use toast notification instead of alert
+            notifications.success('Keyword plan saved successfully!', {
+                title: 'Saved',
+                description: 'Your keyword plan has been saved.'
+            });
+            setListName('');
+            setShowSaveDialog(false);
         } catch (error) {
             console.error("Save failed", error);
-            alert("Failed to save. Please try again.");
+            notifications.error('Failed to save. Please try again.', {
+                title: 'Save Failed'
+            });
         } finally {
             setIsSaving(false);
-            setShowSaveDialog(false);
         }
     };
 
@@ -364,7 +415,9 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             }
         } catch (error) {
             console.error("Load failed", error);
-            alert("Failed to load list. Please try again.");
+            notifications.error('Failed to load list. Please try again.', {
+                title: 'Load Failed'
+            });
         }
     };
 
@@ -374,10 +427,14 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
         try {
             await historyService.delete(listId);
             setSavedLists(prev => prev.filter(list => list.id !== listId));
-            alert("List deleted successfully!");
+            notifications.success('List deleted successfully!', {
+                title: 'Deleted'
+            });
         } catch (error) {
             console.error("Delete failed", error);
-            alert("Failed to delete list. Please try again.");
+            notifications.error('Failed to delete list. Please try again.', {
+                title: 'Delete Failed'
+            });
         }
     };
 
@@ -621,16 +678,6 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                     <span className="text-sm font-semibold text-slate-700">
                                         {generatedKeywords.length} Keywords Generated
                                     </span>
-                                    <Button
-                                        onClick={handleOpenSaveDialog}
-                                        disabled={isSaving || generatedKeywords.length === 0}
-                                        variant="default"
-                                        size="sm"
-                                        className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-                                    >
-                                        <Save className="w-4 h-4" />
-                                        {isSaving ? 'Saving...' : 'Save Plan'}
-                                    </Button>
                                 </div>
                             )}
 

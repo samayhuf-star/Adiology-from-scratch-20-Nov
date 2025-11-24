@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Input } from './ui/input';
 import Papa from 'papaparse';
 import { api } from '../utils/api';
+import { notifications } from '../utils/notifications';
 
 // Validation rules
 const REQUIRED_HEADERS = ['Keyword', 'Match type'];
@@ -167,7 +168,9 @@ export const CSVValidator2 = () => {
             },
             error: (error) => {
                 console.error('CSV parsing error:', error);
-                alert('Error parsing CSV: ' + error.message);
+                notifications.error('Error parsing CSV: ' + error.message, {
+                    title: 'Parse Error'
+                });
             }
         });
     }, [normalizeHeaders]);
@@ -175,7 +178,9 @@ export const CSVValidator2 = () => {
     // Validate
     const handleValidate = useCallback(async () => {
         if (rows.length === 0) {
-            alert('Please upload a CSV file first.');
+            notifications.warning('Please upload a CSV file first.', {
+                title: 'No File Uploaded'
+            });
             return;
         }
 
@@ -204,7 +209,9 @@ export const CSVValidator2 = () => {
             }
         } catch (error: any) {
             console.error('Validation error:', error);
-            alert('Validation failed: ' + (error.message || 'Unknown error'));
+            notifications.error('Validation failed: ' + (error.message || 'Unknown error'), {
+                title: 'Validation Failed'
+            });
         } finally {
             setLoading(false);
         }
@@ -240,7 +247,9 @@ export const CSVValidator2 = () => {
     // Fix sheet with AI
     const handleFixSheet = useCallback(async () => {
         if (rows.length === 0) {
-            alert('Please upload a CSV file first.');
+            notifications.warning('Please upload a CSV file first.', {
+                title: 'No File Uploaded'
+            });
             return;
         }
 
@@ -255,7 +264,11 @@ export const CSVValidator2 = () => {
                 });
                 setRows(resp.fixedRows || rows);
                 setProblems([]);
-                alert('Fix completed. Actions:\n' + (resp.actions || []).slice(0, 20).map((a: FixAction) => `Row ${a.row}: ${a.action}`).join('\n'));
+                const actionsText = (resp.actions || []).slice(0, 20).map((a: FixAction) => `Row ${a.row}: ${a.action}`).join('\n');
+                notifications.success(`Fix completed. Actions: ${actionsText}`, {
+                    title: 'Fix Completed',
+                    duration: 8000
+                });
             } catch (apiError) {
                 // Fallback to client-side fix
                 console.log('API unavailable, using client-side fix');
@@ -331,11 +344,17 @@ export const CSVValidator2 = () => {
 
                 setRows(fixed);
                 setProblems([]);
-                alert('Fix completed. Actions:\n' + actions.slice(0, 20).map(a => `Row ${a.row}: ${a.action}`).join('\n'));
+                const actionsText = actions.slice(0, 20).map(a => `Row ${a.row}: ${a.action}`).join('\n');
+                notifications.success(`Fix completed. Actions: ${actionsText}`, {
+                    title: 'Fix Completed',
+                    duration: 8000
+                });
             }
         } catch (error: any) {
             console.error('Fix error:', error);
-            alert('Fix failed: ' + (error.message || 'Unknown error'));
+            notifications.error('Fix failed: ' + (error.message || 'Unknown error'), {
+                title: 'Fix Failed'
+            });
         } finally {
             setFixing(false);
         }
@@ -344,7 +363,9 @@ export const CSVValidator2 = () => {
     // Download CSV
     const handleDownload = useCallback(() => {
         if (rows.length === 0) {
-            alert('Please upload and process a file first.');
+            notifications.warning('Please upload and process a file first.', {
+                title: 'No File Processed'
+            });
             return;
         }
 

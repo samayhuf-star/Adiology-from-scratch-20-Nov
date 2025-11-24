@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { notifications } from '../utils/notifications';
 
 interface SupportTicket {
     id: string;
@@ -550,7 +551,9 @@ export const HelpSupport = () => {
         setTickets([newTicket, ...tickets]);
         setTicketForm({ subject: '', description: '', category: 'general', priority: 'medium' });
         setShowTicketForm(false);
-        alert('Support ticket submitted successfully! Our team will respond within 24 hours.');
+        notifications.success('Support ticket submitted successfully! Our team will respond within 24 hours.', {
+            title: 'Ticket Submitted'
+        });
     };
 
     const getStatusBadge = (status: string) => {

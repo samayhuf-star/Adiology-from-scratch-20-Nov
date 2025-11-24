@@ -12,6 +12,7 @@ import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { api } from '../utils/api';
 import { historyService } from '../utils/historyService';
+import { notifications } from '../utils/notifications';
 import {
     NEGATIVE_KEYWORD_CATEGORIES,
     buildUserPrompt,
@@ -39,6 +40,7 @@ interface GeneratedKeyword {
 export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) => {
     // Input State
     const [url, setUrl] = useState('');
+    const [urlError, setUrlError] = useState('');
     const [coreKeywords, setCoreKeywords] = useState('');
     const [userGoal, setUserGoal] = useState('');
     const [targetLocation, setTargetLocation] = useState('');
@@ -56,7 +58,24 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
     const [exportFormat, setExportFormat] = useState<'exact' | 'phrase' | 'broad' | 'all'>('all');
     const [showStats, setShowStats] = useState(false);
 
+    // Load form data from localStorage on mount (Bug_34: Persist form fields)
     useEffect(() => {
+        const savedFormData = localStorage.getItem('negative-keywords-form-data');
+        if (savedFormData) {
+            try {
+                const data = JSON.parse(savedFormData);
+                setUrl(data.url || '');
+                setCoreKeywords(data.coreKeywords || '');
+                setUserGoal(data.userGoal || '');
+                setTargetLocation(data.targetLocation || '');
+                setCompetitorBrands(data.competitorBrands || '');
+                setExcludeCompetitors(data.excludeCompetitors || false);
+                setKeywordCount(data.keywordCount || 1000);
+            } catch (e) {
+                console.error('Failed to load saved form data:', e);
+            }
+        }
+        
         if (initialData) {
             setUrl(initialData.url || '');
             setCoreKeywords(initialData.coreKeywords || '');
@@ -64,6 +83,41 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             setGeneratedKeywords(initialData.generatedKeywords || []);
         }
     }, [initialData]);
+
+    // Save form data to localStorage whenever fields change (Bug_34: Persist form fields)
+    useEffect(() => {
+        const formData = {
+            url,
+            coreKeywords,
+            userGoal,
+            targetLocation,
+            competitorBrands,
+            excludeCompetitors,
+            keywordCount
+        };
+        localStorage.setItem('negative-keywords-form-data', JSON.stringify(formData));
+    }, [url, coreKeywords, userGoal, targetLocation, competitorBrands, excludeCompetitors, keywordCount]);
+
+    // URL validation function (Bug_28: Add URL validation)
+    const validateUrl = (urlValue: string): boolean => {
+        if (!urlValue.trim()) {
+            setUrlError('URL is required');
+            return false;
+        }
+        
+        try {
+            const urlObj = new URL(urlValue);
+            if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                setUrlError('URL must start with http:// or https://');
+                return false;
+            }
+            setUrlError('');
+            return true;
+        } catch (e) {
+            setUrlError('Please enter a valid URL (e.g., https://example.com)');
+            return false;
+        }
+    };
 
     const handleSave = async () => {
         if (generatedKeywords.length === 0) return;
@@ -74,10 +128,16 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 `Negatives: ${coreKeywords.substring(0, 20)}...`,
                 { url, coreKeywords, userGoal, generatedKeywords }
             );
-            alert("Negative keywords saved!");
+            // Bug_35: Use toast notification instead of alert
+            notifications.success('Negative keywords saved successfully!', {
+                title: 'Saved',
+                description: 'Your negative keywords have been saved.'
+            });
         } catch (error) {
             console.error("Save failed", error);
-            alert("Failed to save. Please try again.");
+            notifications.error('Failed to save. Please try again.', {
+                title: 'Save Failed'
+            });
         } finally {
             setIsSaving(false);
         }
@@ -85,9 +145,16 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
 
     // AI Generation Logic using Gemini
     const handleGenerate = async () => {
+        // Bug_28: Validate URL before generation
+        if (!validateUrl(url)) {
+            return;
+        }
+        
         // URL is now mandatory
         if (!url.trim() || !coreKeywords.trim() || !userGoal) {
-            alert('Please fill in all required fields including the URL');
+            notifications.warning('Please fill in all required fields including the URL', {
+                title: 'Missing Fields'
+            });
             return;
         }
         
@@ -433,7 +500,9 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
 
     const handleDownload = (format: 'standard' | 'google-ads-editor' = 'standard') => {
         if (filteredKeywords.length === 0) {
-            alert('No keywords to export');
+            notifications.warning('No keywords to export', {
+                title: 'No Keywords'
+            });
             return;
         }
 
@@ -534,13 +603,26 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                             <Input 
                                 placeholder="https://example.com/landing-page" 
                                 value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                className="bg-white/80"
+                                onChange={(e) => {
+                                    setUrl(e.target.value);
+                                    if (urlError) {
+                                        validateUrl(e.target.value);
+                                    }
+                                }}
+                                onBlur={(e) => validateUrl(e.target.value)}
+                                className={`bg-white/80 ${urlError ? 'border-red-500' : ''}`}
                                 required
                             />
-                            <p className="text-xs text-slate-500">
-                                AI will analyze this website to understand your business, CTA, and generate relevant negative keywords.
-                            </p>
+                            {urlError && (
+                                <p className="text-xs text-red-500 mt-1">
+                                    {urlError}
+                                </p>
+                            )}
+                            {!urlError && (
+                                <p className="text-xs text-slate-500">
+                                    AI will analyze this website to understand your business, CTA, and generate relevant negative keywords.
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-2">

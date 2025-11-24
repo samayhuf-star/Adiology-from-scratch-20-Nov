@@ -266,7 +266,9 @@ Generated on ${new Date().toLocaleDateString()}`;
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Failed to download invoice", error);
-            alert("Failed to download invoice. Please try again.");
+            notifications.error('Failed to download invoice. Please try again.', {
+                title: 'Download Failed'
+            });
         }
     };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift } from 'lucide-react';
+import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from './ui/label';
 import { LiveAdPreview } from './LiveAdPreview';
 import { api } from '../utils/api';
+import { notifications } from '../utils/notifications';
 
 interface AdGroup {
     id: string;
@@ -53,6 +54,7 @@ export const AdsBuilder = () => {
     ]);
     
     const [baseUrl, setBaseUrl] = useState('https://www.example.com');
+    const [urlError, setUrlError] = useState('');
     
     const [adConfig, setAdConfig] = useState({
         rsaCount: 1,
@@ -92,7 +94,13 @@ export const AdsBuilder = () => {
 
     const removeAdGroup = (id: string) => {
         if (adGroups.length > 1) {
-            setAdGroups(adGroups.filter(group => group.id !== id));
+            // Bug_23: Renumber groups after deletion (Group 2 becomes Group 1, etc.)
+            const filteredGroups = adGroups.filter(group => group.id !== id);
+            const renumberedGroups = filteredGroups.map((group, index) => ({
+                ...group,
+                name: `Group ${index + 1}`
+            }));
+            setAdGroups(renumberedGroups);
         }
     };
 
@@ -103,6 +111,40 @@ export const AdsBuilder = () => {
     };
 
     const generateAds = async () => {
+        // Bug_27: Validate URL before generating
+        const urlValue = baseUrl.trim();
+        if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+            setUrlError('Please enter a valid URL starting with http:// or https://');
+            notifications.warning('Please enter a valid URL', {
+                title: 'Invalid URL',
+                description: 'The landing page URL must start with http:// or https://'
+            });
+            return;
+        }
+        setUrlError('');
+
+        // Bug_33: Validate that no group fields are blank in multiple mode
+        if (mode === 'multiple') {
+            const blankGroups = adGroups.filter(g => !g.keywords.trim());
+            if (blankGroups.length > 0) {
+                const groupNames = blankGroups.map(g => g.name).join(', ');
+                notifications.warning(`Please enter keywords for all groups. The following groups are blank: ${groupNames}`, {
+                    title: 'Blank Group Fields',
+                    description: 'All groups must have keywords before generating ads.'
+                });
+                return;
+            }
+        }
+
+        // Bug_33: Validate single mode has keywords
+        if (mode === 'single' && !singleKeywords.trim()) {
+            notifications.warning('Please enter keywords', {
+                title: 'Keywords Required',
+                description: 'You must enter keywords before generating ads.'
+            });
+            return;
+        }
+
         setIsGenerating(true);
         try {
             const groupsToProcess = mode === 'single' 
@@ -110,7 +152,9 @@ export const AdsBuilder = () => {
                 : adGroups.filter(g => g.keywords.trim());
 
             if (groupsToProcess.length === 0 || groupsToProcess.every(g => !g.keywords.trim())) {
-                alert('Please enter keywords for at least one group');
+                notifications.warning('Please enter keywords for at least one group', {
+                    title: 'Keywords Required'
+                });
                 setIsGenerating(false);
                 return;
             }
@@ -121,7 +165,9 @@ export const AdsBuilder = () => {
 
             // Limit total ads to 25
             if (totalAdsToGenerate > 25) {
-                alert(`Total ads cannot exceed 25. You're trying to generate ${totalAdsToGenerate} ads (${groupsToProcess.length} groups × ${totalAdsPerGroup} ads per group). Please reduce the quantities or number of groups.`);
+                notifications.warning(`Total ads cannot exceed 25. You're trying to generate ${totalAdsToGenerate} ads (${groupsToProcess.length} groups × ${totalAdsPerGroup} ads per group). Please reduce the quantities or number of groups.`, {
+                    title: 'Too Many Ads'
+                });
                 setIsGenerating(false);
                 return;
             }
@@ -234,7 +280,9 @@ export const AdsBuilder = () => {
             setSelectedAds([]);
         } catch (error) {
             console.error('Generation error:', error);
-            alert('Failed to generate ads. Please try again.');
+            notifications.error('Failed to generate ads. Please try again.', {
+                title: 'Generation Failed'
+            });
         } finally {
             setIsGenerating(false);
         }
@@ -338,7 +386,9 @@ export const AdsBuilder = () => {
 
     const exportToCSV = () => {
         if (selectedAds.length === 0) {
-            alert('Please select at least one ad to export');
+            notifications.warning('Please select at least one ad to export', {
+                title: 'No Ads Selected'
+            });
             return;
         }
 
@@ -392,7 +442,9 @@ export const AdsBuilder = () => {
 
     const copyToClipboard = () => {
         if (selectedAds.length === 0) {
-            alert('Please select at least one ad to copy');
+            notifications.warning('Please select at least one ad to copy', {
+                title: 'No Ads Selected'
+            });
             return;
         }
 
@@ -406,7 +458,9 @@ export const AdsBuilder = () => {
         }).join('\n---\n\n');
 
         navigator.clipboard.writeText(text);
-        alert('Copied to clipboard!');
+        notifications.success('Copied to clipboard!', {
+            title: 'Copied'
+        });
     };
 
     const handleAddExtensions = (adId: string) => {
@@ -645,12 +699,33 @@ export const AdsBuilder = () => {
                                 type="url"
                                 placeholder="https://www.example.com"
                                 value={baseUrl}
-                                onChange={(e) => setBaseUrl(e.target.value)}
-                                    className="bg-white border-slate-300 focus:border-indigo-500"
+                                onChange={(e) => {
+                                    setBaseUrl(e.target.value);
+                                    // Clear validation error when user starts typing
+                                    if (urlError) setUrlError('');
+                                }}
+                                onBlur={(e) => {
+                                    // Bug_27: Validate URL on blur
+                                    const urlValue = e.target.value.trim();
+                                    if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                                        setUrlError('Please enter a valid URL starting with http:// or https://');
+                                    } else {
+                                        setUrlError('');
+                                    }
+                                }}
+                                className={`bg-white border-slate-300 focus:border-indigo-500 ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
-                            <p className="text-xs text-slate-500 mt-2">
-                                This URL will be used for all generated ads. You can edit individual ad URLs after generation.
-                            </p>
+                            {urlError && (
+                                <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {urlError}
+                                </p>
+                            )}
+                            {!urlError && (
+                                <p className="text-xs text-slate-500 mt-2">
+                                    This URL will be used for all generated ads. You can edit individual ad URLs after generation.
+                                </p>
+                            )}
                         </div>
                         </CardContent>
                     </Card>
@@ -687,7 +762,9 @@ export const AdsBuilder = () => {
                                         if (total <= 25) {
                                             setAdConfig({...adConfig, rsaCount: value});
                                         } else {
-                                            alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
+                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
+                                                title: 'Too Many Ads'
+                                            });
                                         }
                                     }}
                                             className="w-20 text-center font-semibold border-blue-300 focus:border-blue-500"
@@ -715,7 +792,9 @@ export const AdsBuilder = () => {
                                         if (total <= 25) {
                                             setAdConfig({...adConfig, dkiCount: value});
                                         } else {
-                                            alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
+                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
+                                                title: 'Too Many Ads'
+                                            });
                                         }
                                     }}
                                             className="w-20 text-center font-semibold border-purple-300 focus:border-purple-500"
@@ -743,7 +822,9 @@ export const AdsBuilder = () => {
                                         if (total <= 25) {
                                             setAdConfig({...adConfig, callOnlyCount: value});
                                         } else {
-                                            alert(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`);
+                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
+                                                title: 'Too Many Ads'
+                                            });
                                         }
                                     }}
                                             className="w-20 text-center font-semibold border-green-300 focus:border-green-500"

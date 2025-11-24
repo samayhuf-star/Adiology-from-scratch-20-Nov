@@ -551,6 +551,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [tempGroupName, setTempGroupName] = useState('');
   const [tempKeywords, setTempKeywords] = useState('');
   const [tempNegatives, setTempNegatives] = useState('');
+  // Bug_37: Store negative keywords per group
+  const [groupNegativeKeywords, setGroupNegativeKeywords] = useState<{ [groupName: string]: string[] }>({});
   
   // Helper to get dynamic ad groups based on structure
   const getDynamicAdGroups = useCallback(() => {
@@ -882,6 +884,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             rows={6}
             className="font-mono text-sm"
           />
+          <p className="text-xs text-slate-500 mt-2">
+            <span className="font-semibold">Note:</span> Each keyword must be at least 3 characters long.
+          </p>
           
           {/* Negative Keywords Input */}
           <div className="mt-4">
@@ -904,6 +909,22 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               onClick={async () => {
                 if (!seedKeywords.trim()) {
                   notifications.warning('Please enter seed keywords', { title: 'Seed Keywords Required' });
+                  return;
+                }
+
+                // Bug_44: Validate minimum character length for keywords
+                const seedList = seedKeywords.split('\n').filter(k => k.trim());
+                const MIN_KEYWORD_LENGTH = 3;
+                const invalidKeywords = seedList.filter(k => k.trim().length < MIN_KEYWORD_LENGTH);
+                
+                if (invalidKeywords.length > 0) {
+                  notifications.error(
+                    `Each keyword must be at least ${MIN_KEYWORD_LENGTH} characters long. Please check: ${invalidKeywords.slice(0, 3).join(', ')}${invalidKeywords.length > 3 ? '...' : ''}`,
+                    { 
+                      title: 'Invalid Keywords',
+                      description: `Keywords must be at least ${MIN_KEYWORD_LENGTH} characters long.`
+                    }
+                  );
                   return;
                 }
 
@@ -3242,8 +3263,40 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const handleSaveKeywords = (groupName: string) => {
       if (tempKeywords.trim()) {
         const newKeywords = tempKeywords.split(',').map(k => k.trim()).filter(Boolean);
-        // Update keywords - this would require updating selectedKeywords and regrouping
-        // For now, we'll just update the display
+        
+        // Bug_36: Actually update the keywords
+        // Get the current group to find which keywords to replace
+        const currentGroup = reviewAdGroups.find(g => g.name === groupName);
+        if (currentGroup) {
+          // Remove old keywords from selectedKeywords
+          const updatedKeywords = selectedKeywords.filter(kw => !currentGroup.keywords.includes(kw));
+          // Add new keywords
+          const finalKeywords = [...updatedKeywords, ...newKeywords];
+          setSelectedKeywords(finalKeywords);
+          
+          // Update ads that belong to this group to reflect new keywords
+          setGeneratedAds(prevAds => prevAds.map(ad => {
+            if (ad.adGroup === groupName) {
+              // Update ad content with new keywords if needed
+              const mainKeyword = newKeywords[0] || currentGroup.keywords[0] || '';
+              if (mainKeyword && ad.type === 'dki') {
+                // Update DKI ad with new keyword
+                return {
+                  ...ad,
+                  headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+                  headline2: `Best {KeyWord:${mainKeyword}} Deals`,
+                  headline3: `Order {KeyWord:${mainKeyword}} Online`,
+                };
+              }
+            }
+            return ad;
+          }));
+          
+          notifications.success('Keywords updated successfully', {
+            title: 'Keywords Saved',
+            description: `Updated keywords for ${groupName}`,
+          });
+        }
       }
       setEditingGroupKeywords(null);
     };
@@ -3253,9 +3306,19 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       setTempNegatives(negatives.join(', '));
     };
 
-    const handleSaveNegatives = () => {
+    const handleSaveNegatives = (groupName: string) => {
       if (tempNegatives.trim()) {
-        setNegativeKeywords(tempNegatives.split(',').map(n => n.trim()).filter(Boolean).join('\n'));
+        // Bug_37: Save negative keywords per group instead of globally
+        const newNegatives = tempNegatives.split(',').map(n => n.trim()).filter(Boolean);
+        setGroupNegativeKeywords(prev => ({
+          ...prev,
+          [groupName]: newNegatives
+        }));
+        
+        notifications.success('Negative keywords updated successfully', {
+          title: 'Negative Keywords Saved',
+          description: `Updated negative keywords for ${groupName}`,
+        });
       }
       setEditingGroupNegatives(null);
     };
@@ -3320,7 +3383,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               <TableBody>
                 {reviewAdGroups.map((group, idx) => {
                   const groupAds = generatedAds.filter(ad => ad.adGroup === group.name && !ad.extensionType);
-                  const allNegatives = negativeKeywords.split('\n').filter(n => n.trim());
+                  // Bug_37: Get negative keywords for this specific group, fallback to global if not set
+                  const groupNegatives = groupNegativeKeywords[group.name] || negativeKeywords.split('\n').filter(n => n.trim());
+                  const allNegatives = groupNegatives;
                   
                   return (
                     <TableRow key={idx} className={`border-b border-indigo-100/50 ${idx % 2 === 0 ? 'bg-white/60' : 'bg-indigo-50/40'} hover:bg-indigo-100/60 transition-colors`}>
@@ -3515,7 +3580,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={handleSaveNegatives}
+                                onClick={() => handleSaveNegatives(group.name)}
                                 className="h-7 text-xs"
                               >
                                 Save
@@ -3532,21 +3597,30 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           </div>
                         ) : (
                           <div className="space-y-1.5">
-                            {allNegatives.slice(0, 5).map((neg, nidx) => (
-                              <div key={nidx} className="text-xs text-red-700 font-mono bg-red-50/60 px-2 py-1 rounded border border-red-200">
-                                "{neg}"
-                              </div>
-                            ))}
-                            {allNegatives.length > 5 && (
-                              <div className="text-xs text-red-500 font-semibold bg-red-50/40 px-2 py-1 rounded border border-red-200">
-                                +{allNegatives.length - 5} more
+                            {allNegatives.length > 0 ? (
+                              <>
+                                {allNegatives.slice(0, 5).map((neg, nidx) => (
+                                  <div key={nidx} className="text-xs text-red-700 font-mono bg-red-50/60 px-2 py-1 rounded border border-red-200">
+                                    "{neg}"
+                                  </div>
+                                ))}
+                                {allNegatives.length > 5 && (
+                                  <div className="text-xs text-red-500 font-semibold bg-red-50/40 px-2 py-1 rounded border border-red-200">
+                                    +{allNegatives.length - 5} more
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="text-xs text-slate-500 italic bg-slate-50 px-2 py-1 rounded border border-slate-200">
+                                No negative keywords set
                               </div>
                             )}
                             <button 
                               onClick={() => handleEditNegatives(group.name, allNegatives)}
-                              className="text-xs text-red-600 hover:text-red-700 font-semibold hover:underline mt-2 flex items-center gap-1"
+                              className="text-xs text-red-600 hover:text-red-700 font-semibold hover:underline mt-2 flex items-center gap-1 cursor-pointer"
                             >
-                              Edit negatives
+                              <Edit3 className="w-3 h-3" />
+                              {allNegatives.length > 0 ? 'Edit negatives' : 'Add negatives'}
                             </button>
                           </div>
                         )}
@@ -3594,7 +3668,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     );
   };
 
-  // Step 6: Validate
+  // Step 6: Final Success Screen
   const renderStep6 = () => {
     const handleExportCSV = () => {
       if (!structureType || !campaignName || selectedKeywords.length === 0) {
@@ -3655,58 +3729,156 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       });
     };
 
-    // Validation checks
-    const validations = [
-      { check: !!campaignName, message: 'Campaign name is valid' },
-      { check: !!structureType, message: 'Structure selected' },
-      { check: selectedKeywords.length > 0, message: 'Keywords configured' },
-      { check: generatedAds.length > 0, message: 'Ads generated' },
-      { check: !!url, message: 'Landing page URL configured' }
-    ];
+    // Calculate stats using dynamicAdGroups
+    const reviewAdGroups = getDynamicAdGroups();
+    const totalAdGroups = reviewAdGroups.length;
+    const totalKeywords = selectedKeywords.length;
+    const totalAds = generatedAds.filter(ad => !ad.extensionType).length;
+    
+    // Calculate number of locations
+    let totalLocations = 0;
+    if (structureType === 'geo') {
+      if (targetType === 'STATE' && manualGeoInput) {
+        const states = manualGeoInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        totalLocations = statePreset === '0' ? getTopStatesByPopulation(targetCountry, 0).length : states.length;
+      } else if (targetType === 'CITY' && manualGeoInput) {
+        const cities = manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        totalLocations = cityPreset === '0' ? getTopCitiesByIncome(targetCountry, 0).length : cities.length;
+      } else if (targetType === 'ZIP' && manualGeoInput) {
+        const zips = manualGeoInput.split(',').map(z => z.trim()).filter(z => z.length > 0);
+        totalLocations = zips.length;
+      } else if (targetType === 'STATE' && selectedStates.length > 0) {
+        totalLocations = selectedStates.length;
+      } else if (targetType === 'CITY' && selectedCities.length > 0) {
+        totalLocations = selectedCities.length;
+      } else if (targetType === 'ZIP' && selectedZips.length > 0) {
+        totalLocations = selectedZips.length;
+      } else {
+        totalLocations = 1; // Default to 1 if only country is selected
+      }
+    } else {
+      totalLocations = 1; // Default to 1 for non-geo structures
+    }
 
-    const allValid = validations.every(v => v.check);
+    // Get structure name
+    const structureName = STRUCTURE_TYPES.find(s => s.id === structureType)?.name || 'Standard';
 
     return (
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">Validate Campaign</h2>
-          <p className="text-slate-600">Validate your campaign before export</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-slate-800">Campaign Created Successfully!</h2>
+          <p className="text-slate-500 mt-2">Your campaign is ready to export and implement</p>
         </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-6 text-center">
+              <div className="text-4xl font-bold text-indigo-600">1</div>
+              <div className="text-sm text-slate-600 mt-2">Campaign</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-6 text-center">
+              <div className="text-4xl font-bold text-purple-600">{totalAdGroups}</div>
+              <div className="text-sm text-slate-600 mt-2">Ad Groups</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-6 text-center">
+              <div className="text-4xl font-bold text-blue-600">{totalKeywords}</div>
+              <div className="text-sm text-slate-600 mt-2">Keywords</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-6 text-center">
+              <div className="text-4xl font-bold text-green-600">{totalLocations}</div>
+              <div className="text-sm text-slate-600 mt-2">Locations</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Campaign Summary */}
         <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
           <CardHeader>
-            <CardTitle>Validation Results</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-green-600" />
+              Campaign Summary
+            </CardTitle>
+            <CardDescription>All checks passed - ready for export</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {validations.map((validation, idx) => (
-                <div key={idx} className={`flex items-center gap-2 ${validation.check ? 'text-green-600' : 'text-red-600'}`}>
-                  {validation.check ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5" />
-                  )}
-                  <span>{validation.message}</span>
-                </div>
-              ))}
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label className="text-slate-500">Campaign Name</Label>
+                <Input 
+                  value={campaignName} 
+                  onChange={(e) => setCampaignName(e.target.value)}
+                  placeholder="Enter campaign name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-500">Structure</Label>
+                <p className="font-medium text-slate-800 py-2">{structureName}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-500">Target Location</Label>
+                <p className="font-medium text-slate-800 py-2">{targetCountry} {targetType !== 'COUNTRY' ? `(${targetType})` : ''}</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">
+                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                <span>Your campaign is validated and ready to export. Click "Download CSV" below to get your file.</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex justify-between">
-          <Button variant="ghost" onClick={() => setStep(5)}>
-            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-            Back
-          </Button>
-          <Button
-            size="lg"
+        {/* Export Actions */}
+        <div className="flex justify-center">
+          <Button 
+            size="lg" 
             onClick={handleExportCSV}
-            disabled={!allValid}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg py-6 px-8"
           >
             <Download className="mr-2 w-5 h-5" />
-            Export CSV
+            Download CSV for Google Ads Editor
           </Button>
+        </div>
+
+        {/* Next Actions */}
+        <div className="flex justify-between items-center pt-4">
+          <Button variant="ghost" onClick={() => setStep(5)}>
+            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+            Back to Review
+          </Button>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setStep(1);
+                setCampaignName(generateDefaultCampaignName());
+                setSelectedKeywords([]);
+                setGeneratedAds([]);
+              }}
+            >
+              <Plus className="mr-2 w-4 h-4" />
+              Create Another Campaign
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.href = '/'}
+            >
+              Go to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
     );

@@ -3,6 +3,7 @@ import { Shuffle, Plus, X, Download, Save } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
 import { historyService } from '../utils/historyService';
+import { notifications } from '../utils/notifications';
 
 export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     // Store each list as a string (newline-separated)
@@ -20,6 +21,9 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     });
 
     useEffect(() => {
+        // Bug_45: Scroll to top when component mounts
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
         if (initialData) {
             // Convert old array format to newline-separated strings if needed
             if (initialData.lists) {
@@ -46,10 +50,14 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
                 `Mixer: ${mixedKeywords.length} Combinations`,
                 { listA, listB, listC, mixedKeywords, matchTypes }
             );
-            alert("Mixer result saved!");
+            notifications.success('Mixer result saved!', {
+                title: 'Saved Successfully'
+            });
         } catch (error) {
             console.error("Save failed", error);
-            alert("Failed to save. Please try again.");
+            notifications.error('Failed to save. Please try again.', {
+                title: 'Save Failed'
+            });
         } finally {
             setIsSaving(false);
         }

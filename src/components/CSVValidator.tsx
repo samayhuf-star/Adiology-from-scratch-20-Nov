@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Upload, Download, Sparkles, AlertCircle, CheckCircle, AlertTriangle, FileText, Loader2, FolderOpen, Layers, Hash, MinusCircle, FileType, Link, Phone, MapPin, MessageSquare, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as XLSXStyle from 'xlsx-js-style';
@@ -141,12 +141,15 @@ export const CSVValidator = () => {
     const [uploadedHeaders, setUploadedHeaders] = useState<string[]>([]);
     const [validationResults, setValidationResults] = useState<any>({});
     const [fileName, setFileName] = useState('');
+    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const [fileUrl, setFileUrl] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isFixing, setIsFixing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [totalErrors, setTotalErrors] = useState(0);
     const [totalWarnings, setTotalWarnings] = useState(0);
+    const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const validateData = useCallback((data: any[], headers: string[]) => {
         const results: any = {};
@@ -190,11 +193,53 @@ export const CSVValidator = () => {
         return { errors, warnings };
     }, []);
 
+    // Auto-hide success message after 4 seconds (Bug 24)
+    useEffect(() => {
+        if (successMessage) {
+            // Clear any existing timeout
+            if (successTimeoutRef.current) {
+                clearTimeout(successTimeoutRef.current);
+            }
+            
+            // Set new timeout to hide message after 4 seconds
+            successTimeoutRef.current = setTimeout(() => {
+                setSuccessMessage('');
+            }, 4000);
+        }
+
+        // Cleanup timeout on unmount
+        return () => {
+            if (successTimeoutRef.current) {
+                clearTimeout(successTimeoutRef.current);
+            }
+        };
+    }, [successMessage]);
+
+    // Cleanup file URL on unmount
+    useEffect(() => {
+        return () => {
+            if (fileUrl) {
+                URL.revokeObjectURL(fileUrl);
+            }
+        };
+    }, [fileUrl]);
+
     const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
+        // Clean up previous file URL if exists
+        if (fileUrl) {
+            URL.revokeObjectURL(fileUrl);
+        }
+
         setFileName(file.name);
+        setUploadedFile(file);
+        
+        // Create object URL for the file so it can be opened in a new tab
+        const url = URL.createObjectURL(file);
+        setFileUrl(url);
+
         setIsProcessing(true);
         setErrorMessage('');
         setSuccessMessage('');
@@ -220,7 +265,7 @@ export const CSVValidator = () => {
             }
         };
         reader.readAsText(file);
-    }, [validateData]);
+    }, [validateData, fileUrl]);
 
     const handleCellEdit = (rowIdx: number, header: string, newValue: string) => {
         const newData = [...uploadedData];
@@ -496,7 +541,18 @@ export const CSVValidator = () => {
                     {fileName && (
                         <div className="mt-4 flex items-center justify-center gap-2 text-sm text-indigo-600">
                             <FileText className="w-4 h-4" />
-                            <span className="font-medium">{fileName}</span>
+                            {fileUrl ? (
+                                <a
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium hover:underline cursor-pointer"
+                                >
+                                    {fileName}
+                                </a>
+                            ) : (
+                                <span className="font-medium">{fileName}</span>
+                            )}
                         </div>
                     )}
                 </div>
@@ -684,7 +740,7 @@ export const CSVValidator = () => {
                         <div className="flex gap-3">
                             <button
                                 onClick={handleAIFix}
-                                disabled={isFixing}
+                                disabled={isFixing || totalErrors === 0}
                                 className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {isFixing ? (
@@ -708,8 +764,9 @@ export const CSVValidator = () => {
                             </button>
                             <button
                                 onClick={handleDownloadWithErrors}
-                                disabled={totalErrors === 0}
+                                disabled={totalErrors === 0 || uploadedData.length === 0}
                                 className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                title={totalErrors === 0 ? "No errors to download" : "Download CSV with highlighted errors"}
                             >
                                 <FileSpreadsheet className="w-5 h-5" />
                                 Download CSV with Errors

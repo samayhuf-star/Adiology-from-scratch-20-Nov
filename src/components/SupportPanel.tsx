@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { api } from '../utils/api';
+import { notifications } from '../utils/notifications';
 
 interface Ticket {
     id: string;
@@ -88,7 +89,9 @@ export const SupportPanel = () => {
                 setPriority('Medium');
                 await fetchTickets();
                 // Show success message
-                alert('✅ Ticket submitted successfully! Our team will respond soon.');
+                notifications.success('Ticket submitted successfully! Our team will respond soon.', {
+                    title: 'Ticket Submitted'
+                });
             } catch (apiError) {
                 // Fallback to localStorage - work silently
                 console.log('ℹ️ Saving ticket to local storage (API unavailable)');
@@ -113,11 +116,15 @@ export const SupportPanel = () => {
                 await fetchTickets();
                 
                 // Show success message (not error)
-                alert('✅ Ticket saved successfully! Your ticket has been recorded and our team will review it.');
+                notifications.success('Ticket saved successfully! Your ticket has been recorded and our team will review it.', {
+                    title: 'Ticket Saved'
+                });
             }
         } catch (error) {
             console.error("Create ticket error", error);
-            alert('❌ Failed to submit ticket. Please try again.');
+            notifications.error('Failed to submit ticket. Please try again.', {
+                title: 'Submission Failed'
+            });
         } finally {
             setIsSubmitting(false);
         }

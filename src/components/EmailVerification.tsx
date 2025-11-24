@@ -157,9 +157,12 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
           description: 'Please use the verification link shown in the console for testing.',
         });
 
-        // For testing: Show URL in console and alert
+        // For testing: Show URL in console and toast
         if (import.meta.env.DEV) {
-          alert(`For testing: Use this verification link:\n\n${verificationUrl}\n\n(Email service is unavailable)`);
+          notifications.info(`For testing: Use this verification link:\n\n${verificationUrl}\n\n(Email service is unavailable)`, {
+            title: 'Verification Link',
+            duration: 10000
+          });
         }
 
         // Still update token so user can verify manually

@@ -171,9 +171,9 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert variant="destructive" className="border-red-500 bg-red-50">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <AlertDescription className="text-red-700 font-medium">{error}</AlertDescription>
                 </Alert>
               )}
 
@@ -267,9 +267,17 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                     <input type="checkbox" className="rounded border-slate-300" />
                     <span className="text-slate-700 font-medium">Remember me</span>
                   </label>
-                  <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError('');
+                      // TODO: Implement forgot password functionality
+                      setError('Forgot password feature coming soon. Please contact support for assistance.');
+                    }}
+                    className="text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer"
+                  >
                     Forgot password?
-                  </a>
+                  </button>
                 </div>
               )}
 

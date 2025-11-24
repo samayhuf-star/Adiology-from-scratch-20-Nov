@@ -10,6 +10,7 @@ import {
 import { CrazyKeywordsBuilder } from './CrazyKeywordsBuilder';
 import { adminApi } from '../utils/api/admin';
 import { lambdaTestApi, type LambdaTestBuild, type LambdaTestSession } from '../utils/api/lambdatest';
+import { notifications } from '../utils/notifications';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -304,7 +305,9 @@ const UsersModule = () => {
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Failed to delete user');
+      notifications.error('Failed to delete user', {
+        title: 'Delete Failed'
+      });
     }
   };
 
@@ -316,13 +319,17 @@ const UsersModule = () => {
       loadUsers();
     } catch (error: any) {
       console.error('Error suspending user:', error);
-      alert(error.message || 'Failed to update user status. Backend API required.');
+      notifications.error(error.message || 'Failed to update user status. Backend API required.', {
+        title: 'Update Failed'
+      });
     }
   };
 
   const handleAddUser = async () => {
     if (!newUser.email || !newUser.password) {
-      alert('Please fill in email and password');
+      notifications.warning('Please fill in email and password', {
+        title: 'Required Fields'
+      });
       return;
     }
 
@@ -337,10 +344,14 @@ const UsersModule = () => {
       setShowAddUserDialog(false);
       setNewUser({ email: '', password: '', full_name: '', subscription_plan: 'free' });
       loadUsers();
-      alert('User created successfully!');
+      notifications.success('User created successfully!', {
+        title: 'User Created'
+      });
     } catch (error: any) {
       console.error('Error creating user:', error);
-      alert(error.message || 'Failed to create user. Backend API required.');
+      notifications.error(error.message || 'Failed to create user. Backend API required.', {
+        title: 'Creation Failed'
+      });
     } finally {
       setAddingUser(false);
     }
@@ -352,13 +363,20 @@ const UsersModule = () => {
     try {
       const result = await adminApi.resetPassword(userId);
       if (result.link) {
-        alert(`Password reset link: ${result.link}`);
+        notifications.success(`Password reset link: ${result.link}`, {
+          title: 'Reset Link Generated',
+          duration: 10000
+        });
       } else {
-        alert('Password reset initiated. Check backend logs for the reset link.');
+        notifications.info('Password reset initiated. Check backend logs for the reset link.', {
+          title: 'Reset Initiated'
+        });
       }
     } catch (error: any) {
       console.error('Error resetting password:', error);
-      alert(error.message || 'Failed to reset password. Backend API required.');
+      notifications.error(error.message || 'Failed to reset password. Backend API required.', {
+        title: 'Reset Failed'
+      });
     }
   };
 
@@ -962,12 +980,16 @@ const TestingModule = () => {
   const handleTriggerTest = async (type: 'selenium' | 'cypress' | 'playwright' | 'puppeteer' | 'k6') => {
     try {
       const result = await lambdaTestApi.triggerTest(type);
-      alert(result.message || `Test triggered for ${type}. Check LambdaTest dashboard for execution.`);
+      notifications.success(result.message || `Test triggered for ${type}. Check LambdaTest dashboard for execution.`, {
+        title: 'Test Triggered'
+      });
       setTimeout(() => {
         loadTestResults();
       }, 2000);
     } catch (error: any) {
-      alert(`Failed to trigger test: ${error.message}`);
+      notifications.error(`Failed to trigger test: ${error.message}`, {
+        title: 'Test Trigger Failed'
+      });
     }
   };
 

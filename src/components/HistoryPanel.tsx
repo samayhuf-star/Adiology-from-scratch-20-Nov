@@ -10,6 +10,7 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { historyService } from '../utils/historyService';
+import { notifications } from '../utils/notifications';
 
 interface HistoryItem {
     id: string;
@@ -62,9 +63,20 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
     const handleDelete = async (id: string) => {
         try {
             await historyService.deleteHistory(id);
+            const deletedItem = history.find(item => item.id === id);
             setHistory(history.filter(item => item.id !== id));
+            
+            // Show success notification
+            notifications.success('History item deleted successfully', {
+                title: 'Deleted',
+                description: deletedItem ? `"${deletedItem.name}" has been removed from your history.` : 'Item has been removed from your history.'
+            });
         } catch (error) {
             console.error("Failed to delete", error);
+            notifications.error('Failed to delete history item', {
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'An error occurred while deleting the item.'
+            });
         }
     };
 

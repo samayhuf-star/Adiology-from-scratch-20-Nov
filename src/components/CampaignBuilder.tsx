@@ -618,6 +618,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [geo, setGeo] = useState('ZIP');
     const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
     const [url, setUrl] = useState('');
+    const [urlError, setUrlError] = useState('');
 
     // Step 2: Keywords
     const [seedKeywords, setSeedKeywords] = useState('Call airline\nairline number\ncall united. number\ndelta phone number');
@@ -1109,11 +1110,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const handleNextStep = () => {
         if (step >= 6) return; // Don't go beyond step 6
         
+        // Bug_18: Validate URL before proceeding from step 1
+        if (step === 1) {
+            const urlValue = url.trim();
+            if (!urlValue) {
+                setUrlError('Landing page URL is required');
+                return;
+            }
+            if (!urlValue.match(/^https?:\/\/.+/i)) {
+                setUrlError('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+            setUrlError('');
+        }
+        
         const nextStep = step + 1;
         
         // Handle step-specific logic BEFORE incrementing
         if (step === 1) {
-            // Moving from Step 1 to Step 2 - nothing special needed
+            // Moving from Step 1 to Step 2 - validation already done above
         } else if (step === 2) {
             // Log selected keywords for campaign creation
             console.log(`✅ Proceeding to Ad Creation with ${selectedKeywords.length} selected keywords:`, selectedKeywords);
@@ -1711,10 +1726,29 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 id="url"
                                 placeholder="https://www.example.com/landing-page" 
                                 value={url}
-                                onChange={(e) => setUrl(e.target.value)}
-                                className="pl-10 py-6 text-lg bg-white"
+                                onChange={(e) => {
+                                    setUrl(e.target.value);
+                                    // Clear validation error when user starts typing
+                                    if (urlError) setUrlError('');
+                                }}
+                                onBlur={(e) => {
+                                    // Bug_18: Validate URL on blur
+                                    const urlValue = e.target.value.trim();
+                                    if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                                        setUrlError('Please enter a valid URL starting with http:// or https://');
+                                    } else {
+                                        setUrlError('');
+                                    }
+                                }}
+                                className={`pl-10 py-6 text-lg bg-white ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
                         </div>
+                        {urlError && (
+                            <p className="text-sm text-red-600 flex items-center gap-1">
+                                <AlertCircle className="w-4 h-4" />
+                                {urlError}
+                            </p>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -1998,6 +2032,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         setEditingAdId(null);
         // Ad is already updated in state through inline editing
         updateUndoRedoState();
+        
+        // Bug_21: Show success confirmation popup
+        notifications.success('Changes saved successfully', {
+            title: 'Ad Updated',
+            description: 'Your ad changes have been saved.',
+        });
     };
     
     const handleCancelEdit = () => {
@@ -2284,24 +2324,27 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
         );
         
+        // Bug_20: Check limit once and show only one validation message
         if (type === 'rsa' || type === 'dki' || type === 'callonly') {
             if (selectedAdGroup === ALL_AD_GROUPS_VALUE) {
                 // For ALL AD GROUPS mode, check selectedAdIds
                 if (selectedAdIds.length >= 3) {
-                    notifications.error('Maximum limit reached: You can select up to 3 ads for all ad groups.', {
+                    const adTypeName = type === 'rsa' ? 'Responsive Search Ad' : type === 'dki' ? 'DKI Text Ad' : 'Call Only Ad';
+                    notifications.error(`Maximum limit reached: You can select up to 3 ads for all ad groups.`, {
                         title: 'Ad Limit Reached',
-                        description: 'Please remove an ad from selection before adding another. Maximum 3 ads allowed per ad group.',
+                        description: `You cannot create more ${adTypeName}s. Please remove an ad from selection before adding another. Maximum 3 ads allowed per ad group.`,
                         priority: 'high',
                     });
-                return;
+                    return;
             }
             } else {
                 // For specific group mode, check ads in that group
                 const groupAds = regularAds.filter(ad => ad.adGroup === selectedAdGroup);
                 if (groupAds.length >= 3) {
+                    const adTypeName = type === 'rsa' ? 'Responsive Search Ad' : type === 'dki' ? 'DKI Text Ad' : 'Call Only Ad';
                     notifications.error(`Maximum limit reached: You can create up to 3 ads per ad group.`, {
                         title: 'Ad Limit Reached',
-                        description: `The selected ad group already has ${groupAds.length} ads. Please delete an ad or select another group.`,
+                        description: `The selected ad group already has ${groupAds.length} ads. You cannot create more ${adTypeName}s. Please delete an ad or select another group.`,
                         priority: 'high',
                     });
                     return;
@@ -2864,12 +2907,24 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                 )}
                                                 {ad.extensionType === 'sitelink' && ad.sitelinks && (
                                                     <div className="space-y-1">
-                                                        {ad.sitelinks.slice(0, 4).map((sl: any, idx: number) => (
-                                                            <div key={idx} className="text-xs">
-                                                                <span className="text-blue-600 font-semibold">{sl.text}</span>
-                                                                {sl.description && <span className="text-slate-600 ml-1">- {sl.description}</span>}
-                                        </div>
-                                                        ))}
+                                                        {ad.sitelinks.slice(0, 4).map((sl: any, idx: number) => {
+                                                            const sitelinkUrl = sl.url || ad.finalUrl || url || 'https://www.example.com';
+                                                            const formattedUrl = sitelinkUrl.match(/^https?:\/\//i) ? sitelinkUrl : `https://${sitelinkUrl}`;
+                                                            return (
+                                                                <div key={idx} className="text-xs">
+                                                                    <a 
+                                                                        href={formattedUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 font-semibold hover:text-blue-800 hover:underline cursor-pointer"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        {sl.text}
+                                                                    </a>
+                                                                    {sl.description && <span className="text-slate-600 ml-1">- {sl.description}</span>}
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
                                                 {ad.extensionType === 'call' && ad.phone && (
@@ -4073,12 +4128,18 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             const validation = validateCSV();
                             if (validation.valid) {
                                 if (validation.warnings.length > 0) {
-                                    alert(`✅ CSV Validation Passed!\n\nWarnings:\n${validation.warnings.join('\n')}\n\nYou can proceed with export.`);
+                                    notifications.success(`CSV Validation Passed! Warnings: ${validation.warnings.join(', ')}. You can proceed with export.`, {
+                                        title: 'Validation Passed'
+                                    });
                                 } else {
-                                    alert('✅ CSV Validation Passed! All checks passed. Ready for Google Ads Editor import.');
+                                    notifications.success('CSV Validation Passed! All checks passed. Ready for Google Ads Editor import.', {
+                                        title: 'Validation Passed'
+                                    });
                                 }
                             } else {
-                                alert(`❌ CSV Validation Failed!\n\nErrors:\n${validation.errors.join('\n')}\n\nWarnings:\n${validation.warnings.join('\n')}\n\nPlease fix these issues before exporting.`);
+                                notifications.error(`CSV Validation Failed! Errors: ${validation.errors.join(', ')}. Warnings: ${validation.warnings.join(', ')}. Please fix these issues before exporting.`, {
+                                    title: 'Validation Failed'
+                                });
                             }
                         }}
                         className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-lg py-6"
@@ -4236,7 +4297,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                                 await loadSavedCampaigns();
                                                             } catch (error) {
                                                                 console.error("Failed to delete", error);
-                                                                alert('Failed to delete campaign. Please try again.');
+                                                                notifications.error('Failed to delete campaign. Please try again.', {
+                                                                    title: 'Delete Failed'
+                                                                });
                                                             }
                                                         }
                                                     }}

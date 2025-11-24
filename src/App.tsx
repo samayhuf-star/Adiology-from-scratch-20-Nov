@@ -57,6 +57,36 @@ const App = () => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
+  const handleNotificationClick = (notification: typeof notifications[0]) => {
+    // Mark as read
+    handleMarkNotificationAsRead(notification.id);
+    
+    // Redirect based on notification type
+    const title = notification.title.toLowerCase();
+    if (title.includes('campaign')) {
+      setActiveTab('campaign-builder');
+    } else if (title.includes('export') || title.includes('csv')) {
+      setActiveTab('csv-validator');
+    } else if (title.includes('billing') || title.includes('subscription')) {
+      setActiveTab('settings');
+      // Optionally open billing tab in settings
+      const settingsPanel = document.querySelector('[data-settings-tab="billing"]');
+      if (settingsPanel) {
+        (settingsPanel as HTMLElement).click();
+      }
+    } else if (title.includes('keyword')) {
+      setActiveTab('keyword-planner');
+    }
+  };
+
+  const handleViewAllNotifications = () => {
+    // Navigate to a notifications view or show all notifications
+    // For now, we'll just scroll to show all notifications in the dropdown
+    // In a full implementation, this could open a dedicated notifications panel
+    setActiveTab('settings');
+    // You could also create a dedicated notifications tab/page
+  };
+
   const handleMarkAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
@@ -385,7 +415,7 @@ const App = () => {
       <Auth
         onLoginSuccess={() => {
           // Directly go to dashboard - no admin/user selection
-          setAppView('user');
+            setAppView('user');
         }}
         onBackToHome={() => setAppView('home')}
       />
@@ -476,6 +506,8 @@ const App = () => {
         return <HistoryPanel onLoadItem={handleLoadHistory} />;
       case 'support-help':
         return <SupportHelpCombined />;
+      case 'support':
+        return <SupportPanel />;
       case 'settings':
         return <SettingsPanel />;
       case 'billing':
@@ -514,7 +546,7 @@ const App = () => {
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -531,7 +563,7 @@ const App = () => {
                 onClick={() => {
                   setActiveTab(item.id);
                 }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
                   isActive
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/50'
                     : 'text-slate-600 hover:bg-slate-100'
@@ -571,7 +603,7 @@ const App = () => {
             {/* Notifications Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-            <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors">
+            <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
               <Bell className="w-5 h-5 text-slate-600" />
                   {unreadCount > 0 && (
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -584,7 +616,7 @@ const App = () => {
                   {unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllAsRead}
-                      className="text-xs text-indigo-600 hover:text-indigo-700"
+                      className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer"
                     >
                       Mark all as read
             </button>
@@ -603,7 +635,7 @@ const App = () => {
                         className={`flex flex-col items-start p-3 cursor-pointer hover:bg-slate-50 ${
                           !notification.read ? 'bg-indigo-50/50' : ''
                         }`}
-                        onClick={() => handleMarkNotificationAsRead(notification.id)}
+                        onClick={() => handleNotificationClick(notification)}
                       >
                         <div className="flex items-start justify-between w-full">
                           <div className="flex-1">
@@ -630,7 +662,10 @@ const App = () => {
                 {notifications.length > 0 && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-center justify-center text-sm text-indigo-600">
+                    <DropdownMenuItem 
+                      className="text-center justify-center text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                      onClick={handleViewAllNotifications}
+                    >
                       View all notifications
                     </DropdownMenuItem>
                   </>
@@ -719,7 +754,7 @@ const App = () => {
                         </>
                       );
                     })()}
-                  </div>
+            </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setActiveTab('settings')}>
