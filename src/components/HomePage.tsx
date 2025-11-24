@@ -481,9 +481,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* Detailed Features Section */}
-      <section id="features" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white/80">
+      <section id="features" className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-white/80">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+          <div className="text-center mb-16 sm:mb-20 lg:mb-24">
             <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 px-4 py-1.5">
               Powerful Features
             </Badge>
@@ -496,18 +496,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
           </div>
 
           {/* Prebuilt Campaign Structures Section */}
-          <div className="mb-16 sm:mb-20">
-            <div className="text-center mb-12 sm:mb-16">
+          <div className="mb-20 sm:mb-24 lg:mb-28">
+            <div className="text-center mb-16 sm:mb-20">
               <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 px-4 py-1.5">
                 Builder 2.0
               </Badge>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-800 mb-4 sm:mb-6">
                 Prebuilt Super Successful Campaign Structures
               </h2>
-              <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto mb-6">
+              <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto mb-8">
                 Just select from the icons and we'll do the rest. Highly optimized campaigns from Day 1, Zero Wastage and tons of saving.
               </p>
-              <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-12">
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle2 className="w-5 h-5" />
                   <span className="font-semibold">Highly Optimized from Day 1</span>
@@ -523,7 +523,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 mb-16">
               {[
                 { id: 'skag', name: 'SKAG', icon: Zap, description: 'Single Keyword Ad Group - Maximum relevance', color: 'from-yellow-400 to-orange-500' },
                 { id: 'stag', name: 'STAG', icon: TrendingUp, description: 'Single Theme Ad Group - Balanced approach', color: 'from-blue-400 to-cyan-500' },
@@ -545,11 +545,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
                     className="border-2 border-slate-200 hover:border-indigo-400 transition-all hover:shadow-xl cursor-pointer group"
                     onClick={onGetStarted}
                   >
-                    <CardContent className="p-6">
-                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${structure.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                    <CardContent className="p-6 sm:p-8">
+                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${structure.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
                         <Icon className="w-7 h-7 text-white" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-800 mb-2">{structure.name}</h3>
+                      <h3 className="text-xl font-bold text-slate-800 mb-3">{structure.name}</h3>
                       <p className="text-sm text-slate-600 leading-relaxed">{structure.description}</p>
                     </CardContent>
                   </Card>
@@ -557,7 +557,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
               })}
             </div>
 
-            <div className="mt-12 text-center">
+            <div className="mt-16 sm:mt-20 text-center">
               <Button
                 size="lg"
                 onClick={onGetStarted}
@@ -569,7 +569,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
           </div>
 
           {/* Featured Feature Showcase */}
-          <div className="mb-16">
+          <div className="mb-20 sm:mb-24">
             <Card className="border-2 border-indigo-200 overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50">
               <CardContent className="p-8 sm:p-12">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -618,7 +618,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
           </div>
 
           {/* All Features Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mt-12">
             {detailedFeatures.map((feature, idx) => (
               <Card 
                 key={idx} 
@@ -648,9 +648,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* Benefits Section */}
-      <section className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <section className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-16 sm:mb-20">
             <Badge className="mb-4 bg-indigo-100 text-indigo-700 border-indigo-200 px-4 py-1.5">
               Why Choose Adiology
             </Badge>
@@ -662,7 +662,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-16 sm:mb-20">
             {benefits.map((benefit, idx) => (
               <div key={idx} className="bg-white rounded-xl p-6 sm:p-8 shadow-lg hover:shadow-xl transition-all border border-slate-200 hover:-translate-y-1">
                 <div className="flex items-start justify-between mb-4">
@@ -731,9 +731,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
+      <section id="how-it-works" className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-16 sm:mb-20">
             <Badge className="mb-4 bg-indigo-100 text-indigo-700 border-indigo-200 px-4 py-1.5">
               Simple Process
             </Badge>
@@ -745,7 +745,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-16">
             {howItWorks.map((item, idx) => (
               <div key={idx} className="relative">
                 <div className={`bg-gradient-to-br ${item.color} rounded-xl p-6 sm:p-8 border border-white/20 hover:shadow-xl transition-all h-full text-white`}>
@@ -768,9 +768,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* Use Cases Section */}
-      <section className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-indigo-50">
+      <section className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-indigo-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-16 sm:mb-20">
             <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200 px-4 py-1.5">
               Perfect For
             </Badge>
@@ -779,7 +779,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mt-8">
             {useCases.map((useCase, idx) => (
               <Card key={idx} className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl">
                 <CardContent className="p-6 sm:p-8">
@@ -802,9 +802,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
+      <section id="testimonials" className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-16 sm:mb-20">
             <Badge className="mb-4 bg-green-100 text-green-700 border-green-200 px-4 py-1.5">
               Customer Stories
             </Badge>
@@ -816,7 +816,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
+          <div className="grid md:grid-cols-2 gap-8 sm:gap-10 mt-8">
             {testimonials.map((testimonial, idx) => (
               <Card key={idx} className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl">
                 <CardContent className="p-6 sm:p-8">
@@ -844,9 +844,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+      <section id="pricing" className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-16 sm:mb-20">
             <Badge className="mb-4 bg-indigo-100 text-indigo-700 border-indigo-200 px-4 py-1.5">
               Choose Your Plan
             </Badge>
@@ -858,7 +858,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mt-8">
             {/* Lifetime Limited Plan */}
             <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
               <CardContent className="p-6 sm:p-8">
@@ -1038,9 +1038,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
       </section>
 
       {/* Contact Us Section */}
-      <section id="contact" className="relative z-10 py-16 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-indigo-50">
+      <section id="contact" className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-indigo-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Get In Touch
             </h2>
@@ -1049,7 +1049,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mt-8">
             {/* Contact Form */}
             <Card className="border-slate-200 shadow-xl">
               <CardContent className="p-6 sm:p-8">
