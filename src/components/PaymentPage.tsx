@@ -219,16 +219,6 @@ const PaymentForm: React.FC<{
       // Get user email from Supabase
       let userEmail: string | undefined;
       try {
-        const { getCurrentAuthUser } = await import('../utils/auth');
-        const user = await getCurrentAuthUser();
-        userEmail = user?.email;
-      } catch (e) {
-        console.error('Error getting user email:', e);
-      }
-
-      // Get user email from Supabase
-      let userEmail: string | undefined;
-      try {
         const user = await getCurrentAuthUser();
         userEmail = user?.email;
       } catch (e) {
