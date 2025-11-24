@@ -1214,137 +1214,73 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin }) => 
         </div>
       </section>
 
-      {/* Comprehensive Footer */}
-      <footer className="relative z-10 py-12 sm:py-16 px-4 sm:px-6 bg-slate-900 text-slate-300">
+      {/* Compact Footer */}
+      <footer className="relative z-10 py-8 sm:py-10 px-4 sm:px-6 bg-slate-900 text-slate-300">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-12 mb-8 sm:mb-12">
-            {/* Brand */}
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
-                  <Sparkle className="w-6 h-6 text-white" />
+          {/* Main Footer Content */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 lg:gap-8 mb-6">
+            {/* Brand & Social */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
+                  <Sparkle className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex flex-col">
-                <span className="text-xl font-bold text-white">Adiology</span>
+                  <span className="text-lg font-bold text-white">Adiology</span>
                   <span className="text-xs text-slate-400 -mt-0.5">~ Samay</span>
                 </div>
               </div>
-              <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-                Professional Google Ads campaign builder powered by AI. Transform your advertising workflow and build winning campaigns in minutes.
-              </p>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <a href="#" className="text-slate-400 hover:text-white transition" aria-label="Twitter">
-                  <Twitter className="w-5 h-5" />
+                  <Twitter className="w-4 h-4" />
                 </a>
                 <a href="#" className="text-slate-400 hover:text-white transition" aria-label="LinkedIn">
-                  <Linkedin className="w-5 h-5" />
+                  <Linkedin className="w-4 h-4" />
                 </a>
                 <a href="#" className="text-slate-400 hover:text-white transition" aria-label="GitHub">
-                  <Github className="w-5 h-5" />
+                  <Github className="w-4 h-4" />
                 </a>
                 <a href="#" className="text-slate-400 hover:text-white transition" aria-label="Facebook">
-                  <Facebook className="w-5 h-5" />
+                  <Facebook className="w-4 h-4" />
                 </a>
               </div>
             </div>
 
-            {/* Product */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
-              <ul className="space-y-3 text-sm">
-                <li><a href="#features" className="hover:text-white transition">Features</a></li>
-                <li><a href="#how-it-works" className="hover:text-white transition">How It Works</a></li>
-                <li><a href="#pricing" className="hover:text-white transition">Pricing</a></li>
-                <li><a href="#" className="hover:text-white transition">Campaign Builder</a></li>
-                <li><a href="#" className="hover:text-white transition">Keyword Planner</a></li>
-                <li><a href="#" className="hover:text-white transition">CSV Validator</a></li>
-                <li><a href="#" className="hover:text-white transition">Ads Builder</a></li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
-              <ul className="space-y-3 text-sm">
-                <li><a href="#" className="hover:text-white transition">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
-                <li><a href="#" className="hover:text-white transition">Press Kit</a></li>
-                <li><a href="#" className="hover:text-white transition">Partners</a></li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h4 className="font-semibold text-white mb-4">Support</h4>
-              <ul className="space-y-3 text-sm">
-                <li><a href="#" className="hover:text-white transition">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition">Documentation</a></li>
-                <li><a href="#" className="hover:text-white transition">API Reference</a></li>
-                <li><a href="#" className="hover:text-white transition">Community</a></li>
-                <li><a href="#" className="hover:text-white transition">Status</a></li>
-              </ul>
+            {/* Quick Links */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <a href="#features" className="hover:text-white transition">Features</a>
+              <a href="#how-it-works" className="hover:text-white transition">How It Works</a>
+              <a href="#pricing" className="hover:text-white transition">Pricing</a>
+              <a href="#contact" className="hover:text-white transition">Contact</a>
+              <a href="#" className="hover:text-white transition">Help Center</a>
             </div>
           </div>
 
-          {/* Policies & Legal */}
-          <div className="border-t border-slate-800 pt-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div>
-                <h5 className="font-semibold text-white mb-3">Legal</h5>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Privacy Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Terms of Service</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Cookie Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">GDPR Compliance</a></li>
-                </ul>
+          {/* Legal Links & Bottom Bar */}
+          <div className="border-t border-slate-800 pt-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs sm:text-sm">
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-slate-400">
+                <a href="#" className="hover:text-white transition">Privacy Policy</a>
+                <span className="text-slate-600">•</span>
+                <a href="#" className="hover:text-white transition">Terms of Service</a>
+                <span className="text-slate-600">•</span>
+                <a href="#" className="hover:text-white transition">Cookie Policy</a>
+                <span className="text-slate-600">•</span>
+                <a href="#" className="hover:text-white transition">GDPR</a>
               </div>
-              <div>
-                <h5 className="font-semibold text-white mb-3">Security</h5>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Security Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Data Protection</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Encryption</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Vulnerability Reporting</a></li>
-                </ul>
-              </div>
-              <div>
-                <h5 className="font-semibold text-white mb-3">Compliance</h5>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="hover:text-white transition text-slate-400">CCPA Compliance</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Accessibility</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">DMCA Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Acceptable Use</a></li>
-                </ul>
-              </div>
-              <div>
-                <h5 className="font-semibold text-white mb-3">Resources</h5>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Sitemap</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Changelog</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Roadmap</a></li>
-                  <li><a href="#" className="hover:text-white transition text-slate-400">Open Source</a></li>
-                </ul>
+              <div className="flex items-center gap-4 text-slate-400">
+                <span>Made with ❤️ by Samay</span>
+                <span className="hidden sm:inline">•</span>
+                <a href="mailto:support@adiology.com" className="hover:text-white transition flex items-center gap-1">
+                  <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">support@adiology.com</span>
+                  <span className="sm:hidden">Support</span>
+                </a>
               </div>
             </div>
-
-            {/* Bottom Bar */}
-            <div className="border-t border-slate-800 pt-8">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p className="text-sm text-slate-400">
-                  © {new Date().getFullYear()} Adiology. All rights reserved.
-                </p>
-                <div className="flex items-center gap-6 text-sm text-slate-400">
-                  <span>Made with ❤️ by Samay</span>
-                  <span>•</span>
-                  <a href="mailto:support@adiology.com" className="hover:text-white transition">
-                    <Mail className="w-4 h-4 inline mr-1" />
-                    support@adiology.com
-                  </a>
-                </div>
-              </div>
-            </div>
+            <p className="text-center sm:text-left text-xs text-slate-500 mt-4">
+              © {new Date().getFullYear()} Adiology. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
