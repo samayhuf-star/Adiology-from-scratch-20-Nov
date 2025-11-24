@@ -367,7 +367,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                   Adiology
                 </h1>
-                <p className="text-xs text-slate-500">~ Samay</p>
               </div>
             </div>
             <div className="hidden md:flex items-center gap-6">
@@ -1240,7 +1239,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 </div>
                 <div className="flex flex-col">
                   <span className="text-lg font-bold text-white">Adiology</span>
-                  <span className="text-xs text-slate-400 -mt-0.5">~ Samay</span>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -1282,7 +1280,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <a href="#" className="hover:text-white transition">GDPR</a>
               </div>
               <div className="flex items-center gap-4 text-slate-400">
-                <span>Made with ❤️ by Samay</span>
+                <span>Made with ❤️</span>
                 <span className="hidden sm:inline">•</span>
                 <a href="mailto:support@adiology.com" className="hover:text-white transition flex items-center gap-1">
                   <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
