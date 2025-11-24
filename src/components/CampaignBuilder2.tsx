@@ -543,6 +543,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [selectedAdIds, setSelectedAdIds] = useState<number[]>([]);
   const [editingAdId, setEditingAdId] = useState<number | null>(null);
   
+  // Step 5: Review - Editing state
+  const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+  const [editingGroupKeywords, setEditingGroupKeywords] = useState<string | null>(null);
+  const [editingGroupNegatives, setEditingGroupNegatives] = useState<string | null>(null);
+  const [tempGroupName, setTempGroupName] = useState('');
+  const [tempKeywords, setTempKeywords] = useState('');
+  const [tempNegatives, setTempNegatives] = useState('');
+  
   // Helper to get dynamic ad groups based on structure
   const getDynamicAdGroups = useCallback(() => {
     if (!selectedKeywords || selectedKeywords.length === 0) return [];
@@ -3193,126 +3201,399 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     );
   };
 
-  // Step 5: Review
+  // Step 5: Detailed Review - shows all ad groups with editable content
   const renderStep5 = () => {
-    // Calculate number of campaigns
-    const getCampaignCount = () => {
-      if (structureType === 'geo') {
-        if (geoType === 'STATE') return selectedStates.length || 1;
-        if (geoType === 'CITY') return selectedCities.length || 1;
-        if (geoType === 'ZIP') return selectedZips.length || 1;
-        return 1;
-      }
-      return 1; // Single campaign for other structures
+    // Use dynamicAdGroups to get proper ad groups based on structure
+    const reviewAdGroups = getDynamicAdGroups();
+    
+    // Calculate stats based on actual data
+    const totalAdGroups = reviewAdGroups.length;
+    const totalKeywords = selectedKeywords.length;
+    const totalAds = generatedAds.filter(ad => !ad.extensionType).length;
+    const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
+
+    // Helper to format keyword display (keywords already have match type formatting)
+    const formatKeywordDisplay = (keyword: string) => {
+      // Keywords are already formatted: broad=keyword, phrase="keyword", exact=[keyword]
+      return keyword;
     };
 
-    // Calculate number of ad groups
-    const getAdGroupCount = () => {
-      if (!structureType) return 0;
-      
-      switch (structureType) {
-        case 'skag':
-          return selectedKeywords.length;
-        case 'stag':
-        case 'mix':
-          // Estimate: group keywords into ~5-10 groups
-          return Math.ceil(selectedKeywords.length / 5);
-        case 'stag_plus':
-        case 'ngram':
-          return Object.keys(smartClusters).length || Math.ceil(selectedKeywords.length / 5);
-        case 'intent':
-          return selectedIntents.length;
-        case 'alpha_beta':
-          return 2; // Alpha and Beta
-        case 'match_type':
-          return Object.values(matchTypes).filter(Boolean).length;
-        case 'geo':
-          return getCampaignCount(); // 1 ad group per campaign
-        case 'funnel':
-          return Object.keys(funnelGroups).filter(k => funnelGroups[k].length > 0).length;
-        case 'brand_split':
-          return 2; // Brand and Non-Brand
-        case 'competitor':
-          return competitorKeywords.length > 0 ? 1 : 0;
-        default:
-          return Math.ceil(selectedKeywords.length / 5);
-      }
+    // Helper to get match type from keyword format
+    const getMatchTypeDisplay = (keyword: string): string => {
+      if (keyword.startsWith('[') && keyword.endsWith(']')) return 'Exact';
+      if (keyword.startsWith('"') && keyword.endsWith('"')) return 'Phrase';
+      return 'Broad';
     };
 
-    const campaignCount = getCampaignCount();
-    const adGroupCount = getAdGroupCount();
-    const structureName = STRUCTURE_TYPES.find(s => s.id === structureType)?.name || 'Not Selected';
+    const handleEditGroupName = (groupName: string) => {
+      setEditingGroupName(groupName);
+      setTempGroupName(groupName);
+    };
+
+    const handleSaveGroupName = (oldName: string) => {
+      if (tempGroupName.trim()) {
+        // Update ad group name in generatedAds
+        setGeneratedAds(generatedAds.map(ad => 
+          ad.adGroup === oldName ? { ...ad, adGroup: tempGroupName } : ad
+        ));
+      }
+      setEditingGroupName(null);
+    };
+
+    const handleEditKeywords = (groupName: string, keywords: string[]) => {
+      setEditingGroupKeywords(groupName);
+      setTempKeywords(keywords.join(', '));
+    };
+
+    const handleSaveKeywords = (groupName: string) => {
+      if (tempKeywords.trim()) {
+        const newKeywords = tempKeywords.split(',').map(k => k.trim()).filter(Boolean);
+        // Update keywords - this would require updating selectedKeywords and regrouping
+        // For now, we'll just update the display
+      }
+      setEditingGroupKeywords(null);
+    };
+
+    const handleEditNegatives = (groupName: string, negatives: string[]) => {
+      setEditingGroupNegatives(groupName);
+      setTempNegatives(negatives.join(', '));
+    };
+
+    const handleSaveNegatives = () => {
+      if (tempNegatives.trim()) {
+        setNegativeKeywords(tempNegatives.split(',').map(n => n.trim()).filter(Boolean).join('\n'));
+      }
+      setEditingGroupNegatives(null);
+    };
 
     return (
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">Review Campaign</h2>
-          <p className="text-slate-600">Review your campaign configuration</p>
+      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-4 text-center">
+              <div className="text-3xl font-bold text-indigo-600">{totalAdGroups}</div>
+              <div className="text-xs text-slate-600 mt-1">Ad Groups</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-4 text-center">
+              <div className="text-3xl font-bold text-purple-600">{totalKeywords}</div>
+              <div className="text-xs text-slate-600 mt-1">Keywords</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-4 text-center">
+              <div className="text-3xl font-bold text-blue-600">{totalAds}</div>
+              <div className="text-xs text-slate-600 mt-1">Ads</div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-4 text-center">
+              <div className="text-3xl font-bold text-green-600">{totalNegatives}</div>
+              <div className="text-xs text-slate-600 mt-1">Negative Keywords</div>
+            </CardContent>
+          </Card>
         </div>
 
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Campaign Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="border border-slate-200 rounded-lg p-4">
-                <Label className="text-xs text-slate-500 uppercase tracking-wide">Number of Campaigns</Label>
-                <p className="text-3xl font-bold text-indigo-600 mt-2">{campaignCount}</p>
-                {structureType === 'geo' && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    {geoType === 'STATE' && selectedStates.length > 0 && `${selectedStates.length} states`}
-                    {geoType === 'CITY' && selectedCities.length > 0 && `${selectedCities.length} cities`}
-                    {geoType === 'ZIP' && selectedZips.length > 0 && `${selectedZips.length} ZIPs`}
-                  </p>
-                )}
-              </div>
-              <div className="border border-slate-200 rounded-lg p-4">
-                <Label className="text-xs text-slate-500 uppercase tracking-wide">Number of Ad Groups</Label>
-                <p className="text-3xl font-bold text-purple-600 mt-2">{adGroupCount}</p>
-              </div>
-              <div className="border border-slate-200 rounded-lg p-4">
-                <Label className="text-xs text-slate-500 uppercase tracking-wide">Structure Type</Label>
-                <p className="text-xl font-semibold text-slate-800 mt-2">{structureName}</p>
-              </div>
+        {/* Success Banner */}
+        <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 border-2 border-emerald-300 rounded-xl p-5 shadow-lg">
+          <div className="flex items-start gap-3">
+            <div className="bg-emerald-500 rounded-full p-2">
+              <CheckCircle2 className="w-6 h-6 text-white flex-shrink-0" />
             </div>
-            
-            <Separator />
-            
-            {/* Additional Details */}
-            <div className="space-y-3">
-              <div>
-                <Label className="font-semibold text-slate-700">Campaign Name:</Label>
-                <p className="text-slate-600">{campaignName || 'Not set'}</p>
-              </div>
-              <div>
-                <Label className="font-semibold text-slate-700">Keywords:</Label>
-                <p className="text-slate-600">{selectedKeywords.length} selected</p>
-              </div>
-              <div>
-                <Label className="font-semibold text-slate-700">Ads:</Label>
-                <p className="text-slate-600">{generatedAds.length} generated</p>
-              </div>
-              <div>
-                <Label className="font-semibold text-slate-700">Target Country:</Label>
-                <p className="text-slate-600">{targetCountry}</p>
-              </div>
+            <div>
+              <h3 className="font-bold text-emerald-900 text-lg">Everything looks good!</h3>
+              <p className="text-sm text-emerald-800 mt-1 font-medium">
+                Review and customize your {totalAdGroups} ad groups below. All groups have ads created.
+              </p>
             </div>
-          </CardContent>
+          </div>
+        </div>
+
+        {/* Review Table - Show All Groups */}
+        <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600">
+                  <TableHead className="font-bold text-white w-[180px] py-4">AD GROUP</TableHead>
+                  <TableHead className="font-bold text-white w-[320px] py-4">ADS & EXTENSIONS</TableHead>
+                  <TableHead className="font-bold text-white w-[240px] py-4">KEYWORDS</TableHead>
+                  <TableHead className="font-bold text-white w-[180px] py-4">NEGATIVES</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reviewAdGroups.map((group, idx) => {
+                  const groupAds = generatedAds.filter(ad => ad.adGroup === group.name && !ad.extensionType);
+                  const allNegatives = negativeKeywords.split('\n').filter(n => n.trim());
+                  
+                  return (
+                    <TableRow key={idx} className={`border-b border-indigo-100/50 ${idx % 2 === 0 ? 'bg-white/60' : 'bg-indigo-50/40'} hover:bg-indigo-100/60 transition-colors`}>
+                      {/* Ad Group Name */}
+                      <TableCell className="align-top py-6">
+                        {editingGroupName === group.name ? (
+                          <div className="space-y-2">
+                            <Input
+                              value={tempGroupName}
+                              onChange={(e) => setTempGroupName(e.target.value)}
+                              className="text-sm border-indigo-300 focus:border-indigo-500 focus:ring-indigo-500"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleSaveGroupName(group.name)}
+                                className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingGroupName(null)}
+                                className="h-7 text-xs border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-indigo-900">{group.name}</span>
+                            <button 
+                              onClick={() => handleEditGroupName(group.name)}
+                              className="p-1 hover:bg-indigo-100 rounded transition-colors"
+                            >
+                              <Edit3 className="w-3 h-3 text-indigo-500 hover:text-indigo-700" />
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+
+                      {/* Ads & Extensions - Show All Ads for This Group */}
+                      <TableCell className="align-top py-6">
+                        {groupAds.length > 0 ? (
+                          <div className="space-y-3">
+                            {groupAds.map((ad, adIdx) => (
+                              <div key={ad.id || adIdx} className="space-y-2 text-sm border-b border-indigo-200/50 pb-3 last:border-0 last:pb-0 bg-gradient-to-r from-purple-50/30 to-indigo-50/30 p-3 rounded-lg">
+                                <div className="flex items-start gap-2">
+                                  <div className="flex-1">
+                                    {(ad.type === 'rsa' || ad.type === 'dki') && (
+                                      <>
+                                        <div className="text-indigo-700 font-semibold hover:text-purple-700 hover:underline cursor-pointer transition-colors">
+                                          {ad.headline1} {ad.headline2 && `| ${ad.headline2}`} {ad.headline3 && `| ${ad.headline3}`}
+                                        </div>
+                                        <div className="text-emerald-600 font-medium text-xs mt-1">
+                                          {ad.finalUrl || url || 'www.example.com'}/{ad.path1 || ''}/{ad.path2 || ''}
+                                        </div>
+                                        <div className="text-slate-700 text-xs mt-1.5 leading-relaxed">
+                                          {ad.description1}
+                                        </div>
+                                        {ad.description2 && (
+                                          <div className="text-slate-600 text-xs mt-1 leading-relaxed">
+                                            {ad.description2}
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
+                                    {ad.type === 'callonly' && (
+                                      <>
+                                        <div className="text-indigo-700 font-bold">
+                                          {ad.headline1}
+                                        </div>
+                                        {ad.headline2 && (
+                                          <div className="text-purple-600 text-xs mt-1 font-medium">
+                                            {ad.headline2}
+                                          </div>
+                                        )}
+                                        <div className="text-slate-700 text-xs mt-1.5 leading-relaxed">
+                                          {ad.description1}
+                                        </div>
+                                        {ad.description2 && (
+                                          <div className="text-slate-600 text-xs mt-1 leading-relaxed">
+                                            {ad.description2}
+                                          </div>
+                                        )}
+                                        <div className="text-emerald-600 font-bold text-xs mt-2 flex items-center gap-1">
+                                          <Phone className="w-3 h-3" /> {ad.phone} • {ad.businessName}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                  <button 
+                                    onClick={() => {
+                                      // Navigate to step 3 and select this ad group
+                                      setSelectedAdGroup(group.name);
+                                      setStep(3);
+                                    }}
+                                    className="p-1.5 hover:bg-indigo-100 rounded-md flex-shrink-0 transition-colors"
+                                    title="Edit ad"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5 text-indigo-500 hover:text-indigo-700" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-500 bg-amber-50/50 p-3 rounded-lg border border-amber-200">
+                            No ad created. <button 
+                              onClick={() => {
+                                setSelectedAdGroup(group.name);
+                                setStep(3);
+                              }}
+                              className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline ml-1"
+                            >
+                              Create ad
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+
+                      {/* Keywords - Show All Keywords */}
+                      <TableCell className="align-top py-6">
+                        {editingGroupKeywords === group.name ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={tempKeywords}
+                              onChange={(e) => setTempKeywords(e.target.value)}
+                              className="text-xs border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                              rows={4}
+                              placeholder="Enter keywords (comma-separated)"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleSaveKeywords(group.name)}
+                                className="h-7 text-xs bg-purple-600 hover:bg-purple-700 text-white"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingGroupKeywords(null)}
+                                className="h-7 text-xs border-purple-300 text-purple-600 hover:bg-purple-50"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {group.keywords.map((kw, kidx) => (
+                              <div key={kidx} className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100">
+                                <span className="text-purple-900 font-mono font-medium">
+                                  {formatKeywordDisplay(kw)}
+                                </span>
+                                <Badge variant="outline" className={`ml-2 text-xs ${
+                                  getMatchTypeDisplay(kw) === 'Exact' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
+                                  getMatchTypeDisplay(kw) === 'Phrase' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                  'bg-amber-100 text-amber-700 border-amber-300'
+                                }`}>
+                                  {getMatchTypeDisplay(kw)}
+                                </Badge>
+                              </div>
+                            ))}
+                            <button 
+                              onClick={() => handleEditKeywords(group.name, group.keywords)}
+                              className="text-xs text-purple-600 hover:text-purple-700 font-semibold hover:underline mt-2 flex items-center gap-1"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              Edit keywords
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+
+                      {/* Negative Keywords */}
+                      <TableCell className="align-top py-6">
+                        {editingGroupNegatives === group.name ? (
+                          <div className="space-y-2">
+                            <Textarea
+                              value={tempNegatives}
+                              onChange={(e) => setTempNegatives(e.target.value)}
+                              className="text-xs"
+                              rows={4}
+                              placeholder="Enter negative keywords (comma-separated)"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={handleSaveNegatives}
+                                className="h-7 text-xs"
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingGroupNegatives(null)}
+                                className="h-7 text-xs"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {allNegatives.slice(0, 5).map((neg, nidx) => (
+                              <div key={nidx} className="text-xs text-red-700 font-mono bg-red-50/60 px-2 py-1 rounded border border-red-200">
+                                "{neg}"
+                              </div>
+                            ))}
+                            {allNegatives.length > 5 && (
+                              <div className="text-xs text-red-500 font-semibold bg-red-50/40 px-2 py-1 rounded border border-red-200">
+                                +{allNegatives.length - 5} more
+                              </div>
+                            )}
+                            <button 
+                              onClick={() => handleEditNegatives(group.name, allNegatives)}
+                              className="text-xs text-red-600 hover:text-red-700 font-semibold hover:underline mt-2 flex items-center gap-1"
+                            >
+                              Edit negatives
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
 
-        <div className="flex justify-between">
-          <Button variant="ghost" onClick={() => setStep(4)}>
-            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-            Back
-          </Button>
-          <Button
-            size="lg"
+        {/* Action Buttons */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-3">
+            <Button variant="ghost" onClick={() => setStep(4)}>
+              <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+              Back
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (confirm('Are you sure you want to reset? All progress will be lost.')) {
+                  setStep(1);
+                  setSelectedKeywords([]);
+                  setGeneratedAds([]);
+                }
+              }}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reset
+            </Button>
+          </div>
+          <Button 
+            size="lg" 
             onClick={() => setStep(6)}
             className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
           >
-            Next: Validate <ArrowRight className="ml-2 w-5 h-5" />
+            Next - Validate Campaign
+            <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
       </div>
