@@ -517,6 +517,7 @@ export const AdsBuilder = () => {
     };
 
     return (
+        <>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-6 lg:p-8">
             {/* Header */}
             <div className="mb-8">
@@ -949,7 +950,7 @@ export const AdsBuilder = () => {
                                 </div>
                                     );
                                 })
-                            ) : (
+                        ) : (
                             <div className="flex items-center justify-center h-[400px]">
                                 <div className="text-center">
                                         <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
@@ -1037,8 +1038,8 @@ export const AdsBuilder = () => {
             </div>
                                             <div className="text-sm text-slate-600">{ext.description}</div>
                                         </div>
-                                    </div>
-                                </div>
+            </div>
+        </div>
                             );
                         })}
                     </div>
@@ -1056,6 +1057,6 @@ export const AdsBuilder = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </>
     );
 };
