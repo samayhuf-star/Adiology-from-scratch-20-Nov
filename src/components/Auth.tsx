@@ -124,17 +124,6 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
         const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
         console.log('Verification URL:', verificationUrl);
         window.location.href = verificationUrl;
-          
-          notifications.warning('Account created, but email could not be sent', {
-            title: 'Email Service Unavailable',
-            description: 'Please use the verification link shown in the console for testing.',
-          });
-
-          setIsLoading(false);
-          
-          // Redirect to verification page
-          window.location.href = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
-        }
       }
     }, 1000);
   };
