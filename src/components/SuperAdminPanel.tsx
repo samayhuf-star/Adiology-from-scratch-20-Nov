@@ -7,6 +7,7 @@ import {
   Code, Webhook, Lock, Download, Upload, RefreshCw, Play, Pause,
   Inbox, Filter, X, TestTube, CheckCircle2
 } from 'lucide-react';
+import { CrazyKeywordsBuilder } from './CrazyKeywordsBuilder';
 import { adminApi } from '../utils/api/admin';
 import { lambdaTestApi, type LambdaTestBuild, type LambdaTestSession } from '../utils/api/lambdatest';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -31,7 +32,8 @@ type Module =
   | 'audit'
   | 'support'
   | 'config'
-  | 'testing';
+  | 'testing'
+  | 'crazy-keywords';
 
 export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLanding }) => {
   const [activeModule, setActiveModule] = useState<Module>('overview');
@@ -49,6 +51,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
     { id: 'audit' as Module, label: 'Audit Logs', icon: FileSearch, color: 'from-slate-500 to-gray-600' },
     { id: 'support' as Module, label: 'Support Tools', icon: Shield, color: 'from-emerald-500 to-green-600' },
     { id: 'testing' as Module, label: 'LambdaTest Results', icon: TestTube, color: 'from-orange-500 to-red-500' },
+    { id: 'crazy-keywords' as Module, label: 'Crazy Keywords Builder', icon: Zap, color: 'from-yellow-500 to-orange-500' },
     { id: 'config' as Module, label: 'Configuration', icon: Settings, color: 'from-violet-500 to-purple-600' },
   ];
 
@@ -76,6 +79,8 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
         return <SupportModule />;
       case 'testing':
         return <TestingModule />;
+      case 'crazy-keywords':
+        return <CrazyKeywordsBuilder />;
       case 'config':
         return <ConfigModule />;
       default:
