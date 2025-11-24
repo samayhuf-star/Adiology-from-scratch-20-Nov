@@ -18,6 +18,11 @@ export const getStripe = () => {
  */
 export async function createCheckoutSession(priceId: string, planName: string) {
   try {
+    // Check if Stripe is properly configured
+    if (STRIPE_PUBLISHABLE_KEY === 'pk_test_placeholder') {
+      throw new Error('Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.');
+    }
+
     const response = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: {
@@ -30,25 +35,35 @@ export async function createCheckoutSession(priceId: string, planName: string) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create checkout session');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to create checkout session: ${response.statusText}`);
     }
 
     const { sessionId } = await response.json();
+    
+    if (!sessionId) {
+      throw new Error('No session ID returned from server');
+    }
+
     const stripe = await getStripe();
     
     if (!stripe) {
-      throw new Error('Stripe failed to load');
+      throw new Error('Stripe failed to load. Please check your Stripe publishable key.');
     }
 
     // Redirect to Stripe Checkout
     const { error } = await stripe.redirectToCheckout({ sessionId });
     
     if (error) {
-      throw error;
+      throw new Error(error.message || 'Failed to redirect to checkout');
     }
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    throw error;
+    // Re-throw with user-friendly message
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred. Please try again or contact support.');
   }
 }
 
@@ -57,6 +72,11 @@ export async function createCheckoutSession(priceId: string, planName: string) {
  */
 export async function createCustomerPortalSession() {
   try {
+    // Check if Stripe is properly configured
+    if (STRIPE_PUBLISHABLE_KEY === 'pk_test_placeholder') {
+      throw new Error('Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.');
+    }
+
     const response = await fetch('/api/create-portal-session', {
       method: 'POST',
       headers: {
@@ -65,16 +85,25 @@ export async function createCustomerPortalSession() {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create portal session');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to create portal session: ${response.statusText}`);
     }
 
     const { url } = await response.json();
+    
+    if (!url) {
+      throw new Error('No portal URL returned from server');
+    }
     
     // Redirect to Stripe Customer Portal
     window.location.href = url;
   } catch (error) {
     console.error('Error creating portal session:', error);
-    throw error;
+    // Re-throw with user-friendly message
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred. Please try again or contact support.');
   }
 }
 

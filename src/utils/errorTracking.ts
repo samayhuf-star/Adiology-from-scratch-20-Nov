@@ -73,6 +73,9 @@ class ErrorTracker {
       timestamp,
     });
 
+    // Use production logger
+    productionLogger.trackError(errorObj, context);
+
     // TODO: Integrate with Sentry
     // if (this.sentryDsn) {
     //   Sentry.captureException(errorObj, {
