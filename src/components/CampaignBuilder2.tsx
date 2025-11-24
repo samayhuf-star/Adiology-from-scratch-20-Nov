@@ -1839,12 +1839,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : [];
     
     // Filter ads for the selected ad group
+    // Filter ads for the selected ad group (only show regular ads, not extension-only objects)
     const filteredAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
-      ? generatedAds.filter(ad => selectedAdIds.includes(ad.id))
-      : generatedAds.filter(ad => ad.adGroup === selectedAdGroup || !ad.adGroup);
+      ? generatedAds.filter(ad => selectedAdIds.includes(ad.id) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'))
+      : generatedAds.filter(ad => (ad.adGroup === selectedAdGroup || !ad.adGroup) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
     
-    // Calculate total ads (excluding extensions for the counter)
-    const totalAds = filteredAds.filter(ad => !ad.extensionType).length;
+    // Calculate total ads (only count regular ads)
+    const totalAds = filteredAds.length;
     const maxAds = 25; // Maximum ads allowed
     
     // Format display URL for ads
