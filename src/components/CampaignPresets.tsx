@@ -318,13 +318,13 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                   Export CSV
                 </Button>
                 <Button
-                  onClick={() => window.open(selectedPreset.final_url, '_blank')}
+                  onClick={() => setShowLandingPagePreview(true)}
                   variant="outline"
                   className="w-full border-white text-white hover:bg-white/10"
                   size="lg"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  View Landing Page
+                  Preview Landing Page
                 </Button>
               </div>
             </div>
