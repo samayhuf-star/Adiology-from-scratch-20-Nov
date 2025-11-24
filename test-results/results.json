@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 1
+      "actualWorkers": 4
     },
     "preserveOutput": "always",
     "reporter": [
@@ -41,7 +41,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "chromium-lt",
         "name": "chromium-lt",
@@ -57,7 +57,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "firefox-lt",
         "name": "firefox-lt",
@@ -73,7 +73,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 1
+          "actualWorkers": 4
         },
         "id": "webkit-lt",
         "name": "webkit-lt",
@@ -89,7 +89,7 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.56.1",
-    "workers": 1,
+    "workers": 4,
     "webServer": {
       "command": "npm run dev",
       "url": "http://localhost:3000",
@@ -127,30 +127,30 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 2110,
+                      "duration": 10717,
                       "error": {
-                        "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:25:16)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:228:52)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)",
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/https:\\/\\/adiology-dashboard-lhuclwfgb-samayhuf-stars-projects\\.vercel\\.app/\u001b[39m\nReceived string:  \u001b[31m\"https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fadiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app%252F%26nonce%3De2ae7e5f37ec45008dc0bbba64ec4ca7bd6966ef423ade617f85146f0df0e33c\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    8 × unexpected value \"https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fadiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app%252F%26nonce%3De2ae7e5f37ec45008dc0bbba64ec4ca7bd6966ef423ade617f85146f0df0e33c\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/https:\\/\\/adiology-dashboard-lhuclwfgb-samayhuf-stars-projects\\.vercel\\.app/\u001b[39m\nReceived string:  \u001b[31m\"https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fadiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app%252F%26nonce%3De2ae7e5f37ec45008dc0bbba64ec4ca7bd6966ef423ade617f85146f0df0e33c\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    8 × unexpected value \"https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fadiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app%252F%26nonce%3De2ae7e5f37ec45008dc0bbba64ec4ca7bd6966ef423ade617f85146f0df0e33c\"\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:37:24)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:310:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:308:7)",
                         "location": {
                           "file": "1)/tests/paid-signup.spec.ts",
-                          "column": 16,
-                          "line": 25
+                          "column": 24,
+                          "line": 37
                         }
                       },
                       "errors": [
                         {
                           "location": {
                             "file": "1)/tests/paid-signup.spec.ts",
-                            "column": 16,
-                            "line": 25
+                            "column": 24,
+                            "line": 37
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:25:16)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:228:52)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/https:\\/\\/adiology-dashboard-lhuclwfgb-samayhuf-stars-projects\\.vercel\\.app/\u001b[39m\nReceived string:  \u001b[31m\"https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fadiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app%252F%26nonce%3De2ae7e5f37ec45008dc0bbba64ec4ca7bd6966ef423ade617f85146f0df0e33c\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    8 × unexpected value \"https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fadiology-dashboard-lhuclwfgb-samayhuf-stars-projects.vercel.app%252F%26nonce%3De2ae7e5f37ec45008dc0bbba64ec4ca7bd6966ef423ade617f85146f0df0e33c\"\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:37:24)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:310:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:308:7)\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-11-24T09:02:38.300Z",
+                      "startTime": "2025-11-24T10:20:48.491Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -166,8 +166,8 @@
                       ],
                       "errorLocation": {
                         "file": "1)/tests/paid-signup.spec.ts",
-                        "column": 16,
-                        "line": 25
+                        "column": 24,
+                        "line": 37
                       }
                     }
                   ],
@@ -176,7 +176,7 @@
               ],
               "id": "dbc2ef0567469424ca3f-a6066505bb08d17f0cc2",
               "file": "paid-signup.spec.ts",
-              "line": 32,
+              "line": 34,
               "column": 7
             },
             {
@@ -193,16 +193,16 @@
                   "results": [
                     {
                       "workerIndex": 1,
-                      "parallelIndex": 0,
+                      "parallelIndex": 1,
                       "status": "failed",
-                      "duration": 2254,
+                      "duration": 5991,
                       "error": {
                         "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:25:16)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:228:52)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:205:16)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:310:15)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:308:22)",
                         "location": {
                           "file": "1)/tests/paid-signup.spec.ts",
                           "column": 16,
-                          "line": 25
+                          "line": 205
                         }
                       },
                       "errors": [
@@ -210,15 +210,15 @@
                           "location": {
                             "file": "1)/tests/paid-signup.spec.ts",
                             "column": 16,
-                            "line": 25
+                            "line": 205
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:25:16)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:228:52)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:205:16)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:310:15)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:308:22)\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-11-24T09:03:02.190Z",
+                      "startTime": "2025-11-24T10:20:48.605Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -235,7 +235,7 @@
                       "errorLocation": {
                         "file": "1)/tests/paid-signup.spec.ts",
                         "column": 16,
-                        "line": 25
+                        "line": 205
                       }
                     }
                   ],
@@ -244,7 +244,7 @@
               ],
               "id": "dbc2ef0567469424ca3f-127892a799b33d1cff12",
               "file": "paid-signup.spec.ts",
-              "line": 196,
+              "line": 197,
               "column": 7
             },
             {
@@ -261,16 +261,16 @@
                   "results": [
                     {
                       "workerIndex": 2,
-                      "parallelIndex": 0,
+                      "parallelIndex": 2,
                       "status": "failed",
-                      "duration": 2194,
+                      "duration": 4717,
                       "error": {
                         "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:25:16)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:228:52)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)",
+                        "stack": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:260:16)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:310:15)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:308:22)",
                         "location": {
                           "file": "1)/tests/paid-signup.spec.ts",
                           "column": 16,
-                          "line": 25
+                          "line": 260
                         }
                       },
                       "errors": [
@@ -278,15 +278,15 @@
                           "location": {
                             "file": "1)/tests/paid-signup.spec.ts",
                             "column": 16,
-                            "line": 25
+                            "line": 260
                           },
-                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:25:16)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:228:52)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                          "message": "Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/\", waiting until \"load\"\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests/paid-signup.spec.ts:260:16)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:310:15)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:308:22)\u001b[22m"
                         }
                       ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-11-24T09:03:18.331Z",
+                      "startTime": "2025-11-24T10:20:48.330Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -303,7 +303,7 @@
                       "errorLocation": {
                         "file": "1)/tests/paid-signup.spec.ts",
                         "column": 16,
-                        "line": 25
+                        "line": 260
                       }
                     }
                   ],
@@ -312,7 +312,259 @@
               ],
               "id": "dbc2ef0567469424ca3f-47c15ad5065a85e9839c",
               "file": "paid-signup.spec.ts",
-              "line": 252,
+              "line": 253,
+              "column": 7
+            },
+            {
+              "title": "Complete paid signup flow - Lifetime Unlimited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox-lt",
+                  "projectName": "firefox-lt",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 10,
+                      "error": {
+                        "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2RG4QYNQGG2JYHEJFQCF-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2RG4QYNQGG2JYHEJFQCF-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n",
+                        "stack": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2RG4QYNQGG2JYHEJFQCF-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2RG4QYNQGG2JYHEJFQCF-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2RG4QYNQGG2JYHEJFQCF-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2RG4QYNQGG2JYHEJFQCF-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T10:20:48.357Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-ebbf93e5e5fc6068e2e6",
+              "file": "paid-signup.spec.ts",
+              "line": 34,
+              "column": 7
+            },
+            {
+              "title": "Paid signup flow - Monthly Limited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox-lt",
+                  "projectName": "firefox-lt",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 9,
+                      "error": {
+                        "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2T351ADJFDX3W1VJ7PS3-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2T351ADJFDX3W1VJ7PS3-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n",
+                        "stack": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2T351ADJFDX3W1VJ7PS3-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2T351ADJFDX3W1VJ7PS3-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2T351ADJFDX3W1VJ7PS3-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2T351ADJFDX3W1VJ7PS3-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T10:20:50.883Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-4d04be904fc9394ae9ee",
+              "file": "paid-signup.spec.ts",
+              "line": 197,
+              "column": 7
+            },
+            {
+              "title": "Verify signup redirects to payment when plan is selected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox-lt",
+                  "projectName": "firefox-lt",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 7,
+                      "error": {
+                        "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2VZGB8VR5K4JD69EKVPH-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2VZGB8VR5K4JD69EKVPH-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n",
+                        "stack": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2VZGB8VR5K4JD69EKVPH-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2VZGB8VR5K4JD69EKVPH-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2VZGB8VR5K4JD69EKVPH-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2VZGB8VR5K4JD69EKVPH-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value firefox which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T10:20:52.862Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-b64f5c07b5fa67e26861",
+              "file": "paid-signup.spec.ts",
+              "line": 253,
+              "column": 7
+            },
+            {
+              "title": "Complete paid signup flow - Lifetime Unlimited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit-lt",
+                  "projectName": "webkit-lt",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 8,
+                      "error": {
+                        "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2XC42RTP1HXTHFEPYNSV-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2XC42RTP1HXTHFEPYNSV-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n",
+                        "stack": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2XC42RTP1HXTHFEPYNSV-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2XC42RTP1HXTHFEPYNSV-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2XC42RTP1HXTHFEPYNSV-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2XC42RTP1HXTHFEPYNSV-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T10:20:54.265Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-dd6c9f9c1e2242ffd445",
+              "file": "paid-signup.spec.ts",
+              "line": 34,
+              "column": 7
+            },
+            {
+              "title": "Paid signup flow - Monthly Limited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit-lt",
+                  "projectName": "webkit-lt",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 10,
+                      "error": {
+                        "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2ZFKTY0HWM6GM47EWZN5-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2ZFKTY0HWM6GM47EWZN5-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n",
+                        "stack": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2ZFKTY0HWM6GM47EWZN5-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2ZFKTY0HWM6GM47EWZN5-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP2ZFKTY0HWM6GM47EWZN5-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP2ZFKTY0HWM6GM47EWZN5-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T10:20:56.393Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-0e9eff008da069442de5",
+              "file": "paid-signup.spec.ts",
+              "line": 197,
+              "column": 7
+            },
+            {
+              "title": "Verify signup redirects to payment when plan is selected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit-lt",
+                  "projectName": "webkit-lt",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 13,
+                      "error": {
+                        "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP311FXST9TCQBD5ASCR9S-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP311FXST9TCQBD5ASCR9S-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n",
+                        "stack": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP311FXST9TCQBD5ASCR9S-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP311FXST9TCQBD5ASCR9S-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.connect: WebSocket error: wss://cdp.lambdatest.com/playwright 400 Bad Request\n{\"status\":400,\"value\":{\"message\":\"LT01KATP311FXST9TCQBD5ASCR9S-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\n\nCall log:\n\u001b[2m  - <ws connecting> wss://cdp.lambdatest.com/playwright\u001b[22m\n\u001b[2m  - <ws unexpected response> wss://cdp.lambdatest.com/playwright 400 Bad Request\u001b[22m\n\u001b[2m{\"status\":400,\"value\":{\"message\":\"LT01KATP311FXST9TCQBD5ASCR9S-6864B6B49B-55RSM-AP-SOUTH-1: The capability browserName has value safari which is not supported. Supported values are [chrome MicrosoftEdge pw-chromium pw-webkit pw-firefox]\"}}\u001b[22m\n\u001b[2m  - <ws error> wss://cdp.lambdatest.com/playwright error WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws connect error> wss://cdp.lambdatest.com/playwright WebSocket was closed before the connection was established\u001b[22m\n\u001b[2m  - <ws disconnected> wss://cdp.lambdatest.com/playwright code=1006 reason=\u001b[22m\n\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T10:20:58.001Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-e1193f0ebc6ab142607e",
+              "file": "paid-signup.spec.ts",
+              "line": 253,
               "column": 7
             }
           ]
@@ -322,11 +574,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-11-24T09:02:25.234Z",
-    "duration": 75413.60100000001,
+    "startTime": "2025-11-24T10:20:36.623Z",
+    "duration": 55773.276000000005,
     "expected": 0,
     "skipped": 0,
-    "unexpected": 3,
+    "unexpected": 9,
     "flaky": 0
   }
 }

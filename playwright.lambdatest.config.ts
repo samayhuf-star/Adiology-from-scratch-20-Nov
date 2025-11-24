@@ -10,19 +10,33 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  * 
  * This configuration file is specifically for running Playwright tests on LambdaTest's cloud infrastructure.
  * 
+ * PARALLEL TESTING CONFIGURATION:
+ * - fullyParallel: true - Enables parallel execution of tests
+ * - workers: '50%' - Uses 50% of CPU cores for parallel execution
+ *   - Set LT_WORKERS env var to override (e.g., LT_WORKERS=4 for 4 parallel workers)
+ *   - Higher workers = faster tests but more LambdaTest minutes consumed
+ *   - Recommended: Start with 50%, increase if you have sufficient test minutes
+ * 
+ * BENEFITS OF PARALLEL TESTING:
+ * - Faster test execution (tests run simultaneously across multiple browsers)
+ * - Cost efficient (completes tests faster, reducing total execution time)
+ * - Better resource utilization (multiple LambdaTest sessions run concurrently)
+ * 
  * Setup:
  * 1. Create a .env file with your LambdaTest credentials:
  *    - LT_USERNAME: Your LambdaTest username
  *    - LT_ACCESS_KEY: Your LambdaTest access token
- *    - BASE_URL: Your application URL (defaults to http://localhost:3000)
+ *    - BASE_URL: Your application URL (use production URL for cloud testing)
  *    - BUILD_NAME: Optional build name (defaults to timestamp)
  *    - PROJECT_NAME: Optional project name (defaults to 'Adiology Campaign Dashboard')
+ *    - LT_WORKERS: Optional worker count (defaults to '50%' of CPU cores)
  * 
  *    Or run: ./scripts/setup-env.sh
  * 
  * 2. Run tests:
  *    - npm run test:lambdatest
  *    - Or: npx playwright test --config=playwright.lambdatest.config.ts
+ *    - For more parallel workers: LT_WORKERS=8 npm run test:lambdatest
  * 
  * 3. View results:
  *    - Check LambdaTest dashboard: https://automation.lambdatest.com/
@@ -41,9 +55,22 @@ function getLambdaTestEndpoint(capabilities: Record<string, any>): string {
     throw new Error('LT_USERNAME and LT_ACCESS_KEY environment variables are required');
   }
 
+  // LambdaTest Playwright requires browserName in format: pw-chromium, pw-firefox, pw-webkit
+  // Map our browser names to LambdaTest format
+  const browserNameMap: Record<string, string> = {
+    'Chrome': 'pw-chromium',
+    'Firefox': 'pw-firefox',
+    'Safari': 'pw-webkit',
+    'chromium': 'pw-chromium',
+    'firefox': 'pw-firefox',
+    'webkit': 'pw-webkit',
+  };
+
+  const mappedBrowserName = browserNameMap[capabilities.browserName] || capabilities.browserName || 'pw-chromium';
+
   // LambdaTest requires capabilities in specific format with LT:Options
   const caps = {
-    browserName: capabilities.browserName || 'Chrome',
+    browserName: mappedBrowserName,
     browserVersion: capabilities.browserVersion || 'latest',
     'LT:Options': {
       platform: capabilities.platform || 'Windows 10',
@@ -54,6 +81,22 @@ function getLambdaTestEndpoint(capabilities: Record<string, any>): string {
       network: true,
       video: true,
       console: true,
+      // Enable parallel execution
+      tunnel: process.env.LT_TUNNEL === 'true',
+      tunnelName: process.env.LT_TUNNEL_NAME || undefined,
+      // Stripe Payment Handling - Allow cross-origin iframes
+      // These capabilities enable Stripe's iframe-based payment forms to work in cloud browsers
+      'allowCrossOriginIframes': true,
+      'allowCrossOriginSubframes': true,
+      // Disable web security for testing (allows Stripe iframes to load)
+      'disableWebSecurity': true,
+      // Enable third-party cookies (required for Stripe)
+      'thirdPartyCookiesEnabled': true,
+      // Additional Stripe-specific settings
+      'acceptInsecureCerts': true,
+      // Performance and reliability settings
+      'idleTimeout': 90,
+      'maxDuration': 300,
       ...capabilities['LT:Options'],
     },
   };
@@ -70,7 +113,7 @@ const config = defineConfig({
     timeout: 5000,
   },
   
-  // Run tests in parallel
+  // Run tests in parallel - enables parallel execution across all projects
   fullyParallel: true,
   
   // Fail the build on CI if you accidentally left test.only in the source code
@@ -79,8 +122,14 @@ const config = defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
   
-  // Opt out of parallel tests on CI
-  workers: process.env.CI ? 1 : undefined,
+  // Parallel testing configuration
+  // Set workers to '50%' for optimal parallel execution (uses 50% of available CPU cores)
+  // For LambdaTest cloud testing, you can increase this to run more tests in parallel
+  // Higher parallelization = faster tests but more LambdaTest minutes consumed
+  workers: process.env.CI ? 2 : process.env.LT_WORKERS ? parseInt(process.env.LT_WORKERS) : '50%',
+  
+  // Maximum number of test failures before stopping
+  maxFailures: process.env.CI ? 10 : undefined,
   
   // Reporter configuration
   reporter: [
@@ -103,9 +152,16 @@ const config = defineConfig({
     
     // Video on failure (disabled for cloud - LambdaTest handles video recording)
     video: 'off',
+    
+    // Stripe Payment Handling - Context options for iframe support
+    // These options allow Stripe's cross-origin iframes to work properly
+    ignoreHTTPSErrors: true,
+    // Allow third-party cookies (required for Stripe)
+    // Note: This is handled via LambdaTest capabilities, but we set it here for completeness
   },
 
   // Configure projects for major browsers on LambdaTest
+  // Each project runs in parallel, and tests within each project also run in parallel
   projects: [
     {
       name: 'chromium-lt',
@@ -163,13 +219,17 @@ const config = defineConfig({
     },
   ],
 
-  // Run your local dev server before starting the tests
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  // Web server configuration
+  // Only start local server if BASE_URL is localhost
+  // For cloud testing, disable webServer and use production URL
+  webServer: process.env.BASE_URL?.includes('localhost') || process.env.BASE_URL?.includes('127.0.0.1')
+    ? {
+        command: 'npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      }
+    : undefined,
 });
 
 export default config;

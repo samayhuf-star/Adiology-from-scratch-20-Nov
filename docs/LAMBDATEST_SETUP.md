@@ -63,6 +63,7 @@ These variables are used by Playwright tests (Node.js environment):
 - `PROJECT_NAME` - Optional project name (default: "Adiology Campaign Dashboard")
 - `LT_TUNNEL` - Enable LambdaTest tunnel (default: `false`)
 - `LT_TUNNEL_NAME` - Optional tunnel name
+- `LT_WORKERS` - Number of parallel workers (default: `50%` of CPU cores, set to number like `4` or `8` for faster execution)
 
 ## Usage
 
@@ -81,19 +82,38 @@ The application will automatically load environment variables prefixed with `VIT
 Run Playwright tests with the LambdaTest configuration:
 
 ```bash
-# Set environment variables (if not using .env)
-export LT_USERNAME="your-username"
-export LT_ACCESS_KEY="your-access-key"
+# Basic test run (uses default parallel workers: 50% of CPU cores)
+npm run test:lambdatest
 
-# Run tests
-npx playwright test --config=playwright.lambdatest.config.ts
+# Run with custom number of parallel workers (faster, uses more LambdaTest minutes)
+LT_WORKERS=8 npm run test:lambdatest
+
+# Run specific test file
+npm run test:lambdatest -- tests/paid-signup.spec.ts
+
+# Run with custom build name
+BUILD_NAME="Production Build $(date +%Y%m%d)" npm run test:lambdatest
 ```
 
-Or use a tool like `dotenv-cli` to load from `.env`:
+### Parallel Testing Configuration
 
+The configuration is optimized for parallel testing to speed up execution and save money:
+
+- **Default**: Uses 50% of available CPU cores for parallel execution
+- **Custom Workers**: Set `LT_WORKERS` environment variable to control parallelism
+  - `LT_WORKERS=4` - Run 4 tests in parallel
+  - `LT_WORKERS=8` - Run 8 tests in parallel
+  - `LT_WORKERS=1` - Run tests sequentially (slower but uses fewer minutes)
+
+**Benefits of Parallel Testing:**
+- ⚡ **Faster execution** - Tests run simultaneously across multiple browsers
+- 💰 **Cost efficient** - Completes tests faster, reducing total execution time
+- 🔄 **Better resource utilization** - Multiple LambdaTest sessions run concurrently
+
+**Example:**
 ```bash
-npm install -D dotenv-cli
-npx dotenv -e .env -- npx playwright test --config=playwright.lambdatest.config.ts
+# Run with 8 parallel workers for faster execution
+LT_WORKERS=8 npm run test:lambdatest
 ```
 
 ## Security Best Practices
