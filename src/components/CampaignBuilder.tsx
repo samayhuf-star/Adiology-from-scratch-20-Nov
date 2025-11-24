@@ -1389,9 +1389,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const baseUrl = formatURL(url || 'www.example.com');
         
         // Google Ads Editor compatible CSV format - all required columns
+        // Bug_46: Column names in plural form
         const headers = [
-            "Campaign", "Ad Group", "Row Type", "Status",
-            "Keyword", "Match Type", 
+            "Campaign", "Ad Groups", "Row Type", "Status",
+            "Keywords", "Match Types", 
             "Final URL", "Headline 1", "Headline 2", "Headline 3", "Headline 4", "Headline 5",
             "Headline 6", "Headline 7", "Headline 8", "Headline 9", "Headline 10", "Headline 11",
             "Headline 12", "Headline 13", "Headline 14", "Headline 15",

@@ -120,12 +120,13 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     };
 
     const exportToCSV = () => {
-        const csv = ['Keyword\n', ...mixedKeywords].join('\n');
+        // Bug_46: Column name in plural form, filename without "mixed_" prefix
+        const csv = ['Keywords\n', ...mixedKeywords].join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'mixed_keywords.csv';
+        link.download = 'keywords.csv'; // Bug_46: Simplified filename - removed "mixed_" prefix
         link.click();
         URL.revokeObjectURL(url);
     };

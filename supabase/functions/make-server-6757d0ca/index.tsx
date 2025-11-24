@@ -27,11 +27,11 @@ app.onError((err, c) => {
 });
 
 // Health check endpoint
-app.get("/make-server-6757d0ca/health", (c) => {
+app.get("/health", (c) => {
   return c.json({ status: "ok" });
 });
 
-app.post("/make-server-6757d0ca/generate-keywords", async (c) => {
+app.post("/generate-keywords", async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
     const { seeds, negatives } = body;
@@ -113,7 +113,7 @@ app.post("/make-server-6757d0ca/generate-keywords", async (c) => {
 });
 
 // Generate negative keywords with AI using website URL analysis
-app.post("/make-server-6757d0ca/ai/generate-negative-keywords", async (c) => {
+app.post("/ai/generate-negative-keywords", async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
     const { url, coreKeywords, userGoal } = body;
@@ -207,7 +207,7 @@ app.post("/make-server-6757d0ca/ai/generate-negative-keywords", async (c) => {
 });
 
 // Generate AI-optimized ads
-app.post("/make-server-6757d0ca/generate-ads", async (c) => {
+app.post("/generate-ads", async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
     const { keywords, adType, count, groupName } = body;
@@ -396,7 +396,7 @@ Important: Return ONLY the JSON array, no other text or formatting.`;
 
 // --- History Endpoints ---
 
-app.post("/make-server-6757d0ca/history/save", async (c) => {
+app.post("/history/save", async (c) => {
   try {
     const body = await c.req.json();
     const { type, name, data } = body;
@@ -416,7 +416,7 @@ app.post("/make-server-6757d0ca/history/save", async (c) => {
   }
 });
 
-app.get("/make-server-6757d0ca/history/list", async (c) => {
+app.get("/history/list", async (c) => {
   try {
     const userId = "user-default"; 
     const prefix = `history:${userId}`;
@@ -431,7 +431,7 @@ app.get("/make-server-6757d0ca/history/list", async (c) => {
   }
 });
 
-app.post("/make-server-6757d0ca/history/delete", async (c) => {
+app.post("/history/delete", async (c) => {
     try {
         const { id } = await c.req.json();
         const userId = "user-default";
@@ -445,7 +445,7 @@ app.post("/make-server-6757d0ca/history/delete", async (c) => {
 
 // --- Support Ticket Endpoints ---
 
-app.post("/make-server-6757d0ca/tickets/create", async (c) => {
+app.post("/tickets/create", async (c) => {
   try {
     const { subject, message, priority } = await c.req.json();
     const id = crypto.randomUUID();
@@ -470,7 +470,7 @@ app.post("/make-server-6757d0ca/tickets/create", async (c) => {
   }
 });
 
-app.get("/make-server-6757d0ca/tickets/list", async (c) => {
+app.get("/tickets/list", async (c) => {
   try {
     const userId = "user-default";
     const tickets = await kv.getByPrefix(`ticket:${userId}`);
@@ -484,7 +484,7 @@ app.get("/make-server-6757d0ca/tickets/list", async (c) => {
 
 // --- Billing Endpoints (Mock) ---
 
-app.get("/make-server-6757d0ca/billing/info", (c) => {
+app.get("/billing/info", (c) => {
   return c.json({
     plan: "Free",
     nextBillingDate: "2025-12-01",
@@ -495,7 +495,7 @@ app.get("/make-server-6757d0ca/billing/info", (c) => {
   });
 });
 
-app.post("/make-server-6757d0ca/billing/subscribe", async (c) => {
+app.post("/billing/subscribe", async (c) => {
     return c.json({ success: true, message: "Redirecting to payment provider..." });
 });
 
@@ -551,7 +551,7 @@ async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: stri
 }
 
 // Get all users (Super Admin only)
-app.get("/make-server-6757d0ca/admin/users", async (c) => {
+app.get("/admin/users", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -601,7 +601,7 @@ app.get("/make-server-6757d0ca/admin/users", async (c) => {
 });
 
 // Get user by ID
-app.get("/make-server-6757d0ca/admin/users/:id", async (c) => {
+app.get("/admin/users/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -632,7 +632,7 @@ app.get("/make-server-6757d0ca/admin/users/:id", async (c) => {
 });
 
 // Update user
-app.put("/make-server-6757d0ca/admin/users/:id", async (c) => {
+app.put("/admin/users/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -675,7 +675,7 @@ app.put("/make-server-6757d0ca/admin/users/:id", async (c) => {
 });
 
 // Delete user
-app.delete("/make-server-6757d0ca/admin/users/:id", async (c) => {
+app.delete("/admin/users/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -714,7 +714,7 @@ app.delete("/make-server-6757d0ca/admin/users/:id", async (c) => {
 });
 
 // Get system overview stats
-app.get("/make-server-6757d0ca/admin/overview", async (c) => {
+app.get("/admin/overview", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -765,7 +765,7 @@ app.get("/make-server-6757d0ca/admin/overview", async (c) => {
 });
 
 // Get audit logs
-app.get("/make-server-6757d0ca/admin/audit-logs", async (c) => {
+app.get("/admin/audit-logs", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -818,7 +818,7 @@ app.get("/make-server-6757d0ca/admin/audit-logs", async (c) => {
 });
 
 // Get billing/subscription stats
-app.get("/make-server-6757d0ca/admin/billing/stats", async (c) => {
+app.get("/admin/billing/stats", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -859,7 +859,7 @@ app.get("/make-server-6757d0ca/admin/billing/stats", async (c) => {
 });
 
 // Get usage metrics
-app.get("/make-server-6757d0ca/admin/usage", async (c) => {
+app.get("/admin/usage", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -906,7 +906,7 @@ app.get("/make-server-6757d0ca/admin/usage", async (c) => {
 });
 
 // Get system health
-app.get("/make-server-6757d0ca/admin/health", async (c) => {
+app.get("/admin/health", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -937,7 +937,7 @@ app.get("/make-server-6757d0ca/admin/health", async (c) => {
 });
 
 // Feature flags endpoints
-app.get("/make-server-6757d0ca/admin/feature-flags", async (c) => {
+app.get("/admin/feature-flags", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -966,7 +966,7 @@ app.get("/make-server-6757d0ca/admin/feature-flags", async (c) => {
   }
 });
 
-app.post("/make-server-6757d0ca/admin/feature-flags", async (c) => {
+app.post("/admin/feature-flags", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -997,7 +997,7 @@ app.post("/make-server-6757d0ca/admin/feature-flags", async (c) => {
   }
 });
 
-app.put("/make-server-6757d0ca/admin/feature-flags/:id", async (c) => {
+app.put("/admin/feature-flags/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1031,7 +1031,7 @@ app.put("/make-server-6757d0ca/admin/feature-flags/:id", async (c) => {
 });
 
 // Create user (Super Admin only)
-app.post("/make-server-6757d0ca/admin/users", async (c) => {
+app.post("/admin/users", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid || !auth.userId) {
@@ -1104,7 +1104,7 @@ app.post("/make-server-6757d0ca/admin/users", async (c) => {
 });
 
 // Reset password (Super Admin only)
-app.post("/make-server-6757d0ca/admin/users/:id/reset-password", async (c) => {
+app.post("/admin/users/:id/reset-password", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid || !auth.userId) {
@@ -1157,7 +1157,7 @@ app.post("/make-server-6757d0ca/admin/users/:id/reset-password", async (c) => {
 });
 
 // Support Tickets endpoints
-app.get("/make-server-6757d0ca/admin/support/tickets", async (c) => {
+app.get("/admin/support/tickets", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1205,7 +1205,7 @@ app.get("/make-server-6757d0ca/admin/support/tickets", async (c) => {
   }
 });
 
-app.put("/make-server-6757d0ca/admin/support/tickets/:id", async (c) => {
+app.put("/admin/support/tickets/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1253,7 +1253,7 @@ app.put("/make-server-6757d0ca/admin/support/tickets/:id", async (c) => {
 });
 
 // Announcements endpoints
-app.get("/make-server-6757d0ca/admin/announcements", async (c) => {
+app.get("/admin/announcements", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1282,7 +1282,7 @@ app.get("/make-server-6757d0ca/admin/announcements", async (c) => {
   }
 });
 
-app.post("/make-server-6757d0ca/admin/announcements", async (c) => {
+app.post("/admin/announcements", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1324,7 +1324,7 @@ app.post("/make-server-6757d0ca/admin/announcements", async (c) => {
   }
 });
 
-app.put("/make-server-6757d0ca/admin/announcements/:id", async (c) => {
+app.put("/admin/announcements/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1357,7 +1357,7 @@ app.put("/make-server-6757d0ca/admin/announcements/:id", async (c) => {
   }
 });
 
-app.delete("/make-server-6757d0ca/admin/announcements/:id", async (c) => {
+app.delete("/admin/announcements/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1396,7 +1396,7 @@ app.delete("/make-server-6757d0ca/admin/announcements/:id", async (c) => {
 });
 
 // Email Templates endpoints
-app.get("/make-server-6757d0ca/admin/email-templates", async (c) => {
+app.get("/admin/email-templates", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1425,7 +1425,7 @@ app.get("/make-server-6757d0ca/admin/email-templates", async (c) => {
   }
 });
 
-app.post("/make-server-6757d0ca/admin/email-templates", async (c) => {
+app.post("/admin/email-templates", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1459,7 +1459,7 @@ app.post("/make-server-6757d0ca/admin/email-templates", async (c) => {
   }
 });
 
-app.put("/make-server-6757d0ca/admin/email-templates/:id", async (c) => {
+app.put("/admin/email-templates/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1493,7 +1493,7 @@ app.put("/make-server-6757d0ca/admin/email-templates/:id", async (c) => {
 });
 
 // Configuration endpoints
-app.get("/make-server-6757d0ca/admin/config", async (c) => {
+app.get("/admin/config", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1526,7 +1526,7 @@ app.get("/make-server-6757d0ca/admin/config", async (c) => {
   }
 });
 
-app.put("/make-server-6757d0ca/admin/config/:key", async (c) => {
+app.put("/admin/config/:key", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1572,7 +1572,7 @@ app.put("/make-server-6757d0ca/admin/config/:key", async (c) => {
 });
 
 // Pricing Plans endpoints
-app.get("/make-server-6757d0ca/admin/pricing-plans", async (c) => {
+app.get("/admin/pricing-plans", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1601,7 +1601,7 @@ app.get("/make-server-6757d0ca/admin/pricing-plans", async (c) => {
   }
 });
 
-app.put("/make-server-6757d0ca/admin/pricing-plans/:id", async (c) => {
+app.put("/admin/pricing-plans/:id", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid) {
@@ -1832,7 +1832,7 @@ function generateActivationEmailHtml(
 /**
  * Send verification email endpoint
  */
-app.post("/make-server-6757d0ca/email/send-verification", async (c) => {
+app.post("/email/send-verification", async (c) => {
   try {
     const body = await c.req.json();
     const { email, token, baseUrl } = body;
@@ -1878,7 +1878,7 @@ app.post("/make-server-6757d0ca/email/send-verification", async (c) => {
 /**
  * Send activation email endpoint
  */
-app.post("/make-server-6757d0ca/email/send-activation", async (c) => {
+app.post("/email/send-activation", async (c) => {
   try {
     const body = await c.req.json();
     const { email, token, baseUrl } = body;
@@ -1924,7 +1924,7 @@ app.post("/make-server-6757d0ca/email/send-activation", async (c) => {
 /**
  * Test email endpoint (for testing Postmark configuration)
  */
-app.post("/make-server-6757d0ca/email/test", async (c) => {
+app.post("/email/test", async (c) => {
   try {
     const body = await c.req.json();
     const { email } = body;

@@ -20,11 +20,11 @@ import { CampaignStructure, Campaign, AdGroup, Ad } from './campaignStructureGen
 export interface CSVRow {
   Campaign: string;
   'Campaign Type': string;
-  'Ad Group': string;
+  'Ad Groups': string; // Bug_46: Changed to plural
   'Row Type': string;
   Status: string;
-  'Keyword': string;
-  'Match Type': string;
+  'Keywords': string; // Bug_46: Changed to plural
+  'Match Types': string; // Bug_46: Changed to plural
   'Final URL': string;
   'Headline 1': string;
   'Headline 2': string;
@@ -151,8 +151,8 @@ function createKeywordRow(
   matchType: string
 ): CSVRow {
   const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Keyword', 'Active');
-  row.Keyword = keyword;
-  row['Match Type'] = matchType;
+  row.Keywords = keyword; // Bug_46: Changed to plural
+  row['Match Types'] = matchType; // Bug_46: Changed to plural
   // Get final URL from first ad in the ad group
   const firstAd = adGroup.ads && adGroup.ads.length > 0 ? adGroup.ads[0] : null;
   if (firstAd && firstAd.final_url) {
@@ -359,8 +359,8 @@ function createNegativeKeywordRow(
 ): CSVRow {
   const cleanNegative = cleanKeywordText(negativeKw);
   const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Keyword', 'Active');
-  row.Keyword = cleanNegative;
-  row['Match Type'] = 'Negative';
+  row.Keywords = cleanNegative; // Bug_46: Changed to plural
+  row['Match Types'] = 'Negative'; // Bug_46: Changed to plural
   row['Negative Keyword'] = 'Yes';
   return row;
 }
@@ -377,11 +377,11 @@ function createEmptyRow(
   return {
     Campaign: campaignName,
     'Campaign Type': '',
-    'Ad Group': adGroupName,
+    'Ad Groups': adGroupName, // Bug_46: Changed to plural
     'Row Type': rowType,
     Status: status,
-    'Keyword': '',
-    'Match Type': '',
+    'Keywords': '', // Bug_46: Changed to plural
+    'Match Types': '', // Bug_46: Changed to plural
     'Final URL': '',
     'Headline 1': '',
     'Headline 2': '',
@@ -457,14 +457,15 @@ export function rowsToCSVString(rows: CSVRow[]): string {
   if (rows.length === 0) return '';
 
   // Get headers in correct order
+  // Bug_46: Column names in plural form
   const headers: (keyof CSVRow)[] = [
     'Campaign',
     'Campaign Type',
-    'Ad Group',
+    'Ad Groups',
     'Row Type',
     'Status',
-    'Keyword',
-    'Match Type',
+    'Keywords',
+    'Match Types',
     'Final URL',
     'Headline 1',
     'Headline 2',

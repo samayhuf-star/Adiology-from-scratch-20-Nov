@@ -92,6 +92,13 @@ mkdir -p supabase/functions/$FUNCTION_NAME
 # Copy the edge function file
 cp "$EDGE_FUNCTION_FILE" "supabase/functions/$FUNCTION_NAME/index.tsx"
 
+# Copy kv_store.tsx if it exists
+KV_STORE_FILE="backend/supabase-functions/server/kv_store.tsx"
+if [ -f "$KV_STORE_FILE" ]; then
+    cp "$KV_STORE_FILE" "supabase/functions/$FUNCTION_NAME/kv_store.tsx"
+    echo -e "${GREEN}✓${NC} KV store file copied"
+fi
+
 # Deploy using Supabase CLI
 if supabase functions deploy "$FUNCTION_NAME" --no-verify-jwt; then
     echo ""
