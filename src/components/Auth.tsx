@@ -116,30 +116,14 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
           createdAt: new Date().toISOString(),
         }));
 
-        // Send verification email via API
-        try {
-          const baseUrl = window.location.origin;
-          await api.post('/email/send-verification', {
-            email: trimmedEmail,
-            token: verificationToken,
-            baseUrl: baseUrl,
-          });
-
-          notifications.success('Verification email sent!', {
-            title: 'Account Created',
-            description: 'Please check your email to verify your account.',
-          });
-
-          setIsLoading(false);
-          
-          // Redirect to verification page
-          window.location.href = `/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
-        } catch (emailError) {
-          console.error('Failed to send verification email:', emailError);
-          
-          // Still allow signup to proceed, but show warning
-          const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
-          console.log('Verification URL (fallback):', verificationUrl);
+        // In production, send verification email via API
+        // For now, redirect directly to verification page
+        setIsLoading(false);
+        
+        // Redirect to verification page
+        const verificationUrl = `${window.location.origin}/verify-email?token=${verificationToken}&email=${encodeURIComponent(trimmedEmail)}`;
+        console.log('Verification URL:', verificationUrl);
+        window.location.href = verificationUrl;
           
           notifications.warning('Account created, but email could not be sent', {
             title: 'Email Service Unavailable',
