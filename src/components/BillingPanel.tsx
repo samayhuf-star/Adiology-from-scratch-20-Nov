@@ -484,7 +484,9 @@ Generated on ${new Date().toLocaleDateString()}`;
                     <DialogHeader>
                         <DialogTitle>Cancel Subscription</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to cancel your subscription? You'll continue to have access until the end of your current billing period ({billingInfo.nextBillingDate}).
+                            {billingInfo.plan.includes('Lifetime') 
+                                ? "Are you sure you want to cancel your lifetime plan? This action cannot be undone."
+                                : `Are you sure you want to cancel your subscription? You'll continue to have access until the end of your current billing period (${billingInfo.nextBillingDate ? new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}).`}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
