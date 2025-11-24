@@ -259,3 +259,25 @@ export async function getSession() {
   }
 }
 
+/**
+ * Check if current user is a super admin
+ */
+export async function isSuperAdmin(): Promise<boolean> {
+  try {
+    const user = await getCurrentAuthUser();
+    if (!user) return false;
+
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !userData) return false;
+    return userData.role === 'superadmin';
+  } catch (error) {
+    console.error('Error checking super admin status:', error);
+    return false;
+  }
+}
+
