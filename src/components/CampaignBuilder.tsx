@@ -1040,17 +1040,16 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         if (!projectId) {
              console.warn("Project ID is missing, using mock generation");
              // Use mock generation immediately
-             setTimeout(() => {
-                 const mockKeywords = generateMockKeywords(seedKeywords, negativeKeywords);
-                 setGeneratedKeywords(mockKeywords);
-                 setSelectedKeywords(mockKeywords.map((k: any) => k.id));
-                 setIsGeneratingKeywords(false);
-                    if (loadingToast) loadingToast();
-                    notifications.success(`Generated ${mockKeywords.length} keywords successfully`, {
-                        title: 'Keywords Generated',
-                        description: `Found ${mockKeywords.length} keyword suggestions based on your seed keywords.`,
-                    });
-             }, 1500);
+             // Generate immediately without delay for faster response
+             const mockKeywords = generateMockKeywords(seedKeywords, negativeKeywords);
+             setGeneratedKeywords(mockKeywords);
+             setSelectedKeywords(mockKeywords.map((k: any) => k.id));
+             setIsGeneratingKeywords(false);
+             if (loadingToast) loadingToast();
+             notifications.success(`Generated ${mockKeywords.length} keywords successfully`, {
+                 title: 'Keywords Generated',
+                 description: `Found ${mockKeywords.length} keyword suggestions based on your seed keywords.`,
+             });
              return;
         }
 

@@ -27,16 +27,63 @@ class RateLimiter {
   ]);
 
   /**
+   * Check if user has a paid plan
+   */
+  private isPaidUser(): boolean {
+    try {
+      const authUser = localStorage.getItem('auth_user');
+      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+      
+      if (authUser) {
+        const user = JSON.parse(authUser);
+        const userData = savedUsers.find((u: any) => u.email === user.email);
+        
+        const plan = userData?.plan || user.plan || 'Free';
+        return plan !== 'Free' && plan !== null && plan !== undefined;
+      }
+    } catch (e) {
+      console.error('Error checking user plan:', e);
+    }
+    return false;
+  }
+
+  /**
+   * Get rate limit config (higher limits for paid users)
+   */
+  private getConfig(key: string, customConfig?: RateLimitConfig): RateLimitConfig | undefined {
+    const config = customConfig || this.defaultLimits.get(key);
+    
+    // Paid users get 10x rate limits or no limits
+    if (config && this.isPaidUser()) {
+      return {
+        ...config,
+        maxRequests: Infinity, // Unlimited for paid users
+      };
+    }
+    
+    return config;
+  }
+
+  /**
    * Check if an action is allowed based on rate limits
    */
   checkLimit(
     key: string,
     customConfig?: RateLimitConfig
   ): RateLimitResult {
-    const config = customConfig || this.defaultLimits.get(key);
+    const config = this.getConfig(key, customConfig);
     
     if (!config) {
       // No limit configured, allow
+      return {
+        allowed: true,
+        remaining: Infinity,
+        resetTime: Date.now(),
+      };
+    }
+
+    // Paid users bypass rate limits
+    if (this.isPaidUser() && config.maxRequests === Infinity) {
       return {
         allowed: true,
         remaining: Infinity,

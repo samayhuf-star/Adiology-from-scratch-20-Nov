@@ -1,0 +1,136 @@
+# LambdaTest Environment Variables Setup
+
+This guide explains how to configure LambdaTest credentials using environment variables for both the application and Playwright tests.
+
+## Quick Setup
+
+### Option 1: Automated Setup Script (Recommended)
+
+Run the setup script to interactively configure your environment:
+
+```bash
+./scripts/setup-env.sh
+```
+
+This script will:
+- Create a `.env` file from `.env.example`
+- Prompt you for your LambdaTest credentials
+- Configure all necessary environment variables
+
+### Option 2: Manual Setup
+
+1. **Copy the example file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Get your LambdaTest credentials:**
+   - Visit: https://automation.lambdatest.com/user-settings/api-token
+   - Copy your Username and Access Key
+
+3. **Edit `.env` file:**
+   ```bash
+   # Open .env in your editor
+   nano .env  # or use your preferred editor
+   ```
+
+4. **Update the following variables:**
+   ```env
+   VITE_LAMBDATEST_USERNAME=your-actual-username
+   VITE_LAMBDATEST_ACCESS_KEY=your-actual-access-key
+   LT_USERNAME=your-actual-username
+   LT_ACCESS_KEY=your-actual-access-key
+   ```
+
+## Environment Variables Explained
+
+### Application Variables (Vite)
+
+These variables are used by the React application and must be prefixed with `VITE_`:
+
+- `VITE_LAMBDATEST_USERNAME` - Your LambdaTest username
+- `VITE_LAMBDATEST_ACCESS_KEY` - Your LambdaTest access token
+- `VITE_BASE_URL` - Application base URL (default: `http://localhost:3000`)
+
+### Playwright Test Variables
+
+These variables are used by Playwright tests (Node.js environment):
+
+- `LT_USERNAME` - Your LambdaTest username
+- `LT_ACCESS_KEY` - Your LambdaTest access token
+- `BASE_URL` - Application URL for testing (default: `http://localhost:3000`)
+- `BUILD_NAME` - Optional build name (defaults to timestamp)
+- `PROJECT_NAME` - Optional project name (default: "Adiology Campaign Dashboard")
+- `LT_TUNNEL` - Enable LambdaTest tunnel (default: `false`)
+- `LT_TUNNEL_NAME` - Optional tunnel name
+
+## Usage
+
+### Running the Application
+
+After setting up `.env`, restart your development server:
+
+```bash
+npm run dev
+```
+
+The application will automatically load environment variables prefixed with `VITE_`.
+
+### Running Playwright Tests
+
+Run Playwright tests with the LambdaTest configuration:
+
+```bash
+# Set environment variables (if not using .env)
+export LT_USERNAME="your-username"
+export LT_ACCESS_KEY="your-access-key"
+
+# Run tests
+npx playwright test --config=playwright.lambdatest.config.ts
+```
+
+Or use a tool like `dotenv-cli` to load from `.env`:
+
+```bash
+npm install -D dotenv-cli
+npx dotenv -e .env -- npx playwright test --config=playwright.lambdatest.config.ts
+```
+
+## Security Best Practices
+
+1. **Never commit `.env` files** - The `.gitignore` file already excludes `.env` files
+2. **Use `.env.example`** - Commit the example file as a template
+3. **Rotate credentials** - If credentials are exposed, rotate them immediately
+4. **Use different credentials** - Use separate credentials for development and production
+
+## Troubleshooting
+
+### "LambdaTest credentials are not configured" Error
+
+This means the environment variables are not set. Check:
+
+1. `.env` file exists in the project root
+2. Variables are prefixed correctly (`VITE_` for app, no prefix for Playwright)
+3. Development server was restarted after creating `.env`
+4. No typos in variable names
+
+### Playwright Tests Can't Connect
+
+1. Verify `LT_USERNAME` and `LT_ACCESS_KEY` are set
+2. Check credentials are valid at https://automation.lambdatest.com/
+3. Ensure you have sufficient test minutes in your LambdaTest account
+4. Check network connectivity
+
+### Environment Variables Not Loading in Browser
+
+Vite only exposes variables prefixed with `VITE_` to the browser. Make sure:
+- Variables used in React code have `VITE_` prefix
+- Development server was restarted after adding variables
+- Variables are in `.env` file (not `.env.local` unless configured)
+
+## Getting Help
+
+- LambdaTest Documentation: https://www.lambdatest.com/support/docs/
+- LambdaTest API Token: https://automation.lambdatest.com/user-settings/api-token
+- Playwright Documentation: https://playwright.dev/
+

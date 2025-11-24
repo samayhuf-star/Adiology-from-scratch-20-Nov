@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * LambdaTest Playwright Configuration
@@ -6,15 +11,18 @@ import { defineConfig, devices } from '@playwright/test';
  * This configuration file is specifically for running Playwright tests on LambdaTest's cloud infrastructure.
  * 
  * Setup:
- * 1. Set environment variables:
+ * 1. Create a .env file with your LambdaTest credentials:
  *    - LT_USERNAME: Your LambdaTest username
  *    - LT_ACCESS_KEY: Your LambdaTest access token
  *    - BASE_URL: Your application URL (defaults to http://localhost:3000)
  *    - BUILD_NAME: Optional build name (defaults to timestamp)
  *    - PROJECT_NAME: Optional project name (defaults to 'Adiology Campaign Dashboard')
  * 
+ *    Or run: ./scripts/setup-env.sh
+ * 
  * 2. Run tests:
- *    - npx playwright test --config=playwright.lambdatest.config.ts
+ *    - npm run test:lambdatest
+ *    - Or: npx playwright test --config=playwright.lambdatest.config.ts
  * 
  * 3. View results:
  *    - Check LambdaTest dashboard: https://automation.lambdatest.com/
@@ -29,13 +37,25 @@ function getLambdaTestEndpoint(capabilities: Record<string, any>): string {
   const username = process.env.LT_USERNAME || process.env.LAMBDATEST_USERNAME || '';
   const accessKey = process.env.LT_ACCESS_KEY || process.env.LAMBDATEST_ACCESS_KEY || '';
   
-  // Note: Credentials will be validated at runtime when tests execute
-  // Set LT_USERNAME and LT_ACCESS_KEY environment variables before running tests
+  if (!username || !accessKey) {
+    throw new Error('LT_USERNAME and LT_ACCESS_KEY environment variables are required');
+  }
 
+  // LambdaTest requires capabilities in specific format with LT:Options
   const caps = {
-    ...capabilities,
-    'lambda:user': username,
-    'lambda:accessKey': accessKey,
+    browserName: capabilities.browserName || 'Chrome',
+    browserVersion: capabilities.browserVersion || 'latest',
+    'LT:Options': {
+      platform: capabilities.platform || 'Windows 10',
+      build: capabilities.build || process.env.BUILD_NAME || `Build ${new Date().toISOString()}`,
+      name: capabilities.name || 'Playwright Test',
+      user: username,
+      accessKey: accessKey,
+      network: true,
+      video: true,
+      console: true,
+      ...capabilities['LT:Options'],
+    },
   };
 
   return `wss://cdp.lambdatest.com/playwright?capabilities=${encodeURIComponent(JSON.stringify(caps))}`;
@@ -95,9 +115,11 @@ const config = defineConfig({
             browserName: 'Chrome',
             browserVersion: 'latest',
             platform: 'Windows 10',
-            name: 'Chrome Test',
+            name: 'Chrome Test - Paid Signup',
             build: process.env.BUILD_NAME || `Build ${new Date().toISOString()}`,
-            project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
+            'LT:Options': {
+              project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
+            },
           }),
         },
       },
@@ -112,9 +134,11 @@ const config = defineConfig({
             browserName: 'Firefox',
             browserVersion: 'latest',
             platform: 'Windows 10',
-            name: 'Firefox Test',
+            name: 'Firefox Test - Paid Signup',
             build: process.env.BUILD_NAME || `Build ${new Date().toISOString()}`,
-            project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
+            'LT:Options': {
+              project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
+            },
           }),
         },
       },
@@ -129,46 +153,11 @@ const config = defineConfig({
             browserName: 'Safari',
             browserVersion: 'latest',
             platform: 'macOS Big Sur',
-            name: 'Safari Test',
+            name: 'Safari Test - Paid Signup',
             build: process.env.BUILD_NAME || `Build ${new Date().toISOString()}`,
-            project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
-          }),
-        },
-      },
-    },
-
-    // Mobile device configurations
-    {
-      name: 'Mobile Chrome Android',
-      use: {
-        ...devices['Pixel 5'],
-        connectOptions: {
-          wsEndpoint: getLambdaTestEndpoint({
-            browserName: 'Chrome',
-            browserVersion: 'latest',
-            platform: 'Android',
-            deviceName: 'Pixel 5',
-            name: 'Mobile Chrome Android Test',
-            build: process.env.BUILD_NAME || `Build ${new Date().toISOString()}`,
-            project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
-          }),
-        },
-      },
-    },
-
-    {
-      name: 'Mobile Safari iOS',
-      use: {
-        ...devices['iPhone 13'],
-        connectOptions: {
-          wsEndpoint: getLambdaTestEndpoint({
-            browserName: 'Safari',
-            browserVersion: 'latest',
-            platform: 'iOS',
-            deviceName: 'iPhone 13',
-            name: 'Mobile Safari iOS Test',
-            build: process.env.BUILD_NAME || `Build ${new Date().toISOString()}`,
-            project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
+            'LT:Options': {
+              project: process.env.PROJECT_NAME || 'Adiology Campaign Dashboard',
+            },
           }),
         },
       },

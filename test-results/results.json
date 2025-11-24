@@ -1,0 +1,790 @@
+{
+  "config": {
+    "configFile": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/playwright.lambdatest.config.ts",
+    "rootDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium-lt",
+        "name": "chromium-lt",
+        "testDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "firefox-lt",
+        "name": "firefox-lt",
+        "testDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "webkit-lt",
+        "name": "webkit-lt",
+        "testDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "Mobile Chrome Android",
+        "name": "Mobile Chrome Android",
+        "testDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "Mobile Safari iOS",
+        "name": "Mobile Safari iOS",
+        "testDir": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 4,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "paid-signup.spec.ts",
+      "file": "paid-signup.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Paid Signup Flow",
+          "file": "paid-signup.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Complete paid signup flow - Lifetime Unlimited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-lt",
+                  "projectName": "chromium-lt",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 43,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:40:59.373Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-a6066505bb08d17f0cc2",
+              "file": "paid-signup.spec.ts",
+              "line": 30,
+              "column": 7
+            },
+            {
+              "title": "Paid signup flow - Monthly Limited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-lt",
+                  "projectName": "chromium-lt",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 13,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:40:59.176Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-127892a799b33d1cff12",
+              "file": "paid-signup.spec.ts",
+              "line": 193,
+              "column": 7
+            },
+            {
+              "title": "Verify signup redirects to payment when plan is selected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium-lt",
+                  "projectName": "chromium-lt",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 42,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:40:59.496Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-47c15ad5065a85e9839c",
+              "file": "paid-signup.spec.ts",
+              "line": 248,
+              "column": 7
+            },
+            {
+              "title": "Complete paid signup flow - Lifetime Unlimited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox-lt",
+                  "projectName": "firefox-lt",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 8,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:40:59.162Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-ebbf93e5e5fc6068e2e6",
+              "file": "paid-signup.spec.ts",
+              "line": 30,
+              "column": 7
+            },
+            {
+              "title": "Paid signup flow - Monthly Limited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox-lt",
+                  "projectName": "firefox-lt",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 11,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:03.684Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-4d04be904fc9394ae9ee",
+              "file": "paid-signup.spec.ts",
+              "line": 193,
+              "column": 7
+            },
+            {
+              "title": "Verify signup redirects to payment when plan is selected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "firefox-lt",
+                  "projectName": "firefox-lt",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 26,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:03.577Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-b64f5c07b5fa67e26861",
+              "file": "paid-signup.spec.ts",
+              "line": 248,
+              "column": 7
+            },
+            {
+              "title": "Complete paid signup flow - Lifetime Unlimited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit-lt",
+                  "projectName": "webkit-lt",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 40,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:03.554Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-dd6c9f9c1e2242ffd445",
+              "file": "paid-signup.spec.ts",
+              "line": 30,
+              "column": 7
+            },
+            {
+              "title": "Paid signup flow - Monthly Limited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit-lt",
+                  "projectName": "webkit-lt",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 85,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:03.439Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-0e9eff008da069442de5",
+              "file": "paid-signup.spec.ts",
+              "line": 193,
+              "column": 7
+            },
+            {
+              "title": "Verify signup redirects to payment when plan is selected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "webkit-lt",
+                  "projectName": "webkit-lt",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 28,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.",
+                        "stack": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unauthorized, either Username or AccessKey is invalid.\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:07.209Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-e1193f0ebc6ab142607e",
+              "file": "paid-signup.spec.ts",
+              "line": 248,
+              "column": 7
+            },
+            {
+              "title": "Complete paid signup flow - Lifetime Unlimited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome Android",
+                  "projectName": "Mobile Chrome Android",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 9,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unsupported platfrom Android",
+                        "stack": "Internal Server Error: browserType.connect: Unsupported platfrom Android\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unsupported platfrom Android\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:06.926Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-18b7311bd5b8bb231ea2",
+              "file": "paid-signup.spec.ts",
+              "line": 30,
+              "column": 7
+            },
+            {
+              "title": "Paid signup flow - Monthly Limited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome Android",
+                  "projectName": "Mobile Chrome Android",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 17,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unsupported platfrom Android",
+                        "stack": "Internal Server Error: browserType.connect: Unsupported platfrom Android\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unsupported platfrom Android\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:07.192Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-ffd7a05c7e375c37ee8d",
+              "file": "paid-signup.spec.ts",
+              "line": 193,
+              "column": 7
+            },
+            {
+              "title": "Verify signup redirects to payment when plan is selected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Chrome Android",
+                  "projectName": "Mobile Chrome Android",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 18,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unsupported platfrom Android",
+                        "stack": "Internal Server Error: browserType.connect: Unsupported platfrom Android\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unsupported platfrom Android\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:07.230Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-0ba1aa61999074b6d443",
+              "file": "paid-signup.spec.ts",
+              "line": 248,
+              "column": 7
+            },
+            {
+              "title": "Complete paid signup flow - Lifetime Unlimited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari iOS",
+                  "projectName": "Mobile Safari iOS",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 2,
+                      "status": "failed",
+                      "duration": 12,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unsupported platfrom iOS",
+                        "stack": "Internal Server Error: browserType.connect: Unsupported platfrom iOS\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unsupported platfrom iOS\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:09.926Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-0b1185eb5081efce1a3e",
+              "file": "paid-signup.spec.ts",
+              "line": 30,
+              "column": 7
+            },
+            {
+              "title": "Paid signup flow - Monthly Limited Plan",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari iOS",
+                  "projectName": "Mobile Safari iOS",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 9,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unsupported platfrom iOS",
+                        "stack": "Internal Server Error: browserType.connect: Unsupported platfrom iOS\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unsupported platfrom iOS\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:09.872Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-d0efd9f2a3c3c77e032d",
+              "file": "paid-signup.spec.ts",
+              "line": 193,
+              "column": 7
+            },
+            {
+              "title": "Verify signup redirects to payment when plan is selected",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "Mobile Safari iOS",
+                  "projectName": "Mobile Safari iOS",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 3,
+                      "status": "failed",
+                      "duration": 23,
+                      "error": {
+                        "message": "Internal Server Error: browserType.connect: Unsupported platfrom iOS",
+                        "stack": "Internal Server Error: browserType.connect: Unsupported platfrom iOS\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\n    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)"
+                      },
+                      "errors": [
+                        {
+                          "message": "Internal Server Error: browserType.connect: Unsupported platfrom iOS\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:98:33)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/fixtureRunner.js:60:109)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/testInfo.js:305:17)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:469:11)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:302:9)\u001b[22m\n\u001b[2m    at /Users/samay/Downloads/New Adiology Campaign Dashboard (1)/node_modules/playwright/lib/worker/workerMain.js:298:7)\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-24T08:41:10.117Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dbc2ef0567469424ca3f-fa74d4f8fe9084924be1",
+              "file": "paid-signup.spec.ts",
+              "line": 248,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-24T08:40:47.644Z",
+    "duration": 23192.718,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 15,
+    "flaky": 0
+  }
+}

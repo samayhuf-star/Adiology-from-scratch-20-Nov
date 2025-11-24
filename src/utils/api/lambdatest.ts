@@ -1,10 +1,17 @@
 // LambdaTest API Integration
-const LAMBDATEST_USERNAME = 'samayhuf';
-const LAMBDATEST_TOKEN = 'LT_gBGWvb6YlVz6t5TfmaN5C4HTR6iAU90ZKtV7hFqhDGOA9ik';
+// Credentials are loaded from environment variables
+// Set VITE_LAMBDATEST_USERNAME and VITE_LAMBDATEST_ACCESS_KEY in your .env file
+const LAMBDATEST_USERNAME = import.meta.env.VITE_LAMBDATEST_USERNAME || '';
+const LAMBDATEST_TOKEN = import.meta.env.VITE_LAMBDATEST_ACCESS_KEY || '';
 const LAMBDATEST_API_BASE = 'https://api.lambdatest.com/automation/api/v1';
 
 // Create Basic Auth header
 const getAuthHeader = () => {
+  if (!LAMBDATEST_USERNAME || !LAMBDATEST_TOKEN) {
+    throw new Error(
+      'LambdaTest credentials are not configured. Please set VITE_LAMBDATEST_USERNAME and VITE_LAMBDATEST_ACCESS_KEY in your .env file.'
+    );
+  }
   const credentials = btoa(`${LAMBDATEST_USERNAME}:${LAMBDATEST_TOKEN}`);
   return `Basic ${credentials}`;
 };

@@ -25,6 +25,48 @@ class UsageTracker {
     ['campaign-creation', { daily: 20, monthly: 500, perAction: 1 }],
   ]);
 
+  /**
+   * Check if user has a paid plan
+   */
+  private isPaidUser(): boolean {
+    try {
+      const authUser = localStorage.getItem('auth_user');
+      const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
+      
+      if (authUser) {
+        const user = JSON.parse(authUser);
+        const userData = savedUsers.find((u: any) => u.email === user.email);
+        
+        const plan = userData?.plan || user.plan || 'Free';
+        return plan !== 'Free' && plan !== null && plan !== undefined;
+      }
+    } catch (e) {
+      console.error('Error checking user plan:', e);
+    }
+    return false;
+  }
+
+  /**
+   * Get quota for action (higher limits for paid users)
+   */
+  private getQuota(action: string): UsageQuota {
+    const baseQuota = this.quotas.get(action);
+    if (!baseQuota) {
+      return { daily: Infinity, monthly: Infinity, perAction: Infinity };
+    }
+
+    // Paid users get 10x limits or unlimited
+    if (this.isPaidUser()) {
+      return {
+        daily: Infinity, // Unlimited daily for paid users
+        monthly: Infinity, // Unlimited monthly for paid users
+        perAction: baseQuota.perAction * 10, // 10x per-action limit
+      };
+    }
+
+    return baseQuota;
+  }
+
   private getStorageKey(action: string): string {
     const today = new Date().toISOString().split('T')[0];
     const month = new Date().toISOString().substring(0, 7); // YYYY-MM
@@ -35,15 +77,17 @@ class UsageTracker {
    * Track usage of an action
    */
   trackUsage(action: string, amount: number = 1): { allowed: boolean; stats: UsageStats; message?: string } {
-    const quota = this.quotas.get(action);
-    if (!quota) {
+    const quota = this.getQuota(action);
+    
+    // Paid users bypass limits
+    if (this.isPaidUser()) {
       return {
         allowed: true,
         stats: {
           today: 0,
           thisMonth: 0,
           lastAction: 0,
-          quota: { daily: Infinity, monthly: Infinity, perAction: Infinity },
+          quota,
         },
       };
     }
@@ -102,8 +146,15 @@ class UsageTracker {
    * Get current usage stats
    */
   getUsage(action: string): UsageStats | null {
-    const quota = this.quotas.get(action);
-    if (!quota) return null;
+    const quota = this.getQuota(action);
+    if (!quota || (quota.daily === Infinity && quota.monthly === Infinity)) {
+      return {
+        today: 0,
+        thisMonth: 0,
+        lastAction: 0,
+        quota,
+      };
+    }
 
     const storageKey = this.getStorageKey(action);
     const stored = localStorage.getItem(storageKey);
@@ -134,10 +185,21 @@ class UsageTracker {
    * Check if user is approaching limits
    */
   checkWarnings(action: string): string | null {
+    // Paid users don't get warnings
+    if (this.isPaidUser()) {
+      return null;
+    }
+
     const stats = this.getUsage(action);
     if (!stats) return null;
 
     const { today, thisMonth, quota } = stats;
+    
+    // Skip warnings if limits are unlimited
+    if (quota.daily === Infinity || quota.monthly === Infinity) {
+      return null;
+    }
+
     const dailyPercent = (today / quota.daily) * 100;
     const monthlyPercent = (thisMonth / quota.monthly) * 100;
 
