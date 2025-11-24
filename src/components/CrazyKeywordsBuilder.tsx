@@ -42,23 +42,68 @@ const IntentBadges = ({ tags = [] }: { tags?: string[] }) => (
   </div>
 );
 
+// Backend API base URL - can be configured via environment variable
+const KEYWORD_API_BASE = import.meta.env.VITE_KEYWORD_API_BASE || 'http://localhost:8000';
+
 function useMockOrBackend() {
-  async function run(payload: any) {
+  async function run(payload: any, sync: boolean = true) {
     try {
-      const res = await fetch('/api/keywords', {
+      // Try backend API first
+      const url = sync 
+        ? `${KEYWORD_API_BASE}/api/keywords?sync=1`
+        : `${KEYWORD_API_BASE}/api/keywords`;
+      
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('backend error');
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(errorData.detail || 'Backend error');
+      }
+      
       const data = await res.json();
+      
+      // If async job, poll for results
+      if (data.job_id && !sync) {
+        return await pollJobStatus(data.job_id);
+      }
+      
       return { ok: true, data };
     } catch (e) {
+      console.warn('Backend unavailable, using mock data:', e);
       // Fallback mock
       const mock = mockGenerator(payload.seed, payload.max_results || 50);
       return { ok: false, data: { results: mock } };
     }
   }
+  
+  async function pollJobStatus(jobId: string, maxAttempts: number = 60): Promise<{ ok: boolean; data: any }> {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const res = await fetch(`${KEYWORD_API_BASE}/api/keywords/${jobId}/status`);
+        if (!res.ok) throw new Error('Status check failed');
+        
+        const status = await res.json();
+        
+        if (status.state === 'SUCCESS') {
+          return { ok: true, data: status.result };
+        } else if (status.state === 'FAILURE') {
+          throw new Error(status.error || 'Job failed');
+        }
+        
+        // Still processing, wait before next poll
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second intervals
+      } catch (e) {
+        if (attempt === maxAttempts - 1) throw e;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    throw new Error('Job timeout - exceeded max polling attempts');
+  }
+  
   return { run };
 }
 
@@ -161,9 +206,9 @@ export const CrazyKeywordsBuilder = () => {
 
     const payload = {
       seed: seedInput,
-      geo,
-      intent,
-      funnel,
+      geo: geo || undefined,
+      intent: intent || undefined,
+      funnel: funnel || undefined,
       depth,
       max_results: maxResults,
       include_synonyms: true,
@@ -174,7 +219,9 @@ export const CrazyKeywordsBuilder = () => {
     };
 
     try {
-      const { ok, data } = await apiHook.run(payload);
+      // Use sync mode for smaller requests, async for larger ones
+      const useSync = maxResults <= 500 && !asyncJob;
+      const { ok, data } = await apiHook.run(payload, useSync);
       const keywordResults = (data && data.results) || [];
       setResults(keywordResults);
       
@@ -201,7 +248,7 @@ export const CrazyKeywordsBuilder = () => {
     }
   }
 
-  function exportSelectedGoogleAds() {
+  async function exportSelectedGoogleAds() {
     const rows = results.filter(r => selected.has(r.id));
     if (!rows.length) {
       notifications.warning('Please select keywords to export', {
@@ -210,6 +257,43 @@ export const CrazyKeywordsBuilder = () => {
       return;
     }
 
+    const keywords = rows.map(r => r.keyword);
+
+    try {
+      // Try backend API export first
+      const res = await fetch(`${KEYWORD_API_BASE}/api/export/google-ads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keywords,
+          intent,
+          adgroup_prefix: `${intent}_group`,
+          campaign_name: 'Search Campaign 1',
+          match_type: 'Phrase'
+        }),
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `google_ads_export_${seedInput.replace(/\s+/g, '_')}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        notifications.success(`Exported ${rows.length} keywords to CSV`, {
+          title: 'Export Complete',
+          description: 'Your Google Ads CSV file has been downloaded.',
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('Backend export unavailable, using client-side export');
+    }
+
+    // Fallback to client-side export
     const header = ['Campaign', 'Ad group', 'Criterion', 'Type', 'Max CPC', 'Status'].join(',') + '\n';
     const body = rows.map(r => {
       const campaign = 'Search Campaign 1';
