@@ -62,14 +62,6 @@ const App = () => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    setUser(null);
-    window.history.pushState({}, '', '/');
-    setAppView('home');
-    setActiveTab('dashboard');
-  };
-
   const handleNotificationClick = (notification: typeof notifications[0]) => {
     // Mark as read
     handleMarkNotificationAsRead(notification.id);
