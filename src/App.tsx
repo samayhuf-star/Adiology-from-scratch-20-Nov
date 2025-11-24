@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import { CSVValidator2 } from './components/CSVValidator2';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
+import { CrazyKeywordsBuilder } from './components/CrazyKeywordsBuilder';
 import { AdsBuilder } from './components/AdsBuilder';
 import { HistoryPanel } from './components/HistoryPanel';
 import { BillingPanel } from './components/BillingPanel';
@@ -276,6 +277,7 @@ const App = () => {
     { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },
     { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
     { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
+    { id: 'crazy-keywords', label: 'Crazy Keywords Builder', icon: Zap },
     { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
@@ -301,6 +303,8 @@ const App = () => {
         return <CSVValidator2 />;
       case 'keyword-planner':
         return <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />;
+      case 'crazy-keywords':
+        return <CrazyKeywordsBuilder />;
       case 'keyword-mixer':
         return <KeywordMixer initialData={activeTab === 'keyword-mixer' ? historyData : null} />;
       case 'negative-keywords':
