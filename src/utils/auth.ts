@@ -33,30 +33,91 @@ export async function getCurrentUserProfile() {
       .eq('id', user.id)
       .single();
 
-    // If profile doesn't exist, create it
-    if (error && error.code === 'PGRST116') {
-      console.log('User profile not found, creating one...');
+    // If profile doesn't exist (404 or PGRST116), create it
+    const isNotFoundError = error && (
+      error.code === 'PGRST116' || 
+      error.message?.includes('No rows') ||
+      error.message?.includes('not found') ||
+      (error as any).status === 404 ||
+      (error as any).code === '404'
+    );
+
+    if (isNotFoundError) {
+      console.log('User profile not found (404/PGRST116), creating one...', { userId: user.id, error });
       try {
+        const fullName = user.user_metadata?.full_name || 
+                        user.user_metadata?.full_name || 
+                        user.email?.split('@')[0] || 
+                        'User';
+        
         const newProfile = await createUserProfile(
           user.id,
           user.email || '',
-          user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+          fullName
         );
-        return newProfile;
-      } catch (createError) {
-        console.error('Error creating user profile:', createError);
-        return null;
+        
+        if (newProfile) {
+          console.log('✅ User profile created successfully:', newProfile.id);
+          return newProfile;
+        } else {
+          console.warn('⚠️ Profile creation returned null, but user exists');
+          // Return a minimal user object so the app doesn't break
+          return {
+            id: user.id,
+            email: user.email || '',
+            full_name: fullName,
+            role: 'user',
+            subscription_plan: 'free',
+            subscription_status: 'active',
+          };
+        }
+      } catch (createError: any) {
+        console.error('❌ Error creating user profile:', createError);
+        
+        // If creation fails, return minimal user object so app doesn't break
+        return {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          role: 'user',
+          subscription_plan: 'free',
+          subscription_status: 'active',
+        };
       }
     }
 
     if (error) {
       console.error('Error fetching user profile:', error);
-      return null;
+      // Return minimal user object even on error so app doesn't break
+      return {
+        id: user.id,
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        role: 'user',
+        subscription_plan: 'free',
+        subscription_status: 'active',
+      };
     }
 
     return data;
   } catch (error) {
     console.error('Error getting user profile:', error);
+    // Try to get auth user at least
+    try {
+      const user = await getCurrentAuthUser();
+      if (user) {
+        return {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          role: 'user',
+          subscription_plan: 'free',
+          subscription_status: 'active',
+        };
+      }
+    } catch (e) {
+      console.error('Error getting auth user as fallback:', e);
+    }
     return null;
   }
 }
@@ -66,6 +127,8 @@ export async function getCurrentUserProfile() {
  */
 export async function createUserProfile(userId: string, email: string, fullName: string) {
   try {
+    console.log('Creating/updating user profile:', { userId, email, fullName });
+    
     // Check if user profile already exists
     const { data: existingUser, error: checkError } = await supabase
       .from('users')
@@ -75,10 +138,11 @@ export async function createUserProfile(userId: string, email: string, fullName:
 
     // If error is not "not found", log it but continue
     if (checkError && checkError.code !== 'PGRST116') {
-      console.warn('Error checking for existing user:', checkError);
+      console.warn('Warning checking for existing user (continuing anyway):', checkError);
     }
 
     if (existingUser) {
+      console.log('User profile exists, updating...');
       // Update existing profile
       const { data, error } = await supabase
         .from('users')
@@ -91,9 +155,14 @@ export async function createUserProfile(userId: string, email: string, fullName:
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating user profile:', error);
+        throw error;
+      }
+      console.log('✅ User profile updated successfully');
       return data;
     } else {
+      console.log('Creating new user profile...');
       // Create new profile
       const { data, error } = await supabase
         .from('users')
@@ -104,29 +173,56 @@ export async function createUserProfile(userId: string, email: string, fullName:
           role: 'user',
           subscription_plan: 'free',
           subscription_status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
 
       if (error) {
+        console.error('Error inserting user profile:', error);
+        
         // If it's a duplicate key error, try to fetch the existing profile
-        if (error.code === '23505') {
-          console.log('Profile already exists, fetching it...');
+        if (error.code === '23505' || error.message?.includes('duplicate')) {
+          console.log('Profile already exists (duplicate key), fetching it...');
           const { data: existingData, error: fetchError } = await supabase
             .from('users')
             .select('*')
             .eq('id', userId)
             .single();
           
-          if (fetchError) throw fetchError;
+          if (fetchError) {
+            console.error('Error fetching existing profile:', fetchError);
+            throw fetchError;
+          }
+          console.log('✅ Fetched existing user profile');
           return existingData;
         }
+        
+        // If it's a permission error (RLS), log it but don't throw - we'll handle it gracefully
+        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
+          console.warn('⚠️ RLS policy may be blocking profile creation:', error);
+          throw error;
+        }
+        
         throw error;
       }
+      
+      if (!data) {
+        throw new Error('Profile creation returned no data');
+      }
+      
+      console.log('✅ User profile created successfully:', data.id);
       return data;
     }
-  } catch (error) {
-    console.error('Error creating/updating user profile:', error);
+  } catch (error: any) {
+    console.error('❌ Error creating/updating user profile:', {
+      error,
+      code: error?.code,
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+    });
     throw error;
   }
 }
