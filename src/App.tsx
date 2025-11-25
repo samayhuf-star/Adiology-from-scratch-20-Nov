@@ -59,8 +59,23 @@ const App = () => {
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
 
   const handleLoadHistory = (type: string, data: any) => {
+    // Map history types to actual tab IDs
+    const typeToTabMap: Record<string, string> = {
+      'campaign': 'campaign-builder',
+      'keyword-planner': 'keyword-planner',
+      'keyword-mixer': 'keyword-mixer',
+      'negative-keywords': 'negative-keywords'
+    };
+    
+    const targetTab = typeToTabMap[type] || type;
     setHistoryData(data);
-    setActiveTab(type);
+    setActiveTab(targetTab);
+    
+    // Show success notification
+    notifications.success('History item restored successfully', {
+      title: 'Restored',
+      description: 'Your saved item has been loaded and is ready to use.'
+    });
   };
 
   const handleMarkNotificationAsRead = (id: number) => {
