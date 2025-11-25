@@ -11,10 +11,11 @@ import { notifications } from '../utils/notifications';
 interface AuthProps {
   onLoginSuccess: () => void;
   onBackToHome: () => void;
+  initialMode?: 'login' | 'signup';
 }
 
-export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
-  const [isLogin, setIsLogin] = useState(true);
+export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initialMode = 'login' }) => {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +28,12 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
   
   // Signup is enabled for production
   const SIGNUP_DISABLED = false;
+
+  // Sync isLogin state when initialMode prop changes
+  React.useEffect(() => {
+    setIsLogin(initialMode === 'login');
+    setError(''); // Clear any errors when mode changes
+  }, [initialMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +125,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
           if (result?.user) {
             notifications.success('Account created successfully!', {
               title: 'Check Your Email',
-              description: 'We\'ve sent a verification link to your email. Please verify your email to continue.',
+              description: 'We\'ve sent a verification link to your email. Please verify your email before signing in.',
             });
 
             // Clear form
@@ -127,12 +134,17 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
             setConfirmPassword('');
             setName('');
             
-            // Redirect to verification page after a brief delay
-            setTimeout(() => {
-              window.location.href = `/verify-email?email=${encodeURIComponent(trimmedEmail)}`;
-            }, 1000);
-            // Don't set loading to false - we're redirecting
-            return; // Exit early since we're redirecting
+            // Switch to login mode and stay on this page (don't redirect)
+            setIsLogin(true);
+            setError('');
+            setIsLoading(false);
+            
+            // Show a message that they can login after verification
+            notifications.info('Please verify your email, then sign in.', {
+              title: 'Verification Required',
+              description: 'Check your inbox and click the verification link. Once verified, you can sign in below.',
+            });
+            return;
           } else {
             setError('Failed to create account. Please try again.');
             setIsLoading(false);
@@ -203,10 +215,10 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
               {isForgotPassword
                 ? 'Enter your email to receive a password reset link'
                 : isLogin 
-                  ? 'Sign in to your Adiology account' 
-                  : SIGNUP_DISABLED 
-                    ? 'New signups are currently disabled until production launch'
-                    : 'Start building winning campaigns today'}
+                ? 'Sign in to your Adiology account' 
+                : SIGNUP_DISABLED 
+                  ? 'New signups are currently disabled until production launch'
+                : 'Start building winning campaigns today'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -255,28 +267,28 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
 
               {!isForgotPassword && (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-slate-900 font-semibold">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
-                      <Input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder={isLogin ? 'Enter your password' : 'Create a password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-900 font-semibold">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={isLogin ? 'Enter your password' : 'Create a password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                         required={!isForgotPassword}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
                 </>
               )}
 
@@ -376,39 +388,39 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
                 </div>
               ) : (
                 !isForgotPassword && (
-                  <div className="text-center text-sm text-slate-700">
-                    {isLogin ? (
-                      <>
-                        Don't have an account?{' '}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsLogin(false);
-                            setError('');
+              <div className="text-center text-sm text-slate-700">
+                {isLogin ? (
+                  <>
+                    Don't have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLogin(false);
+                        setError('');
                             setIsForgotPassword(false);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                        >
-                          Sign up
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        Already have an account?{' '}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsLogin(true);
-                            setError('');
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                    >
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLogin(true);
+                        setError('');
                             setIsForgotPassword(false);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-700 font-semibold"
-                        >
-                          Sign in
-                        </button>
-                      </>
-                    )}
-                  </div>
+                      }}
+                      className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                    >
+                      Sign in
+                    </button>
+                  </>
+                )}
+              </div>
                 )
               )}
             </form>

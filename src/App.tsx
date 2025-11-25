@@ -42,6 +42,7 @@ type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'adm
 
 const App = () => {
   const [appView, setAppView] = useState<AppView>('home');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [historyData, setHistoryData] = useState<any>(null);
@@ -155,7 +156,7 @@ const App = () => {
         if (session?.user) {
           const userProfile = await getCurrentUserProfile();
           setUser(userProfile);
-        } else {
+    } else {
           setUser(null);
         }
       } catch (error) {
@@ -178,7 +179,7 @@ const App = () => {
         if (event === 'SIGNED_IN' && appView === 'auth') {
           setAppView('user');
         }
-      } else {
+    } else {
         setUser(null);
         // If user signed out and we're on user view, go to home
         if (event === 'SIGNED_OUT' && appView === 'user') {
@@ -247,6 +248,7 @@ const App = () => {
       if (!user) {
         // Redirect to signup
         window.history.pushState({}, '', '/');
+        setAuthMode('signup');
         setAppView('auth');
         return;
       }
@@ -280,7 +282,7 @@ const App = () => {
         };
         checkSuperAdmin();
       } else {
-        setAppView('admin-login');
+      setAppView('admin-login');
       }
       return;
     }
@@ -323,21 +325,21 @@ const App = () => {
         if (user) {
           const isAdmin = await isSuperAdmin();
           if (isAdmin) {
-            setAppView('admin-landing');
+              setAppView('admin-landing');
           } else {
             setAppView('admin-login');
-          }
+            }
         } else {
-          setAppView('admin-login');
+        setAppView('admin-login');
         }
       } else {
         if (user) {
           const isAdmin = await isSuperAdmin();
           if (isAdmin) {
-            window.history.pushState({}, '', '/superadmin');
-            setAppView('admin-landing');
-          } else {
-            setAppView('user');
+              window.history.pushState({}, '', '/superadmin');
+              setAppView('admin-landing');
+            } else {
+              setAppView('user');
           }
         } else {
           setAppView('home');
@@ -355,6 +357,7 @@ const App = () => {
     const authenticated = await isAuthenticated();
     if (!authenticated || !user) {
       // User not logged in, redirect to signup
+      setAuthMode('signup');
       setAppView('auth');
       return;
     }
@@ -369,8 +372,14 @@ const App = () => {
   if (appView === 'home') {
     return (
       <HomePage
-        onGetStarted={() => setAppView('auth')}
-        onLogin={() => setAppView('auth')}
+        onGetStarted={() => {
+          setAuthMode('signup');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
         onSelectPlan={handleSelectPlan}
       />
     );
@@ -458,6 +467,7 @@ const App = () => {
         onSuccess={async () => {
           // Password reset successful, redirect to login
           window.history.pushState({}, '', '/');
+          setAuthMode('login');
           setAppView('auth');
         }}
         onBackToHome={() => setAppView('home')}
@@ -468,6 +478,7 @@ const App = () => {
   if (appView === 'auth') {
     return (
       <Auth
+        initialMode={authMode}
         onLoginSuccess={async () => {
           try {
             // Wait a moment for auth state to propagate
@@ -506,7 +517,7 @@ const App = () => {
               }
             }
             
-            // Directly go to dashboard - no admin/user selection
+          // Directly go to dashboard - no admin/user selection
             setAppView('user');
           } catch (error) {
             console.error('Error in onLoginSuccess:', error);
@@ -557,8 +568,14 @@ const App = () => {
     // Redirect to auth if not authenticated
     return (
       <HomePage
-        onGetStarted={() => setAppView('auth')}
-        onLogin={() => setAppView('auth')}
+        onGetStarted={() => {
+          setAuthMode('signup');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
       />
     );
   }
@@ -807,14 +824,14 @@ const App = () => {
                       <>
                         <div className="font-semibold text-slate-900">
                           {user.full_name || user.email?.split('@')[0] || 'User'}
-                        </div>
+                            </div>
                         <div className="text-xs text-slate-600">
                           {user.email || 'user@example.com'}
-                        </div>
+                          </div>
                         {user.subscription_plan && user.subscription_plan !== 'free' && (
                           <Badge className="w-fit bg-indigo-100 text-indigo-700 border-indigo-200">
                             {user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1)}
-                          </Badge>
+                              </Badge>
                         )}
                       </>
                     ) : (
