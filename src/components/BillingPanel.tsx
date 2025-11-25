@@ -15,6 +15,7 @@ import { createCheckoutSession, createCustomerPortalSession, PLAN_PRICE_IDS } fr
 import { notifications } from '../utils/notifications';
 import { isPaidUser } from '../utils/userPlan';
 import { getCurrentUserProfile } from '../utils/auth';
+import { getCurrentUserProfile } from '../utils/auth';
 
 export const BillingPanel = () => {
     const [info, setInfo] = useState<any>(null);
@@ -44,9 +45,11 @@ export const BillingPanel = () => {
         const fetchInfo = async () => {
             try {
                 setError(null);
+                setLoading(true);
                 try {
                     const data = await api.get('/billing/info');
                     setInfo(data);
+                    setLoading(false);
                 } catch (apiError) {
                     // Fallback: Read from Supabase user profile
                     console.log('ℹ️ Using Supabase user profile data (API unavailable)');
@@ -88,21 +91,29 @@ export const BillingPanel = () => {
                                 { id: "inv_2", date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" }
                             ]
                         });
+                        setLoading(false);
                     } catch (profileError) {
                         console.error('Error loading user profile:', profileError);
-                        // Set default info
+                        // Bug_65: Set default info even on error to ensure component renders
                         setInfo({
                             plan: "Free",
                             nextBillingDate: null,
                             subscriptionStatus: "inactive",
                             invoices: []
                         });
+                        setLoading(false);
                     }
                 }
             } catch (error) {
                 console.error("Billing error", error);
                 setError(error instanceof Error ? error.message : "Failed to load billing info");
-            } finally {
+                // Bug_65: Set default info on error to ensure component renders
+                setInfo({
+                    plan: "Free",
+                    nextBillingDate: null,
+                    subscriptionStatus: "inactive",
+                    invoices: []
+                });
                 setLoading(false);
             }
         };
@@ -110,8 +121,13 @@ export const BillingPanel = () => {
         
         // Check if user is paid
         const checkPaidStatus = async () => {
-            const paid = await isPaidUser();
-            setIsPaid(paid);
+            try {
+                const paid = await isPaidUser();
+                setIsPaid(paid);
+            } catch (error) {
+                console.error('Error checking paid status:', error);
+                setIsPaid(false);
+            }
         };
         checkPaidStatus();
     }, []);

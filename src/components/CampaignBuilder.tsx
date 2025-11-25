@@ -883,6 +883,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // --- Load Initial Data ---
     useEffect(() => {
         if (initialData) {
+            // Bug_58, Bug_59, Bug_70: Load all required data from initialData
             setStructure(initialData.structure || 'SKAG');
             setGeo(initialData.geo || 'ZIP');
             setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
@@ -897,7 +898,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             setTargetType(initialData.targetType || 'ZIP');
             setManualGeoInput(initialData.manualGeoInput || '');
             setCampaignName(initialData.name || 'Restored Campaign');
-            // Jump to review step if loaded
+            // Load generatedAds if provided
+            if (initialData.generatedAds && Array.isArray(initialData.generatedAds)) {
+                setGeneratedAds(initialData.generatedAds);
+            }
+            // Jump to review step if loaded, otherwise start at step 1
             if (initialData.step) setStep(initialData.step);
         }
     }, [initialData]);
@@ -2093,8 +2098,70 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
     
     const handleSaveAd = (adId: number) => {
-        // Save state when finishing edit if we started editing this ad
+        // Bug_77c: Validate required fields before saving
         const ad = generatedAds.find(a => a.id === adId);
+        if (!ad) {
+            notifications.error('Ad not found', {
+                title: 'Error',
+                description: 'The ad you are trying to save could not be found.',
+            });
+            return;
+        }
+
+        // Validate required fields based on ad type
+        const errors: string[] = [];
+        
+        if (ad.type === 'rsa' || ad.type === 'dki') {
+            // RSA/DKI requires at least 3 headlines and 2 descriptions
+            if (!ad.headline1 || ad.headline1.trim() === '') {
+                errors.push('Headline 1 is required');
+            }
+            if (!ad.headline2 || ad.headline2.trim() === '') {
+                errors.push('Headline 2 is required');
+            }
+            if (!ad.headline3 || ad.headline3.trim() === '') {
+                errors.push('Headline 3 is required');
+            }
+            if (!ad.description1 || ad.description1.trim() === '') {
+                errors.push('Description 1 is required');
+            }
+            if (!ad.description2 || ad.description2.trim() === '') {
+                errors.push('Description 2 is required');
+            }
+            if (!ad.finalUrl || ad.finalUrl.trim() === '') {
+                errors.push('Final URL is required');
+            }
+        } else if (ad.type === 'callonly') {
+            if (!ad.headline1 || ad.headline1.trim() === '') {
+                errors.push('Headline 1 is required');
+            }
+            if (!ad.headline2 || ad.headline2.trim() === '') {
+                errors.push('Headline 2 is required');
+            }
+            if (!ad.description1 || ad.description1.trim() === '') {
+                errors.push('Description 1 is required');
+            }
+            if (!ad.description2 || ad.description2.trim() === '') {
+                errors.push('Description 2 is required');
+            }
+            if (!ad.phone || ad.phone.trim() === '') {
+                errors.push('Phone number is required');
+            }
+            if (!ad.businessName || ad.businessName.trim() === '') {
+                errors.push('Business name is required');
+            }
+        }
+
+        if (errors.length > 0) {
+            notifications.error(`Please fill in all required fields:\n\n${errors.join('\n')}`, {
+                title: 'Validation Error',
+                description: 'All required fields must be filled before saving.',
+                priority: 'high',
+            });
+            return;
+        }
+
+        // Save state when finishing edit if we started editing this ad
         if (ad && editingStarted.has(adId)) {
             saveStateBeforeAction('edit', adId, `Saved changes to ${ad.type || 'ad'} #${adId}`);
             setEditingStarted(new Set([...editingStarted].filter(id => id !== adId)));
@@ -2300,6 +2367,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     
     
     const createNewAd = async (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
+        // Bug_77a: Optimize performance - show loading state immediately
+        const loadingNotification = notifications.info('Creating ad...', {
+            title: 'Processing',
+            description: 'Please wait while we create your ad.',
+        });
+        
         // Check if this is an extension type
         const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
         
@@ -2330,15 +2403,16 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             const mainKeyword = allGroups[0]?.keywords?.[0] || 'your service';
             
             // Create DKI ad
+            // Bug_77b: Fix DKI format - should be {Keyword:Default Text} not {KeyWord:}
             const dkiAd: any = {
                 id: Date.now(),
                 type: 'dki',
                 adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
-                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-                headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-                headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-                description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-                description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                headline1: `{Keyword:${mainKeyword}} - Official Site`,
+                headline2: `Best {Keyword:${mainKeyword}} Deals`,
+                headline3: `Order {Keyword:${mainKeyword}} Online`,
+                description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
+                description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
                 finalUrl: formattedUrl,
                 path1: 'keyword',
                 path2: 'deals'
@@ -2367,8 +2441,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             // both will be visible to the user
         }
         
-        // Check rate limit
-        const rateLimit = await rateLimiter.checkLimit('ad-creation');
+        // Bug_77a: Optimize performance - check rate limit and usage in parallel
+        const [rateLimit, usage] = await Promise.all([
+            rateLimiter.checkLimit('ad-creation'),
+            usageTracker.trackUsage('ad-creation', 1)
+        ]);
+        
         if (!rateLimit.allowed) {
             notifications.error(rateLimit.message || 'Rate limit exceeded', {
                 title: 'Too Many Requests',
@@ -2378,8 +2456,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             return;
         }
 
-        // Check usage quota
-        const usage = await usageTracker.trackUsage('ad-creation', 1);
         if (!usage.allowed) {
             notifications.error(usage.message || 'Usage limit exceeded', {
                 title: 'Daily Limit Reached',
@@ -2480,11 +2556,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 } else if (type === 'dki') {
                     baseAd = {
                         ...baseAd,
-                        headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-                        headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-                        headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-                        description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-                        description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                        // Bug_77b: Fix DKI format
+                        headline1: `{Keyword:${mainKeyword}} - Official Site`,
+                        headline2: `Best {Keyword:${mainKeyword}} Deals`,
+                        headline3: `Order {Keyword:${mainKeyword}} Online`,
+                        description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
+                        description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
                         finalUrl: formattedUrl,
                         path1: 'keyword',
                         path2: 'deals'
@@ -2653,13 +2730,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 path2: 'now'
             };
         } else if (type === 'dki') {
+            // Bug_77b: Fix DKI format - should be {Keyword:Default Text} not {KeyWord:}
             newAd = {
                 ...newAd,
-                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-                headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-                headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-                description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-                description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                headline1: `{Keyword:${mainKeyword}} - Official Site`,
+                headline2: `Best {Keyword:${mainKeyword}} Deals`,
+                headline3: `Order {Keyword:${mainKeyword}} Online`,
+                description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
+                description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
                 finalUrl: formattedUrl,
                 path1: 'keyword',
                 path2: 'deals'
@@ -3651,11 +3729,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             } else if (adType === 'dki') {
                                 defaultAd = {
                                     ...defaultAd,
-                                    headline1: `{KeyWord:${keywordText}} - Official Site`,
-                                    headline2: `Best {KeyWord:${keywordText}} Deals`,
-                                    headline3: i === 0 ? `Order {KeyWord:${keywordText}} Online` : `Shop {KeyWord:${keywordText}} Now`,
-                                    description1: `Find quality {KeyWord:${keywordText}} at great prices. Shop our selection today.`,
-                                    description2: `Get your {KeyWord:${keywordText}} with fast shipping and expert support.`,
+                                    // Bug_77b: Fix DKI format
+                                    headline1: `{Keyword:${keywordText}} - Official Site`,
+                                    headline2: `Best {Keyword:${keywordText}} Deals`,
+                                    headline3: i === 0 ? `Order {Keyword:${keywordText}} Online` : `Shop {Keyword:${keywordText}} Now`,
+                                    description1: `Find quality {Keyword:${keywordText}} at great prices. Shop our selection today.`,
+                                    description2: `Get your {Keyword:${keywordText}} with fast shipping and expert support.`,
                                     finalUrl: formattedUrl
                                 };
                             } else if (adType === 'callonly') {

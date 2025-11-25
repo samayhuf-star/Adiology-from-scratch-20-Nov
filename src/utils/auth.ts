@@ -232,6 +232,11 @@ export async function createUserProfile(userId: string, email: string, fullName:
  */
 export async function signUpWithEmail(email: string, password: string, fullName: string) {
   try {
+    // Bug_73: Email sender name "Adiology Login" must be configured in Supabase Dashboard
+    // Go to: Authentication > Email Templates > Configure email sender
+    // Set the "From" name to "Adiology Login"
+    // This cannot be changed programmatically - it's a Supabase project setting
+    
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -277,6 +282,13 @@ export async function signUpWithEmail(email: string, password: string, fullName:
  */
 export async function signInWithEmail(email: string, password: string) {
   try {
+    // Bug_61, Bug_71: Clear any stale sessions before signing in to prevent conflicts
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      // Ignore errors when clearing - might not have a session
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,

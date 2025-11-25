@@ -324,15 +324,16 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
           {/* Sidebar Actions */}
           <div className="space-y-6">
+            {/* Bug_69: Ensure all buttons are visible by removing overflow constraints */}
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
               <h3 className="text-lg font-semibold mb-4">Ready to Launch</h3>
               <p className="text-sm text-indigo-100 mb-6">
                 This preset is optimized for high-intent pay-per-call campaigns. Review the details and export when ready.
               </p>
-              <div className="space-y-3">
+              <div className="space-y-3 flex flex-col">
                 <Button
                   onClick={handleLoadToBuilder}
-                  className="w-full bg-white text-indigo-600 hover:bg-indigo-50"
+                  className="w-full bg-white text-indigo-600 hover:bg-indigo-50 flex-shrink-0"
                   size="lg"
                 >
                   <Edit className="w-4 h-4 mr-2" />
@@ -341,16 +342,22 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 <Button
                   onClick={handleExportCSV}
                   variant="outline"
-                  className="w-full border-white text-white hover:bg-white/10"
+                  className="w-full border-white text-white hover:bg-white/10 flex-shrink-0"
                   size="lg"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export CSV
                 </Button>
+                {/* Bug_60, Bug_75: Fix Preview Landing Page button */}
                 <Button
-                  onClick={() => setShowLandingPagePreview(true)}
+                  onClick={() => {
+                    if (selectedPreset) {
+                      setShowLandingPagePreview(true);
+                      setShowReview(false);
+                    }
+                  }}
                   variant="outline"
-                  className="w-full border-white text-white hover:bg-white/10"
+                  className="w-full border-white text-white hover:bg-white/10 flex-shrink-0"
                   size="lg"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
@@ -390,19 +397,22 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
     );
   }
 
+  // Bug_60, Bug_75: Fix Preview Landing Page rendering
   if (showLandingPagePreview && selectedPreset) {
     return (
       <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10 shadow-sm">
           <h2 className="text-xl font-semibold">Landing Page Preview: {selectedPreset.title}</h2>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => window.open(selectedPreset.final_url, '_blank')}
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Open in New Tab
-            </Button>
+            {selectedPreset.final_url && (
+              <Button
+                variant="outline"
+                onClick={() => window.open(selectedPreset.final_url, '_blank')}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open in New Tab
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => {
@@ -415,7 +425,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             </Button>
           </div>
         </div>
-        <div className="max-w-full">
+        <div className="w-full">
           <LandingPageTemplate preset={selectedPreset} />
         </div>
       </div>

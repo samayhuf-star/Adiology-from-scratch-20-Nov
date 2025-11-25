@@ -63,12 +63,12 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
       }
 
       if (isLogin) {
-        // Login with Supabase Auth
+        // Bug_61, Bug_71: Optimize login - reduce wait time and improve session handling
         try {
           const result = await signInWithEmail(trimmedEmail, trimmedPassword);
           
-          // Wait a bit for auth state to update
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Bug_61: Reduce wait time for faster login
+          await new Promise(resolve => setTimeout(resolve, 50));
           
           notifications.success('Welcome back!', {
             title: 'Login Successful',
@@ -77,12 +77,19 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
           // Clear loading state first so UI doesn't hang
           setIsLoading(false);
           
+          // Bug_71: Ensure session is properly set before navigation
+          // Verify session exists before proceeding
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            throw new Error('Session not established after login');
+          }
+          
           // Call onLoginSuccess but don't block on it - let it handle navigation
           // Use Promise.race to ensure we don't hang if it takes too long
           Promise.race([
             onLoginSuccess(),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Navigation timeout')), 10000)
+              setTimeout(() => reject(new Error('Navigation timeout')), 5000)
             )
           ]).catch((error) => {
             console.error('Error during navigation after login:', error);

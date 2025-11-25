@@ -851,6 +851,25 @@ const App = () => {
                   // Delay to allow click on suggestion
                   setTimeout(() => setShowSearchSuggestions(false), 200);
                 }}
+                onKeyDown={(e) => {
+                  // Bug_63: Handle Enter key to execute search
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    e.preventDefault();
+                    if (searchSuggestions.length > 0) {
+                      handleSearchSuggestionClick(searchSuggestions[0]);
+                    } else {
+                      // If no suggestions, try to find matching menu item
+                      const matchingItem = menuItems.find(item => 
+                        item.label.toLowerCase().includes(searchQuery.toLowerCase())
+                      );
+                      if (matchingItem) {
+                        setActiveTab(matchingItem.id);
+                        setSearchQuery('');
+                        setShowSearchSuggestions(false);
+                      }
+                    }
+                  }
+                }}
                 className="w-full pl-10 pr-4 py-2 bg-slate-100/80 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white transition-all"
               />
               {/* Bug_64: Search suggestions dropdown */}
