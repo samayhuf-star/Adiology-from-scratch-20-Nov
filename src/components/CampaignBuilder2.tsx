@@ -560,24 +560,43 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Bug_37: Store negative keywords per group
   const [groupNegativeKeywords, setGroupNegativeKeywords] = useState<{ [groupName: string]: string[] }>({});
   
+  // Helper function to apply match type formatting to keywords
+  const applyMatchTypeFormatting = (keywords: string[]): string[] => {
+    // Apply formatting: 70% phrase, 20% exact, 10% broad
+    return keywords.map((kw, idx) => {
+      const cleanKw = kw.replace(/^\[|\]$|^"|"$/g, '').trim(); // Remove existing formatting
+      const rand = (idx * 37) % 100; // Deterministic pseudo-random
+      if (rand < 70) {
+        return `"${cleanKw}"`; // Phrase match
+      } else if (rand < 90) {
+        return `[${cleanKw}]`; // Exact match
+      } else {
+        return cleanKw; // Broad match
+      }
+    });
+  };
+  
   // Helper to get dynamic ad groups based on structure
   const getDynamicAdGroups = useCallback(() => {
     if (!selectedKeywords || selectedKeywords.length === 0) return [];
     if (!structureType) return [];
     
+    // Apply match type formatting to all keywords
+    const formattedKeywords = applyMatchTypeFormatting(selectedKeywords);
+    
     switch (structureType) {
       case 'skag':
-        return selectedKeywords.slice(0, 20).map(kw => ({
-          name: kw,
-          keywords: [kw]
+        return formattedKeywords.slice(0, 20).map(kw => ({
+          name: kw.replace(/^\[|\]$|^"|"$/g, ''), // Use clean name for ad group
+          keywords: [kw] // Use formatted keyword
         }));
       case 'stag':
       case 'stag_plus':
       case 'ngram':
-        const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
+        const groupSize = Math.max(3, Math.ceil(formattedKeywords.length / 5));
         const groups = [];
-        for (let i = 0; i < selectedKeywords.length; i += groupSize) {
-          const groupKeywords = selectedKeywords.slice(i, i + groupSize);
+        for (let i = 0; i < formattedKeywords.length; i += groupSize) {
+          const groupKeywords = formattedKeywords.slice(i, i + groupSize);
           groups.push({
             name: `Ad Group ${groups.length + 1}`,
             keywords: groupKeywords
@@ -587,49 +606,56 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       case 'intent':
         const intentGroupsList: Array<{ name: string; keywords: string[] }> = [];
         if (selectedIntents.includes('high_intent') && intentGroups.high_intent.length > 0) {
-          intentGroupsList.push({ name: 'High Intent', keywords: intentGroups.high_intent });
+          intentGroupsList.push({ name: 'High Intent', keywords: applyMatchTypeFormatting(intentGroups.high_intent) });
         }
         if (selectedIntents.includes('research') && intentGroups.research.length > 0) {
-          intentGroupsList.push({ name: 'Research', keywords: intentGroups.research });
+          intentGroupsList.push({ name: 'Research', keywords: applyMatchTypeFormatting(intentGroups.research) });
         }
         if (selectedIntents.includes('brand') && intentGroups.brand.length > 0) {
-          intentGroupsList.push({ name: 'Brand', keywords: intentGroups.brand });
+          intentGroupsList.push({ name: 'Brand', keywords: applyMatchTypeFormatting(intentGroups.brand) });
         }
         if (selectedIntents.includes('competitor') && intentGroups.competitor.length > 0) {
-          intentGroupsList.push({ name: 'Competitor', keywords: intentGroups.competitor });
+          intentGroupsList.push({ name: 'Competitor', keywords: applyMatchTypeFormatting(intentGroups.competitor) });
         }
         return intentGroupsList;
       case 'alpha_beta':
         return [
-          { name: 'Alpha Winners', keywords: alphaKeywords },
-          { name: 'Beta Discovery', keywords: betaKeywords }
+          { name: 'Alpha Winners', keywords: applyMatchTypeFormatting(alphaKeywords) },
+          { name: 'Beta Discovery', keywords: applyMatchTypeFormatting(betaKeywords) }
         ].filter(g => g.keywords.length > 0);
       case 'funnel':
         return [
-          { name: 'TOF', keywords: funnelGroups.tof },
-          { name: 'MOF', keywords: funnelGroups.mof },
-          { name: 'BOF', keywords: funnelGroups.bof }
+          { name: 'TOF', keywords: applyMatchTypeFormatting(funnelGroups.tof) },
+          { name: 'MOF', keywords: applyMatchTypeFormatting(funnelGroups.mof) },
+          { name: 'BOF', keywords: applyMatchTypeFormatting(funnelGroups.bof) }
         ].filter(g => g.keywords.length > 0);
       case 'brand_split':
         return [
-          { name: 'Brand', keywords: brandKeywords },
-          { name: 'Non-Brand', keywords: nonBrandKeywords }
+          { name: 'Brand', keywords: applyMatchTypeFormatting(brandKeywords) },
+          { name: 'Non-Brand', keywords: applyMatchTypeFormatting(nonBrandKeywords) }
         ].filter(g => g.keywords.length > 0);
       case 'competitor':
-        return competitorKeywords.length > 0 ? [{ name: 'Competitor', keywords: competitorKeywords }] : [];
+        return competitorKeywords.length > 0 ? [{ name: 'Competitor', keywords: applyMatchTypeFormatting(competitorKeywords) }] : [];
       case 'match_type':
+        // For match type structure, explicitly apply each match type
+        const broadKeywords = selectedKeywords.map(kw => kw.replace(/^\[|\]$|^"|"$/g, ''));
+        const phraseKeywords = selectedKeywords.map(kw => `"${kw.replace(/^\[|\]$|^"|"$/g, '')}"`);
+        const exactKeywords = selectedKeywords.map(kw => `[${kw.replace(/^\[|\]$|^"|"$/g, '')}]`);
         return [
-          { name: 'Broad Match', keywords: selectedKeywords },
-          { name: 'Phrase Match', keywords: selectedKeywords },
-          { name: 'Exact Match', keywords: selectedKeywords }
+          { name: 'Broad Match', keywords: broadKeywords },
+          { name: 'Phrase Match', keywords: phraseKeywords },
+          { name: 'Exact Match', keywords: exactKeywords }
         ];
       default:
         // Mix or default
         const mixGroups: any[] = [];
-        selectedKeywords.slice(0, 5).forEach(kw => {
-          mixGroups.push({ name: kw, keywords: [kw] });
+        formattedKeywords.slice(0, 5).forEach(kw => {
+          mixGroups.push({ 
+            name: kw.replace(/^\[|\]$|^"|"$/g, ''), // Clean name
+            keywords: [kw] // Formatted keyword
+          });
         });
-        const remaining = selectedKeywords.slice(5);
+        const remaining = formattedKeywords.slice(5);
         if (remaining.length > 0) {
           const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
           for (let i = 0; i < remaining.length; i += groupSize) {
