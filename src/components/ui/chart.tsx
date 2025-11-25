@@ -4,6 +4,7 @@ import * as React from "react";
 import * as RechartsPrimitive from "recharts@2.15.2";
 
 import { cn } from "./utils";
+import { generateSafeCSS } from "../../utils/sanitization";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
@@ -78,27 +79,18 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
+  // Use safe CSS generation instead of dangerouslySetInnerHTML
+  const safeCSS = React.useMemo(() => {
+    try {
+      return generateSafeCSS(id, THEMES, colorConfig);
+    } catch (error) {
+      console.error('Error generating chart CSS:', error);
+      return '';
+    }
+  }, [id, colorConfig]);
+
   return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
-  })
-  .join("\n")}
-}
-`,
-          )
-          .join("\n"),
-      }}
-    />
+    <style>{safeCSS}</style>
   );
 };
 

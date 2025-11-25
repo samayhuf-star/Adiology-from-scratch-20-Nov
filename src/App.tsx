@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from './components/ui/dropdown-menu';
 import { Badge } from './components/ui/badge';
+import { ErrorBoundary, FormErrorFallback, DataErrorFallback } from './components/ErrorBoundary';
+import { ErrorProvider, useErrorReporting } from './contexts/ErrorContext';
 import { CampaignBuilder } from './components/CampaignBuilder';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
 import { CSVValidator } from './components/CSVValidator';
@@ -599,39 +601,99 @@ const App = () => {
     
     switch (activeTab) {
       case 'campaign-presets':
-        return <CampaignPresets onLoadPreset={(presetData) => {
-          setHistoryData(presetData);
-          setActiveTab('campaign-builder');
-        }} />;
+        return (
+          <ErrorBoundary isolate resetKeys={[activeTab]}>
+            <CampaignPresets onLoadPreset={(presetData) => {
+              setHistoryData(presetData);
+              setActiveTab('campaign-builder');
+            }} />
+          </ErrorBoundary>
+        );
       case 'campaign-builder':
-        return <CampaignBuilder initialData={activeTab === 'campaign-builder' ? historyData : null} />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab, historyData]}>
+            <CampaignBuilder initialData={activeTab === 'campaign-builder' ? historyData : null} />
+          </ErrorBoundary>
+        );
       case 'builder-2':
-        return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab, historyData]}>
+            <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />
+          </ErrorBoundary>
+        );
       case 'csv-validator':
-        return <CSVValidator />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab]}>
+            <CSVValidator />
+          </ErrorBoundary>
+        );
       case 'csv-validator-2':
-        return <CSVValidator2 />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab]}>
+            <CSVValidator2 />
+          </ErrorBoundary>
+        );
       case 'keyword-planner':
-        return <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab, historyData]}>
+            <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />
+          </ErrorBoundary>
+        );
       case 'keyword-mixer':
-        return <KeywordMixer initialData={activeTab === 'keyword-mixer' ? historyData : null} />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab, historyData]}>
+            <KeywordMixer initialData={activeTab === 'keyword-mixer' ? historyData : null} />
+          </ErrorBoundary>
+        );
       case 'negative-keywords':
-        return <NegativeKeywordsBuilder initialData={activeTab === 'negative-keywords' ? historyData : null} />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab, historyData]}>
+            <NegativeKeywordsBuilder initialData={activeTab === 'negative-keywords' ? historyData : null} />
+          </ErrorBoundary>
+        );
       case 'ads-builder':
-        return <AdsBuilder />;
+        return (
+          <ErrorBoundary fallback={DataErrorFallback} isolate resetKeys={[activeTab]}>
+            <AdsBuilder />
+          </ErrorBoundary>
+        );
       case 'history':
-        return <HistoryPanel onLoadItem={handleLoadHistory} />;
+        return (
+          <ErrorBoundary isolate resetKeys={[activeTab]}>
+            <HistoryPanel onLoadItem={handleLoadHistory} />
+          </ErrorBoundary>
+        );
       case 'support-help':
-        return <SupportHelpCombined />;
+        return (
+          <ErrorBoundary fallback={FormErrorFallback} isolate resetKeys={[activeTab]}>
+            <SupportHelpCombined />
+          </ErrorBoundary>
+        );
       case 'support':
-        return <SupportPanel />;
+        return (
+          <ErrorBoundary fallback={FormErrorFallback} isolate resetKeys={[activeTab]}>
+            <SupportPanel />
+          </ErrorBoundary>
+        );
       case 'settings':
-        return <SettingsPanel />;
+        return (
+          <ErrorBoundary fallback={FormErrorFallback} isolate resetKeys={[activeTab]}>
+            <SettingsPanel />
+          </ErrorBoundary>
+        );
       case 'billing':
-        return <SettingsPanel defaultTab="billing" />;
+        return (
+          <ErrorBoundary fallback={FormErrorFallback} isolate resetKeys={[activeTab]}>
+            <SettingsPanel defaultTab="billing" />
+          </ErrorBoundary>
+        );
       case 'dashboard':
       default:
-        return <DashboardView />;
+        return (
+          <ErrorBoundary isolate resetKeys={[activeTab]}>
+            <DashboardView />
+          </ErrorBoundary>
+        );
     }
   };
 
@@ -883,4 +945,20 @@ const DashboardView = () => (
 );
 
 
-export default App;
+// Wrap the entire app with error handling
+const AppWithErrorHandling = () => {
+  return (
+    <ErrorProvider>
+      <ErrorBoundary 
+        onError={(error, errorInfo) => {
+          console.error('Top-level error caught:', error);
+          console.error('Error info:', errorInfo);
+        }}
+      >
+        <App />
+      </ErrorBoundary>
+    </ErrorProvider>
+  );
+};
+
+export default AppWithErrorHandling;

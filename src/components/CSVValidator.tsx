@@ -1,7 +1,9 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Upload, Download, Sparkles, AlertCircle, CheckCircle, AlertTriangle, FileText, Loader2, FolderOpen, Layers, Hash, MinusCircle, FileType, Link, Phone, MapPin, MessageSquare, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as XLSXStyle from 'xlsx-js-style';
+import { useTimeout } from '../hooks/useCleanup';
+import { debounce, arrayUtils } from '../utils/performance';
 
 // --- Column Rules Configuration ---
 const COLUMN_RULES = {
@@ -149,71 +151,101 @@ export const CSVValidator = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [totalErrors, setTotalErrors] = useState(0);
     const [totalWarnings, setTotalWarnings] = useState(0);
-    const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    
+    // Use optimized timeout management
+    const { setTimeout: setTimeoutSafe, clearAllTimeouts } = useTimeout();
 
+    // Memoize header sets for faster lookups
+    const headerSet = useMemo(() => new Set(uploadedHeaders), [uploadedHeaders]);
+    
     const validateData = useCallback((data: any[], headers: string[]) => {
         const results: any = {};
-        let errors = 0;
-        let warnings = 0;
+        
+        // Use optimized multi-reduce for single-pass counting
+        const { errors, warnings } = arrayUtils.multiReduce(
+            data,
+            {
+                errors: (acc, row, rowIdx) => {
+                    results[rowIdx] = {};
+                    const rowType = (row["Row Type"] || "").trim().toLowerCase();
+                    
+                    let requiredHeaders: string[] = [];
+                    if (rowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
+                    else if (rowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
+                    else if (rowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
+                    else if (rowType === 'location') requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+                    else if (rowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
 
-        data.forEach((row, rowIdx) => {
-            results[rowIdx] = {};
-            const rowType = (row["Row Type"] || "").trim().toLowerCase();
-            
-            let requiredHeaders: string[] = [];
-            if (rowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
-            else if (rowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
-            else if (rowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
-            else if (rowType === 'location') requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
-            else if (rowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
+                    let rowErrors = 0;
+                    
+                    // Check missing required headers (optimized with Set lookup)
+                    for (const reqHeader of requiredHeaders) {
+                        if (!headerSet.has(reqHeader)) {
+                            results[rowIdx][reqHeader] = { 
+                                status: 'warning', 
+                                message: `Required column '${reqHeader}' for '${rowType}' is missing from file headers.` 
+                            };
+                        }
+                    }
+                    
+                    // Validate each cell
+                    for (const header of headers) {
+                        const value = row[header];
+                        const result = validateCell(header, value, rowType);
+                        results[rowIdx][header] = result;
+                        if (result.status === 'error') rowErrors++;
+                    }
+                    
+                    return acc + rowErrors;
+                },
+                warnings: (acc, row, rowIdx) => {
+                    const rowType = (row["Row Type"] || "").trim().toLowerCase();
+                    let requiredHeaders: string[] = [];
+                    if (rowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
+                    else if (rowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
+                    else if (rowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
+                    else if (rowType === 'location') requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+                    else if (rowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
 
-            requiredHeaders.forEach(reqHeader => {
-                if (!headers.includes(reqHeader)) {
-                    results[rowIdx][reqHeader] = { 
-                        status: 'warning', 
-                        message: `Required column '${reqHeader}' for '${rowType}' is missing from file headers.` 
-                    };
-                    warnings++;
+                    let rowWarnings = 0;
+                    
+                    // Count missing headers as warnings
+                    for (const reqHeader of requiredHeaders) {
+                        if (!headerSet.has(reqHeader)) {
+                            rowWarnings++;
+                        }
+                    }
+                    
+                    // Count validation warnings
+                    for (const header of headers) {
+                        const value = row[header];
+                        const result = validateCell(header, value, rowType);
+                        if (result.status === 'warning') rowWarnings++;
+                    }
+                    
+                    return acc + rowWarnings;
                 }
-            });
-            
-            headers.forEach(header => {
-                const value = row[header];
-                const result = validateCell(header, value, rowType);
-                results[rowIdx][header] = result;
-                if (result.status === 'error') errors++;
-                if (result.status === 'warning') warnings++;
-            });
-        });
+            },
+            { errors: 0, warnings: 0 }
+        );
 
         setValidationResults(results);
         setTotalErrors(errors);
         setTotalWarnings(warnings);
         
         return { errors, warnings };
-    }, []);
+    }, [headerSet]);
 
-    // Auto-hide success message after 4 seconds (Bug 24)
+    // Auto-hide success message after 4 seconds (Bug 24) - Optimized with proper cleanup
     useEffect(() => {
         if (successMessage) {
-            // Clear any existing timeout
-            if (successTimeoutRef.current) {
-                clearTimeout(successTimeoutRef.current);
-            }
-            
-            // Set new timeout to hide message after 4 seconds
-            successTimeoutRef.current = setTimeout(() => {
+            // Clear any existing timeouts and set new one
+            clearAllTimeouts();
+            setTimeoutSafe(() => {
                 setSuccessMessage('');
             }, 4000);
         }
-
-        // Cleanup timeout on unmount
-        return () => {
-            if (successTimeoutRef.current) {
-                clearTimeout(successTimeoutRef.current);
-            }
-        };
-    }, [successMessage]);
+    }, [successMessage, setTimeoutSafe, clearAllTimeouts]);
 
     // Cleanup file URL on unmount
     useEffect(() => {
