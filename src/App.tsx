@@ -172,13 +172,37 @@ const App = () => {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const userProfile = await getCurrentUserProfile();
-        setUser(userProfile);
+        // Don't block on profile fetch - do it in background
+        getCurrentUserProfile().then((userProfile) => {
+          if (userProfile) {
+            setUser(userProfile);
+          } else {
+            // Set minimal user if profile fetch fails
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+              role: 'user',
+              subscription_plan: 'free',
+              subscription_status: 'active',
+            });
+          }
+        }).catch((error) => {
+          console.warn('Profile fetch failed in auth listener:', error);
+          // Set minimal user anyway
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+            role: 'user',
+            subscription_plan: 'free',
+            subscription_status: 'active',
+          });
+        });
         
-        // If user just signed in and we're on auth view, navigate to user view
-        if (event === 'SIGNED_IN' && appView === 'auth') {
-          setAppView('user');
-        }
+        // If user just signed in and we're on auth view, let onLoginSuccess handle navigation
+        // Don't duplicate navigation here to avoid conflicts
+        // The onLoginSuccess callback will handle the navigation
     } else {
         setUser(null);
         // If user signed out and we're on user view, go to home
@@ -480,50 +504,47 @@ const App = () => {
       <Auth
         initialMode={authMode}
         onLoginSuccess={async () => {
+          // Navigate to dashboard immediately - don't wait for profile fetch
+          setAppView('user');
+          
+          // Fetch profile in background (don't block navigation)
           try {
             // Wait a moment for auth state to propagate
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 500));
             
-            // Refresh user profile after login with timeout
-            const profilePromise = getCurrentUserProfile();
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
-            );
+            // Try to get auth user first (faster)
+            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
             
-            try {
-              const userProfile = await Promise.race([profilePromise, timeoutPromise]) as any;
+            if (authUser) {
+              // Set minimal user immediately
+              setUser({ 
+                id: authUser.id, 
+                email: authUser.email || '',
+                full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+                role: 'user',
+                subscription_plan: 'free',
+                subscription_status: 'active',
+              });
               
-              if (userProfile) {
-                setUser(userProfile);
-                console.log('✅ User profile loaded:', userProfile);
-              } else {
-                console.warn('⚠️ User profile is null, but proceeding with login');
-                // Try to get auth user at least
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                if (authUser) {
-                  setUser({ id: authUser.id, email: authUser.email });
+              // Then fetch full profile in background (with timeout)
+              Promise.race([
+                getCurrentUserProfile(),
+                new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+                )
+              ]).then((userProfile: any) => {
+                if (userProfile) {
+                  setUser(userProfile);
+                  console.log('✅ User profile loaded:', userProfile);
                 }
-              }
-            } catch (profileError: any) {
-              console.warn('⚠️ Error loading profile (non-critical):', profileError);
-              // Try to get auth user at least
-              try {
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                if (authUser) {
-                  setUser({ id: authUser.id, email: authUser.email });
-                }
-              } catch (authError) {
-                console.error('Error getting auth user:', authError);
-              }
+              }).catch((profileError: any) => {
+                console.warn('⚠️ Profile fetch failed (non-critical):', profileError);
+                // Keep using minimal user object - app will work fine
+              });
             }
-            
-          // Directly go to dashboard - no admin/user selection
-            setAppView('user');
           } catch (error) {
             console.error('Error in onLoginSuccess:', error);
-            // Still navigate to user view even if profile fetch fails
-            // The auth state change listener will handle profile creation
-            setAppView('user');
+            // Navigation already happened, so we're good
           }
         }}
         onBackToHome={() => setAppView('home')}

@@ -615,10 +615,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     onClick={onGetStarted}
                   >
                     <CardContent className="p-6 sm:p-8">
+                      <h3 className="text-xl font-bold text-slate-800 mb-3">{structure.name}</h3>
                       <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${structure.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
                         <Icon className="w-7 h-7 text-white" />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-800 mb-3">{structure.name}</h3>
                       <p className="text-sm text-slate-600 leading-relaxed mb-3">{structure.description}</p>
                       {structure.detailedDescription && (
                         <p className="text-xs text-slate-500 leading-relaxed mt-2">{structure.detailedDescription}</p>

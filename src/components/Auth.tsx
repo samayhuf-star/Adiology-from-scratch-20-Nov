@@ -74,15 +74,20 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
             title: 'Login Successful',
           });
           
-          // Call onLoginSuccess and await it before clearing loading state
-          try {
-            await onLoginSuccess();
-          } catch (navError) {
-            console.error('Error during navigation after login:', navError);
-            // Still proceed even if navigation has issues
-          }
-          
+          // Clear loading state first so UI doesn't hang
           setIsLoading(false);
+          
+          // Call onLoginSuccess but don't block on it - let it handle navigation
+          // Use Promise.race to ensure we don't hang if it takes too long
+          Promise.race([
+            onLoginSuccess(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Navigation timeout')), 10000)
+            )
+          ]).catch((error) => {
+            console.error('Error during navigation after login:', error);
+            // Navigation might have still succeeded, just log the error
+          });
         } catch (err: any) {
           let errorMessage = 'Invalid email or password. Please try again.';
           
