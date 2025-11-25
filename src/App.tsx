@@ -868,31 +868,71 @@ const App = () => {
         subscription_status: 'active',
       };
       setUser(bypassUser);
-      // Continue rendering user view - will re-render with user set
-      return null; // Prevent render until user is set
-    } else {
-      // Check if there's an active session - if so, user is being loaded
-      const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && !user) {
-          // Has session but user not loaded yet - show loading
-          return null;
-        }
-        // No session, redirect to auth
-        return null;
-      };
-      
-      // If we have no user and no bypass, check session first
-      // For now, show loading while we check
+      // Show loading while user is being set
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
           <div className="text-white text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p>Loading user profile...</p>
+            <p>Loading...</p>
           </div>
         </div>
       );
     }
+    
+    // Check if there's an active session - if so, user is being loaded
+    // Use useEffect to check and load user if session exists
+    React.useEffect(() => {
+      const checkAndLoadUser = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // Has session, try to load user profile
+          try {
+            const userProfile = await getCurrentUserProfile();
+            if (userProfile) {
+              setUser(userProfile);
+            } else {
+              // Set minimal user if profile fetch fails
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+                role: 'user',
+                subscription_plan: 'free',
+                subscription_status: 'active',
+              });
+            }
+          } catch (error) {
+            console.error('Error loading user:', error);
+            // Set minimal user on error
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+              role: 'user',
+              subscription_plan: 'free',
+              subscription_status: 'active',
+            });
+          }
+        } else {
+          // No session, redirect to auth after a brief delay
+          setTimeout(() => {
+            setAppView('home');
+            setAuthMode('login');
+          }, 100);
+        }
+      };
+      checkAndLoadUser();
+    }, []); // Only run once when component mounts with no user
+    
+    // Show loading while checking session/loading user
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading user profile...</p>
+        </div>
+      </div>
+    );
   }
 
   // Show loading state while checking auth
