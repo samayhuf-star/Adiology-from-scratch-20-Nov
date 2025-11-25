@@ -218,7 +218,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                         id: index + 1,
                     keyword: `[${item.keyword}]`, // Always show exact match format in UI
                     reason: item.reason,
-                    category: NEGATIVE_KEYWORD_CATEGORIES[item.category].label,
+                    category: item.category,
                     subcategory: item.subcategory,
                     matchType: item.matchType
                 }));
@@ -253,14 +253,14 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             const employmentBase = ['jobs', 'career', 'careers', 'hiring', 'salary', 'resume', 'employment', 'job openings', 'apply now', 'application', 'work from home', 'remote jobs', 'part time', 'full time', 'internship', 'intern', 'job opportunities', 'positions available', 'now hiring', 'employee', 'employer', 'recruitment', 'recruiter', 'staffing', 'workforce', 'vacancy', 'vacancies', 'position', 'opening', 'opportunity', 'candidate', 'applicant', 'interview', 'hiring process', 'job search', 'career change', 'job fair', 'job board', 'linkedin jobs', 'indeed', 'glassdoor', 'monster', 'ziprecruiter', 'workday', 'talent acquisition', 'hr', 'human resources', 'payroll', 'benefits', 'compensation', 'wage', 'hourly', 'annual salary', 'job description', 'job posting', 'job listing', 'job board', 'job site', 'job portal', 'job search engine', 'job alert', 'job notification', 'job application form', 'job application process', 'job interview questions', 'job interview tips', 'job interview preparation', 'job offer', 'job acceptance', 'job rejection', 'job market', 'job outlook', 'job growth', 'job security', 'job satisfaction', 'job requirements', 'job qualifications', 'job skills', 'job training', 'job certification', 'job license', 'job permit', 'work permit', 'work visa', 'green card', 'h1b', 'sponsorship', 'relocation', 'work authorization'];
             
             employmentBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters job seekers and employment-related searches', 'Employment');
+                addUniqueKeyword(kw, 'Filters job seekers and employment-related searches', 'Job/DIY');
             });
             
             // Add employment variations with modifiers
             const employmentModifiers = ['entry level', 'senior', 'junior', 'mid level', 'executive', 'manager', 'director', 'assistant', 'coordinator', 'specialist', 'analyst', 'consultant', 'freelance', 'contract', 'temporary', 'permanent', 'seasonal', 'summer', 'winter', 'weekend', 'night shift', 'day shift', 'overtime', 'flexible hours', '9 to 5'];
             employmentBase.slice(0, 30).forEach(base => {
                 employmentModifiers.forEach(mod => {
-                    addUniqueKeyword(`${base} ${mod}`, 'Filters specific job type searches', 'Employment');
+                    addUniqueKeyword(`${base} ${mod}`, 'Filters specific job type searches', 'Job/DIY');
                 });
             });
 
@@ -268,7 +268,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             const freeLowIntentBase = ['free', 'cheap', 'discount', 'coupon', 'coupons', 'promo code', 'promotional code', 'deal', 'deals', 'bargain', 'on sale', 'sale', 'clearance', 'affordable', 'inexpensive', 'budget', 'low cost', 'free trial', 'trial', 'no cost', 'zero cost', 'complimentary', 'gratis', 'without charge', 'at no cost', 'freebie', 'freebies', 'giveaway', 'giveaways', 'free sample', 'free samples', 'free shipping', 'free delivery', 'free installation', 'free consultation', 'free estimate', 'free quote', 'free download', 'free access', 'free account', 'free membership', 'free subscription', 'free service', 'free product', 'free item', 'free offer', 'free promotion', 'free gift', 'free bonus', 'free addon', 'free upgrade', 'free credit', 'free money', 'free cash', 'free voucher', 'free voucher code', 'free code', 'free coupon code', 'free discount code', 'free promo', 'cheapest', 'cheaper', 'lowest price', 'best price', 'best deal', 'best discount', 'best coupon', 'best promo', 'biggest discount', 'biggest sale', 'huge discount', 'massive discount', 'extreme discount', 'maximum discount', 'deep discount', 'steep discount', 'heavy discount', 'big discount', 'large discount', 'major discount', 'significant discount', 'substantial discount', 'considerable discount', 'generous discount', 'attractive discount', 'appealing discount', 'enticing discount', 'tempting discount', 'irresistible discount', 'unbeatable discount', 'unmatched discount', 'unparalleled discount', 'exceptional discount', 'outstanding discount', 'remarkable discount', 'extraordinary discount', 'incredible discount', 'amazing discount', 'fantastic discount', 'wonderful discount', 'great discount', 'good discount', 'nice discount', 'decent discount', 'reasonable discount', 'fair discount', 'acceptable discount', 'moderate discount', 'small discount', 'minor discount', 'slight discount', 'tiny discount', 'minimal discount', 'negligible discount', 'token discount', 'symbolic discount', 'nominal discount', 'trivial discount', 'paltry discount', 'meager discount', 'scanty discount', 'skimpy discount', 'sparse discount', 'scarce discount', 'limited discount', 'restricted discount', 'conditional discount', 'qualified discount', 'eligible discount', 'applicable discount', 'valid discount', 'active discount', 'current discount', 'available discount', 'existing discount', 'ongoing discount', 'continuing discount', 'persistent discount', 'enduring discount', 'lasting discount', 'permanent discount', 'temporary discount', 'short term discount', 'long term discount', 'extended discount', 'prolonged discount', 'sustained discount', 'maintained discount', 'preserved discount', 'protected discount', 'secured discount', 'guaranteed discount', 'assured discount', 'promised discount', 'pledged discount', 'committed discount', 'dedicated discount', 'devoted discount', 'loyal discount', 'faithful discount', 'trustworthy discount', 'reliable discount', 'dependable discount', 'consistent discount', 'steady discount', 'stable discount', 'constant discount', 'uniform discount', 'regular discount', 'routine discount', 'standard discount', 'typical discount', 'normal discount', 'ordinary discount', 'common discount', 'usual discount', 'customary discount', 'conventional discount', 'traditional discount', 'classic discount', 'vintage discount', 'retro discount', 'old discount', 'new discount', 'fresh discount', 'recent discount', 'latest discount', 'modern discount', 'contemporary discount'];
             
             freeLowIntentBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters free-seekers and low-intent price-focused searches', 'Free/Low-Intent');
+                addUniqueKeyword(kw, 'Filters free-seekers and low-intent price-focused searches', 'Low-Value');
             });
             
             // Add free/low-intent variations with context
@@ -276,7 +276,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             freeLowIntentBase.slice(0, 30).forEach(base => {
                 if (base.includes('free')) {
                     freeModifiers.forEach(mod => {
-                        addUniqueKeyword(`${mod} ${base.replace('free', '').trim()}`, 'Filters extreme free-seekers', 'Free/Low-Intent');
+                        addUniqueKeyword(`${mod} ${base.replace('free', '').trim()}`, 'Filters extreme free-seekers', 'Low-Value');
                     });
                 }
             });
@@ -285,122 +285,122 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
 
             // Irrelevant Industry (100+ variations)
             const irrelevantTerms = [
-                { kw: 'review', reason: 'Filters review searches', category: 'Irrelevant' },
-                { kw: 'reviews', reason: 'Filters review content searches', category: 'Irrelevant' },
-                { kw: 'rating', reason: 'Filters rating searches', category: 'Irrelevant' },
-                { kw: 'ratings', reason: 'Filters rating searches', category: 'Irrelevant' },
-                { kw: 'comparison', reason: 'Filters comparison searches', category: 'Irrelevant' },
-                { kw: 'compare', reason: 'Filters comparison searches', category: 'Irrelevant' },
-                { kw: 'vs', reason: 'Filters comparison searches', category: 'Irrelevant' },
-                { kw: 'versus', reason: 'Filters comparison searches', category: 'Irrelevant' },
-                { kw: 'alternative', reason: 'Filters alternative searches', category: 'Irrelevant' },
-                { kw: 'alternatives', reason: 'Filters alternative product searches', category: 'Irrelevant' },
-                { kw: 'best', reason: 'Filters informational searches', category: 'Irrelevant' },
-                { kw: 'top', reason: 'Filters list searches', category: 'Irrelevant' },
-                { kw: 'worst', reason: 'Filters negative review searches', category: 'Irrelevant' },
-                { kw: 'scam', reason: 'Filters scam investigation searches', category: 'Irrelevant' },
-                { kw: 'complaint', reason: 'Filters complaint searches', category: 'Irrelevant' },
-                { kw: 'complaints', reason: 'Filters complaint searches', category: 'Irrelevant' },
-                { kw: 'problem', reason: 'Filters problem searches', category: 'Irrelevant' },
-                { kw: 'problems', reason: 'Filters problem-related searches', category: 'Irrelevant' },
-                { kw: 'issue', reason: 'Filters issue searches', category: 'Irrelevant' },
-                { kw: 'issues', reason: 'Filters issue-related searches', category: 'Irrelevant' }
+                { kw: 'review', reason: 'Filters review searches', category: 'Irrelevant-Product' },
+                { kw: 'reviews', reason: 'Filters review content searches', category: 'Irrelevant-Product' },
+                { kw: 'rating', reason: 'Filters rating searches', category: 'Irrelevant-Product' },
+                { kw: 'ratings', reason: 'Filters rating searches', category: 'Irrelevant-Product' },
+                { kw: 'comparison', reason: 'Filters comparison searches', category: 'Irrelevant-Product' },
+                { kw: 'compare', reason: 'Filters comparison searches', category: 'Irrelevant-Product' },
+                { kw: 'vs', reason: 'Filters comparison searches', category: 'Irrelevant-Product' },
+                { kw: 'versus', reason: 'Filters comparison searches', category: 'Irrelevant-Product' },
+                { kw: 'alternative', reason: 'Filters alternative searches', category: 'Irrelevant-Product' },
+                { kw: 'alternatives', reason: 'Filters alternative product searches', category: 'Irrelevant-Product' },
+                { kw: 'best', reason: 'Filters informational searches', category: 'Irrelevant-Product' },
+                { kw: 'top', reason: 'Filters list searches', category: 'Irrelevant-Product' },
+                { kw: 'worst', reason: 'Filters negative review searches', category: 'Irrelevant-Product' },
+                { kw: 'scam', reason: 'Filters scam investigation searches', category: 'Irrelevant-Product' },
+                { kw: 'complaint', reason: 'Filters complaint searches', category: 'Irrelevant-Product' },
+                { kw: 'complaints', reason: 'Filters complaint searches', category: 'Irrelevant-Product' },
+                { kw: 'problem', reason: 'Filters problem searches', category: 'Irrelevant-Product' },
+                { kw: 'problems', reason: 'Filters problem-related searches', category: 'Irrelevant-Product' },
+                { kw: 'issue', reason: 'Filters issue searches', category: 'Irrelevant-Product' },
+                { kw: 'issues', reason: 'Filters issue-related searches', category: 'Irrelevant-Product' }
             ];
 
             // Informational (120+ variations)
             const informationalTerms = [
-                { kw: 'what is', reason: 'Filters definitional searches', category: 'Informational' },
-                { kw: 'who is', reason: 'Filters identity searches', category: 'Informational' },
-                { kw: 'when', reason: 'Filters timing questions', category: 'Informational' },
-                { kw: 'where', reason: 'Filters location questions', category: 'Informational' },
-                { kw: 'why', reason: 'Filters reasoning questions', category: 'Informational' },
-                { kw: 'wikipedia', reason: 'Filters encyclopedia searches', category: 'Informational' },
-                { kw: 'definition', reason: 'Filters definition searches', category: 'Informational' },
-                { kw: 'meaning', reason: 'Filters meaning searches', category: 'Informational' },
-                { kw: 'information', reason: 'Filters general info searches', category: 'Informational' },
-                { kw: 'info', reason: 'Filters information searches', category: 'Informational' },
-                { kw: 'about', reason: 'Filters about searches', category: 'Informational' },
-                { kw: 'history', reason: 'Filters historical searches', category: 'Informational' },
-                { kw: 'facts', reason: 'Filters fact searches', category: 'Informational' },
-                { kw: 'statistics', reason: 'Filters statistical searches', category: 'Informational' },
-                { kw: 'stats', reason: 'Filters statistics searches', category: 'Informational' },
-                { kw: 'data', reason: 'Filters data searches', category: 'Informational' },
-                { kw: 'research', reason: 'Filters research searches', category: 'Informational' },
-                { kw: 'article', reason: 'Filters article searches', category: 'Informational' },
-                { kw: 'articles', reason: 'Filters article content searches', category: 'Informational' },
-                { kw: 'blog', reason: 'Filters blog content searches', category: 'Informational' }
+                { kw: 'what is', reason: 'Filters definitional searches', category: 'Intent-Mismatch' },
+                { kw: 'who is', reason: 'Filters identity searches', category: 'Intent-Mismatch' },
+                { kw: 'when', reason: 'Filters timing questions', category: 'Intent-Mismatch' },
+                { kw: 'where', reason: 'Filters location questions', category: 'Intent-Mismatch' },
+                { kw: 'why', reason: 'Filters reasoning questions', category: 'Intent-Mismatch' },
+                { kw: 'wikipedia', reason: 'Filters encyclopedia searches', category: 'Intent-Mismatch' },
+                { kw: 'definition', reason: 'Filters definition searches', category: 'Intent-Mismatch' },
+                { kw: 'meaning', reason: 'Filters meaning searches', category: 'Intent-Mismatch' },
+                { kw: 'information', reason: 'Filters general info searches', category: 'Intent-Mismatch' },
+                { kw: 'info', reason: 'Filters information searches', category: 'Intent-Mismatch' },
+                { kw: 'about', reason: 'Filters about searches', category: 'Intent-Mismatch' },
+                { kw: 'history', reason: 'Filters historical searches', category: 'Intent-Mismatch' },
+                { kw: 'facts', reason: 'Filters fact searches', category: 'Intent-Mismatch' },
+                { kw: 'statistics', reason: 'Filters statistical searches', category: 'Intent-Mismatch' },
+                { kw: 'stats', reason: 'Filters statistics searches', category: 'Intent-Mismatch' },
+                { kw: 'data', reason: 'Filters data searches', category: 'Intent-Mismatch' },
+                { kw: 'research', reason: 'Filters research searches', category: 'Intent-Mismatch' },
+                { kw: 'article', reason: 'Filters article searches', category: 'Intent-Mismatch' },
+                { kw: 'articles', reason: 'Filters article content searches', category: 'Intent-Mismatch' },
+                { kw: 'blog', reason: 'Filters blog content searches', category: 'Intent-Mismatch' }
             ];
 
             // Company/Corporate (80+ variations)
             const corporateTerms = [
-                { kw: 'company', reason: 'Filters company info searches', category: 'Corporate' },
-                { kw: 'corporation', reason: 'Filters corporation searches', category: 'Corporate' },
-                { kw: 'headquarters', reason: 'Filters HQ location searches', category: 'Corporate' },
-                { kw: 'headquater', reason: 'Filters headquarters searches (misspelling)', category: 'Corporate' },
-                { kw: 'office', reason: 'Filters office location searches', category: 'Corporate' },
-                { kw: 'contact', reason: 'Filters contact info searches', category: 'Corporate' },
-                { kw: 'phone number', reason: 'Filters phone lookup searches', category: 'Corporate' },
-                { kw: 'address', reason: 'Filters address searches', category: 'Corporate' },
-                { kw: 'location', reason: 'Filters location searches', category: 'Corporate' },
-                { kw: 'locations', reason: 'Filters multiple location searches', category: 'Corporate' },
-                { kw: 'hours', reason: 'Filters business hours searches', category: 'Corporate' },
-                { kw: 'open', reason: 'Filters opening hours searches', category: 'Corporate' },
-                { kw: 'closed', reason: 'Filters closing info searches', category: 'Corporate' },
-                { kw: 'email', reason: 'Filters email contact searches', category: 'Corporate' },
-                { kw: 'customer service', reason: 'Filters support searches', category: 'Corporate' },
-                { kw: 'support', reason: 'Filters support searches', category: 'Corporate' },
-                { kw: 'contact us', reason: 'Filters contact page searches', category: 'Corporate' },
-                { kw: 'about us', reason: 'Filters about page searches', category: 'Corporate' },
-                { kw: 'corporate', reason: 'Filters corporate info searches', category: 'Corporate' },
-                { kw: 'investor', reason: 'Filters investor relation searches', category: 'Corporate' }
+                { kw: 'company', reason: 'Filters company info searches', category: 'Other' },
+                { kw: 'corporation', reason: 'Filters corporation searches', category: 'Other' },
+                { kw: 'headquarters', reason: 'Filters HQ location searches', category: 'Other' },
+                { kw: 'headquater', reason: 'Filters headquarters searches (misspelling)', category: 'Other' },
+                { kw: 'office', reason: 'Filters office location searches', category: 'Other' },
+                { kw: 'contact', reason: 'Filters contact info searches', category: 'Other' },
+                { kw: 'phone number', reason: 'Filters phone lookup searches', category: 'Other' },
+                { kw: 'address', reason: 'Filters address searches', category: 'Other' },
+                { kw: 'location', reason: 'Filters location searches', category: 'Other' },
+                { kw: 'locations', reason: 'Filters multiple location searches', category: 'Other' },
+                { kw: 'hours', reason: 'Filters business hours searches', category: 'Other' },
+                { kw: 'open', reason: 'Filters opening hours searches', category: 'Other' },
+                { kw: 'closed', reason: 'Filters closing info searches', category: 'Other' },
+                { kw: 'email', reason: 'Filters email contact searches', category: 'Other' },
+                { kw: 'customer service', reason: 'Filters support searches', category: 'Other' },
+                { kw: 'support', reason: 'Filters support searches', category: 'Other' },
+                { kw: 'contact us', reason: 'Filters contact page searches', category: 'Other' },
+                { kw: 'about us', reason: 'Filters about page searches', category: 'Other' },
+                { kw: 'corporate', reason: 'Filters corporate info searches', category: 'Other' },
+                { kw: 'investor', reason: 'Filters investor relation searches', category: 'Other' }
             ];
 
             // Media/Entertainment (60+ variations)
             const mediaTerms = [
-                { kw: 'video', reason: 'Filters video content searches', category: 'Media' },
-                { kw: 'videos', reason: 'Filters video searches', category: 'Media' },
-                { kw: 'youtube', reason: 'Filters YouTube searches', category: 'Media' },
-                { kw: 'watch', reason: 'Filters watch-related searches', category: 'Media' },
-                { kw: 'stream', reason: 'Filters streaming searches', category: 'Media' },
-                { kw: 'streaming', reason: 'Filters streaming service searches', category: 'Media' },
-                { kw: 'podcast', reason: 'Filters podcast searches', category: 'Media' },
-                { kw: 'download', reason: 'Filters download searches', category: 'Media' },
-                { kw: 'mp3', reason: 'Filters audio file searches', category: 'Media' },
-                { kw: 'pdf', reason: 'Filters PDF searches', category: 'Media' },
-                { kw: 'image', reason: 'Filters image searches', category: 'Media' },
-                { kw: 'images', reason: 'Filters image gallery searches', category: 'Media' },
-                { kw: 'picture', reason: 'Filters picture searches', category: 'Media' },
-                { kw: 'pictures', reason: 'Filters picture gallery searches', category: 'Media' },
-                { kw: 'photo', reason: 'Filters photo searches', category: 'Media' },
-                { kw: 'photos', reason: 'Filters photo gallery searches', category: 'Media' },
-                { kw: 'wallpaper', reason: 'Filters wallpaper searches', category: 'Media' },
-                { kw: 'movie', reason: 'Filters movie searches', category: 'Media' },
-                { kw: 'movies', reason: 'Filters movie content searches', category: 'Media' },
-                { kw: 'film', reason: 'Filters film searches', category: 'Media' }
+                { kw: 'video', reason: 'Filters video content searches', category: 'Other' },
+                { kw: 'videos', reason: 'Filters video searches', category: 'Other' },
+                { kw: 'youtube', reason: 'Filters YouTube searches', category: 'Other' },
+                { kw: 'watch', reason: 'Filters watch-related searches', category: 'Other' },
+                { kw: 'stream', reason: 'Filters streaming searches', category: 'Other' },
+                { kw: 'streaming', reason: 'Filters streaming service searches', category: 'Other' },
+                { kw: 'podcast', reason: 'Filters podcast searches', category: 'Other' },
+                { kw: 'download', reason: 'Filters download searches', category: 'Other' },
+                { kw: 'mp3', reason: 'Filters audio file searches', category: 'Other' },
+                { kw: 'pdf', reason: 'Filters PDF searches', category: 'Other' },
+                { kw: 'image', reason: 'Filters image searches', category: 'Other' },
+                { kw: 'images', reason: 'Filters image gallery searches', category: 'Other' },
+                { kw: 'picture', reason: 'Filters picture searches', category: 'Other' },
+                { kw: 'pictures', reason: 'Filters picture gallery searches', category: 'Other' },
+                { kw: 'photo', reason: 'Filters photo searches', category: 'Other' },
+                { kw: 'photos', reason: 'Filters photo gallery searches', category: 'Other' },
+                { kw: 'wallpaper', reason: 'Filters wallpaper searches', category: 'Other' },
+                { kw: 'movie', reason: 'Filters movie searches', category: 'Other' },
+                { kw: 'movies', reason: 'Filters movie content searches', category: 'Other' },
+                { kw: 'film', reason: 'Filters film searches', category: 'Other' }
             ];
 
             // Legal/Regulatory (40+ variations)
             const legalTerms = [
-                { kw: 'lawsuit', reason: 'Filters legal action searches', category: 'Legal' },
-                { kw: 'legal', reason: 'Filters legal searches', category: 'Legal' },
-                { kw: 'sue', reason: 'Filters lawsuit searches', category: 'Legal' },
-                { kw: 'court', reason: 'Filters court case searches', category: 'Legal' },
-                { kw: 'case', reason: 'Filters legal case searches', category: 'Legal' },
-                { kw: 'lawyer', reason: 'Filters lawyer searches', category: 'Legal' },
-                { kw: 'attorney', reason: 'Filters attorney searches', category: 'Legal' },
-                { kw: 'settlement', reason: 'Filters settlement searches', category: 'Legal' },
-                { kw: 'claim', reason: 'Filters claim searches', category: 'Legal' },
-                { kw: 'fraud', reason: 'Filters fraud investigation searches', category: 'Legal' },
-                { kw: 'illegal', reason: 'Filters illegal activity searches', category: 'Legal' },
-                { kw: 'investigation', reason: 'Filters investigation searches', category: 'Legal' },
-                { kw: 'regulation', reason: 'Filters regulatory searches', category: 'Legal' },
-                { kw: 'compliance', reason: 'Filters compliance searches', category: 'Legal' },
-                { kw: 'terms of service', reason: 'Filters TOS searches', category: 'Legal' },
-                { kw: 'privacy policy', reason: 'Filters privacy policy searches', category: 'Legal' },
-                { kw: 'refund', reason: 'Filters refund searches', category: 'Legal' },
-                { kw: 'return', reason: 'Filters return policy searches', category: 'Legal' },
-                { kw: 'warranty', reason: 'Filters warranty searches', category: 'Legal' },
-                { kw: 'guarantee', reason: 'Filters guarantee searches', category: 'Legal' }
+                { kw: 'lawsuit', reason: 'Filters legal action searches', category: 'Other' },
+                { kw: 'legal', reason: 'Filters legal searches', category: 'Other' },
+                { kw: 'sue', reason: 'Filters lawsuit searches', category: 'Other' },
+                { kw: 'court', reason: 'Filters court case searches', category: 'Other' },
+                { kw: 'case', reason: 'Filters legal case searches', category: 'Other' },
+                { kw: 'lawyer', reason: 'Filters lawyer searches', category: 'Other' },
+                { kw: 'attorney', reason: 'Filters attorney searches', category: 'Other' },
+                { kw: 'settlement', reason: 'Filters settlement searches', category: 'Other' },
+                { kw: 'claim', reason: 'Filters claim searches', category: 'Other' },
+                { kw: 'fraud', reason: 'Filters fraud investigation searches', category: 'Other' },
+                { kw: 'illegal', reason: 'Filters illegal activity searches', category: 'Other' },
+                { kw: 'investigation', reason: 'Filters investigation searches', category: 'Other' },
+                { kw: 'regulation', reason: 'Filters regulatory searches', category: 'Other' },
+                { kw: 'compliance', reason: 'Filters compliance searches', category: 'Other' },
+                { kw: 'terms of service', reason: 'Filters TOS searches', category: 'Other' },
+                { kw: 'privacy policy', reason: 'Filters privacy policy searches', category: 'Other' },
+                { kw: 'refund', reason: 'Filters refund searches', category: 'Other' },
+                { kw: 'return', reason: 'Filters return policy searches', category: 'Other' },
+                { kw: 'warranty', reason: 'Filters warranty searches', category: 'Other' },
+                { kw: 'guarantee', reason: 'Filters guarantee searches', category: 'Other' }
             ];
 
             // Expand remaining categories using helper function
@@ -408,35 +408,35 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             const irrelevantBase = ['review', 'reviews', 'rating', 'ratings', 'comparison', 'compare', 'vs', 'versus', 'alternative', 'alternatives', 'best', 'top', 'worst', 'scam', 'complaint', 'complaints', 'problem', 'problems', 'issue', 'issues', 'competitors', 'similar to', 'like', 'better than', 'pros and cons', 'what is better', 'which is better', 'what is the best', 'which is the best', 'what is the top', 'which is the top', 'what is the worst', 'which is the worst', 'what is better than', 'which is better than', 'what is worse than', 'which is worse than', 'what is similar to', 'which is similar to', 'what is like', 'which is like', 'what is different from', 'which is different from', 'what is different than', 'which is different than', 'what is unlike', 'which is unlike', 'what is not like', 'which is not like', 'what is not similar', 'which is not similar', 'what is not same', 'which is not same', 'what is not identical', 'which is not identical', 'what is not equivalent', 'which is not equivalent', 'what is not equal', 'which is not equal', 'what is not comparable', 'which is not comparable', 'what is not comparable to', 'which is not comparable to', 'what is not comparable with', 'which is not comparable with', 'what is not comparable against', 'which is not comparable against', 'what is not comparable versus', 'which is not comparable versus', 'what is not comparable vs', 'which is not comparable vs', 'what is not comparable like', 'which is not comparable like', 'what is not comparable similar', 'which is not comparable similar', 'what is not comparable same', 'which is not comparable same', 'what is not comparable identical', 'which is not comparable identical', 'what is not comparable equivalent', 'which is not comparable equivalent', 'what is not comparable equal', 'which is not comparable equal', 'what is not comparable different', 'which is not comparable different', 'what is not comparable unlike', 'which is not comparable unlike', 'what is not comparable opposite', 'which is not comparable opposite', 'what is not comparable opposite of', 'which is not comparable opposite of', 'what is not comparable different from', 'which is not comparable different from', 'what is not comparable different than', 'which is not comparable different than', 'what is not comparable unlike', 'which is not comparable unlike', 'what is not comparable not like', 'which is not comparable not like', 'what is not comparable not similar', 'which is not comparable not similar', 'what is not comparable not same', 'which is not comparable not same', 'what is not comparable not identical', 'which is not comparable not identical', 'what is not comparable not equivalent', 'which is not comparable not equivalent', 'what is not comparable not equal', 'which is not comparable not equal'];
             
             irrelevantBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters review, comparison, and informational searches', 'Irrelevant');
+                addUniqueKeyword(kw, 'Filters review, comparison, and informational searches', 'Irrelevant-Product');
             });
             
             // Informational (150+ variations)
             const informationalBase = ['what is', 'who is', 'when', 'where', 'why', 'wikipedia', 'definition', 'meaning', 'information', 'info', 'about', 'history', 'facts', 'statistics', 'stats', 'data', 'research', 'article', 'articles', 'blog', 'what does', 'what do', 'what are', 'what was', 'what were', 'what will', 'what would', 'what can', 'what could', 'what should', 'what might', 'what may', 'what must', 'what shall', 'what ought', 'what need', 'what needs', 'what required', 'what requires', 'what wants', 'what want', 'what likes', 'what like', 'what loves', 'what love', 'what hates', 'what hate', 'what prefers', 'what prefer', 'what chooses', 'what choose', 'what selects', 'what select', 'what picks', 'what pick', 'what decides', 'what decide', 'what determines', 'what determine', 'what establishes', 'what establish', 'what sets', 'what set', 'what fixes', 'what fix', 'what locks', 'what lock', 'what seals', 'what seal', 'what closes', 'what close', 'what finalizes', 'what finalize', 'what concludes', 'what conclude', 'what ends', 'what end', 'what finishes', 'what finish', 'what completes', 'what complete', 'what wraps up', 'what wrap up', 'what rounds off', 'what round off', 'what ties up', 'what tie up', 'what closes out', 'what close out', 'what winds down', 'what wind down', 'what wraps', 'what wrap', 'what packages', 'what package', 'what bundles', 'what bundle', 'what groups', 'what group', 'what combines', 'what combine', 'what merges', 'what merge', 'what unifies', 'what unify', 'what consolidates', 'what consolidate', 'what integrates', 'what integrate', 'what incorporates', 'what incorporate', 'what includes', 'what include', 'what encompasses', 'what encompass', 'what covers', 'what cover', 'what embraces', 'what embrace', 'what contains', 'what contain', 'what holds', 'what hold', 'what carries', 'what carry', 'what bears', 'what bear', 'what supports', 'what support', 'what sustains', 'what sustain', 'what maintains', 'what maintain', 'what preserves', 'what preserve', 'what keeps', 'what keep', 'what retains', 'what retain', 'what holds onto', 'what hold onto', 'what clings to', 'what cling to', 'what sticks with', 'what stick with', 'what stays with', 'what stay with', 'what remains with', 'what remain with', 'what continues with', 'what continue with', 'what persists with', 'what persist with', 'what endures', 'what endure', 'what lasts', 'what last', 'what survives', 'what survive', 'what outlasts', 'what outlast', 'what outlives', 'what outlive', 'what outstays', 'what outstay', 'what outstretches', 'what outstretch', 'what outreaches', 'what outreach', 'what extends', 'what extend', 'what expands', 'what expand', 'what grows', 'what grow', 'what develops', 'what develop', 'what evolves', 'what evolve', 'what progresses', 'what progress', 'what advances', 'what advance', 'what moves forward', 'what move forward', 'what goes forward', 'what go forward', 'what proceeds', 'what proceed', 'what continues', 'what continue', 'what persists', 'what persist', 'what endures', 'what endure', 'what lasts', 'what last', 'what survives', 'what survive', 'what thrives', 'what thrive', 'what flourishes', 'what flourish', 'what prospers', 'what prosper', 'what succeeds', 'what succeed', 'what achieves', 'what achieve', 'what attains', 'what attain', 'what reaches', 'what reach', 'what obtains', 'what obtain', 'what acquires', 'what acquire', 'what gains', 'what gain', 'what earns', 'what earn', 'what wins', 'what win', 'what secures', 'what secure', 'what captures', 'what capture', 'what seizes', 'what seize', 'what grabs', 'what grab', 'what snatches', 'what snatch', 'what takes', 'what take', 'what gets', 'what get', 'what receives', 'what receive', 'what accepts', 'what accept', 'what welcomes', 'what welcome', 'what embraces', 'what embrace', 'what adopts', 'what adopt', 'what takes on', 'what take on', 'what takes up', 'what take up', 'what takes over', 'what take over', 'what assumes', 'what assume', 'what undertakes', 'what undertake', 'what embarks on', 'what embark on', 'what starts', 'what start', 'what begins', 'what begin', 'what commences', 'what commence', 'what initiates', 'what initiate', 'what launches', 'what launch', 'what opens', 'what open', 'what introduces', 'what introduce', 'what presents', 'what present', 'what offers', 'what offer', 'what provides', 'what provide', 'what supplies', 'what supply', 'what delivers', 'what deliver', 'what furnishes', 'what furnish', 'what equips', 'what equip', 'what outfits', 'what outfit', 'what prepares', 'what prepare', 'what readies', 'what ready', 'what sets up', 'what set up', 'what arranges', 'what arrange', 'what organizes', 'what organize', 'what coordinates', 'what coordinate', 'what orchestrates', 'what orchestrate', 'what manages', 'what manage', 'what handles', 'what handle', 'what deals with', 'what deal with', 'what copes with', 'what cope with', 'what manages', 'what manage', 'what controls', 'what control', 'what regulates', 'what regulate', 'what governs', 'what govern', 'what oversees', 'what oversee', 'what supervises', 'what supervise', 'what monitors', 'what monitor', 'what watches', 'what watch', 'what observes', 'what observe', 'what notices', 'what notice', 'what detects', 'what detect', 'what discovers', 'what discover', 'what finds', 'what find', 'what locates', 'what locate', 'what identifies', 'what identify', 'what recognizes', 'what recognize', 'what acknowledges', 'what acknowledge', 'what admits', 'what admit', 'what confesses', 'what confess', 'what reveals', 'what reveal', 'what discloses', 'what disclose', 'what exposes', 'what expose', 'what uncovers', 'what uncover', 'what unveils', 'what unveil', 'what unmasks', 'what unmask', 'what uncloaks', 'what uncloak', 'what unwraps', 'what unwrap', 'what unpacks', 'what unpack', 'what unfolds', 'what unfold', 'what unrolls', 'what unroll', 'what unfurls', 'what unfurl', 'what spreads', 'what spread', 'what stretches', 'what stretch', 'what extends', 'what extend', 'what expands', 'what expand', 'what widens', 'what widen', 'what broadens', 'what broaden', 'what enlarges', 'what enlarge', 'what increases', 'what increase', 'what grows', 'what grow', 'what develops', 'what develop', 'what evolves', 'what evolve', 'what progresses', 'what progress', 'what advances', 'what advance', 'what improves', 'what improve', 'what enhances', 'what enhance', 'what upgrades', 'what upgrade', 'what refines', 'what refine', 'what perfects', 'what perfect', 'what polishes', 'what polish', 'what smooths', 'what smooth', 'what softens', 'what soften', 'what eases', 'what ease', 'what relaxes', 'what relax', 'what loosens', 'what loosen', 'what releases', 'what release', 'what frees', 'what free', 'what liberates', 'what liberate', 'what emancipates', 'what emancipate', 'what unshackles', 'what unshackle', 'what unchains', 'what unchain', 'what unties', 'what untie', 'what unbinds', 'what unbind', 'what unfastens', 'what unfasten', 'what unbuttons', 'what unbutton', 'what unzips', 'what unzip', 'what unlaces', 'what unlace', 'what unties', 'what untie', 'what unwraps', 'what unwrap', 'what unpacks', 'what unpack', 'what unboxes', 'what unbox', 'what uncrates', 'what uncrate', 'what uncases', 'what uncase', 'what unsheaths', 'what unsheath'];
             
             informationalBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters informational and definitional searches', 'Informational');
+                addUniqueKeyword(kw, 'Filters informational and definitional searches', 'Intent-Mismatch');
             });
             
             // Corporate (100+ variations)
             const corporateBase = ['company', 'corporation', 'headquarters', 'headquater', 'office', 'contact', 'phone number', 'address', 'location', 'locations', 'hours', 'open', 'closed', 'email', 'customer service', 'support', 'contact us', 'about us', 'corporate', 'investor', 'investor relations', 'investor relations department', 'investor relations team', 'investor relations contact', 'investor relations email', 'investor relations phone', 'investor relations address', 'investor relations location', 'investor relations office', 'investor relations headquarters', 'investor relations corporate', 'investor relations company', 'investor relations corporation', 'investor relations business', 'investor relations firm', 'investor relations agency', 'investor relations organization', 'investor relations institution', 'investor relations establishment', 'investor relations enterprise', 'investor relations venture', 'investor relations undertaking', 'investor relations operation', 'investor relations activity', 'investor relations function', 'investor relations role', 'investor relations responsibility', 'investor relations duty', 'investor relations obligation', 'investor relations commitment', 'investor relations dedication', 'investor relations devotion', 'investor relations loyalty', 'investor relations faithfulness', 'investor relations trustworthiness', 'investor relations reliability', 'investor relations dependability', 'investor relations consistency', 'investor relations steadiness', 'investor relations stability', 'investor relations constancy', 'investor relations uniformity', 'investor relations regularity', 'investor relations routine', 'investor relations standard', 'investor relations typical', 'investor relations normal', 'investor relations ordinary', 'investor relations common', 'investor relations usual', 'investor relations customary', 'investor relations conventional', 'investor relations traditional', 'investor relations classic', 'investor relations vintage', 'investor relations retro', 'investor relations old', 'investor relations new', 'investor relations fresh', 'investor relations recent', 'investor relations latest', 'investor relations modern', 'investor relations contemporary'];
             
             corporateBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters company info and corporate searches', 'Corporate');
+                addUniqueKeyword(kw, 'Filters company info and corporate searches', 'Other');
             });
             
             // Media/Entertainment (100+ variations)
             const mediaBase = ['video', 'videos', 'youtube', 'watch', 'stream', 'streaming', 'podcast', 'download', 'mp3', 'pdf', 'image', 'images', 'picture', 'pictures', 'photo', 'photos', 'wallpaper', 'movie', 'movies', 'film', 'films', 'cinema', 'cinemas', 'theater', 'theaters', 'theatre', 'theatres', 'show', 'shows', 'series', 'episode', 'episodes', 'season', 'seasons', 'episode', 'episodes', 'season', 'seasons', 'series', 'series', 'show', 'shows', 'program', 'programs', 'programme', 'programmes', 'broadcast', 'broadcasts', 'telecast', 'telecasts', 'airing', 'airings', 'premiere', 'premieres', 'debut', 'debuts', 'release', 'releases', 'launch', 'launches', 'opening', 'openings', 'closing', 'closings', 'ending', 'endings', 'finale', 'finales', 'final', 'finals', 'conclusion', 'conclusions', 'wrap up', 'wrap ups', 'wrap-up', 'wrap-ups', 'round off', 'round offs', 'round-off', 'round-offs', 'tie up', 'tie ups', 'tie-up', 'tie-ups', 'close out', 'close outs', 'close-out', 'close-outs', 'wind down', 'wind downs', 'wind-down', 'wind-downs', 'wrap', 'wraps', 'package', 'packages', 'bundle', 'bundles', 'group', 'groups', 'combine', 'combines', 'merge', 'merges', 'unify', 'unifies', 'consolidate', 'consolidates', 'integrate', 'integrates', 'incorporate', 'incorporates', 'include', 'includes', 'encompass', 'encompasses', 'cover', 'covers', 'embrace', 'embraces', 'contain', 'contains', 'hold', 'holds', 'carry', 'carries', 'bear', 'bears', 'support', 'supports', 'sustain', 'sustains', 'maintain', 'maintains', 'preserve', 'preserves', 'keep', 'keeps', 'retain', 'retains', 'hold onto', 'holds onto', 'cling to', 'clings to', 'stick with', 'sticks with', 'stay with', 'stays with', 'remain with', 'remains with', 'continue with', 'continues with', 'persist with', 'persists with', 'endure', 'endures', 'last', 'lasts', 'survive', 'survives', 'outlast', 'outlasts', 'outlive', 'outlives', 'outstay', 'outstays', 'outstretch', 'outstretches', 'outreach', 'outreaches', 'extend', 'extends', 'expand', 'expands', 'grow', 'grows', 'develop', 'develops', 'evolve', 'evolves', 'progress', 'progresses', 'advance', 'advances', 'move forward', 'moves forward', 'go forward', 'goes forward', 'proceed', 'proceeds', 'continue', 'continues', 'persist', 'persists', 'endure', 'endures', 'last', 'lasts', 'survive', 'survives', 'thrive', 'thrives', 'flourish', 'flourishes', 'prosper', 'prospers', 'succeed', 'succeeds', 'achieve', 'achieves', 'attain', 'attains', 'reach', 'reaches', 'obtain', 'obtains', 'acquire', 'acquires', 'gain', 'gains', 'earn', 'earns', 'win', 'wins', 'secure', 'secures', 'capture', 'captures', 'seize', 'seizes', 'grab', 'grabs', 'snatch', 'snatches', 'take', 'takes', 'get', 'gets', 'receive', 'receives', 'accept', 'accepts', 'welcome', 'welcomes', 'embrace', 'embraces', 'adopt', 'adopts', 'take on', 'takes on', 'take up', 'takes up', 'take over', 'takes over', 'assume', 'assumes', 'undertake', 'undertakes', 'embark on', 'embarks on', 'start', 'starts', 'begin', 'begins', 'commence', 'commences', 'initiate', 'initiates', 'launch', 'launches', 'open', 'opens', 'introduce', 'introduces', 'present', 'presents', 'offer', 'offers', 'provide', 'provides', 'supply', 'supplies', 'deliver', 'delivers', 'furnish', 'furnishes', 'equip', 'equips', 'outfit', 'outfits', 'prepare', 'prepares', 'ready', 'readies', 'set up', 'sets up', 'arrange', 'arranges', 'organize', 'organizes', 'coordinate', 'coordinates', 'orchestrate', 'orchestrates', 'manage', 'manages', 'handle', 'handles', 'deal with', 'deals with', 'cope with', 'copes with', 'manage', 'manages', 'control', 'controls', 'regulate', 'regulates', 'govern', 'governs', 'oversee', 'oversees', 'supervise', 'supervises', 'monitor', 'monitors', 'watch', 'watches', 'observe', 'observes', 'notice', 'notices', 'detect', 'detects', 'discover', 'discovers', 'find', 'finds', 'locate', 'locates', 'identify', 'identifies', 'recognize', 'recognizes', 'acknowledge', 'acknowledges', 'admit', 'admits', 'confess', 'confesses', 'reveal', 'reveals', 'disclose', 'discloses', 'expose', 'exposes', 'uncover', 'uncovers', 'unveil', 'unveils', 'unmask', 'unmasks', 'uncloak', 'uncloaks', 'unwrap', 'unwraps', 'unpack', 'unpacks', 'unfold', 'unfolds', 'unroll', 'unrolls', 'unfurl', 'unfurls', 'spread', 'spreads', 'stretch', 'stretches', 'extend', 'extends', 'expand', 'expands', 'widen', 'widens', 'broaden', 'broadens', 'enlarge', 'enlarges', 'increase', 'increases', 'grow', 'grows', 'develop', 'develops', 'evolve', 'evolves', 'progress', 'progresses', 'advance', 'advances', 'improve', 'improves', 'enhance', 'enhances', 'upgrade', 'upgrades', 'refine', 'refines', 'perfect', 'perfects', 'polish', 'polishes', 'smooth', 'smooths', 'soften', 'softens', 'ease', 'eases', 'relax', 'relaxes', 'loosen', 'loosens', 'release', 'releases', 'free', 'frees', 'liberate', 'liberates', 'emancipate', 'emancipates', 'unshackle', 'unshackles', 'unchain', 'unchains', 'untie', 'unties', 'unbind', 'unbinds', 'unfasten', 'unfastens', 'unbutton', 'unbuttons', 'unzip', 'unzips', 'unlace', 'unlaces', 'untie', 'unties', 'unwrap', 'unwraps', 'unpack', 'unpacks', 'unbox', 'unboxes', 'uncrate', 'uncrates', 'uncase', 'uncases', 'unsheath', 'unsheaths'];
             
             mediaBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters media content and entertainment searches', 'Media');
+                addUniqueKeyword(kw, 'Filters media content and entertainment searches', 'Other');
             });
             
             // Legal/Regulatory (100+ variations)
             const legalBase = ['lawsuit', 'legal', 'sue', 'court', 'case', 'lawyer', 'attorney', 'settlement', 'claim', 'fraud', 'illegal', 'investigation', 'regulation', 'compliance', 'terms of service', 'privacy policy', 'refund', 'return', 'warranty', 'guarantee', 'sue', 'suing', 'sued', 'lawsuit', 'lawsuits', 'legal action', 'legal actions', 'legal proceeding', 'legal proceedings', 'legal process', 'legal processes', 'legal case', 'legal cases', 'legal matter', 'legal matters', 'legal issue', 'legal issues', 'legal problem', 'legal problems', 'legal dispute', 'legal disputes', 'legal conflict', 'legal conflicts', 'legal controversy', 'legal controversies', 'legal disagreement', 'legal disagreements', 'legal argument', 'legal arguments', 'legal debate', 'legal debates', 'legal discussion', 'legal discussions', 'legal conversation', 'legal conversations', 'legal talk', 'legal talks', 'legal chat', 'legal chats', 'legal communication', 'legal communications', 'legal exchange', 'legal exchanges', 'legal interaction', 'legal interactions', 'legal engagement', 'legal engagements', 'legal involvement', 'legal involvements', 'legal participation', 'legal participations', 'legal contribution', 'legal contributions', 'legal input', 'legal inputs', 'legal output', 'legal outputs', 'legal feedback', 'legal feedbacks', 'legal response', 'legal responses', 'legal reply', 'legal replies', 'legal answer', 'legal answers', 'legal solution', 'legal solutions', 'legal resolution', 'legal resolutions', 'legal settlement', 'legal settlements', 'legal agreement', 'legal agreements', 'legal contract', 'legal contracts', 'legal deal', 'legal deals', 'legal arrangement', 'legal arrangements', 'legal understanding', 'legal understandings', 'legal consensus', 'legal consensuses', 'legal accord', 'legal accords', 'legal harmony', 'legal harmonies', 'legal unity', 'legal unities', 'legal solidarity', 'legal solidarities', 'legal cooperation', 'legal cooperations', 'legal collaboration', 'legal collaborations', 'legal partnership', 'legal partnerships', 'legal alliance', 'legal alliances', 'legal association', 'legal associations', 'legal connection', 'legal connections', 'legal link', 'legal links', 'legal bond', 'legal bonds', 'legal tie', 'legal ties', 'legal relationship', 'legal relationships', 'legal relation', 'legal relations', 'legal association', 'legal associations', 'legal affiliation', 'legal affiliations', 'legal membership', 'legal memberships', 'legal belonging', 'legal belongings', 'legal inclusion', 'legal inclusions', 'legal integration', 'legal integrations', 'legal incorporation', 'legal incorporations', 'legal assimilation', 'legal assimilations', 'legal absorption', 'legal absorptions', 'legal adoption', 'legal adoptions', 'legal acceptance', 'legal acceptances', 'legal approval', 'legal approvals', 'legal endorsement', 'legal endorsements', 'legal support', 'legal supports', 'legal backing', 'legal backings', 'legal encouragement', 'legal encouragements', 'legal promotion', 'legal promotions', 'legal advancement', 'legal advancements', 'legal progress', 'legal progresses', 'legal development', 'legal developments', 'legal growth', 'legal growths', 'legal expansion', 'legal expansions', 'legal extension', 'legal extensions', 'legal enlargement', 'legal enlargements', 'legal increase', 'legal increases', 'legal rise', 'legal rises', 'legal surge', 'legal surges', 'legal spike', 'legal spikes', 'legal jump', 'legal jumps', 'legal leap', 'legal leaps', 'legal boost', 'legal boosts', 'legal lift', 'legal lifts', 'legal raise', 'legal raises', 'legal elevation', 'legal elevations', 'legal upgrade', 'legal upgrades', 'legal improvement', 'legal improvements', 'legal enhancement', 'legal enhancements', 'legal refinement', 'legal refinements', 'legal perfection', 'legal perfections', 'legal polish', 'legal polishes', 'legal smoothing', 'legal smoothings', 'legal softening', 'legal softenings', 'legal easing', 'legal easings', 'legal relaxation', 'legal relaxations', 'legal loosening', 'legal loosenings', 'legal release', 'legal releases', 'legal freeing', 'legal freings', 'legal liberation', 'legal liberations', 'legal emancipation', 'legal emancipations', 'legal unshackling', 'legal unshacklings', 'legal unchaining', 'legal unchainings', 'legal untying', 'legal untyings', 'legal unbinding', 'legal unbindings', 'legal unfastening', 'legal unfastenings', 'legal unbuttoning', 'legal unbuttonings', 'legal unzipping', 'legal unzippings', 'legal unlacing', 'legal unlacings', 'legal untying', 'legal untyings', 'legal unwrapping', 'legal unwrappings', 'legal unpacking', 'legal unpackings', 'legal unboxing', 'legal unboxings', 'legal uncrating', 'legal uncratings', 'legal uncasing', 'legal uncasings', 'legal unsheathing', 'legal unsheathings'];
             
             legalBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters legal action and regulatory searches', 'Legal');
+                addUniqueKeyword(kw, 'Filters legal action and regulatory searches', 'Other');
             });
 
             // Add more variations to reach 700+ keywords
@@ -453,7 +453,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             const competitorTerms = ['competitor', 'competitors', 'competition', 'competing', 'compete', 'rival', 'rivals', 'rivalry', 'alternative', 'alternatives', 'similar to', 'like', 'better than', 'worse than', 'compared to', 'comparison', 'compare', 'vs', 'versus', 'against', 'opposite', 'opposite of', 'different from', 'different than', 'unlike', 'not like', 'not similar', 'not same', 'not identical', 'not equivalent', 'not equal', 'not comparable', 'not comparable to', 'not comparable with', 'not comparable against', 'not comparable versus', 'not comparable vs', 'not comparable like', 'not comparable similar', 'not comparable same', 'not comparable identical', 'not comparable equivalent', 'not comparable equal', 'not comparable different', 'not comparable unlike', 'not comparable opposite', 'not comparable against', 'not comparable opposite of', 'not comparable different from', 'not comparable different than', 'not comparable unlike', 'not comparable not like', 'not comparable not similar', 'not comparable not same', 'not comparable not identical', 'not comparable not equivalent', 'not comparable not equal', 'not comparable not comparable', 'not comparable not comparable to', 'not comparable not comparable with', 'not comparable not comparable against', 'not comparable not comparable versus', 'not comparable not comparable vs', 'not comparable not comparable like', 'not comparable not comparable similar', 'not comparable not comparable same', 'not comparable not comparable identical', 'not comparable not comparable equivalent', 'not comparable not comparable equal', 'not comparable not comparable different', 'not comparable not comparable unlike', 'not comparable not comparable opposite', 'not comparable not comparable opposite of', 'not comparable not comparable different from', 'not comparable not comparable different than', 'not comparable not comparable unlike', 'not comparable not comparable not like', 'not comparable not comparable not similar', 'not comparable not comparable not same', 'not comparable not comparable not identical', 'not comparable not comparable not equivalent', 'not comparable not comparable not equal'];
             
             competitorTerms.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters competitor research and comparison searches', 'Competitor Terms');
+                addUniqueKeyword(kw, 'Filters competitor research and comparison searches', 'Competitor');
             });
             
             // Ensure we have at least 1000 unique keywords
@@ -478,12 +478,8 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         if (selectedCategories.size === 0) return generatedKeywords;
         
         return generatedKeywords.filter(kw => {
-            // Find category key from label
-            const categoryKey = Object.keys(NEGATIVE_KEYWORD_CATEGORIES).find(
-                key => NEGATIVE_KEYWORD_CATEGORIES[key as NegativeKeywordCategory].label === kw.category
-            ) as NegativeKeywordCategory;
-            
-            return categoryKey && selectedCategories.has(categoryKey);
+            // kw.category is already the key, not the label
+            return selectedCategories.has(kw.category as NegativeKeywordCategory);
         });
     }, [generatedKeywords, selectedCategories]);
 
