@@ -18,6 +18,10 @@ export async function getCurrentAuthUser(): Promise<User | null> {
   }
 }
 
+// Cache to prevent duplicate profile fetches
+let profileFetchCache: { [userId: string]: { data: any; timestamp: number } } = {};
+const PROFILE_CACHE_DURATION = 5000; // 5 seconds
+
 /**
  * Get current user profile from users table
  * Auto-creates profile if it doesn't exist
@@ -26,6 +30,12 @@ export async function getCurrentUserProfile() {
   try {
     const user = await getCurrentAuthUser();
     if (!user) return null;
+
+    // Check cache first to prevent duplicate fetches
+    const cached = profileFetchCache[user.id];
+    if (cached && Date.now() - cached.timestamp < PROFILE_CACHE_DURATION) {
+      return cached.data;
+    }
 
     const { data, error } = await supabase
       .from('users')
@@ -43,7 +53,7 @@ export async function getCurrentUserProfile() {
     );
 
     if (isNotFoundError) {
-      console.log('User profile not found (404/PGRST116), creating one...', { userId: user.id, error });
+      console.log('User profile not found (404/PGRST116), creating one...', { userId: user.id });
       try {
         const fullName = user.user_metadata?.full_name || 
                         user.user_metadata?.full_name || 
@@ -58,11 +68,13 @@ export async function getCurrentUserProfile() {
         
         if (newProfile) {
           console.log('✅ User profile created successfully:', newProfile.id);
+          // Cache the result
+          profileFetchCache[user.id] = { data: newProfile, timestamp: Date.now() };
           return newProfile;
         } else {
           console.warn('⚠️ Profile creation returned null, but user exists');
           // Return a minimal user object so the app doesn't break
-          return {
+          const minimalUser = {
             id: user.id,
             email: user.email || '',
             full_name: fullName,
@@ -70,12 +82,14 @@ export async function getCurrentUserProfile() {
             subscription_plan: 'free',
             subscription_status: 'active',
           };
+          profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+          return minimalUser;
         }
       } catch (createError: any) {
-        console.error('❌ Error creating user profile:', createError);
+        console.warn('⚠️ Error creating user profile (non-critical):', createError?.message || createError);
         
         // If creation fails, return minimal user object so app doesn't break
-        return {
+        const minimalUser = {
           id: user.id,
           email: user.email || '',
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
@@ -83,13 +97,16 @@ export async function getCurrentUserProfile() {
           subscription_plan: 'free',
           subscription_status: 'active',
         };
+        profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+        return minimalUser;
       }
     }
 
     if (error) {
-      console.error('Error fetching user profile:', error);
+      // Don't log as error if it's a common/expected error - use warn instead
+      console.warn('Profile fetch error (non-critical):', error?.code || error?.message || error);
       // Return minimal user object even on error so app doesn't break
-      return {
+      const minimalUser = {
         id: user.id,
         email: user.email || '',
         full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
@@ -97,16 +114,22 @@ export async function getCurrentUserProfile() {
         subscription_plan: 'free',
         subscription_status: 'active',
       };
+      profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+      return minimalUser;
     }
 
+    // Cache successful result
+    if (data) {
+      profileFetchCache[user.id] = { data, timestamp: Date.now() };
+    }
     return data;
   } catch (error) {
-    console.error('Error getting user profile:', error);
+    console.warn('Error getting user profile (non-critical):', error instanceof Error ? error.message : error);
     // Try to get auth user at least
     try {
       const user = await getCurrentAuthUser();
       if (user) {
-        return {
+        const minimalUser = {
           id: user.id,
           email: user.email || '',
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
@@ -114,11 +137,24 @@ export async function getCurrentUserProfile() {
           subscription_plan: 'free',
           subscription_status: 'active',
         };
+        profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+        return minimalUser;
       }
     } catch (e) {
-      console.error('Error getting auth user as fallback:', e);
+      // Silently fail - don't spam console
     }
     return null;
+  }
+}
+
+/**
+ * Clear profile cache (useful after profile updates)
+ */
+export function clearProfileCache(userId?: string) {
+  if (userId) {
+    delete profileFetchCache[userId];
+  } else {
+    profileFetchCache = {};
   }
 }
 

@@ -169,62 +169,99 @@ const App = () => {
 
   // Initialize auth state and listen for changes
   useEffect(() => {
+    let isMounted = true;
+    let profileFetchInProgress = false;
+    
     // Check initial session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          const userProfile = await getCurrentUserProfile();
-          setUser(userProfile);
-    } else {
+        if (session?.user && isMounted) {
+          try {
+            const userProfile = await getCurrentUserProfile();
+            if (isMounted) {
+              setUser(userProfile);
+            }
+          } catch (error) {
+            console.error('Error fetching user profile during init:', error);
+            if (isMounted) {
+              // Set minimal user on error
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+                role: 'user',
+                subscription_plan: 'free',
+                subscription_status: 'active',
+              });
+            }
+          }
+        } else if (isMounted) {
           setUser(null);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeAuth();
 
-    // Listen for auth state changes
+    // Listen for auth state changes with debouncing
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        // Don't block on profile fetch - do it in background
-        getCurrentUserProfile().then((userProfile) => {
-          if (userProfile) {
-            setUser(userProfile);
-          } else {
-            // Set minimal user if profile fetch fails
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-              role: 'user',
-              subscription_plan: 'free',
-              subscription_status: 'active',
-            });
+      // Prevent multiple simultaneous profile fetches
+      if (profileFetchInProgress) {
+        return;
+      }
+
+      if (session?.user && isMounted) {
+        profileFetchInProgress = true;
+        
+        // Set minimal user immediately to avoid UI flicker
+        const minimalUser = {
+          id: session.user.id,
+          email: session.user.email || '',
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          role: 'user',
+          subscription_plan: 'free',
+          subscription_status: 'active',
+        };
+        
+        // Only update if user actually changed
+        setUser(prevUser => {
+          if (prevUser?.id === minimalUser.id) {
+            return prevUser; // Don't update if same user
           }
-        }).catch((error) => {
-          console.warn('Profile fetch failed in auth listener:', error);
-          // Set minimal user anyway
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-            role: 'user',
-            subscription_plan: 'free',
-            subscription_status: 'active',
-          });
+          return minimalUser;
         });
         
-        // If user just signed in and we're on auth view, let onLoginSuccess handle navigation
-        // Don't duplicate navigation here to avoid conflicts
-        // The onLoginSuccess callback will handle the navigation
-    } else {
+        // Fetch full profile in background (non-blocking)
+        getCurrentUserProfile()
+          .then((userProfile) => {
+            profileFetchInProgress = false;
+            if (userProfile && isMounted) {
+              setUser(prevUser => {
+                // Only update if still the same user
+                if (prevUser?.id === userProfile.id) {
+                  return userProfile;
+                }
+                return prevUser;
+              });
+            }
+          })
+          .catch((error) => {
+            profileFetchInProgress = false;
+            console.warn('Profile fetch failed in auth listener (non-critical):', error);
+            // Keep using minimal user - already set above
+          });
+      } else if (isMounted) {
         setUser(null);
         // If user signed out and we're on user view, go to home
         if (event === 'SIGNED_OUT' && appView === 'user') {
@@ -233,12 +270,12 @@ const App = () => {
       }
 
       // Handle password recovery
-      if (event === 'PASSWORD_RECOVERY') {
+      if (event === 'PASSWORD_RECOVERY' && isMounted) {
         setAppView('reset-password');
       }
 
       // Handle email verification
-      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && isMounted) {
         // User just verified email, redirect to pricing/home
         if (window.location.pathname.includes('/verify-email')) {
           window.history.pushState({}, '', '/');
@@ -248,6 +285,7 @@ const App = () => {
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
