@@ -851,7 +851,7 @@ const App = () => {
   }
 
   // Protect user view - require authentication (unless bypass)
-  // Give it a moment for user to be set after login before redirecting
+  // Wait for user to load from auth listener - it should happen quickly after login
   if (!user && appView === 'user' && !loading) {
     // Check if bypass key is in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -868,7 +868,7 @@ const App = () => {
         subscription_status: 'active',
       };
       setUser(bypassUser);
-      // Show loading while user is being set
+      // Show loading while user is being set - will re-render with user
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
           <div className="text-white text-center">
@@ -879,52 +879,9 @@ const App = () => {
       );
     }
     
-    // Check if there's an active session - if so, user is being loaded
-    // Use useEffect to check and load user if session exists
-    React.useEffect(() => {
-      const checkAndLoadUser = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          // Has session, try to load user profile
-          try {
-            const userProfile = await getCurrentUserProfile();
-            if (userProfile) {
-              setUser(userProfile);
-            } else {
-              // Set minimal user if profile fetch fails
-              setUser({
-                id: session.user.id,
-                email: session.user.email || '',
-                full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-                role: 'user',
-                subscription_plan: 'free',
-                subscription_status: 'active',
-              });
-            }
-          } catch (error) {
-            console.error('Error loading user:', error);
-            // Set minimal user on error
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-              role: 'user',
-              subscription_plan: 'free',
-              subscription_status: 'active',
-            });
-          }
-        } else {
-          // No session, redirect to auth after a brief delay
-          setTimeout(() => {
-            setAppView('home');
-            setAuthMode('login');
-          }, 100);
-        }
-      };
-      checkAndLoadUser();
-    }, []); // Only run once when component mounts with no user
-    
-    // Show loading while checking session/loading user
+    // No user, no bypass - check if session exists (user is being loaded by auth listener)
+    // If no session after a moment, redirect to login
+    // The auth listener will load the user if session exists, so just show loading for now
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
         <div className="text-white text-center">
@@ -934,6 +891,25 @@ const App = () => {
       </div>
     );
   }
+  
+  // Add useEffect to check session and redirect if no session after timeout
+  useEffect(() => {
+    if (!user && appView === 'user' && !loading) {
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          // No session - redirect to login after a brief delay
+          setTimeout(() => {
+            setAppView('home');
+            setAuthMode('login');
+          }, 1000);
+        }
+      };
+      // Wait a bit for auth listener to set user, then check
+      const timeout = setTimeout(checkSession, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [user, appView, loading]);
 
   // Show loading state while checking auth
   if (loading) {
