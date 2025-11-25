@@ -66,21 +66,28 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
           notifications.success('Welcome back!', {
             title: 'Login Successful',
           });
-          setIsLoading(false);
           
-          // Call onLoginSuccess and await it if it's async
-          await onLoginSuccess();
+          // Call onLoginSuccess and await it before clearing loading state
+          try {
+            await onLoginSuccess();
+          } catch (navError) {
+            console.error('Error during navigation after login:', navError);
+            // Still proceed even if navigation has issues
+          }
+          
+          setIsLoading(false);
         } catch (err: any) {
           let errorMessage = 'Invalid email or password. Please try again.';
           
-          if (err.message?.includes('Invalid login credentials') || err.message?.includes('invalid_credentials')) {
+          if (err?.message?.includes('Invalid login credentials') || err?.message?.includes('invalid_credentials')) {
             errorMessage = 'Invalid email or password. Please try again.';
-          } else if (err.message?.includes('Email not confirmed') || err.message?.includes('email_not_confirmed')) {
+          } else if (err?.message?.includes('Email not confirmed') || err?.message?.includes('email_not_confirmed')) {
             errorMessage = 'Please verify your email before signing in. Check your inbox for the verification link.';
-          } else if (err.message) {
+          } else if (err?.message) {
             errorMessage = err.message;
           }
           
+          console.error('Login error:', err);
           setError(errorMessage);
           setIsLoading(false);
         }
@@ -106,31 +113,44 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome }) => {
 
         // Sign up with Supabase Auth
         try {
-          const { user } = await signUpWithEmail(trimmedEmail, trimmedPassword, name.trim());
+          const result = await signUpWithEmail(trimmedEmail, trimmedPassword, name.trim());
           
-          if (user) {
+          if (result?.user) {
             notifications.success('Account created successfully!', {
               title: 'Check Your Email',
               description: 'We\'ve sent a verification link to your email. Please verify your email to continue.',
             });
 
-            // Redirect to verification page
+            // Clear form
+            setEmail('');
+            setPassword('');
+            setConfirmPassword('');
+            setName('');
+            
+            // Redirect to verification page after a brief delay
+            setTimeout(() => {
+              window.location.href = `/verify-email?email=${encodeURIComponent(trimmedEmail)}`;
+            }, 1000);
+            // Don't set loading to false - we're redirecting
+            return; // Exit early since we're redirecting
+          } else {
+            setError('Failed to create account. Please try again.');
             setIsLoading(false);
-            window.location.href = `/verify-email?email=${encodeURIComponent(trimmedEmail)}`;
           }
         } catch (err: any) {
           let errorMessage = 'Failed to create account. Please try again.';
           
-          if (err.message.includes('User already registered')) {
+          if (err?.message?.includes('User already registered') || err?.message?.includes('already registered')) {
             errorMessage = 'An account with this email already exists. Please sign in instead.';
-          } else if (err.message.includes('Invalid email')) {
+          } else if (err?.message?.includes('Invalid email')) {
             errorMessage = 'Please enter a valid email address.';
-          } else if (err.message.includes('Password')) {
+          } else if (err?.message?.includes('Password')) {
             errorMessage = err.message;
-          } else if (err.message) {
+          } else if (err?.message) {
             errorMessage = err.message;
           }
           
+          console.error('Signup error:', err);
           setError(errorMessage);
           setIsLoading(false);
         }

@@ -148,16 +148,25 @@ export async function signUpWithEmail(email: string, password: string, fullName:
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase signup error:', error);
+      throw error;
+    }
 
-    // Create user profile if signup successful
+    if (!data) {
+      throw new Error('No data returned from signup');
+    }
+
+    // Create user profile if signup successful (non-blocking)
     if (data.user) {
-      try {
-        await createUserProfile(data.user.id, email, fullName);
-      } catch (profileError) {
-        console.error('Error creating user profile:', profileError);
-        // Don't throw - auth was successful, profile can be created later
-      }
+      createUserProfile(data.user.id, email, fullName)
+        .then(() => {
+          console.log('User profile created successfully');
+        })
+        .catch((profileError) => {
+          console.error('Error creating user profile (non-critical):', profileError);
+          // Don't throw - auth was successful, profile can be created later
+        });
     }
 
     return data;

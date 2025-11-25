@@ -489,18 +489,36 @@ const App = () => {
             // Wait a moment for auth state to propagate
             await new Promise(resolve => setTimeout(resolve, 300));
             
-            // Refresh user profile after login (will auto-create if missing)
-            const userProfile = await getCurrentUserProfile();
+            // Refresh user profile after login with timeout
+            const profilePromise = getCurrentUserProfile();
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+            );
             
-            if (userProfile) {
-              setUser(userProfile);
-              console.log('✅ User profile loaded:', userProfile);
-            } else {
-              console.warn('⚠️ User profile is null, but proceeding with login');
+            try {
+              const userProfile = await Promise.race([profilePromise, timeoutPromise]) as any;
+              
+              if (userProfile) {
+                setUser(userProfile);
+                console.log('✅ User profile loaded:', userProfile);
+              } else {
+                console.warn('⚠️ User profile is null, but proceeding with login');
+                // Try to get auth user at least
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (authUser) {
+                  setUser({ id: authUser.id, email: authUser.email });
+                }
+              }
+            } catch (profileError: any) {
+              console.warn('⚠️ Error loading profile (non-critical):', profileError);
               // Try to get auth user at least
-              const { data: { user: authUser } } = await supabase.auth.getUser();
-              if (authUser) {
-                setUser({ id: authUser.id, email: authUser.email });
+              try {
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (authUser) {
+                  setUser({ id: authUser.id, email: authUser.email });
+                }
+              } catch (authError) {
+                console.error('Error getting auth user:', authError);
               }
             }
             
