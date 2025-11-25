@@ -128,8 +128,8 @@ const App = () => {
         sessionStorage.clear();
         // Redirect to home
         window.history.pushState({}, '', '/');
-        setAppView('home');
-        setActiveTab('dashboard');
+      setAppView('home');
+      setActiveTab('dashboard');
         // Force page reload to clear all state
         window.location.href = '/';
       } catch (error) {
@@ -416,24 +416,24 @@ const App = () => {
         setActiveTab('dashboard');
         setView('user');
         window.history.replaceState({}, '', '/');
-        return;
-      }
-
+      return;
+    }
+    
       if (path.startsWith('/reset-password')) {
         setView('reset-password');
-        return;
-      }
-
+      return;
+    }
+    
       if (path.startsWith('/verify-email')) {
         setView('verify-email');
-        return;
-      }
+            return;
+          }
 
       if (path.startsWith('/payment-success')) {
         applyPlanFromParams();
         setView('payment-success');
-        return;
-      }
+      return;
+    }
 
       if (path.startsWith('/payment')) {
         applyPlanFromParams();
@@ -512,7 +512,7 @@ const App = () => {
       const checkSession = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          setTimeout(() => {
+        setTimeout(() => {
             setAppView('home');
             setAuthMode('login');
           }, 1000);
@@ -520,7 +520,7 @@ const App = () => {
       };
       const timeout = setTimeout(checkSession, 500);
       return () => clearTimeout(timeout);
-    }
+          }
     return undefined;
   }, [user, appView, loading]);
 
@@ -1126,7 +1126,7 @@ const App = () => {
                       <>
                         <div className="font-semibold text-slate-900">User</div>
                         <div className="text-xs text-slate-600">user@example.com</div>
-                      </>
+                        </>
                     )}
             </div>
                 </DropdownMenuLabel>

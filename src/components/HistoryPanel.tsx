@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     History, Clock, ArrowRight, Trash2, RotateCcw, FileText, 
-    Search, Filter, Calendar
+    Search, Filter, Calendar, AlertCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -107,94 +107,120 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
     };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                        Activity History
-                    </h1>
-                    <p className="text-slate-500 mt-1">View, restore, or manage your past campaigns and keyword lists.</p>
-                </div>
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-6 sm:mb-8">
+                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                    Activity History
+                </h1>
+                <p className="text-slate-600">View, restore, or manage your past campaigns and keyword lists.</p>
             </div>
 
-            <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
-                <CardHeader>
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                        <Tabs defaultValue="all" className="w-full md:w-auto" onValueChange={setActiveTab}>
-                            <TabsList className="grid w-full grid-cols-5 bg-slate-100/80">
-                                <TabsTrigger value="all">All</TabsTrigger>
-                                <TabsTrigger value="campaign">Campaigns</TabsTrigger>
-                                <TabsTrigger value="keyword-planner">Planning</TabsTrigger>
-                                <TabsTrigger value="keyword-mixer">Mixer</TabsTrigger>
-                                <TabsTrigger value="negative-keywords">Negatives</TabsTrigger>
+            {/* Filters and Search */}
+            <Card className="border-slate-200 bg-white shadow-xl mb-6">
+                <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+                        {/* Tabs */}
+                        <Tabs defaultValue="all" className="flex-1" onValueChange={setActiveTab}>
+                            <TabsList className="grid w-full grid-cols-5 bg-slate-100 h-10">
+                                <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
+                                <TabsTrigger value="campaign" className="text-xs sm:text-sm">Campaigns</TabsTrigger>
+                                <TabsTrigger value="keyword-planner" className="text-xs sm:text-sm">Planning</TabsTrigger>
+                                <TabsTrigger value="keyword-mixer" className="text-xs sm:text-sm">Mixer</TabsTrigger>
+                                <TabsTrigger value="negative-keywords" className="text-xs sm:text-sm">Negatives</TabsTrigger>
                             </TabsList>
                         </Tabs>
-                        <div className="relative w-full md:w-72">
+                        
+                        {/* Search */}
+                        <div className="relative w-full lg:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input 
                                 placeholder="Search history..." 
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
-                                className="pl-9 bg-white"
+                                className="pl-10 bg-white border-slate-200 h-10"
                             />
                         </div>
                     </div>
-                </CardHeader>
-                <CardContent>
+                </CardContent>
+            </Card>
+
+            {/* History List */}
+            <Card className="border-slate-200 bg-white shadow-xl">
+                <CardContent className="p-4 sm:p-6">
                     {loading ? (
-                        <div className="flex items-center justify-center h-64">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                            <p className="text-slate-500">Loading history...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-red-500">
+                            <AlertCircle className="w-12 h-12 mb-4 opacity-50" />
+                            <p className="font-semibold mb-2">Failed to load history</p>
+                            <p className="text-sm text-slate-500">{error}</p>
+                            <Button 
+                                onClick={fetchHistory} 
+                                className="mt-4 bg-indigo-600 hover:bg-indigo-700"
+                            >
+                                Try Again
+                            </Button>
                         </div>
                     ) : filteredHistory.length > 0 ? (
-                        <ScrollArea className="h-[600px] pr-4">
-                            <div className="space-y-4">
-                                {filteredHistory.map((item) => (
-                                    <div 
-                                        key={item.id} 
-                                        className="group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-3 bg-slate-50 rounded-lg group-hover:bg-indigo-50 transition-colors">
-                                                {getTypeIcon(item.type)}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-slate-800">{item.name}</h3>
-                                                <div className="flex items-center gap-3 mt-1">
-                                                    <Badge variant="secondary" className="text-xs font-normal">
-                                                        {getTypeLabel(item.type)}
-                                                    </Badge>
-                                                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                                                        <Clock className="w-3 h-3" />
-                                                        {new Date(item.timestamp).toLocaleDateString()} at {new Date(item.timestamp).toLocaleTimeString()}
-                                                    </span>
-                                                </div>
-                                            </div>
+                        <div className="space-y-3">
+                            {filteredHistory.map((item) => (
+                                <div 
+                                    key={item.id} 
+                                    className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-lg transition-all gap-4"
+                                >
+                                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                                        <div className="p-2.5 sm:p-3 bg-white rounded-lg group-hover:bg-indigo-50 transition-colors shadow-sm flex-shrink-0">
+                                            {getTypeIcon(item.type)}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm"
-                                                onClick={() => handleDelete(item.id)}
-                                                className="text-slate-400 hover:text-red-600"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                            <Button 
-                                                size="sm"
-                                                onClick={() => onLoadItem(item.type, item.data)}
-                                                className="bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300"
-                                            >
-                                                Restore <ArrowRight className="w-4 h-4 ml-2" />
-                                            </Button>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-slate-900 mb-1 truncate">{item.name}</h3>
+                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                                <Badge variant="secondary" className="text-xs">
+                                                    {getTypeLabel(item.type)}
+                                                </Badge>
+                                                <span className="text-xs text-slate-500 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {new Date(item.timestamp).toLocaleDateString()}
+                                                </span>
+                                                <span className="hidden sm:inline text-xs text-slate-400">
+                                                    {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </ScrollArea>
+                                    <div className="flex items-center gap-2 sm:gap-3 justify-end sm:justify-start flex-shrink-0">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => handleDelete(item.id)}
+                                            className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                            size="sm"
+                                            onClick={() => onLoadItem(item.type, item.data)}
+                                            className="bg-indigo-600 text-white hover:bg-indigo-700 shadow-md"
+                                        >
+                                            Restore <ArrowRight className="w-4 h-4 ml-2" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                            <History className="w-12 h-12 mb-4 opacity-20" />
-                            <p>No history found.</p>
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                                <History className="w-10 h-10 text-slate-300" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-700 mb-2">No history found</h3>
+                            <p className="text-sm text-slate-500 text-center max-w-sm">
+                                {filter ? `No items match "${filter}"` : 'Your activity history will appear here once you create campaigns or keyword lists.'}
+                            </p>
                         </div>
                     )}
                 </CardContent>

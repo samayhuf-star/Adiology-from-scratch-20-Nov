@@ -357,8 +357,8 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                         window.open(selectedPreset.landing_page_url, '_blank');
                       } else {
                         // Fallback to the old preview component
-                        setShowLandingPagePreview(true);
-                        setShowReview(false);
+                      setShowLandingPagePreview(true);
+                      setShowReview(false);
                       }
                     }
                   }}

@@ -56,11 +56,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
-            </div>
+      </div>
             <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Adiology
+                  Adiology
             </span>
-          </div>
+              </div>
           
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-slate-600 hover:text-slate-900 transition">Features</a>
@@ -68,15 +68,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             <Button variant="ghost" onClick={onLogin} className="text-sm">Sign In</Button>
             <Button onClick={onGetStarted} size="sm" className="bg-slate-900 hover:bg-slate-800 text-white">
               Get Started
-            </Button>
+              </Button>
           </div>
 
           <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
-        </div>
-
-        {mobileMenuOpen && (
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
+          </div>
+          
+          {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-100 bg-white/95 backdrop-blur-md">
             <div className="px-6 py-4 space-y-4">
               <a href="#features" className="block text-slate-600 hover:text-slate-900">Features</a>
@@ -84,10 +84,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               <Button variant="ghost" onClick={onLogin} className="w-full justify-start">Sign In</Button>
               <Button onClick={onGetStarted} className="w-full bg-slate-900 hover:bg-slate-800 text-white">
                 Get Started
-              </Button>
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </nav>
 
       {/* Hero - Ultra Minimalist */}
@@ -97,26 +97,26 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <span className="text-sm text-slate-600">Trusted by 10,000+ marketers</span>
           </div>
-
+            
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
             <span className="bg-gradient-to-r from-slate-900 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Build Winning
-            </span>
-            <br />
+              </span>
+              <br />
             <span className="text-slate-900">Google Ads Campaigns</span>
-          </h1>
-
+            </h1>
+            
           <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto leading-relaxed">
             The AI-powered platform that transforms campaign creation from days to minutes. 
             Professional campaigns, zero complexity.
-          </p>
+            </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button 
-              onClick={onGetStarted}
+              <Button 
+                onClick={onGetStarted}
               size="lg"
               className="bg-slate-900 hover:bg-slate-800 text-white px-8 group"
-            >
+              >
               Start Building Free
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -127,24 +127,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             >
               <Play className="w-4 h-4 mr-2" />
               Watch Demo
-            </Button>
-          </div>
+              </Button>
+            </div>
 
           {/* Trust Badges */}
           <div className="flex flex-wrap justify-center gap-8 text-sm text-slate-500">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <span>No credit card</span>
-            </div>
+                  </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <span>Free forever</span>
-            </div>
+                  </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <span>5min setup</span>
+              </div>
             </div>
-          </div>
         </div>
       </section>
 
@@ -162,8 +162,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <stat.icon className="w-6 h-6 mx-auto mb-3 text-indigo-600" />
                 <div className="text-3xl font-bold text-slate-900 mb-1">{stat.value}</div>
                 <div className="text-sm text-slate-600">{stat.label}</div>
-              </div>
-            ))}
+                </div>
+              ))}
           </div>
         </div>
       </section>
@@ -175,11 +175,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             <Badge className="mb-4 bg-slate-100 text-slate-700 border-0">Builder 2.0</Badge>
             <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
               Pre-built Campaign Structures
-            </h2>
+              </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               Professional structures optimized for maximum ROI from day one
-            </p>
-          </div>
+              </p>
+                </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {campaignStructures.map((structure, idx) => {
@@ -192,44 +192,44 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 >
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${structure.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-6 h-6 text-white" />
-                  </div>
+                </div>
                   <h3 className="font-bold text-slate-900">{structure.name}</h3>
                 </div>
               );
             })}
-          </div>
-        </div>
+              </div>
+            </div>
       </section>
 
       {/* Features - Clean Layout */}
       <section className="py-24 px-6 bg-slate-50">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-3 gap-12">
-            {[
-              {
-                icon: Zap,
+              {[
+                { 
+                  icon: Zap, 
                 title: 'AI-Powered Keywords',
                 desc: 'Generate 1000+ relevant keywords instantly',
                 color: 'text-yellow-600'
-              },
-              {
-                icon: Target,
+                },
+                { 
+                  icon: Target, 
                 title: 'Smart Campaigns',
                 desc: 'Professional structures in 5 minutes',
                 color: 'text-blue-600'
-              },
-              {
+                },
+                { 
                 icon: FileCheck,
                 title: 'Zero Errors',
                 desc: 'Automatic validation before export',
                 color: 'text-green-600'
-              },
-              {
+                },
+                { 
                 icon: Globe,
                 title: 'Geo-Targeting',
                 desc: 'Precise location-based campaigns',
                 color: 'text-indigo-600'
-              },
+                },
               {
                 icon: Wand2,
                 title: 'AI Ad Copy',
@@ -305,7 +305,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
               Simple Pricing
-            </h2>
+              </h2>
             <p className="text-xl text-slate-600">
               Choose the plan that fits your needs
             </p>
@@ -327,7 +327,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                     <Badge className="bg-indigo-600 text-white border-0">Popular</Badge>
-                  </div>
+              </div>
                 )}
                 
                 <div className="text-center mb-6">
@@ -347,11 +347,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <li key={fIdx} className="flex items-center gap-2 text-slate-600">
                       <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       {feature}
-                    </li>
+                  </li>
                   ))}
                 </ul>
 
-                <Button
+                <Button 
                   onClick={onGetStarted}
                   variant={plan.popular ? "default" : "outline"}
                   className={`w-full ${plan.popular ? 'bg-slate-900 hover:bg-slate-800 text-white' : ''}`}
@@ -369,17 +369,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
             Ready to transform your campaigns?
-          </h2>
+            </h2>
           <p className="text-xl text-slate-600 mb-8">
             Join thousands of marketers building better campaigns with Adiology
           </p>
-          <Button 
+                <Button 
             onClick={onGetStarted}
-            size="lg"
+                  size="lg"
             className="bg-slate-900 hover:bg-slate-800 text-white px-8"
-          >
+                >
             Start Building Free <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+                </Button>
         </div>
       </section>
 
@@ -388,30 +388,30 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
-              </div>
+                </div>
               <span className="text-lg font-bold text-slate-900">Adiology</span>
-            </div>
+                </div>
 
             <div className="flex gap-6 text-sm">
               <a href="#features" className="text-slate-600 hover:text-slate-900">Features</a>
               <a href="#pricing" className="text-slate-600 hover:text-slate-900">Pricing</a>
               <a href="#" className="text-slate-600 hover:text-slate-900">Support</a>
-            </div>
+              </div>
 
             <div className="flex gap-4">
               <a href="#" className="text-slate-400 hover:text-slate-900 transition">
                 <Twitter className="w-5 h-5" />
-              </a>
+                </a>
               <a href="#" className="text-slate-400 hover:text-slate-900 transition">
                 <Linkedin className="w-5 h-5" />
-              </a>
+                </a>
               <a href="#" className="text-slate-400 hover:text-slate-900 transition">
                 <Github className="w-5 h-5" />
-              </a>
+                </a>
+              </div>
             </div>
-          </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-slate-100 text-sm text-slate-600">
             <p>© 2025 Adiology. All rights reserved.</p>

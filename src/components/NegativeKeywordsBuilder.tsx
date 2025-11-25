@@ -619,9 +619,9 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                 </p>
                             )}
                             {!urlError && (
-                                <p className="text-xs text-slate-500">
-                                    AI will analyze this website to understand your business, CTA, and generate relevant negative keywords.
-                                </p>
+                            <p className="text-xs text-slate-500">
+                                AI will analyze this website to understand your business, CTA, and generate relevant negative keywords.
+                            </p>
                             )}
                         </div>
 

@@ -56,11 +56,11 @@ export const BillingPanel = () => {
                     
                     try {
                         const userProfile = await getCurrentUserProfile();
-                        
-                        let userPlan = "Free";
+                    
+                    let userPlan = "Free";
                         let nextBillingDate: string | null = null;
-                        let subscriptionStatus = "inactive";
-                        
+                    let subscriptionStatus = "inactive";
+                    
                         if (userProfile) {
                             // Map subscription_plan from database to display format
                             const planMap: Record<string, string> = {
@@ -76,21 +76,21 @@ export const BillingPanel = () => {
                             // Get next billing date from subscriptions table if available
                             // For now, calculate if it's a subscription plan
                             if (userPlan.includes('Monthly') || userPlan.includes('month')) {
-                                const nextDate = new Date();
-                                nextDate.setMonth(nextDate.getMonth() + 1);
-                                nextBillingDate = nextDate.toISOString().split('T')[0];
+                        const nextDate = new Date();
+                        nextDate.setMonth(nextDate.getMonth() + 1);
+                        nextBillingDate = nextDate.toISOString().split('T')[0];
                             }
-                        }
-                        
-                        setInfo({
-                            plan: userPlan,
-                            nextBillingDate: nextBillingDate || (userPlan.includes('Lifetime') ? null : "2025-12-01"),
-                            subscriptionStatus: subscriptionStatus,
-                            invoices: [
-                                { id: "inv_1", date: new Date().toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" },
-                                { id: "inv_2", date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" }
-                            ]
-                        });
+                    }
+                    
+                    setInfo({
+                        plan: userPlan,
+                        nextBillingDate: nextBillingDate || (userPlan.includes('Lifetime') ? null : "2025-12-01"),
+                        subscriptionStatus: subscriptionStatus,
+                        invoices: [
+                            { id: "inv_1", date: new Date().toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" },
+                            { id: "inv_2", date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" }
+                        ]
+                    });
                         setLoading(false);
                     } catch (profileError) {
                         console.error('Error loading user profile:', profileError);
@@ -433,7 +433,7 @@ Generated on ${new Date().toLocaleDateString()}`;
         nextBillingDate: null,
         subscriptionStatus: "inactive",
         invoices: []
-    };
+        };
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">

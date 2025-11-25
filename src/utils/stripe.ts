@@ -80,11 +80,11 @@ export async function createCustomerPortalSession() {
     // Get user email for customer identification
     let customerEmail = '';
     
-    try {
+      try {
       const { getCurrentAuthUser } = await import('./auth');
       const user = await getCurrentAuthUser();
       customerEmail = user?.email || '';
-    } catch (e) {
+      } catch (e) {
       console.error('Error getting user email:', e);
     }
 

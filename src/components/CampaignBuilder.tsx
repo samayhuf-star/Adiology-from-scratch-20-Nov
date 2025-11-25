@@ -1127,7 +1127,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             });
 
             if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
-                console.log("Google Ads API generation successful:", data.keywords.length, "keywords");
+                console.log("Google Ads API generation successful:", data.keywords.length, "keywords");                                                                     
                 // Bug_17: Remove duplicates by text (case-insensitive) before setting state
                 const deduplicatedKeywords = removeDuplicateKeywords(data.keywords);
                 setGeneratedKeywords(deduplicatedKeywords);
