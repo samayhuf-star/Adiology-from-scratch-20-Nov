@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, Download, Sparkles, AlertCircle, CheckCircle, FileText, Loader2, Edit2, Save, X, RefreshCw } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Upload, Download, Sparkles, AlertCircle, CheckCircle, FileText, Loader2, Edit2, Save, X, RefreshCw, FolderOpen, Layers, Hash, Link2, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Input } from './ui/input';
@@ -384,6 +384,75 @@ export const CSVValidator2 = () => {
         return problems.find(p => p.row === rowIdx + 2 && p.col === col);
     }, [problems]);
 
+    // Calculate statistics
+    const statistics = useMemo(() => {
+        if (rows.length === 0) {
+            return {
+                campaigns: 0,
+                adGroups: 0,
+                keywords: 0,
+                extensionsAssets: 0,
+                locations: 0,
+            };
+        }
+
+        // Find column names (case-insensitive matching)
+        const campaignCol = headers.find(h => h.toLowerCase() === 'campaign') || '';
+        const adGroupCol = headers.find(h => h.toLowerCase() === 'ad group' || h.toLowerCase() === 'adgroup') || '';
+        const keywordCol = headers.find(h => h.toLowerCase() === 'keyword') || '';
+        const rowTypeCol = headers.find(h => h.toLowerCase() === 'row type' || h.toLowerCase() === 'rowtype') || '';
+        const assetTypeCol = headers.find(h => h.toLowerCase() === 'asset type' || h.toLowerCase() === 'assettype') || '';
+        const locationCol = headers.find(h => h.toLowerCase() === 'location') || '';
+
+        // Count unique campaigns
+        const uniqueCampaigns = new Set<string>();
+        rows.forEach(row => {
+            const campaign = row[campaignCol] || '';
+            if (campaign.trim()) {
+                uniqueCampaigns.add(campaign.trim());
+            }
+        });
+
+        // Count unique ad groups
+        const uniqueAdGroups = new Set<string>();
+        rows.forEach(row => {
+            const adGroup = row[adGroupCol] || '';
+            if (adGroup.trim()) {
+                uniqueAdGroups.add(adGroup.trim());
+            }
+        });
+
+        // Count keywords (non-empty)
+        const keywordCount = rows.filter(row => {
+            const keyword = row[keywordCol] || '';
+            return keyword.trim() !== '';
+        }).length;
+
+        // Count extensions/assets (sitelink, call, or rows with Asset Type)
+        const extensionsAssetsCount = rows.filter(row => {
+            const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
+            const assetType = (row[assetTypeCol] || '').trim();
+            return rowType === 'sitelink' || 
+                   rowType === 'call' || 
+                   assetType !== '';
+        }).length;
+
+        // Count locations (Row Type = location or Location column has value)
+        const locationsCount = rows.filter(row => {
+            const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
+            const location = row[locationCol] || '';
+            return rowType === 'location' || location.trim() !== '';
+        }).length;
+
+        return {
+            campaigns: uniqueCampaigns.size,
+            adGroups: uniqueAdGroups.size,
+            keywords: keywordCount,
+            extensionsAssets: extensionsAssetsCount,
+            locations: locationsCount,
+        };
+    }, [rows, headers]);
+
     return (
         <div className="p-8 min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30">
             <div className="max-w-7xl mx-auto">
@@ -531,6 +600,86 @@ export const CSVValidator2 = () => {
                             </div>
                         </CardContent>
                     </Card>
+                )}
+
+                {/* Statistics Cards */}
+                {rows.length > 0 && (
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {/* Campaigns Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-indigo-50 to-indigo-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Campaigns</p>
+                                        <p className="text-3xl font-bold text-indigo-700">{statistics.campaigns}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <FolderOpen className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Ad Groups Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Ad Groups</p>
+                                        <p className="text-3xl font-bold text-purple-700">{statistics.adGroups}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <Layers className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Keywords Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Keywords</p>
+                                        <p className="text-3xl font-bold text-blue-700">{statistics.keywords}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <Hash className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Extensions/Assets Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Extensions/Assets</p>
+                                        <p className="text-3xl font-bold text-green-700">{statistics.extensionsAssets}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <Link2 className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Locations Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Locations</p>
+                                        <p className="text-3xl font-bold text-orange-700">{statistics.locations}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <MapPin className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 )}
 
                 {/* Data Table */}

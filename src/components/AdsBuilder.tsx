@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift, AlertCircle, Search, Filter, X, ChevronDown, SlidersHorizontal, BarChart3, BarChart, TrendingUp, FileText as FileTextIcon, MoreVertical, Save, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { LiveAdPreview } from './LiveAdPreview';
 import { api } from '../utils/api';
 import { notifications } from '../utils/notifications';
@@ -68,6 +69,13 @@ export const AdsBuilder = () => {
     const [showExtensionDialog, setShowExtensionDialog] = useState(false);
     const [selectedAdForExtension, setSelectedAdForExtension] = useState<string | null>(null);
     const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+    
+    // Filter & Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterAdType, setFilterAdType] = useState<string>('all');
+    const [filterGroup, setFilterGroup] = useState<string>('all');
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [showConfigSidebar, setShowConfigSidebar] = useState(true);
     
     const extensionTypes = [
         { id: 'callout', label: 'Callout Extension', icon: Tag, description: 'Highlight key benefits', color: 'purple' },
@@ -477,10 +485,26 @@ export const AdsBuilder = () => {
     const handleConfirmExtensions = () => {
         if (!selectedAdForExtension) return;
 
-        const newExtensions: Extension[] = selectedExtensions.map(extType => {
+        const ad = generatedAds.find(a => a.id === selectedAdForExtension);
+        if (!ad) return;
+
+        // Get existing extension types to prevent duplicates
+        const existingExtensionTypes = (ad.extensions || []).map((ext: Extension) => ext.extensionType);
+        
+        // Filter out extension types that already exist
+        const newExtensionTypes = selectedExtensions.filter(extType => !existingExtensionTypes.includes(extType));
+        
+        if (newExtensionTypes.length === 0) {
+            notifications.warning('All selected extensions are already added to this ad', {
+                title: 'Extensions Already Added'
+            });
+            return;
+        }
+
+        const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
+
+        const newExtensions: Extension[] = newExtensionTypes.map(extType => {
             const extId = crypto.randomUUID();
-            const ad = generatedAds.find(a => a.id === selectedAdForExtension);
-            const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
 
             let extension: Extension = {
                 id: extId,
@@ -559,16 +583,75 @@ export const AdsBuilder = () => {
             return extension;
         });
 
-        setGeneratedAds(generatedAds.map(ad => 
-            ad.id === selectedAdForExtension 
-                ? { ...ad, extensions: newExtensions }
-                : ad
+        // Merge new extensions with existing ones
+        setGeneratedAds(generatedAds.map(a => 
+            a.id === selectedAdForExtension 
+                ? { ...a, extensions: [...(a.extensions || []), ...newExtensions] }
+                : a
         ));
 
         setShowExtensionDialog(false);
         setSelectedAdForExtension(null);
         setSelectedExtensions([]);
     };
+
+    const handleRemoveExtension = (adId: string, extensionId: string) => {
+        setGeneratedAds(generatedAds.map(ad => 
+            ad.id === adId 
+                ? { ...ad, extensions: (ad.extensions || []).filter((ext: Extension) => ext.id !== extensionId) }
+                : ad
+        ));
+    };
+
+    // Filter and search logic
+    const filteredAds = useMemo(() => {
+        return generatedAds.filter(ad => {
+            // Search filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                const matchesSearch = 
+                    ad.headline1?.toLowerCase().includes(query) ||
+                    ad.headline2?.toLowerCase().includes(query) ||
+                    ad.headline3?.toLowerCase().includes(query) ||
+                    ad.description1?.toLowerCase().includes(query) ||
+                    ad.description2?.toLowerCase().includes(query) ||
+                    ad.groupName.toLowerCase().includes(query);
+                if (!matchesSearch) return false;
+            }
+            
+            // Ad type filter
+            if (filterAdType !== 'all' && ad.adType !== filterAdType) return false;
+            
+            // Group filter
+            if (filterGroup !== 'all' && ad.groupName !== filterGroup) return false;
+            
+            return true;
+        });
+    }, [generatedAds, searchQuery, filterAdType, filterGroup]);
+
+    // Statistics
+    const stats = useMemo(() => {
+        const adTypes = generatedAds.reduce((acc, ad) => {
+            acc[ad.adType] = (acc[ad.adType] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        const groups = [...new Set(generatedAds.map(ad => ad.groupName))];
+        
+        return {
+            total: generatedAds.length,
+            rsa: adTypes['RSA'] || 0,
+            dki: adTypes['DKI'] || 0,
+            callOnly: adTypes['CallOnly'] || 0,
+            groups: groups.length,
+            selected: selectedAds.length
+        };
+    }, [generatedAds, selectedAds]);
+
+    // Unique groups for filter dropdown
+    const uniqueGroups = useMemo(() => {
+        return [...new Set(generatedAds.map(ad => ad.groupName))];
+    }, [generatedAds]);
 
     return (
         <>
@@ -875,7 +958,7 @@ export const AdsBuilder = () => {
                 {/* Right Panel: Generated Ads */}
                 <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden h-fit lg:sticky lg:top-6">
                     <div className="bg-gradient-to-r from-slate-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-4">
                             <div>
                                 <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
                                     <Eye className="h-5 w-5 text-indigo-600" />
@@ -899,37 +982,126 @@ export const AdsBuilder = () => {
                                         <><CheckSquare className="w-4 h-4 mr-1" /> Select All</>
                                     )}
                                 </Button>
-                                <Button
-                                    onClick={exportToCSV}
-                                    disabled={selectedAds.length === 0}
-                                    variant="default"
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700"
-                                >
-                                    <Download className="w-4 h-4 mr-1" />
-                                    CSV
-                                </Button>
-                                <Button
-                                    onClick={copyToClipboard}
-                                    disabled={selectedAds.length === 0}
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    <Copy className="w-4 h-4 mr-1" />
-                                    Copy
-                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="border-slate-300">
+                                            <Download className="w-4 h-4 mr-1" />
+                                            Export
+                                            <ChevronDown className="w-3 h-3 ml-1" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={exportToCSV} disabled={selectedAds.length === 0}>
+                                            <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                            CSV
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={copyToClipboard} disabled={selectedAds.length === 0}>
+                                            <Copy className="w-4 h-4 mr-2" />
+                                            Copy to Clipboard
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         )}
                     </div>
+                    
+                    {/* Statistics & Search/Filter Bar */}
+                    {generatedAds.length > 0 && (
+                        <div className="px-6 pb-4 space-y-3">
+                            {/* Statistics Cards */}
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+                                    <div className="text-xs text-blue-600 font-medium mb-0.5">Total</div>
+                                    <div className="text-lg font-bold text-blue-700">{stats.total}</div>
+                                </div>
+                                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2 text-center">
+                                    <div className="text-xs text-indigo-600 font-medium mb-0.5">RSA</div>
+                                    <div className="text-lg font-bold text-indigo-700">{stats.rsa}</div>
+                                </div>
+                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 text-center">
+                                    <div className="text-xs text-purple-600 font-medium mb-0.5">DKI</div>
+                                    <div className="text-lg font-bold text-purple-700">{stats.dki}</div>
+                                </div>
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+                                    <div className="text-xs text-green-600 font-medium mb-0.5">Call</div>
+                                    <div className="text-lg font-bold text-green-700">{stats.callOnly}</div>
+                                </div>
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 text-center">
+                                    <div className="text-xs text-orange-600 font-medium mb-0.5">Selected</div>
+                                    <div className="text-lg font-bold text-orange-700">{stats.selected}</div>
+                                </div>
+                            </div>
+                            
+                            {/* Search & Filters */}
+                            <div className="flex flex-wrap gap-2">
+                                <div className="flex-1 min-w-[200px] relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <Input
+                                        placeholder="Search ads by headline, description, or group..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-9 h-9 text-sm"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                <Select value={filterAdType} onValueChange={setFilterAdType}>
+                                    <SelectTrigger className="w-[140px] h-9 text-sm">
+                                        <SelectValue placeholder="Ad Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                        <SelectItem value="RSA">RSA</SelectItem>
+                                        <SelectItem value="DKI">DKI</SelectItem>
+                                        <SelectItem value="CallOnly">Call Only</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {uniqueGroups.length > 0 && (
+                                    <Select value={filterGroup} onValueChange={setFilterGroup}>
+                                        <SelectTrigger className="w-[140px] h-9 text-sm">
+                                            <SelectValue placeholder="Group" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Groups</SelectItem>
+                                            {uniqueGroups.map(group => (
+                                                <SelectItem key={group} value={group}>{group}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                                {(searchQuery || filterAdType !== 'all' || filterGroup !== 'all') && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setFilterAdType('all');
+                                            setFilterGroup('all');
+                                        }}
+                                        className="h-9 text-xs"
+                                    >
+                                        <X className="w-3 h-3 mr-1" />
+                                        Clear Filters
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     </div>
                     <CardContent className="p-6">
                     {generatedAds.length > 0 && (
-                            <div className="mb-6 px-4 py-3 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-indigo-50/50 rounded-lg border border-indigo-200/50">
-                                <p className="text-sm font-bold text-slate-800">
-                                {generatedAds.length} Ads Generated
+                            <div className="mb-4 px-3 py-2 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-indigo-50/50 rounded-lg border border-indigo-200/50 text-center">
+                                <p className="text-xs font-semibold text-slate-800">
+                                Showing {filteredAds.length} of {generatedAds.length} ads
                                 {selectedAds.length > 0 && (
-                                        <span className="ml-2 text-indigo-600 font-semibold">
-                                        ({selectedAds.length} selected)
+                                        <span className="ml-2 text-indigo-600">
+                                        • {selectedAds.length} selected
                                     </span>
                                 )}
                             </p>
@@ -937,8 +1109,8 @@ export const AdsBuilder = () => {
                     )}
 
                         <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
-                        {generatedAds.length > 0 ? (
-                                generatedAds.map((ad) => {
+                        {filteredAds.length > 0 ? (
+                                filteredAds.map((ad) => {
                                     // Convert GeneratedAd to LiveAdPreview format
                                     const previewAd = {
                                         id: parseInt(ad.id) || Date.now(),
@@ -1003,7 +1175,10 @@ export const AdsBuilder = () => {
                                             </div>
 
                                                     {/* Live Ad Preview */}
-                                                    <LiveAdPreview ad={previewAd} />
+                                                    <LiveAdPreview 
+                                                        ad={previewAd} 
+                                                        onRemoveExtension={(extensionId) => handleRemoveExtension(ad.id, extensionId)}
+                                                    />
 
                                                     {/* Editable URL for RSA/DKI */}
                                                     {(ad.adType === 'RSA' || ad.adType === 'DKI') && (
@@ -1031,6 +1206,25 @@ export const AdsBuilder = () => {
                                 </div>
                                     );
                                 })
+                        ) : generatedAds.length > 0 ? (
+                            <div className="flex items-center justify-center h-[300px]">
+                                <div className="text-center">
+                                    <Filter className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                                    <p className="text-slate-600 font-medium mb-1">No ads match your filters</p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setFilterAdType('all');
+                                            setFilterGroup('all');
+                                        }}
+                                        className="mt-2"
+                                    >
+                                        Clear Filters
+                                    </Button>
+                                </div>
+                            </div>
                         ) : (
                             <div className="flex items-center justify-center h-[400px]">
                                 <div className="text-center">
@@ -1065,39 +1259,48 @@ export const AdsBuilder = () => {
                         {extensionTypes.map((ext) => {
                             const IconComponent = ext.icon;
                             const isSelected = selectedExtensions.includes(ext.id);
+                            const ad = generatedAds.find(a => a.id === selectedAdForExtension);
+                            const alreadyAdded = (ad?.extensions || []).some((e: Extension) => e.extensionType === ext.id);
                             return (
                                 <div
                                     key={ext.id}
                                     onClick={() => {
-                                        setSelectedExtensions(prev =>
-                                            prev.includes(ext.id)
-                                                ? prev.filter(e => e !== ext.id)
-                                                : [...prev, ext.id]
-                                        );
+                                        if (!alreadyAdded) {
+                                            setSelectedExtensions(prev =>
+                                                prev.includes(ext.id)
+                                                    ? prev.filter(e => e !== ext.id)
+                                                    : [...prev, ext.id]
+                                            );
+                                        }
                                     }}
-                                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                        isSelected
-                                            ? (ext.color === 'purple' ? 'border-purple-500 bg-purple-50' :
-                                               ext.color === 'blue' ? 'border-blue-500 bg-blue-50' :
-                                               ext.color === 'green' ? 'border-green-500 bg-green-50' :
-                                               ext.color === 'indigo' ? 'border-indigo-500 bg-indigo-50' :
-                                               ext.color === 'emerald' ? 'border-emerald-500 bg-emerald-50' :
-                                               ext.color === 'red' ? 'border-red-500 bg-red-50' :
-                                               ext.color === 'orange' ? 'border-orange-500 bg-orange-50' :
-                                               ext.color === 'pink' ? 'border-pink-500 bg-pink-50' :
-                                               ext.color === 'cyan' ? 'border-cyan-500 bg-cyan-50' :
-                                               'border-purple-500 bg-purple-50')
-                                            : 'border-slate-200 hover:border-indigo-300 bg-white'
+                                    className={`p-4 border-2 rounded-lg transition-all ${
+                                        alreadyAdded
+                                            ? 'border-slate-300 bg-slate-100 cursor-not-allowed opacity-60'
+                                            : isSelected
+                                                ? (ext.color === 'purple' ? 'border-purple-500 bg-purple-50 cursor-pointer' :
+                                                   ext.color === 'blue' ? 'border-blue-500 bg-blue-50 cursor-pointer' :
+                                                   ext.color === 'green' ? 'border-green-500 bg-green-50 cursor-pointer' :
+                                                   ext.color === 'indigo' ? 'border-indigo-500 bg-indigo-50 cursor-pointer' :
+                                                   ext.color === 'emerald' ? 'border-emerald-500 bg-emerald-50 cursor-pointer' :
+                                                   ext.color === 'red' ? 'border-red-500 bg-red-50 cursor-pointer' :
+                                                   ext.color === 'orange' ? 'border-orange-500 bg-orange-50 cursor-pointer' :
+                                                   ext.color === 'pink' ? 'border-pink-500 bg-pink-50 cursor-pointer' :
+                                                   ext.color === 'cyan' ? 'border-cyan-500 bg-cyan-50 cursor-pointer' :
+                                                   'border-purple-500 bg-purple-50 cursor-pointer')
+                                                : 'border-slate-200 hover:border-indigo-300 bg-white cursor-pointer'
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         <Checkbox
                                             checked={isSelected}
+                                            disabled={alreadyAdded}
                                             onCheckedChange={(checked) => {
-                                                if (checked) {
-                                                    setSelectedExtensions([...selectedExtensions, ext.id]);
-                                                } else {
-                                                    setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
+                                                if (!alreadyAdded) {
+                                                    if (checked) {
+                                                        setSelectedExtensions([...selectedExtensions, ext.id]);
+                                                    } else {
+                                                        setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
+                                                    }
                                                 }
                                             }}
                                         />
@@ -1116,11 +1319,16 @@ export const AdsBuilder = () => {
                                                     'text-purple-600'
                                                 }`} />
                                                 <div className="font-semibold text-slate-800">{ext.label}</div>
-            </div>
+                                                {alreadyAdded && (
+                                                    <Badge variant="outline" className="text-xs ml-auto bg-green-100 text-green-700 border-green-300">
+                                                        Already Added
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <div className="text-sm text-slate-600">{ext.description}</div>
                                         </div>
-            </div>
-        </div>
+                                    </div>
+                                </div>
                             );
                         })}
                     </div>

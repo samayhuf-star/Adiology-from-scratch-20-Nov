@@ -36,14 +36,15 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
         // User has verified their email
         if (session.user.email_confirmed_at) {
           setIsVerified(true);
+          // Bug_74: Show success message and redirect to login
           notifications.success('Email verified successfully!', {
             title: 'Verification Complete',
-            description: 'Your email has been verified. Redirecting to pricing...',
+            description: 'Your email has been verified. Redirecting to login...',
           });
 
           setTimeout(() => {
             onVerificationSuccess();
-          }, 1500);
+          }, 2000);
         }
       }
     });
@@ -105,7 +106,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
               Email Verified!
             </CardTitle>
             <CardDescription className="text-slate-600 mt-2">
-              Your email has been successfully verified. Redirecting to pricing...
+              Email verified successfully. Redirecting to login screen...
             </CardDescription>
           </CardHeader>
         </Card>

@@ -53,6 +53,10 @@ const App = () => {
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
     { id: 3, title: 'Billing Update', message: 'Your subscription will renew on Dec 1, 2025', time: '1 day ago', read: true },
   ]);
+  // Bug_64: Search suggestions state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
 
   const handleLoadHistory = (type: string, data: any) => {
     setHistoryData(data);
@@ -99,11 +103,28 @@ const App = () => {
 
   const handleLogout = async () => {
     if (confirm('Are you sure you want to logout?')) {
-      await signOut();
-      setUser(null);
-      window.history.pushState({}, '', '/');
-      setAppView('home');
-      setActiveTab('dashboard');
+      try {
+        // Bug_62, Bug_76: Ensure proper logout
+        await signOut();
+        // Clear user state
+        setUser(null);
+        // Clear any cached data
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+        // Redirect to home
+        window.history.pushState({}, '', '/');
+        setAppView('home');
+        setActiveTab('dashboard');
+        // Force page reload to clear all state
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Even if signOut fails, clear local state and redirect
+        setUser(null);
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+        window.location.href = '/';
+      }
     }
   };
 
@@ -468,17 +489,10 @@ const App = () => {
     return (
       <EmailVerification
         onVerificationSuccess={() => {
-          // Redirect to homepage and scroll to pricing
+          // Bug_74: Redirect to login screen after email verification
           window.history.pushState({}, '', '/');
-          setAppView('home');
-          
-          // Scroll to pricing section after a brief delay
-          setTimeout(() => {
-            const pricingSection = document.getElementById('pricing');
-            if (pricingSection) {
-              pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 100);
+          setAuthMode('login');
+          setAppView('auth');
         }}
         onBackToHome={() => setAppView('home')}
       />
@@ -566,11 +580,20 @@ const App = () => {
         onSelectUserView={() => setAppView('user')}
         onSelectAdminPanel={() => setAppView('admin-panel')}
         onLogout={async () => {
-          await signOut();
-          setUser(null);
-          window.history.pushState({}, '', '/');
-          setAppView('home');
-          setActiveTab('dashboard');
+          // Bug_62, Bug_76: Ensure proper logout
+          try {
+            await signOut();
+            setUser(null);
+            localStorage.removeItem('supabase.auth.token');
+            sessionStorage.clear();
+            window.location.href = '/';
+          } catch (error) {
+            console.error('Logout error:', error);
+            setUser(null);
+            localStorage.removeItem('supabase.auth.token');
+            sessionStorage.clear();
+            window.location.href = '/';
+          }
         }}
       />
     );
@@ -628,6 +651,86 @@ const App = () => {
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
+
+  // Bug_64: Generate search suggestions based on query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const suggestions: string[] = [];
+
+    // Add matching menu items
+    menuItems.forEach(item => {
+      if (item.label.toLowerCase().includes(query)) {
+        suggestions.push(item.label);
+      }
+    });
+
+    // Add common search terms
+    const commonTerms = [
+      'marketing', 'market analysis', 'market research',
+      'campaign', 'campaigns', 'ad campaign',
+      'keywords', 'keyword research', 'keyword planning',
+      'ads', 'advertising', 'ad builder',
+      'negative keywords', 'exclude keywords',
+      'csv', 'export', 'import', 'validator',
+      'settings', 'billing', 'account',
+      'help', 'support', 'documentation'
+    ];
+
+    commonTerms.forEach(term => {
+      if (term.toLowerCase().includes(query) && !suggestions.includes(term)) {
+        suggestions.push(term);
+      }
+    });
+
+    setSearchSuggestions(suggestions.slice(0, 8)); // Limit to 8 suggestions
+    setShowSearchSuggestions(suggestions.length > 0);
+  }, [searchQuery]);
+
+  // Bug_64: Handle search suggestion click
+  const handleSearchSuggestionClick = (suggestion: string) => {
+    // Find matching menu item
+    const matchingItem = menuItems.find(item => 
+      item.label.toLowerCase() === suggestion.toLowerCase()
+    );
+    
+    if (matchingItem) {
+      setActiveTab(matchingItem.id);
+      setSearchQuery('');
+      setShowSearchSuggestions(false);
+    } else {
+      // For common terms, try to match to a menu item
+      const termMap: Record<string, string> = {
+        'marketing': 'campaign-builder',
+        'campaign': 'campaign-builder',
+        'campaigns': 'campaign-builder',
+        'keywords': 'keyword-planner',
+        'keyword research': 'keyword-planner',
+        'keyword planning': 'keyword-planner',
+        'ads': 'ads-builder',
+        'advertising': 'ads-builder',
+        'negative keywords': 'negative-keywords',
+        'csv': 'csv-validator-2',
+        'export': 'csv-validator-2',
+        'settings': 'settings',
+        'billing': 'settings',
+        'help': 'support-help',
+        'support': 'support-help'
+      };
+
+      const matchedTab = termMap[suggestion.toLowerCase()];
+      if (matchedTab) {
+        setActiveTab(matchedTab);
+      }
+      setSearchQuery('');
+      setShowSearchSuggestions(false);
+    }
+  };
 
   const renderContent = () => {
     // Reset history data if leaving the tab to prevent stale data injection
@@ -741,8 +844,30 @@ const App = () => {
               <input
                 type="text"
                 placeholder="Search campaigns, keywords, tools..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery.trim() && setShowSearchSuggestions(true)}
+                onBlur={() => {
+                  // Delay to allow click on suggestion
+                  setTimeout(() => setShowSearchSuggestions(false), 200);
+                }}
                 className="w-full pl-10 pr-4 py-2 bg-slate-100/80 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white transition-all"
               />
+              {/* Bug_64: Search suggestions dropdown */}
+              {showSearchSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSearchSuggestionClick(suggestion)}
+                      className="w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    >
+                      <Search className="w-4 h-4 text-slate-400" />
+                      <span className="text-slate-700">{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           

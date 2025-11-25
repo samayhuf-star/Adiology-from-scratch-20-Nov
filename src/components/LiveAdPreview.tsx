@@ -1,8 +1,10 @@
 import React from 'react';
-import { Phone, MapPin, Link2, DollarSign, Smartphone, MessageSquare, Building2, FileText, Tag, Image as ImageIcon } from 'lucide-react';
+import { Phone, MapPin, Link2, DollarSign, Smartphone, MessageSquare, Building2, FileText, Tag, Image as ImageIcon, X } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 
 interface Extension {
+    id?: string;
     extensionType: string;
     [key: string]: any;
 }
@@ -29,121 +31,167 @@ interface Ad {
 interface LiveAdPreviewProps {
     ad: Ad;
     className?: string;
+    onRemoveExtension?: (extensionId: string) => void;
 }
 
-export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = '' }) => {
+export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = '', onRemoveExtension }) => {
     const displayUrl = ad.finalUrl 
         ? `${ad.finalUrl.replace(/^https?:\/\//, '').split('/')[0]}${ad.path1 ? '/' + ad.path1 : ''}${ad.path2 ? '/' + ad.path2 : ''}`
         : 'example.com';
 
     const renderExtension = (ext: Extension, idx: number) => {
+        const extensionId = ext.id || `ext-${idx}`;
+        const canDelete = onRemoveExtension && extensionId;
+        
+        const DeleteButton = canDelete ? (
+            <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveExtension(extensionId);
+                }}
+                className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
+            >
+                <X className="w-3 h-3" />
+            </Button>
+        ) : null;
+
         switch (ext.extensionType) {
             case 'callout':
                 return Array.isArray(ext.callouts) && ext.callouts.length > 0 ? (
-                    <div key={idx} className="flex flex-wrap gap-1.5 mt-2">
-                        {ext.callouts.slice(0, 4).map((callout: string, cIdx: number) => (
-                            <span key={cIdx} className="text-xs text-slate-600 px-2 py-0.5 bg-slate-50 rounded border border-slate-200">
-                                {callout}
-                            </span>
-                        ))}
+                    <div key={idx} className="flex items-start justify-between gap-2 mt-2">
+                        <div className="flex flex-wrap gap-1.5 flex-1">
+                            {ext.callouts.slice(0, 4).map((callout: string, cIdx: number) => (
+                                <span key={cIdx} className="text-xs text-slate-600 px-2 py-0.5 bg-slate-50 rounded border border-slate-200">
+                                    {callout}
+                                </span>
+                            ))}
+                        </div>
+                        {DeleteButton}
                     </div>
                 ) : null;
 
             case 'snippet':
                 return (
-                    <div key={idx} className="text-xs text-slate-600 mt-2">
-                        <span className="font-semibold text-slate-700">{ext.header}:</span>{' '}
-                        {Array.isArray(ext.values) ? ext.values.slice(0, 3).join(', ') : ''}
+                    <div key={idx} className="flex items-start justify-between gap-2 mt-2">
+                        <div className="text-xs text-slate-600 flex-1">
+                            <span className="font-semibold text-slate-700">{ext.header}:</span>{' '}
+                            {Array.isArray(ext.values) ? ext.values.slice(0, 3).join(', ') : ''}
+                        </div>
+                        {DeleteButton}
                     </div>
                 );
 
             case 'sitelink':
                 return Array.isArray(ext.sitelinks) && ext.sitelinks.length > 0 ? (
-                    <div key={idx} className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-200">
-                        {ext.sitelinks.slice(0, 4).map((sitelink: any, sIdx: number) => (
-                            <div key={sIdx} className="flex items-start gap-1.5">
-                                <Link2 className="w-3 h-3 text-blue-600 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <div className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer">
-                                        {sitelink.text || 'Link'}
+                    <div key={idx} className="mt-3 pt-3 border-t border-slate-200">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="grid grid-cols-2 gap-2 flex-1">
+                                {ext.sitelinks.slice(0, 4).map((sitelink: any, sIdx: number) => (
+                                    <div key={sIdx} className="flex items-start gap-1.5">
+                                        <Link2 className="w-3 h-3 text-blue-600 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <div className="text-xs font-semibold text-blue-600 hover:underline cursor-pointer">
+                                                {sitelink.text || 'Link'}
+                                            </div>
+                                            {sitelink.description && (
+                                                <div className="text-xs text-slate-500 line-clamp-1">{sitelink.description}</div>
+                                            )}
+                                        </div>
                                     </div>
-                                    {sitelink.description && (
-                                        <div className="text-xs text-slate-500 line-clamp-1">{sitelink.description}</div>
-                                    )}
-                                </div>
+                                ))}
                             </div>
-                        ))}
+                            {DeleteButton}
+                        </div>
                     </div>
                 ) : null;
 
             case 'call':
                 return ext.phone ? (
-                    <div key={idx} className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200">
-                        <Phone className="w-3.5 h-3.5 text-green-600" />
-                        <span className="text-xs font-semibold text-green-700">{ext.phone}</span>
-                        {ext.callTrackingEnabled && (
-                            <Badge variant="outline" className="text-xs h-5">Call Tracking</Badge>
-                        )}
+                    <div key={idx} className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-200">
+                        <div className="flex items-center gap-2 flex-1">
+                            <Phone className="w-3.5 h-3.5 text-green-600" />
+                            <span className="text-xs font-semibold text-green-700">{ext.phone}</span>
+                            {ext.callTrackingEnabled && (
+                                <Badge variant="outline" className="text-xs h-5">Call Tracking</Badge>
+                            )}
+                        </div>
+                        {DeleteButton}
                     </div>
                 ) : null;
 
             case 'location':
                 return ext.businessName ? (
                     <div key={idx} className="mt-2 pt-2 border-t border-slate-200">
-                        <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-red-600" />
-                            <span className="text-xs font-semibold text-slate-700">{ext.businessName}</span>
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-1.5">
+                                    <MapPin className="w-3.5 h-3.5 text-red-600" />
+                                    <span className="text-xs font-semibold text-slate-700">{ext.businessName}</span>
+                                </div>
+                                {(ext.addressLine1 || ext.city) && (
+                                    <div className="text-xs text-slate-600 ml-5 mt-0.5">
+                                        {[ext.addressLine1, ext.city, ext.state, ext.postalCode].filter(Boolean).join(', ')}
+                                    </div>
+                                )}
+                                {ext.phone && (
+                                    <div className="text-xs text-slate-600 ml-5 mt-0.5 flex items-center gap-1">
+                                        <Phone className="w-3 h-3" />
+                                        {ext.phone}
+                                    </div>
+                                )}
+                            </div>
+                            {DeleteButton}
                         </div>
-                        {(ext.addressLine1 || ext.city) && (
-                            <div className="text-xs text-slate-600 ml-5 mt-0.5">
-                                {[ext.addressLine1, ext.city, ext.state, ext.postalCode].filter(Boolean).join(', ')}
-                            </div>
-                        )}
-                        {ext.phone && (
-                            <div className="text-xs text-slate-600 ml-5 mt-0.5 flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {ext.phone}
-                            </div>
-                        )}
                     </div>
                 ) : null;
 
             case 'price':
                 return ext.price ? (
-                    <div key={idx} className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200">
-                        <DollarSign className="w-3.5 h-3.5 text-green-600" />
-                        <span className="text-xs font-semibold text-slate-700">
-                            {ext.priceQualifier && `${ext.priceQualifier} `}
-                            {ext.price} {ext.unit || ''}
-                        </span>
-                        {ext.description && (
-                            <span className="text-xs text-slate-600">- {ext.description}</span>
-                        )}
+                    <div key={idx} className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-200">
+                        <div className="flex items-center gap-2 flex-1">
+                            <DollarSign className="w-3.5 h-3.5 text-green-600" />
+                            <span className="text-xs font-semibold text-slate-700">
+                                {ext.priceQualifier && `${ext.priceQualifier} `}
+                                {ext.price} {ext.unit || ''}
+                            </span>
+                            {ext.description && (
+                                <span className="text-xs text-slate-600">- {ext.description}</span>
+                            )}
+                        </div>
+                        {DeleteButton}
                     </div>
                 ) : null;
 
             case 'message':
                 return ext.messageText ? (
-                    <div key={idx} className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200">
-                        <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
-                        <div>
-                            <div className="text-xs font-semibold text-slate-700">{ext.messageText}</div>
-                            <div className="text-xs text-slate-600">{ext.businessName || 'Business'} • {ext.phone || '(555) 123-4567'}</div>
+                    <div key={idx} className="flex items-start justify-between gap-2 mt-2 pt-2 border-t border-slate-200">
+                        <div className="flex items-center gap-2 flex-1">
+                            <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
+                            <div>
+                                <div className="text-xs font-semibold text-slate-700">{ext.messageText}</div>
+                                <div className="text-xs text-slate-600">{ext.businessName || 'Business'} • {ext.phone || '(555) 123-4567'}</div>
+                            </div>
                         </div>
+                        {DeleteButton}
                     </div>
                 ) : null;
 
             case 'leadform':
                 return (
                     <div key={idx} className="mt-2 pt-2 border-t border-slate-200">
-                        <div className="flex items-start gap-2">
-                            <FileText className="w-3.5 h-3.5 text-blue-600 mt-0.5" />
-                            <div>
-                                <div className="text-xs font-semibold text-slate-700">{ext.formName || 'Get Started'}</div>
-                                {ext.formDescription && (
-                                    <div className="text-xs text-slate-600 mt-0.5">{ext.formDescription}</div>
-                                )}
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2 flex-1">
+                                <FileText className="w-3.5 h-3.5 text-blue-600 mt-0.5" />
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-700">{ext.formName || 'Get Started'}</div>
+                                    {ext.formDescription && (
+                                        <div className="text-xs text-slate-600 mt-0.5">{ext.formDescription}</div>
+                                    )}
+                                </div>
                             </div>
+                            {DeleteButton}
                         </div>
                     </div>
                 );
@@ -151,32 +199,40 @@ export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = ''
             case 'promotion':
                 return ext.promotionText ? (
                     <div key={idx} className="mt-2 pt-2 border-t border-slate-200">
-                        <div className="flex items-center gap-2">
-                            <Tag className="w-3.5 h-3.5 text-orange-600" />
-                            <span className="text-xs font-semibold text-slate-700">{ext.promotionText}</span>
-                            {ext.promotionDescription && (
-                                <span className="text-xs text-slate-600">- {ext.promotionDescription}</span>
-                            )}
-                        </div>
-                        {ext.startDate && ext.endDate && (
-                            <div className="text-xs text-slate-600 ml-5 mt-0.5">
-                                {new Date(ext.startDate).toLocaleDateString()} - {new Date(ext.endDate).toLocaleDateString()}
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <Tag className="w-3.5 h-3.5 text-orange-600" />
+                                    <span className="text-xs font-semibold text-slate-700">{ext.promotionText}</span>
+                                    {ext.promotionDescription && (
+                                        <span className="text-xs text-slate-600">- {ext.promotionDescription}</span>
+                                    )}
+                                </div>
+                                {ext.startDate && ext.endDate && (
+                                    <div className="text-xs text-slate-600 ml-5 mt-0.5">
+                                        {new Date(ext.startDate).toLocaleDateString()} - {new Date(ext.endDate).toLocaleDateString()}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                            {DeleteButton}
+                        </div>
                     </div>
                 ) : null;
 
             case 'image':
                 return ext.imageUrl ? (
                     <div key={idx} className="mt-3 pt-3 border-t border-slate-200">
-                        <div className="flex items-center gap-2">
-                            <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
-                            <div>
-                                <div className="text-xs font-semibold text-slate-700">{ext.imageName || 'Image'}</div>
-                                {ext.imageAltText && (
-                                    <div className="text-xs text-slate-600 mt-0.5">{ext.imageAltText}</div>
-                                )}
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-1">
+                                <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
+                                <div>
+                                    <div className="text-xs font-semibold text-slate-700">{ext.imageName || 'Image'}</div>
+                                    {ext.imageAltText && (
+                                        <div className="text-xs text-slate-600 mt-0.5">{ext.imageAltText}</div>
+                                    )}
+                                </div>
                             </div>
+                            {DeleteButton}
                         </div>
                     </div>
                 ) : null;

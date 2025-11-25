@@ -3293,7 +3293,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             
             {/* Navigation */}
             <div className="flex justify-between mt-8">
-                <Button variant="ghost" onClick={() => setStep(2)}>
+                {/* Bug_67: Fix back button to go to previous step */}
+                <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
                     <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
                     Back
                 </Button>
@@ -3577,7 +3578,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             </Card>
 
             <div className="flex justify-between mt-8">
-                <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
+                {/* Bug_67: Fix back button to go to previous step */}
+                <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>Back</Button>
                 <Button 
                     size="lg" 
                     onClick={handleNextStep}
@@ -4051,7 +4053,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center">
                     <div className="flex gap-3">
-                        <Button variant="ghost" onClick={() => setStep(4)}>
+                        {/* Bug_67: Fix back button to go to previous step */}
+                        <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
                             <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
                             Back
                         </Button>
@@ -4238,7 +4241,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
                 {/* Next Actions */}
                 <div className="flex justify-between items-center pt-4">
-                    <Button variant="ghost" onClick={() => setStep(5)}>
+                    {/* Bug_67: Fix back button to go to previous step */}
+                    <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
                         <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
                         Back to Review
                     </Button>

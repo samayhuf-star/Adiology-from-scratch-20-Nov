@@ -105,8 +105,10 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
         }
       } else {
         // Signup logic
-        if (!name.trim()) {
-          setError('Please enter your name');
+        // Bug_72: Validate that name is not empty or only blank spaces
+        const trimmedName = name.trim();
+        if (!trimmedName || trimmedName.length === 0) {
+          setError('Please enter your full name');
           setIsLoading(false);
           return;
         }
@@ -125,7 +127,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
 
         // Sign up with Supabase Auth
         try {
-          const result = await signUpWithEmail(trimmedEmail, trimmedPassword, name.trim());
+          const result = await signUpWithEmail(trimmedEmail, trimmedPassword, trimmedName);
           
           if (result?.user) {
             notifications.success('Account created successfully!', {

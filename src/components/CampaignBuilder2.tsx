@@ -30,6 +30,7 @@ import { exportCampaignToCSV } from '../utils/csvExporter';
 import { api } from '../utils/api';
 import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { projectId } from '../utils/supabase/info';
+import { historyService } from '../utils/historyService';
 
 // Geo Targeting Constants
 const COUNTRIES = [
@@ -490,6 +491,11 @@ const STRUCTURE_TYPES = [
 ];
 
 export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
+  // Tabs State
+  const [activeTab, setActiveTab] = useState<'builder' | 'saved'>('builder');
+  const [savedCampaigns, setSavedCampaigns] = useState<any[]>([]);
+  const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(null);
+  
   // Wizard State
   const [step, setStep] = useState(1);
   const [structureType, setStructureType] = useState<StructureType | null>(null);
@@ -667,6 +673,147 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       setGeneratedAds(initialData.generatedAds || []);
     }
   }, [initialData]);
+
+  // Load saved campaigns on mount
+  useEffect(() => {
+    loadSavedCampaigns();
+  }, []);
+
+  // Auto-save campaign state
+  useEffect(() => {
+    // Only auto-save if there's meaningful data (campaign name or structure selected)
+    if (campaignName && (structureType || selectedKeywords.length > 0 || generatedAds.length > 0)) {
+      const saveTimeout = setTimeout(() => {
+        autoSaveCampaign();
+      }, 2000); // Debounce: save 2 seconds after last change
+
+      return () => clearTimeout(saveTimeout);
+    }
+  }, [campaignName, structureType, step, selectedKeywords, generatedAds, seedKeywords, negativeKeywords, url, matchTypes]);
+
+  // Auto-save function
+  const autoSaveCampaign = async () => {
+    try {
+      const campaignData = {
+        campaignName,
+        structureType,
+        step,
+        url,
+        matchTypes,
+        seedKeywords,
+        negativeKeywords,
+        selectedKeywords,
+        generatedKeywords,
+        generatedAds,
+        ads,
+        intentGroups,
+        selectedIntents,
+        alphaKeywords,
+        betaKeywords,
+        funnelGroups,
+        brandKeywords,
+        nonBrandKeywords,
+        competitorKeywords,
+        smartClusters,
+        targetCountry,
+        targetType,
+        selectedStates,
+        selectedCities,
+        selectedZips,
+        reviewData,
+        validationResults,
+        groupNegativeKeywords,
+        timestamp: new Date().toISOString(),
+        status: step === 6 ? 'completed' : step > 1 ? 'in_progress' : 'started'
+      };
+
+      // Use existing campaign ID or create new one
+      const campaignId = currentCampaignId || crypto.randomUUID();
+      if (!currentCampaignId) {
+        setCurrentCampaignId(campaignId);
+      }
+
+      // Save to history service (which handles server/localStorage fallback)
+      await historyService.save('builder-2-campaign', campaignName, {
+        ...campaignData,
+        id: campaignId
+      });
+
+      // Update local saved campaigns list
+      await loadSavedCampaigns();
+    } catch (error) {
+      console.error('Failed to auto-save campaign:', error);
+    }
+  };
+
+  // Load saved campaigns
+  const loadSavedCampaigns = async () => {
+    try {
+      const allHistory = await historyService.getAll();
+      const campaigns = allHistory.filter((item: any) => item.type === 'builder-2-campaign');
+      // Sort by timestamp (newest first)
+      campaigns.sort((a: any, b: any) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      setSavedCampaigns(campaigns);
+    } catch (error) {
+      console.error('Failed to load saved campaigns:', error);
+    }
+  };
+
+  // Load a saved campaign
+  const loadCampaign = (campaign: any) => {
+    const data = campaign.data || campaign;
+    setCampaignName(data.campaignName || generateDefaultCampaignName());
+    setStructureType(data.structureType || null);
+    setStep(data.step || 1);
+    setUrl(data.url || 'https://example.com');
+    setMatchTypes(data.matchTypes || { broad: true, phrase: true, exact: true });
+    setSeedKeywords(data.seedKeywords || '');
+    setNegativeKeywords(data.negativeKeywords || DEFAULT_NEGATIVE_KEYWORDS);
+    setSelectedKeywords(data.selectedKeywords || []);
+    setGeneratedKeywords(data.generatedKeywords || []);
+    setGeneratedAds(data.generatedAds || []);
+    setAds(data.ads || []);
+    setIntentGroups(data.intentGroups || { high_intent: [], research: [], brand: [], competitor: [] });
+    setSelectedIntents(data.selectedIntents || ['high_intent', 'research', 'brand']);
+    setAlphaKeywords(data.alphaKeywords || []);
+    setBetaKeywords(data.betaKeywords || []);
+    setFunnelGroups(data.funnelGroups || { tof: [], mof: [], bof: [] });
+    setBrandKeywords(data.brandKeywords || []);
+    setNonBrandKeywords(data.nonBrandKeywords || []);
+    setCompetitorKeywords(data.competitorKeywords || []);
+    setSmartClusters(data.smartClusters || {});
+    setTargetCountry(data.targetCountry || 'United States');
+    setTargetType(data.targetType || 'ZIP');
+    setSelectedStates(data.selectedStates || []);
+    setSelectedCities(data.selectedCities || []);
+    setSelectedZips(data.selectedZips || []);
+    setReviewData(data.reviewData || null);
+    setValidationResults(data.validationResults || null);
+    setGroupNegativeKeywords(data.groupNegativeKeywords || {});
+    setCurrentCampaignId(data.id || campaign.id || null);
+    setActiveTab('builder');
+    notifications.success('Campaign loaded successfully', {
+      title: 'Campaign Loaded'
+    });
+  };
+
+  // Delete a saved campaign
+  const deleteCampaign = async (campaignId: string) => {
+    try {
+      await historyService.delete(campaignId);
+      await loadSavedCampaigns();
+      notifications.success('Campaign deleted', {
+        title: 'Deleted'
+      });
+    } catch (error) {
+      console.error('Failed to delete campaign:', error);
+      notifications.error('Failed to delete campaign', {
+        title: 'Error'
+      });
+    }
+  };
 
   // Step Indicator
   const renderStepIndicator = () => (
@@ -3867,6 +4014,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 setCampaignName(generateDefaultCampaignName());
                 setSelectedKeywords([]);
                 setGeneratedAds([]);
+                setCurrentCampaignId(null); // Reset campaign ID for new campaign
+                setStructureType(null);
               }}
             >
               <Plus className="mr-2 w-4 h-4" />
@@ -3884,16 +4033,182 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     );
   };
 
+  // Render Saved Campaigns view
+  const renderSavedCampaigns = () => {
+    const getStatusBadge = (status: string) => {
+      switch (status) {
+        case 'completed':
+          return <Badge className="bg-green-100 text-green-700 border-green-300">Completed</Badge>;
+        case 'in_progress':
+          return <Badge className="bg-blue-100 text-blue-700 border-blue-300">In Progress</Badge>;
+        case 'started':
+          return <Badge className="bg-slate-100 text-slate-700 border-slate-300">Started</Badge>;
+        default:
+          return <Badge className="bg-slate-100 text-slate-700 border-slate-300">Unknown</Badge>;
+      }
+    };
+
+    const getStepLabel = (stepNum: number) => {
+      const steps = ['Setup', 'Keywords', 'Ads & Extensions', 'Geo Target', 'Review', 'Validate'];
+      return steps[stepNum - 1] || 'Unknown';
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+              Saved Campaigns
+            </h1>
+            <p className="text-slate-600">
+              All your campaigns are automatically saved. Continue where you left off or start a new one.
+            </p>
+          </div>
+
+          {savedCampaigns.length === 0 ? (
+            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+              <CardContent className="p-12 text-center">
+                <FileText className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                <h3 className="text-xl font-semibold text-slate-700 mb-2">No Saved Campaigns</h3>
+                <p className="text-slate-500 mb-6">
+                  Start creating a campaign and it will be automatically saved here.
+                </p>
+                <Button 
+                  onClick={() => setActiveTab('builder')}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Campaign
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {savedCampaigns.map((campaign: any) => {
+                const data = campaign.data || campaign;
+                const status = data.status || 'started';
+                const stepNum = data.step || 1;
+                const timestamp = new Date(campaign.timestamp || data.timestamp);
+                
+                return (
+                  <Card 
+                    key={campaign.id} 
+                    className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all cursor-pointer"
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg mb-2">{campaign.name || data.campaignName || 'Unnamed Campaign'}</CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            {timestamp.toLocaleString()}
+                          </CardDescription>
+                        </div>
+                        {getStatusBadge(status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Structure:</span>
+                          <span className="font-medium text-slate-700">
+                            {STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Current Step:</span>
+                          <span className="font-medium text-slate-700">{getStepLabel(stepNum)}</span>
+                        </div>
+                        {data.selectedKeywords && data.selectedKeywords.length > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Keywords:</span>
+                            <span className="font-medium text-slate-700">{data.selectedKeywords.length}</span>
+                          </div>
+                        )}
+                        {data.generatedAds && data.generatedAds.length > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-slate-500">Ads:</span>
+                            <span className="font-medium text-slate-700">{data.generatedAds.length}</span>
+                          </div>
+                        )}
+                      </div>
+                      <Separator />
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => loadCampaign(campaign)}
+                          className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600"
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Continue
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Are you sure you want to delete this campaign?')) {
+                              deleteCampaign(campaign.id);
+                            }
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
-      {renderStepIndicator()}
-      
-      {step === 1 && renderStep1()}
-      {step === 2 && renderStep2()}
-      {step === 3 && renderStep3()}
-      {step === 4 && renderStep4()}
-      {step === 5 && renderStep5()}
-      {step === 6 && renderStep6()}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'builder' | 'saved')} className="w-full">
+        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <TabsList className="w-full justify-start bg-transparent h-16">
+              <TabsTrigger 
+                value="builder" 
+                className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 font-semibold px-6"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Campaign Builder
+              </TabsTrigger>
+              <TabsTrigger 
+                value="saved" 
+                className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 font-semibold px-6"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Saved Campaigns
+                {savedCampaigns.length > 0 && (
+                  <Badge className="ml-2 bg-indigo-600">{savedCampaigns.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
+
+        <TabsContent value="builder" className="mt-0">
+          <div className="py-8 px-4 sm:px-6 lg:px-8">
+            {renderStepIndicator()}
+            
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
+            {step === 4 && renderStep4()}
+            {step === 5 && renderStep5()}
+            {step === 6 && renderStep6()}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="saved" className="mt-0">
+          {renderSavedCampaigns()}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
