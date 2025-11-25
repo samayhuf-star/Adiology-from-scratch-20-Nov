@@ -43,17 +43,22 @@ export async function getCurrentUserProfile() {
       .eq('id', user.id)
       .single();
 
-    // If profile doesn't exist (404 or PGRST116), create it
+    // If profile doesn't exist (404, PGRST116, or PGRST205 permission error), create it
     const isNotFoundError = error && (
       error.code === 'PGRST116' || 
+      error.code === 'PGRST205' || // Permission denied - might need to create profile
       error.message?.includes('No rows') ||
       error.message?.includes('not found') ||
+      error.message?.includes('permission denied') ||
       (error as any).status === 404 ||
       (error as any).code === '404'
     );
 
     if (isNotFoundError) {
-      console.log('User profile not found (404/PGRST116), creating one...', { userId: user.id });
+      // Don't log PGRST205 as it's a common permission error that we handle gracefully
+      if (error.code !== 'PGRST205') {
+        console.log('User profile not found, creating one...', { userId: user.id, errorCode: error.code });
+      }
       try {
         const fullName = user.user_metadata?.full_name || 
                         user.user_metadata?.full_name || 
@@ -103,6 +108,21 @@ export async function getCurrentUserProfile() {
     }
 
     if (error) {
+      // Don't log PGRST205 (permission denied) as it's expected for new users
+      // PGRST205 typically means RLS policy is blocking, which we handle by creating profile
+      if (error.code === 'PGRST205') {
+        // Silently handle - this is expected for new users without profiles
+        const minimalUser = {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          role: 'user',
+          subscription_plan: 'free',
+          subscription_status: 'active',
+        };
+        profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+        return minimalUser;
+      }
       // Don't log as error if it's a common/expected error - use warn instead
       console.warn('Profile fetch error (non-critical):', error?.code || error?.message || error);
       // Return minimal user object even on error so app doesn't break

@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { signUpWithEmail, signInWithEmail, resetPassword } from '../utils/auth';
+import { supabase } from '../utils/supabase/client';
 import { notifications } from '../utils/notifications';
 
 interface AuthProps {

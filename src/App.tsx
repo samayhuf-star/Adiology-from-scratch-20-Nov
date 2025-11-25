@@ -48,6 +48,8 @@ const App = () => {
   const [historyData, setHistoryData] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const prevUserIdRef = React.useRef<string | null>(null);
+  const processingRouteRef = React.useRef(false);
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Campaign Created', message: 'Your campaign "Summer Sale" has been created successfully', time: '2 hours ago', read: false },
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
@@ -293,13 +295,26 @@ const App = () => {
   // Check URL path and authentication on mount
   useEffect(() => {
     if (loading) return; // Wait for auth to initialize
+    if (processingRouteRef.current) return; // Already processing a route change
 
+    let isMounted = true;
     const path = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
+    const userId = user?.id; // Use only the ID, not the whole object
+    const currentUserId = prevUserIdRef.current;
+    
+    // Only process if user ID actually changed OR if we haven't processed yet
+    if (currentUserId === userId && currentUserId !== null) {
+      // User ID hasn't changed and we've processed before - skip unless route changed
+      return;
+    }
+    
+    processingRouteRef.current = true;
+    prevUserIdRef.current = userId;
     
     // Check if user is accessing /reset-password route
     if (path === '/reset-password' || path.startsWith('/reset-password')) {
-      setAppView('reset-password');
+      if (isMounted) setAppView('reset-password');
       return;
     }
     
@@ -310,13 +325,15 @@ const App = () => {
       const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
       const isSubscription = urlParams.get('subscription') === 'true';
       
-      setSelectedPlan({
-        name: planName,
-        priceId: urlParams.get('priceId') || '',
-        amount,
-        isSubscription
-      });
-      setAppView('payment-success');
+      if (isMounted) {
+        setSelectedPlan({
+          name: planName,
+          priceId: urlParams.get('priceId') || '',
+          amount,
+          isSubscription
+        });
+        setAppView('payment-success');
+      }
       return;
     }
     
@@ -328,66 +345,92 @@ const App = () => {
       const isSubscription = urlParams.get('subscription') === 'true';
       
       // Check if user is logged in
-      if (!user) {
+      if (!userId) {
         // Redirect to signup
-        window.history.pushState({}, '', '/');
-        setAuthMode('signup');
-        setAppView('auth');
+        if (isMounted) {
+          window.history.pushState({}, '', '/');
+          setAuthMode('signup');
+          setAppView('auth');
+        }
         return;
       }
       
-      setSelectedPlan({
-        name: planName,
-        priceId,
-        amount,
-        isSubscription
-      });
-      setAppView('payment');
+      if (isMounted) {
+        setSelectedPlan({
+          name: planName,
+          priceId,
+          amount,
+          isSubscription
+        });
+        setAppView('payment');
+      }
       return;
     }
     
     // Check if user is accessing /verify-email route
     if (path === '/verify-email' || path.startsWith('/verify-email')) {
-      setAppView('verify-email');
+      if (isMounted) setAppView('verify-email');
       return;
     }
     
     // Check if user is accessing /superadmin route
     if (path === '/superadmin' || path.startsWith('/superadmin/')) {
-      if (user) {
+      if (userId) {
         const checkSuperAdmin = async () => {
-          const isAdmin = await isSuperAdmin();
-          if (isAdmin) {
-            setAppView('admin-landing');
-          } else {
-            setAppView('admin-login');
+          try {
+            const isAdmin = await isSuperAdmin();
+            if (isMounted) {
+              if (isAdmin) {
+                setAppView('admin-landing');
+              } else {
+                setAppView('admin-login');
+              }
+            }
+          } catch (error) {
+            console.warn('Error checking super admin status:', error);
+            if (isMounted) setAppView('admin-login');
           }
         };
         checkSuperAdmin();
       } else {
-      setAppView('admin-login');
+        if (isMounted) setAppView('admin-login');
       }
       return;
     }
 
-    // Regular routes
-    if (user) {
+    // Regular routes - only run once per user change
+    if (userId) {
       // Check if superadmin
       const checkSuperAdmin = async () => {
-        const isAdmin = await isSuperAdmin();
-        if (isAdmin) {
-          // Super admin accessing regular routes, redirect to superadmin
-          window.history.pushState({}, '', '/superadmin');
-          setAppView('admin-landing');
-        } else {
-          setAppView('user');
+        try {
+          const isAdmin = await isSuperAdmin();
+          if (isMounted) {
+            if (isAdmin) {
+              // Super admin accessing regular routes, redirect to superadmin
+              window.history.pushState({}, '', '/superadmin');
+              setAppView('admin-landing');
+            } else {
+              setAppView('user');
+            }
+          }
+        } catch (error) {
+          console.warn('Error checking super admin status:', error);
+          if (isMounted) setAppView('user');
         }
       };
       checkSuperAdmin();
     } else {
-      setAppView('home');
+      if (isMounted) setAppView('home');
     }
-  }, [loading, user]);
+
+    return () => {
+      isMounted = false;
+      // Reset processing flag after a short delay to allow route processing
+      setTimeout(() => {
+        processingRouteRef.current = false;
+      }, 100);
+    };
+  }, [loading, user?.id]); // Only depend on user ID, not the whole user object
 
   // Handle browser back/forward navigation
   useEffect(() => {
