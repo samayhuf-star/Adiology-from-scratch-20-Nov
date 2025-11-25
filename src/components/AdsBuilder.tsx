@@ -485,7 +485,7 @@ export const AdsBuilder = () => {
     const handleConfirmExtensions = () => {
         if (!selectedAdForExtension) return;
 
-        const ad = generatedAds.find(a => a.id === selectedAdForExtension);
+            const ad = generatedAds.find(a => a.id === selectedAdForExtension);
         if (!ad) return;
 
         // Get existing extension types to prevent duplicates
@@ -501,7 +501,7 @@ export const AdsBuilder = () => {
             return;
         }
 
-        const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
+            const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
 
         const newExtensions: Extension[] = newExtensionTypes.map(extType => {
             const extId = crypto.randomUUID();
@@ -1266,11 +1266,11 @@ export const AdsBuilder = () => {
                                     key={ext.id}
                                     onClick={() => {
                                         if (!alreadyAdded) {
-                                            setSelectedExtensions(prev =>
-                                                prev.includes(ext.id)
-                                                    ? prev.filter(e => e !== ext.id)
-                                                    : [...prev, ext.id]
-                                            );
+                                        setSelectedExtensions(prev =>
+                                            prev.includes(ext.id)
+                                                ? prev.filter(e => e !== ext.id)
+                                                : [...prev, ext.id]
+                                        );
                                         }
                                     }}
                                     className={`p-4 border-2 rounded-lg transition-all ${
@@ -1296,10 +1296,10 @@ export const AdsBuilder = () => {
                                             disabled={alreadyAdded}
                                             onCheckedChange={(checked) => {
                                                 if (!alreadyAdded) {
-                                                    if (checked) {
-                                                        setSelectedExtensions([...selectedExtensions, ext.id]);
-                                                    } else {
-                                                        setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
+                                                if (checked) {
+                                                    setSelectedExtensions([...selectedExtensions, ext.id]);
+                                                } else {
+                                                    setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
                                                     }
                                                 }
                                             }}
@@ -1324,11 +1324,11 @@ export const AdsBuilder = () => {
                                                         Already Added
                                                     </Badge>
                                                 )}
-                                            </div>
+            </div>
                                             <div className="text-sm text-slate-600">{ext.description}</div>
                                         </div>
-                                    </div>
-                                </div>
+            </div>
+        </div>
                             );
                         })}
                     </div>

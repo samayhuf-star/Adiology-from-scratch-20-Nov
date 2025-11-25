@@ -4051,10 +4051,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const getStepLabel = (stepNum: number) => {
       const steps = ['Setup', 'Keywords', 'Ads & Extensions', 'Geo Target', 'Review', 'Validate'];
       return steps[stepNum - 1] || 'Unknown';
-    };
+  };
 
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
@@ -4194,14 +4194,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
         <TabsContent value="builder" className="mt-0">
           <div className="py-8 px-4 sm:px-6 lg:px-8">
-            {renderStepIndicator()}
-            
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
-            {step === 3 && renderStep3()}
-            {step === 4 && renderStep4()}
-            {step === 5 && renderStep5()}
-            {step === 6 && renderStep6()}
+      {renderStepIndicator()}
+      
+      {step === 1 && renderStep1()}
+      {step === 2 && renderStep2()}
+      {step === 3 && renderStep3()}
+      {step === 4 && renderStep4()}
+      {step === 5 && renderStep5()}
+      {step === 6 && renderStep6()}
           </div>
         </TabsContent>
 
