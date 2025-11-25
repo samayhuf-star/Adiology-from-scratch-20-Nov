@@ -9,6 +9,38 @@
   // Initialize notification service
   notifications.setToastInstance(toast);
 
+  // Filter out browser extension service worker errors (harmless)
+  if (typeof window !== 'undefined') {
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      // Ignore errors from browser extension service workers
+      const errorMessage = args.join(' ');
+      if (
+        errorMessage.includes('sw.js') ||
+        errorMessage.includes('mobx-state-tree') ||
+        errorMessage.includes('setDetectedLibs') ||
+        (errorMessage.includes('service worker') && errorMessage.includes('extension'))
+      ) {
+        // Silently ignore these browser extension errors
+        return;
+      }
+      // Log all other errors normally
+      originalConsoleError.apply(console, args);
+    };
+
+    // Also filter unhandled promise rejections from extensions
+    window.addEventListener('unhandledrejection', (event) => {
+      const errorMessage = String(event.reason || '');
+      if (
+        errorMessage.includes('sw.js') ||
+        errorMessage.includes('mobx-state-tree') ||
+        errorMessage.includes('setDetectedLibs')
+      ) {
+        event.preventDefault(); // Prevent error from showing in console
+      }
+    });
+  }
+
   createRoot(document.getElementById("root")!).render(
     <>
       <App />
