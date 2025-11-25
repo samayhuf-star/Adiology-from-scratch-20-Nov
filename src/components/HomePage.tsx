@@ -906,214 +906,199 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="relative z-10 py-20 sm:py-24 lg:py-28 px-4 sm:px-6 bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
+      <section id="pricing" className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-purple-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 sm:mb-20">
-            <Badge className="mb-4 bg-indigo-100 text-indigo-700 border-indigo-200 px-4 py-1.5">
-              Choose Your Plan
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-800 mb-4 sm:mb-6">
+          <div className="text-center space-y-4 mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-full border border-purple-100">
+              <span className="text-sm text-purple-600">Choose Your Plan</span>
+            </div>
+            
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
               Simple, Transparent Pricing
-              </h2>
-            <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto">
+            </h2>
+            
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Pick the perfect plan for your business needs. All plans include access to our powerful campaign building tools.
             </p>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mt-8">
-            {/* Lifetime Limited Plan */}
-            <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
-              <CardContent className="p-6 sm:p-8">
-                <div className="text-center mb-6">
-                  <Badge className="mb-3 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
-                  <div className="text-4xl font-bold text-slate-800 mb-1">$99.99</div>
-                  <div className="text-sm text-slate-600 mb-4">One-time payment</div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {/* Starter Plan (Lifetime Limited) */}
+            <div 
+              className="relative bg-white rounded-2xl p-6 border-2 border-gray-100 transition-all hover:shadow-xl"
+            >
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
+                  Lifetime
                 </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">15 campaigns/month</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">All features included</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">AI keyword generation</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">Campaign builder</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">CSV validation & export</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">24/7 support</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={onGetStarted}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                >
-                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Lifetime Unlimited Plan */}
-            <Card className="border-2 border-indigo-400 hover:border-indigo-500 transition-all hover:shadow-2xl relative bg-gradient-to-br from-indigo-50 to-purple-50">
-              <div className="absolute top-4 right-4">
-                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0">Popular</Badge>
+                <div className="text-4xl font-bold text-gray-900 mb-1">$99.99</div>
+                <div className="text-sm text-gray-500">One-time payment</div>
               </div>
-              <CardContent className="p-6 sm:p-8">
-                <div className="text-center mb-6">
-                  <Badge className="mb-3 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
-                  <div className="text-4xl font-bold text-slate-800 mb-1">$199</div>
-                  <div className="text-sm text-slate-600 mb-4">One-time payment</div>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+              
+              <ul className="space-y-3 mb-6">
+                {[
+                  "15 campaigns/month",
+                  "All features included",
+                  "AI keyword generation",
+                  "Campaign builder",
+                  "CSV validation & export",
+                  "24/7 support"
+                ].map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">{feature}</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700 font-semibold">Unlimited access to all tools</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">AI keyword generation</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">Campaign builder</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">CSV validation & export</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">Priority support</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={() => {
-                    if (onSelectPlan) {
-                      onSelectPlan('Lifetime Unlimited', 'price_lifetime_unlimited', 199, false);
-                    } else {
-                      onGetStarted();
-                    }
-                  }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
-                >
-                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
+                ))}
+              </ul>
+              
+              <Button 
+                onClick={onGetStarted}
+                variant="outline"
+                className="w-full"
+              >
+                Get Started
+              </Button>
+            </div>
 
-            {/* Monthly Limited Plan */}
-            <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
-              <CardContent className="p-6 sm:p-8">
-                <div className="text-center mb-6">
-                  <Badge className="mb-3 bg-green-100 text-green-700 border-green-200">Monthly</Badge>
-                  <div className="text-4xl font-bold text-slate-800 mb-1">$49.99</div>
-                  <div className="text-sm text-slate-600 mb-4">per month</div>
+            {/* Professional Plan (Lifetime Unlimited) */}
+            <div 
+              className="relative bg-white rounded-2xl p-6 border-2 border-purple-500 shadow-lg transition-all hover:shadow-xl"
+            >
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs rounded-full">
+                  <Sparkles className="w-3 h-3" />
+                  Popular
+                </span>
+              </div>
+              
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
+                  Lifetime
                 </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">25 campaigns/month</span>
+                <div className="text-4xl font-bold text-gray-900 mb-1">$199</div>
+                <div className="text-sm text-gray-500">One-time payment</div>
+              </div>
+              
+              <ul className="space-y-3 mb-6">
+                {[
+                  "Unlimited campaigns",
+                  "Unlimited access to all tools",
+                  "AI keyword generation",
+                  "Campaign builder",
+                  "CSV validation & export",
+                  "Priority support"
+                ].map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">{feature}</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">Access to other tools</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">AI keyword generation</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">Campaign builder</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">CSV validation & export</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">24/7 support</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={() => {
-                    if (onSelectPlan) {
-                      onSelectPlan('Monthly Limited', 'price_monthly_25', 49.99, true);
-                    } else {
-                      onGetStarted();
-                    }
-                  }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                >
-                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
+                ))}
+              </ul>
+              
+              <Button 
+                onClick={() => {
+                  if (onSelectPlan) {
+                    onSelectPlan('Lifetime Unlimited', 'price_lifetime_unlimited', 199, false);
+                  } else {
+                    onGetStarted();
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              >
+                Get Started
+              </Button>
+            </div>
 
-            {/* Monthly Unlimited Plan */}
-            <Card className="border-2 border-purple-300 hover:border-purple-400 transition-all hover:shadow-xl relative">
-              <CardContent className="p-6 sm:p-8">
-                <div className="text-center mb-6">
-                  <Badge className="mb-3 bg-purple-100 text-purple-700 border-purple-200">Monthly</Badge>
-                  <div className="text-4xl font-bold text-slate-800 mb-1">$99.99</div>
-                  <div className="text-sm text-slate-600 mb-4">per month</div>
+            {/* Growth Plan (Monthly Limited) */}
+            <div 
+              className="relative bg-white rounded-2xl p-6 border-2 border-gray-100 transition-all hover:shadow-xl"
+            >
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
+                  Monthly
                 </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+                <div className="text-4xl font-bold text-gray-900 mb-1">$49.99</div>
+                <div className="text-sm text-gray-500">per month</div>
+              </div>
+              
+              <ul className="space-y-3 mb-6">
+                {[
+                  "25 campaigns/month",
+                  "Access to other tools",
+                  "AI keyword generation",
+                  "Campaign builder",
+                  "CSV validation & export",
+                  "24/7 support"
+                ].map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">{feature}</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700 font-semibold">Full access to all tools</span>
+                ))}
+              </ul>
+              
+              <Button 
+                onClick={() => {
+                  if (onSelectPlan) {
+                    onSelectPlan('Monthly Limited', 'price_monthly_25', 49.99, true);
+                  } else {
+                    onGetStarted();
+                  }
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                Get Started
+              </Button>
+            </div>
+
+            {/* Enterprise Plan (Monthly Unlimited) */}
+            <div 
+              className="relative bg-white rounded-2xl p-6 border-2 border-gray-100 transition-all hover:shadow-xl"
+            >
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
+                  Monthly
+                </div>
+                <div className="text-4xl font-bold text-gray-900 mb-1">$99.99</div>
+                <div className="text-sm text-gray-500">per month</div>
+              </div>
+              
+              <ul className="space-y-3 mb-6">
+                {[
+                  "Unlimited campaigns",
+                  "Full access to all tools",
+                  "AI keyword generation",
+                  "Campaign builder",
+                  "CSV validation & export",
+                  "Priority support"
+                ].map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-start gap-2">
+                    <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700">{feature}</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">AI keyword generation</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">Campaign builder</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">CSV validation & export</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-slate-700">Priority support</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={() => {
-                    if (onSelectPlan) {
-                      onSelectPlan('Monthly Unlimited', 'price_monthly_unlimited', 99.99, true);
-                    } else {
-                      onGetStarted();
-                    }
-                  }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
-                >
-                  Get Started <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
+                ))}
+              </ul>
+              
+              <Button 
+                onClick={() => {
+                  if (onSelectPlan) {
+                    onSelectPlan('Monthly Unlimited', 'price_monthly_unlimited', 99.99, true);
+                  } else {
+                    onGetStarted();
+                  }
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                Get Started
+              </Button>
+            </div>
           </div>
+          
+          <p className="text-center text-sm text-gray-500 mt-8">
+            All plans include AI-powered optimization • No hidden fees • Cancel anytime
+          </p>
         </div>
       </section>
 
