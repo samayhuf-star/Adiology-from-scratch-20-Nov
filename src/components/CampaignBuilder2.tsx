@@ -27,6 +27,7 @@ import { LiveAdPreview } from './LiveAdPreview';
 import { notifications } from '../utils/notifications';
 import { generateCampaignStructure, type StructureSettings } from '../utils/campaignStructureGenerator';
 import { exportCampaignToCSV } from '../utils/csvExporter';
+import { validateCampaignForExport, formatValidationErrors } from '../utils/csvValidator';
 import { api } from '../utils/api';
 import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { projectId } from '../utils/supabase/info';
@@ -4052,57 +4053,106 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         return;
       }
 
-      // Prepare settings for structure generation
-      const settings: StructureSettings = {
-        structureType,
-        campaignName,
-        keywords: selectedKeywords,
-        matchTypes,
-        url,
-        negativeKeywords: negativeKeywords.split('\n').filter(k => k.trim()),
-        geoType,
-        selectedStates,
-        selectedCities,
-        selectedZips,
-        targetCountry,
-        ads: generatedAds
-          .filter(ad => ad.type !== 'extension') // Filter out standalone extensions
-          .map(ad => ({
-            type: ad.type || 'rsa',
-            headline1: ad.headline1,
-            headline2: ad.headline2,
-            headline3: ad.headline3,
-            headline4: ad.headline4,
-            headline5: ad.headline5,
-            description1: ad.description1,
-            description2: ad.description2,
-            final_url: ad.finalUrl || url,
-            path1: ad.path1,
-            path2: ad.path2,
-            extensions: ad.extensions || [] // Include extensions attached to ads
-          })),
-        intentGroups,
-        selectedIntents,
-        alphaKeywords,
-        betaKeywords,
-        funnelGroups,
-        brandKeywords,
-        nonBrandKeywords,
-        competitorKeywords,
-        smartClusters
-      };
+      try {
+        // Prepare settings for structure generation
+        const settings: StructureSettings = {
+          structureType,
+          campaignName,
+          keywords: selectedKeywords,
+          matchTypes,
+          url,
+          negativeKeywords: negativeKeywords.split('\n').filter(k => k.trim()),
+          geoType,
+          selectedStates,
+          selectedCities,
+          selectedZips,
+          targetCountry,
+          ads: generatedAds
+            .filter(ad => ad.type !== 'extension') // Filter out standalone extensions
+            .map(ad => ({
+              type: ad.type || 'rsa',
+              headline1: ad.headline1,
+              headline2: ad.headline2,
+              headline3: ad.headline3,
+              headline4: ad.headline4,
+              headline5: ad.headline5,
+              description1: ad.description1,
+              description2: ad.description2,
+              final_url: ad.finalUrl || url,
+              path1: ad.path1,
+              path2: ad.path2,
+              extensions: ad.extensions || [] // Include extensions attached to ads
+            })),
+          intentGroups,
+          selectedIntents,
+          alphaKeywords,
+          betaKeywords,
+          funnelGroups,
+          brandKeywords,
+          nonBrandKeywords,
+          competitorKeywords,
+          smartClusters
+        };
 
-      // Generate campaign structure
-      const structure = generateCampaignStructure(selectedKeywords, settings);
-      
-      // Export to CSV
-      const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-      exportCampaignToCSV(structure, filename);
-      
-      notifications.success('Campaign exported successfully!', { 
-        title: 'Export Complete',
-        description: `Generated ${structure.campaigns.length} campaign(s) with ${structure.campaigns.reduce((sum, c) => sum + c.adgroups.length, 0)} ad group(s)`
-      });
+        // Generate campaign structure
+        const structure = generateCampaignStructure(selectedKeywords, settings);
+        
+        // Validate campaign structure before export
+        const validationResult = validateCampaignForExport(structure);
+        
+        if (!validationResult.isValid) {
+          // Show validation errors
+          const errorMessage = formatValidationErrors(validationResult);
+          notifications.error(
+            <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
+              {errorMessage}
+            </div>,
+            { 
+              title: '❌ Validation Failed',
+              description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
+              duration: 15000 // Show for 15 seconds
+            }
+          );
+          return;
+        }
+
+        // Show warnings if any (but still allow export)
+        if (validationResult.warnings.length > 0) {
+          const warningMessage = formatValidationErrors({ 
+            isValid: true, 
+            errors: [], 
+            warnings: validationResult.warnings 
+          });
+          notifications.warning(
+            <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+              {warningMessage}
+            </div>,
+            { 
+              title: '⚠️  Validation Warnings',
+              description: 'Your campaign will export, but consider fixing these warnings for better results.',
+              duration: 10000
+            }
+          );
+        }
+        
+        // Export to CSV
+        const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        exportCampaignToCSV(structure, filename);
+        
+        notifications.success('Campaign exported successfully!', { 
+          title: '✅ Export Complete',
+          description: `Generated ${structure.campaigns.length} campaign(s) with ${structure.campaigns.reduce((sum, c) => sum + c.adgroups.length, 0)} ad group(s). Ready for Google Ads Editor import.`
+        });
+      } catch (error) {
+        console.error('Export error:', error);
+        notifications.error(
+          error instanceof Error ? error.message : 'An unexpected error occurred during export',
+          { 
+            title: '❌ Export Failed',
+            description: 'Please try again or contact support if the issue persists.'
+          }
+        );
+      }
     };
 
     // Calculate stats using dynamicAdGroups
