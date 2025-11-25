@@ -333,7 +333,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
               <div className="space-y-3 flex flex-col">
                 <Button
                   onClick={handleLoadToBuilder}
-                  className="w-full bg-white text-indigo-600 hover:bg-indigo-50 flex-shrink-0"
+                  className="w-full bg-white text-black hover:bg-gray-100 flex-shrink-0"
                   size="lg"
                 >
                   <Edit className="w-4 h-4 mr-2" />
@@ -342,7 +342,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 <Button
                   onClick={handleExportCSV}
                   variant="outline"
-                  className="w-full border-white text-white hover:bg-white/10 flex-shrink-0"
+                  className="w-full border-white bg-white text-black hover:bg-gray-100 flex-shrink-0"
                   size="lg"
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -352,12 +352,18 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 <Button
                   onClick={() => {
                     if (selectedPreset) {
-                      setShowLandingPagePreview(true);
-                      setShowReview(false);
+                      // If landing page URL exists, open it in a new tab
+                      if (selectedPreset.landing_page_url) {
+                        window.open(selectedPreset.landing_page_url, '_blank');
+                      } else {
+                        // Fallback to the old preview component
+                        setShowLandingPagePreview(true);
+                        setShowReview(false);
+                      }
                     }
                   }}
                   variant="outline"
-                  className="w-full border-white text-white hover:bg-white/10 flex-shrink-0"
+                  className="w-full border-white bg-white text-black hover:bg-gray-100 flex-shrink-0"
                   size="lg"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />

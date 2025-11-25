@@ -915,19 +915,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
               Simple, Transparent Pricing
-            </h2>
+              </h2>
             
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Pick the perfect plan for your business needs. All plans include access to our powerful campaign building tools.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {/* Starter Plan (Lifetime Limited) */}
             <div 
               className="relative bg-white rounded-2xl p-6 border-2 border-gray-100 transition-all hover:shadow-xl"
             >
-              <div className="text-center mb-6">
+                <div className="text-center mb-6">
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
                   Lifetime
                 </div>
@@ -935,7 +935,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <div className="text-sm text-gray-500">One-time payment</div>
               </div>
               
-              <ul className="space-y-3 mb-6">
+                <ul className="space-y-3 mb-6">
                 {[
                   "15 campaigns/month",
                   "All features included",
@@ -949,15 +949,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <span className="text-sm text-gray-700">{feature}</span>
                   </li>
                 ))}
-              </ul>
+                </ul>
               
-              <Button 
-                onClick={onGetStarted}
+                <Button 
+                  onClick={onGetStarted}
                 variant="outline"
                 className="w-full"
-              >
+                >
                 Get Started
-              </Button>
+                </Button>
             </div>
 
             {/* Professional Plan (Lifetime Unlimited) */}
@@ -971,7 +971,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 </span>
               </div>
               
-              <div className="text-center mb-6">
+                <div className="text-center mb-6">
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
                   Lifetime
                 </div>
@@ -979,7 +979,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <div className="text-sm text-gray-500">One-time payment</div>
               </div>
               
-              <ul className="space-y-3 mb-6">
+                <ul className="space-y-3 mb-6">
                 {[
                   "Unlimited campaigns",
                   "Unlimited access to all tools",
@@ -993,27 +993,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <span className="text-sm text-gray-700">{feature}</span>
                   </li>
                 ))}
-              </ul>
+                </ul>
               
-              <Button 
-                onClick={() => {
-                  if (onSelectPlan) {
-                    onSelectPlan('Lifetime Unlimited', 'price_lifetime_unlimited', 199, false);
-                  } else {
-                    onGetStarted();
-                  }
-                }}
+                <Button 
+                  onClick={() => {
+                    if (onSelectPlan) {
+                      onSelectPlan('Lifetime Unlimited', 'price_lifetime_unlimited', 199, false);
+                    } else {
+                      onGetStarted();
+                    }
+                  }}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-              >
+                >
                 Get Started
-              </Button>
+                </Button>
             </div>
 
             {/* Growth Plan (Monthly Limited) */}
             <div 
               className="relative bg-white rounded-2xl p-6 border-2 border-gray-100 transition-all hover:shadow-xl"
             >
-              <div className="text-center mb-6">
+                <div className="text-center mb-6">
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
                   Monthly
                 </div>
@@ -1021,7 +1021,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <div className="text-sm text-gray-500">per month</div>
               </div>
               
-              <ul className="space-y-3 mb-6">
+                <ul className="space-y-3 mb-6">
                 {[
                   "25 campaigns/month",
                   "Access to other tools",
@@ -1035,28 +1035,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <span className="text-sm text-gray-700">{feature}</span>
                   </li>
                 ))}
-              </ul>
+                </ul>
               
-              <Button 
-                onClick={() => {
-                  if (onSelectPlan) {
-                    onSelectPlan('Monthly Limited', 'price_monthly_25', 49.99, true);
-                  } else {
-                    onGetStarted();
-                  }
-                }}
+                <Button 
+                  onClick={() => {
+                    if (onSelectPlan) {
+                      onSelectPlan('Monthly Limited', 'price_monthly_25', 49.99, true);
+                    } else {
+                      onGetStarted();
+                    }
+                  }}
                 variant="outline"
                 className="w-full"
-              >
+                >
                 Get Started
-              </Button>
+                </Button>
             </div>
 
             {/* Enterprise Plan (Monthly Unlimited) */}
             <div 
               className="relative bg-white rounded-2xl p-6 border-2 border-gray-100 transition-all hover:shadow-xl"
             >
-              <div className="text-center mb-6">
+                <div className="text-center mb-6">
                 <div className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 text-xs rounded-full mb-4">
                   Monthly
                 </div>
@@ -1064,7 +1064,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <div className="text-sm text-gray-500">per month</div>
               </div>
               
-              <ul className="space-y-3 mb-6">
+                <ul className="space-y-3 mb-6">
                 {[
                   "Unlimited campaigns",
                   "Full access to all tools",
@@ -1078,22 +1078,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <span className="text-sm text-gray-700">{feature}</span>
                   </li>
                 ))}
-              </ul>
+                </ul>
               
-              <Button 
-                onClick={() => {
-                  if (onSelectPlan) {
-                    onSelectPlan('Monthly Unlimited', 'price_monthly_unlimited', 99.99, true);
-                  } else {
-                    onGetStarted();
-                  }
-                }}
+                <Button 
+                  onClick={() => {
+                    if (onSelectPlan) {
+                      onSelectPlan('Monthly Unlimited', 'price_monthly_unlimited', 99.99, true);
+                    } else {
+                      onGetStarted();
+                    }
+                  }}
                 variant="outline"
                 className="w-full"
-              >
+                >
                 Get Started
-              </Button>
-            </div>
+                </Button>
+          </div>
           </div>
           
           <p className="text-center text-sm text-gray-500 mt-8">

@@ -20,6 +20,7 @@ export interface CampaignPreset {
     description2: string;
   }>;
   final_url: string;
+  landing_page_url?: string;
   cta: string;
   phone?: string;
 }
@@ -29,6 +30,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "electrician",
     title: "Electrician",
     campaign_name: "Electrician - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_1.html",
     ad_groups: [
       { name: "Emergency Electrician" },
       { name: "Residential Electrician" },
@@ -74,6 +76,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "plumber",
     title: "Plumber",
     campaign_name: "Plumber - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_2.html",
     ad_groups: [
       { name: "Emergency Plumber" },
       { name: "Drain & Leak Repair" },
@@ -119,6 +122,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "carpenter",
     title: "Carpenter",
     campaign_name: "Carpenter - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_3.html",
     ad_groups: [
       { name: "Emergency Repairs" },
       { name: "Custom Carpentry" },
@@ -164,6 +168,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "roofing",
     title: "Roofing",
     campaign_name: "Roofing - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_4.html",
     ad_groups: [
       { name: "Roof Repair" },
       { name: "Roof Replacement" },
@@ -209,6 +214,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "flooring",
     title: "Flooring",
     campaign_name: "Flooring - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_5.html",
     ad_groups: [
       { name: "Installation" },
       { name: "Repair" },
@@ -249,6 +255,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "solar",
     title: "Solar Installation",
     campaign_name: "Solar - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_6.html",
     ad_groups: [
       { name: "Residential Solar" },
       { name: "Commercial Solar" },
@@ -290,6 +297,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "pest-control",
     title: "Pest Control",
     campaign_name: "Pest Control - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_7.html",
     ad_groups: [
       { name: "Exterminator" },
       { name: "Rodent Control" },
@@ -330,6 +338,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "lawn-care",
     title: "Lawn Care",
     campaign_name: "Lawn Care - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_8.html",
     ad_groups: [
       { name: "Lawn Mowing" },
       { name: "Lawn Maintenance" },
@@ -368,6 +377,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "movers-domestic",
     title: "Movers & Packers - Domestic",
     campaign_name: "Movers - Domestic PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_9.html",
     ad_groups: [
       { name: "Local Movers" },
       { name: "Interstate Moving" },
@@ -405,6 +415,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "movers-international",
     title: "Movers & Packers - International",
     campaign_name: "Movers - International PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_10.html",
     ad_groups: [
       { name: "International Shipping" },
       { name: "Customs Clearance" },
@@ -440,6 +451,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "hvac",
     title: "HVAC / AC Repair",
     campaign_name: "HVAC - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_11.html",
     ad_groups: [
       { name: "Emergency AC Repair" },
       { name: "Furnace Repair" },
@@ -477,6 +489,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "locksmith",
     title: "Locksmith",
     campaign_name: "Locksmith - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_12.html",
     ad_groups: [
       { name: "Emergency Lockout" },
       { name: "Lock Replacement" },
@@ -512,6 +525,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "water-damage",
     title: "Water Damage Restoration",
     campaign_name: "Water Damage - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_13.html",
     ad_groups: [
       { name: "Emergency Drying" },
       { name: "Flood Cleanup" },
@@ -547,6 +561,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "pool-repair",
     title: "Pool Repair",
     campaign_name: "Pool Repair - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_14.html",
     ad_groups: [
       { name: "Pool Pump Repair" },
       { name: "Leak Detection" },
@@ -582,6 +597,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "appliance-repair",
     title: "Appliance Repair",
     campaign_name: "Appliance Repair - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_15.html",
     ad_groups: [
       { name: "Washer & Dryer" },
       { name: "Fridge & Oven" },
@@ -617,6 +633,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "window-cleaning",
     title: "Window Cleaning",
     campaign_name: "Window Cleaning - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_16.html",
     ad_groups: [
       { name: "Residential Window Cleaning" },
       { name: "Commercial Window Cleaning" },
@@ -650,6 +667,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "tree-removal",
     title: "Tree Removal",
     campaign_name: "Tree Removal - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_17.html",
     ad_groups: [
       { name: "Emergency Tree Removal" },
       { name: "Tree Trimming" },
@@ -682,6 +700,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "painting",
     title: "Painting (Interior/Exterior)",
     campaign_name: "Painting - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_18.html",
     ad_groups: [
       { name: "Interior Painting" },
       { name: "Exterior Painting" },
@@ -715,6 +734,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "concrete",
     title: "Concrete / Driveway Contractor",
     campaign_name: "Concrete - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_19.html",
     ad_groups: [
       { name: "Driveway Repair" },
       { name: "Concrete Pouring" },
@@ -748,6 +768,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "security-systems",
     title: "Security System Installation",
     campaign_name: "Security - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_20.html",
     ad_groups: [
       { name: "Alarm Installation" },
       { name: "CCTV Installation" },
@@ -781,6 +802,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "garage-door",
     title: "Garage Door Repair",
     campaign_name: "Garage Door - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_21.html",
     ad_groups: [
       { name: "Emergency Garage Repair" },
       { name: "Opener Repair" },
@@ -813,6 +835,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "septic",
     title: "Septic Service",
     campaign_name: "Septic - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_22.html",
     ad_groups: [
       { name: "Septic Pumping" },
       { name: "Septic Repair" },
@@ -846,6 +869,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "landscaping",
     title: "Landscaping",
     campaign_name: "Landscaping - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_23.html",
     ad_groups: [
       { name: "Landscape Design" },
       { name: "Hardscaping" },
@@ -879,6 +903,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "chimney",
     title: "Chimney Sweep & Repair",
     campaign_name: "Chimney - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_24.html",
     ad_groups: [
       { name: "Chimney Cleaning" },
       { name: "Chimney Repair" },
@@ -911,6 +936,7 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "gutters",
     title: "Gutter Cleaning & Repair",
     campaign_name: "Gutters - PPC Calls",
+    landing_page_url: "/landing-pages/landing_page_25.html",
     ad_groups: [
       { name: "Gutter Cleaning" },
       { name: "Gutter Repair" },
