@@ -6,7 +6,7 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
   Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map, Funnel, 
-  Users, TrendingDown, Network, Filter, Info
+  Users, TrendingDown, Network, Filter, Info, FolderOpen
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -4268,14 +4268,23 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         </Card>
 
         {/* Export Actions */}
-        <div className="flex justify-center">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
           <Button 
             size="lg" 
             onClick={handleExportCSV}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg py-6 px-8"
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg py-6 px-8 w-full sm:w-auto"
           >
             <Download className="mr-2 w-5 h-5" />
             Download CSV for Google Ads Editor
+          </Button>
+          <Button 
+            size="lg" 
+            variant="outline"
+            onClick={() => setShowSavedCampaigns(true)}
+            className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-lg py-6 px-8 w-full sm:w-auto"
+          >
+            <FolderOpen className="mr-2 w-5 h-5" />
+            View Saved Campaigns
           </Button>
         </div>
 
