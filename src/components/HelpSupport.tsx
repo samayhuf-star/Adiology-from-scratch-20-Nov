@@ -1,31 +1,15 @@
 import React, { useState } from 'react';
 import { 
     Book, HelpCircle, MessageSquare, Search, ChevronRight, ChevronDown,
-    FileText, Zap, Target, BarChart3, Settings, Download, Upload,
-    CheckCircle2, AlertCircle, Send, X
+    Zap, BarChart3, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ScrollArea } from './ui/scroll-area';
-import { Separator } from './ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { notifications } from '../utils/notifications';
 
-interface SupportTicket {
-    id: string;
-    subject: string;
-    description: string;
-    category: string;
-    priority: string;
-    status: 'open' | 'in-progress' | 'resolved' | 'closed';
-    createdAt: string;
-}
 
 const documentationSections = [
     {
@@ -509,16 +493,6 @@ export const HelpSupport = () => {
     const [selectedArticle, setSelectedArticle] = useState<any>(null);
     const [showArticleDialog, setShowArticleDialog] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'article'>('list');
-    
-    // Support Ticket State
-    const [tickets, setTickets] = useState<SupportTicket[]>([]);
-    const [showTicketForm, setShowTicketForm] = useState(false);
-    const [ticketForm, setTicketForm] = useState({
-        subject: '',
-        description: '',
-        category: 'general',
-        priority: 'medium'
-    });
 
     const handleSearchFilter = (item: any) => {
         if (!searchQuery) return true;
@@ -537,41 +511,6 @@ export const HelpSupport = () => {
     })).filter(section => section.articles.length > 0);
 
     const filteredFAQs = faqItems.filter(handleSearchFilter);
-
-    const handleSubmitTicket = () => {
-        const newTicket: SupportTicket = {
-            id: `TICKET-${Date.now()}`,
-            subject: ticketForm.subject,
-            description: ticketForm.description,
-            category: ticketForm.category,
-            priority: ticketForm.priority,
-            status: 'open',
-            createdAt: new Date().toISOString()
-        };
-        
-        setTickets([newTicket, ...tickets]);
-        setTicketForm({ subject: '', description: '', category: 'general', priority: 'medium' });
-        setShowTicketForm(false);
-        notifications.success('Support ticket submitted successfully! Our team will respond within 24 hours.', {
-            title: 'Ticket Submitted'
-        });
-    };
-
-    const getStatusBadge = (status: string) => {
-        const variants: any = {
-            'open': 'default',
-            'in-progress': 'secondary',
-            'resolved': 'outline',
-            'closed': 'outline'
-        };
-        const colors: any = {
-            'open': 'bg-blue-100 text-blue-800',
-            'in-progress': 'bg-amber-100 text-amber-800',
-            'resolved': 'bg-green-100 text-green-800',
-            'closed': 'bg-slate-100 text-slate-600'
-        };
-        return <Badge className={colors[status]}>{status.replace('-', ' ').toUpperCase()}</Badge>;
-    };
 
     // If viewing an article, show full detailed view
     if (viewMode === 'article' && selectedArticle) {
@@ -770,7 +709,7 @@ export const HelpSupport = () => {
 
                 {/* Main Content */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid w-full max-w-xl grid-cols-3 h-12">
+                    <TabsList className="grid w-full max-w-md grid-cols-2 h-12">
                         <TabsTrigger value="documentation" className="flex items-center gap-2">
                             <Book className="w-4 h-4" />
                             Documentation
@@ -778,10 +717,6 @@ export const HelpSupport = () => {
                         <TabsTrigger value="faq" className="flex items-center gap-2">
                             <HelpCircle className="w-4 h-4" />
                             FAQ
-                        </TabsTrigger>
-                        <TabsTrigger value="support" className="flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" />
-                            Support Tickets
                         </TabsTrigger>
                     </TabsList>
 
@@ -865,169 +800,7 @@ export const HelpSupport = () => {
                         </Card>
                     </TabsContent>
 
-                    {/* Support Tickets Tab */}
-                    <TabsContent value="support" className="space-y-6">
-                        <Card className="border-slate-200 shadow-lg">
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle className="text-2xl">Support Tickets</CardTitle>
-                                        <CardDescription>
-                                            Submit a ticket and track your support requests
-                                        </CardDescription>
-                                    </div>
-                                    <Button
-                                        onClick={() => setShowTicketForm(true)}
-                                        className="bg-indigo-600 hover:bg-indigo-700"
-                                    >
-                                        <Send className="w-4 h-4 mr-2" />
-                                        New Ticket
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                {tickets.length === 0 ? (
-                                    <div className="py-12 text-center">
-                                        <MessageSquare className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-slate-700 mb-2">No Support Tickets</h3>
-                                        <p className="text-slate-600 mb-4">
-                                            You haven't submitted any support tickets yet.
-                                        </p>
-                                        <Button
-                                            onClick={() => setShowTicketForm(true)}
-                                            variant="outline"
-                                            className="gap-2"
-                                        >
-                                            <Send className="w-4 h-4" />
-                                            Submit Your First Ticket
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {tickets.map((ticket) => (
-                                            <div
-                                                key={ticket.id}
-                                                className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 hover:shadow-md transition-all"
-                                            >
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <div>
-                                                        <h3 className="font-semibold text-slate-800">{ticket.subject}</h3>
-                                                        <p className="text-sm text-slate-500">{ticket.id}</p>
-                                                    </div>
-                                                    {getStatusBadge(ticket.status)}
-                                                </div>
-                                                <p className="text-sm text-slate-600 mb-3 line-clamp-2">
-                                                    {ticket.description}
-                                                </p>
-                                                <div className="flex items-center gap-4 text-xs text-slate-500">
-                                                    <span className="flex items-center gap-1">
-                                                        <Badge variant="outline">{ticket.category}</Badge>
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        Priority: <Badge variant="outline">{ticket.priority}</Badge>
-                                                    </span>
-                                                    <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
                 </Tabs>
-
-                {/* New Ticket Dialog */}
-                <Dialog open={showTicketForm} onOpenChange={setShowTicketForm}>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl">Submit Support Ticket</DialogTitle>
-                            <DialogDescription>
-                                Describe your issue and our team will respond within 24 hours
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Subject
-                                </label>
-                                <Input
-                                    placeholder="Brief description of your issue"
-                                    value={ticketForm.subject}
-                                    onChange={(e) => setTicketForm({ ...ticketForm, subject: e.target.value })}
-                                />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Category
-                                    </label>
-                                    <Select
-                                        value={ticketForm.category}
-                                        onValueChange={(value) => setTicketForm({ ...ticketForm, category: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="general">General Question</SelectItem>
-                                            <SelectItem value="technical">Technical Issue</SelectItem>
-                                            <SelectItem value="bug">Bug Report</SelectItem>
-                                            <SelectItem value="feature">Feature Request</SelectItem>
-                                            <SelectItem value="account">Account Issue</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Priority
-                                    </label>
-                                    <Select
-                                        value={ticketForm.priority}
-                                        onValueChange={(value) => setTicketForm({ ...ticketForm, priority: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="low">Low</SelectItem>
-                                            <SelectItem value="medium">Medium</SelectItem>
-                                            <SelectItem value="high">High</SelectItem>
-                                            <SelectItem value="urgent">Urgent</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Description
-                                </label>
-                                <Textarea
-                                    placeholder="Please provide detailed information about your issue..."
-                                    value={ticketForm.description}
-                                    onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
-                                    className="min-h-[150px]"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setShowTicketForm(false)}>
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleSubmitTicket}
-                                disabled={!ticketForm.subject || !ticketForm.description}
-                                className="bg-indigo-600 hover:bg-indigo-700"
-                            >
-                                <Send className="w-4 h-4 mr-2" />
-                                Submit Ticket
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
             </div>
         </div>
     );
