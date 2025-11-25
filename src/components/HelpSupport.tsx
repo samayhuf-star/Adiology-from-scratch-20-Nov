@@ -508,6 +508,7 @@ export const HelpSupport = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedArticle, setSelectedArticle] = useState<any>(null);
     const [showArticleDialog, setShowArticleDialog] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'article'>('list');
     
     // Support Ticket State
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -571,6 +572,175 @@ export const HelpSupport = () => {
         };
         return <Badge className={colors[status]}>{status.replace('-', ' ').toUpperCase()}</Badge>;
     };
+
+    // If viewing an article, show full detailed view
+    if (viewMode === 'article' && selectedArticle) {
+        const SectionIcon = selectedArticle.sectionIcon || Book;
+        
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+                <div className="max-w-5xl mx-auto">
+                    {/* Back Button */}
+                    <Button
+                        variant="ghost"
+                        onClick={() => setViewMode('list')}
+                        className="mb-6 gap-2 hover:bg-indigo-50"
+                    >
+                        <ChevronDown className="w-4 h-4 rotate-90" />
+                        Back to Documentation
+                    </Button>
+
+                    {/* Article Header */}
+                    <Card className="mb-6 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+                        <CardHeader>
+                            <div className="flex items-center gap-3 text-indigo-600 mb-2">
+                                <SectionIcon className="w-5 h-5" />
+                                <span className="text-sm font-semibold uppercase tracking-wide">
+                                    {selectedArticle.sectionTitle}
+                                </span>
+                            </div>
+                            <CardTitle className="text-3xl mb-2">{selectedArticle.title}</CardTitle>
+                            <CardDescription className="text-base">
+                                Complete guide with step-by-step instructions
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+
+                    {/* Article Content */}
+                    <Card className="border-slate-200 shadow-xl">
+                        <CardContent className="p-8">
+                            <div className="prose prose-slate prose-lg max-w-none">
+                                <div className="whitespace-pre-wrap text-slate-700 leading-relaxed space-y-4">
+                                    {selectedArticle.content.split('\n\n').map((paragraph: string, idx: number) => (
+                                        <div key={idx} className="mb-4">
+                                            {paragraph.startsWith('**') ? (
+                                                <h3 className="text-xl font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                                                    <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
+                                                    {paragraph.replace(/\*\*/g, '')}
+                                                </h3>
+                                            ) : paragraph.includes('**') ? (
+                                                <p className="text-slate-700 leading-relaxed">
+                                                    {paragraph.split('**').map((part, i) => 
+                                                        i % 2 === 0 ? part : <strong key={i} className="text-indigo-700 font-semibold">{part}</strong>
+                                                    )}
+                                                </p>
+                                            ) : paragraph.startsWith('-') || paragraph.match(/^\d\./) ? (
+                                                <ul className="space-y-2 ml-4">
+                                                    {paragraph.split('\n').filter(line => line.trim()).map((line, i) => (
+                                                        <li key={i} className="flex items-start gap-3 text-slate-700">
+                                                            <CheckCircle2 className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                                                            <span>{line.replace(/^[-\d.]\s*/, '')}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                                    {paragraph}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Visual Example Placeholder */}
+                                <div className="mt-8 p-8 bg-gradient-to-br from-slate-100 to-blue-100 rounded-xl border-2 border-indigo-200">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="bg-indigo-600 rounded-lg p-2">
+                                            <AlertCircle className="w-5 h-5 text-white" />
+                                        </div>
+                                        <h4 className="font-bold text-slate-800 text-lg">Visual Example</h4>
+                                    </div>
+                                    <div className="bg-white rounded-lg border-2 border-slate-300 p-6 mb-4">
+                                        <div className="aspect-video bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg flex items-center justify-center border border-slate-200">
+                                            <div className="text-center">
+                                                <BarChart3 className="w-16 h-16 text-indigo-400 mx-auto mb-3" />
+                                                <p className="text-slate-500 font-medium">Screenshot Placeholder</p>
+                                                <p className="text-xs text-slate-400 mt-1">Visual guide for {selectedArticle.title}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        📸 <strong>Pro Tip:</strong> Follow the steps above while looking at your dashboard. 
+                                        The interface is intuitive and guides you through each action.
+                                    </p>
+                                </div>
+
+                                {/* Quick Tips Box */}
+                                <div className="mt-8 p-6 bg-emerald-50 rounded-xl border-2 border-emerald-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Zap className="w-5 h-5 text-emerald-600" />
+                                        <h4 className="font-bold text-emerald-900">Quick Tips</h4>
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-emerald-800">
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                            Take your time to explore each feature as you go
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                            Use the search bar if you need to find specific tools quickly
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                            Check the FAQ section if you have additional questions
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Related Articles */}
+                                <div className="mt-8 p-6 bg-blue-50 rounded-xl border-2 border-blue-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Book className="w-5 h-5 text-blue-600" />
+                                        <h4 className="font-bold text-blue-900">Related Documentation</h4>
+                                    </div>
+                                    <p className="text-sm text-blue-700 mb-3">
+                                        Continue learning with these related topics:
+                                    </p>
+                                    <div className="grid gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="justify-start text-left hover:bg-blue-100 border-blue-300"
+                                            onClick={() => setViewMode('list')}
+                                        >
+                                            <ChevronRight className="w-4 h-4 mr-2" />
+                                            View All Documentation
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="justify-start text-left hover:bg-blue-100 border-blue-300"
+                                            onClick={() => { setViewMode('list'); setActiveTab('faq'); }}
+                                        >
+                                            <HelpCircle className="w-4 h-4 mr-2" />
+                                            Browse FAQ
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Bottom Actions */}
+                    <div className="mt-6 flex justify-between items-center">
+                        <Button
+                            variant="outline"
+                            onClick={() => setViewMode('list')}
+                            className="gap-2"
+                        >
+                            <ChevronDown className="w-4 h-4 rotate-90" />
+                            Back to Documentation
+                        </Button>
+                        <Button
+                            onClick={() => { setViewMode('list'); setActiveTab('support'); }}
+                            className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            Still Need Help?
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -640,8 +810,8 @@ export const HelpSupport = () => {
                                             <div
                                                 key={idx}
                                                 onClick={() => {
-                                                    setSelectedArticle({ ...article, sectionTitle: section.title });
-                                                    setShowArticleDialog(true);
+                                                    setSelectedArticle({ ...article, sectionTitle: section.title, sectionIcon: section.icon });
+                                                    setViewMode('article');
                                                 }}
                                                 className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition-all group"
                                             >
@@ -766,24 +936,6 @@ export const HelpSupport = () => {
                         </Card>
                     </TabsContent>
                 </Tabs>
-
-                {/* Article Dialog */}
-                <Dialog open={showArticleDialog} onOpenChange={setShowArticleDialog}>
-                    <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                            <div className="flex items-center gap-2 text-sm text-indigo-600 mb-2">
-                                <Book className="w-4 h-4" />
-                                {selectedArticle?.sectionTitle}
-                            </div>
-                            <DialogTitle className="text-2xl">{selectedArticle?.title}</DialogTitle>
-                        </DialogHeader>
-                        <div className="prose prose-slate max-w-none">
-                            <div className="whitespace-pre-wrap text-slate-700 leading-relaxed">
-                                {selectedArticle?.content}
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
 
                 {/* New Ticket Dialog */}
                 <Dialog open={showTicketForm} onOpenChange={setShowTicketForm}>
