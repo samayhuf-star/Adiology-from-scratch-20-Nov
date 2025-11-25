@@ -43,22 +43,33 @@ export async function getCurrentUserProfile() {
       .eq('id', user.id)
       .single();
 
-    // If profile doesn't exist (404, PGRST116, or PGRST205 permission error), create it
+    // Handle PGRST205 - table not found in schema cache (table might not exist or schema issue)
+    if (error && error.code === 'PGRST205') {
+      console.warn('⚠️ Table "users" not found in schema cache. This may indicate the migration hasn\'t been run or there\'s a schema issue.');
+      // Return minimal user object so app doesn't break
+      const minimalUser = {
+        id: user.id,
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        role: 'user',
+        subscription_plan: 'free',
+        subscription_status: 'active',
+      };
+      profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+      return minimalUser;
+    }
+
+    // If profile doesn't exist (404, PGRST116), create it
     const isNotFoundError = error && (
       error.code === 'PGRST116' || 
-      error.code === 'PGRST205' || // Permission denied - might need to create profile
       error.message?.includes('No rows') ||
       error.message?.includes('not found') ||
-      error.message?.includes('permission denied') ||
       (error as any).status === 404 ||
       (error as any).code === '404'
     );
 
     if (isNotFoundError) {
-      // Don't log PGRST205 as it's a common permission error that we handle gracefully
-      if (error.code !== 'PGRST205') {
-        console.log('User profile not found, creating one...', { userId: user.id, errorCode: error.code });
-      }
+      console.log('User profile not found, creating one...', { userId: user.id, errorCode: error.code });
       try {
         const fullName = user.user_metadata?.full_name || 
                         user.user_metadata?.full_name || 
@@ -112,6 +123,7 @@ export async function getCurrentUserProfile() {
       // PGRST205 typically means RLS policy is blocking, which we handle by creating profile
       if (error.code === 'PGRST205') {
         // Silently handle - this is expected for new users without profiles
+        // Return cached minimal user if available, otherwise create new one
         const minimalUser = {
           id: user.id,
           email: user.email || '',
@@ -120,7 +132,8 @@ export async function getCurrentUserProfile() {
           subscription_plan: 'free',
           subscription_status: 'active',
         };
-        profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+        // Don't cache PGRST205 errors to allow retry on next fetch
+        // Return minimal user immediately without logging
         return minimalUser;
       }
       // Don't log as error if it's a common/expected error - use warn instead
@@ -192,6 +205,13 @@ export async function createUserProfile(userId: string, email: string, fullName:
       .eq('id', userId)
       .maybeSingle();
 
+    // Handle PGRST205 - table not found in schema cache (table might not exist or schema issue)
+    if (checkError && checkError.code === 'PGRST205') {
+      // Silently return null - don't spam console with warnings
+      // The app will work with minimal user object from auth
+      return null;
+    }
+
     // If error is not "not found", log it but continue
     if (checkError && checkError.code !== 'PGRST116') {
       console.warn('Warning checking for existing user (continuing anyway):', checkError);
@@ -238,6 +258,13 @@ export async function createUserProfile(userId: string, email: string, fullName:
       if (error) {
         console.error('Error inserting user profile:', error);
         
+        // Handle PGRST205 - table not found in schema cache
+        if (error.code === 'PGRST205') {
+          console.warn('⚠️ Table "users" not found in schema cache. Profile creation skipped.');
+          // Return null instead of throwing - app will work with minimal user object
+          return null;
+        }
+        
         // If it's a duplicate key error, try to fetch the existing profile
         if (error.code === '23505' || error.message?.includes('duplicate')) {
           console.log('Profile already exists (duplicate key), fetching it...');
@@ -249,6 +276,11 @@ export async function createUserProfile(userId: string, email: string, fullName:
           
           if (fetchError) {
             console.error('Error fetching existing profile:', fetchError);
+            // If fetch also fails with PGRST205, return null
+            if (fetchError.code === 'PGRST205') {
+              console.warn('⚠️ Table "users" not found when fetching existing profile.');
+              return null;
+            }
             throw fetchError;
           }
           console.log('✅ Fetched existing user profile');
@@ -258,7 +290,8 @@ export async function createUserProfile(userId: string, email: string, fullName:
         // If it's a permission error (RLS), log it but don't throw - we'll handle it gracefully
         if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
           console.warn('⚠️ RLS policy may be blocking profile creation:', error);
-          throw error;
+          // Return null instead of throwing - app will work with minimal user object
+          return null;
         }
         
         throw error;

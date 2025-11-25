@@ -50,6 +50,8 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const prevUserIdRef = React.useRef<string | null>(null);
   const processingRouteRef = React.useRef(false);
+  const routeProcessedRef = React.useRef<string | null>(null); // Track processed routes
+  const appViewRef = React.useRef<AppView>('home'); // Track current appView to prevent unnecessary updates
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Campaign Created', message: 'Your campaign "Summer Sale" has been created successfully', time: '2 hours ago', read: false },
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
@@ -173,6 +175,8 @@ const App = () => {
   useEffect(() => {
     let isMounted = true;
     let profileFetchInProgress = false;
+    let lastProcessedUserId: string | null = null;
+    let authChangeTimeout: NodeJS.Timeout | null = null;
     
     // Check initial session
     const initializeAuth = async () => {
@@ -180,14 +184,15 @@ const App = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user && isMounted) {
+          lastProcessedUserId = session.user.id;
           try {
             const userProfile = await getCurrentUserProfile();
-            if (isMounted) {
+            if (isMounted && lastProcessedUserId === session.user.id) {
               setUser(userProfile);
             }
           } catch (error) {
             console.error('Error fetching user profile during init:', error);
-            if (isMounted) {
+            if (isMounted && lastProcessedUserId === session.user.id) {
               // Set minimal user on error
               setUser({
                 id: session.user.id,
@@ -201,11 +206,13 @@ const App = () => {
           }
         } else if (isMounted) {
           setUser(null);
+          lastProcessedUserId = null;
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (isMounted) {
           setUser(null);
+          lastProcessedUserId = null;
         }
       } finally {
         if (isMounted) {
@@ -216,78 +223,126 @@ const App = () => {
 
     initializeAuth();
 
-    // Listen for auth state changes with debouncing
+    // Listen for auth state changes with debouncing and duplicate prevention
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Prevent multiple simultaneous profile fetches
-      if (profileFetchInProgress) {
-        return;
+      // Clear any pending auth change processing
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
       }
 
-      if (session?.user && isMounted) {
-        profileFetchInProgress = true;
-        
-        // Set minimal user immediately to avoid UI flicker
-        const minimalUser = {
-          id: session.user.id,
-          email: session.user.email || '',
-          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          role: 'user',
-          subscription_plan: 'free',
-          subscription_status: 'active',
-        };
-        
-        // Only update if user actually changed
-        setUser(prevUser => {
-          if (prevUser?.id === minimalUser.id) {
-            return prevUser; // Don't update if same user
-          }
-          return minimalUser;
-        });
-        
-        // Fetch full profile in background (non-blocking)
-        getCurrentUserProfile()
-          .then((userProfile) => {
-            profileFetchInProgress = false;
-            if (userProfile && isMounted) {
-              setUser(prevUser => {
-                // Only update if still the same user
-                if (prevUser?.id === userProfile.id) {
-                  return userProfile;
-                }
-                return prevUser;
-              });
+      // Debounce auth state changes to prevent rapid-fire updates
+      authChangeTimeout = setTimeout(async () => {
+        if (!isMounted) return;
+
+        // Prevent multiple simultaneous profile fetches
+        if (profileFetchInProgress) {
+          return;
+        }
+
+        const currentUserId = session?.user?.id || null;
+
+        // Skip if we're already processing this same user
+        if (currentUserId === lastProcessedUserId && currentUserId !== null) {
+          return;
+        }
+
+        if (session?.user && isMounted) {
+          // Update last processed user ID immediately to prevent duplicate processing
+          lastProcessedUserId = session.user.id;
+          profileFetchInProgress = true;
+          
+          // Set minimal user immediately to avoid UI flicker
+          const minimalUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+            role: 'user',
+            subscription_plan: 'free',
+            subscription_status: 'active',
+          };
+          
+          // Only update if user actually changed
+          setUser(prevUser => {
+            if (prevUser?.id === minimalUser.id) {
+              // Same user, don't update unless we have more complete data
+              return prevUser;
             }
-          })
-          .catch((error) => {
-            profileFetchInProgress = false;
-            console.warn('Profile fetch failed in auth listener (non-critical):', error);
-            // Keep using minimal user - already set above
+            return minimalUser;
           });
-      } else if (isMounted) {
-        setUser(null);
-        // If user signed out and we're on user view, go to home
-        if (event === 'SIGNED_OUT' && appView === 'user') {
-          setAppView('home');
+          
+          // Fetch full profile in background (non-blocking)
+          getCurrentUserProfile()
+            .then((userProfile) => {
+              profileFetchInProgress = false;
+              if (userProfile && isMounted && lastProcessedUserId === session.user.id) {
+                setUser(prevUser => {
+                  // Only update if still the same user and we got new data
+                  if (prevUser?.id === userProfile.id) {
+                    // Only update if the new profile has more complete data
+                    return userProfile;
+                  }
+                  return prevUser;
+                });
+              }
+            })
+            .catch((error) => {
+              profileFetchInProgress = false;
+              // Silently handle - minimal user already set
+              // Only log if it's not a permission error
+              if (error?.code !== 'PGRST205') {
+                console.warn('Profile fetch failed in auth listener (non-critical):', error?.code || error?.message);
+              }
+              // Keep using minimal user - already set above
+            });
+        } else if (isMounted) {
+          lastProcessedUserId = null;
+          setUser(prevUser => {
+            // Only update if we actually had a user before
+            if (prevUser) {
+              return null;
+            }
+            return prevUser;
+          });
+          // If user signed out and we're on user view, go to home
+          if (event === 'SIGNED_OUT') {
+            // Use setTimeout to avoid state update during render
+            setTimeout(() => {
+              if (isMounted) {
+                setAppView('home');
+              }
+            }, 0);
+          }
         }
-      }
 
-      // Handle password recovery
-      if (event === 'PASSWORD_RECOVERY' && isMounted) {
-        setAppView('reset-password');
-      }
-
-      // Handle email verification
-      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && isMounted) {
-        // User just verified email, redirect to pricing/home
-        if (window.location.pathname.includes('/verify-email')) {
-          window.history.pushState({}, '', '/');
-          setAppView('home');
+        // Handle password recovery
+        if (event === 'PASSWORD_RECOVERY' && isMounted) {
+          setTimeout(() => {
+            if (isMounted) {
+              setAppView('reset-password');
+            }
+          }, 0);
         }
-      }
+
+        // Handle email verification
+        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && isMounted) {
+          // User just verified email, redirect to pricing/home
+          if (window.location.pathname.includes('/verify-email')) {
+            setTimeout(() => {
+              if (isMounted) {
+                window.history.pushState({}, '', '/');
+                setAppView('home');
+              }
+            }, 0);
+          }
+        }
+      }, 100); // Debounce by 100ms to prevent rapid-fire updates
     });
 
     return () => {
       isMounted = false;
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
+      }
       subscription.unsubscribe();
     };
   }, []);
@@ -300,21 +355,39 @@ const App = () => {
     let isMounted = true;
     const path = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
-    const userId = user?.id; // Use only the ID, not the whole object
+    const userId = user?.id || null; // Use only the ID, not the whole object
     const currentUserId = prevUserIdRef.current;
     
-    // Only process if user ID actually changed OR if we haven't processed yet
-    if (currentUserId === userId && currentUserId !== null) {
-      // User ID hasn't changed and we've processed before - skip unless route changed
+    // Create a unique key for this route/user combination
+    const routeKey = `${path}-${userId || 'anonymous'}`;
+    
+    // Only process if route/user combination actually changed
+    if (routeProcessedRef.current === routeKey) {
+      // Already processed this exact route/user combination
       return;
     }
     
+    // Only process if user ID actually changed OR if we haven't processed yet
+    if (currentUserId === userId && currentUserId !== null && routeProcessedRef.current !== null) {
+      // User ID hasn't changed and we've processed before - skip unless route changed
+      const currentPath = window.location.pathname;
+      if (routeProcessedRef.current?.startsWith(currentPath)) {
+        return;
+      }
+    }
+    
+    // Mark as processing to prevent concurrent runs
     processingRouteRef.current = true;
     prevUserIdRef.current = userId;
+    routeProcessedRef.current = routeKey;
     
     // Check if user is accessing /reset-password route
     if (path === '/reset-password' || path.startsWith('/reset-password')) {
-      if (isMounted) setAppView('reset-password');
+      if (isMounted && appViewRef.current !== 'reset-password') {
+        appViewRef.current = 'reset-password';
+        setAppView('reset-password');
+      }
+      setTimeout(() => { processingRouteRef.current = false; }, 0);
       return;
     }
     
@@ -325,15 +398,17 @@ const App = () => {
       const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
       const isSubscription = urlParams.get('subscription') === 'true';
       
-      if (isMounted) {
+      if (isMounted && appViewRef.current !== 'payment-success') {
         setSelectedPlan({
           name: planName,
           priceId: urlParams.get('priceId') || '',
           amount,
           isSubscription
         });
+        appViewRef.current = 'payment-success';
         setAppView('payment-success');
       }
+      processingRouteRef.current = false;
       return;
     }
     
@@ -347,29 +422,37 @@ const App = () => {
       // Check if user is logged in
       if (!userId) {
         // Redirect to signup
-        if (isMounted) {
+        if (isMounted && appViewRef.current !== 'auth') {
           window.history.pushState({}, '', '/');
           setAuthMode('signup');
+          appViewRef.current = 'auth';
           setAppView('auth');
         }
+        processingRouteRef.current = false;
         return;
       }
       
-      if (isMounted) {
+      if (isMounted && appViewRef.current !== 'payment') {
         setSelectedPlan({
           name: planName,
           priceId,
           amount,
           isSubscription
         });
+        appViewRef.current = 'payment';
         setAppView('payment');
       }
+      processingRouteRef.current = false;
       return;
     }
     
     // Check if user is accessing /verify-email route
     if (path === '/verify-email' || path.startsWith('/verify-email')) {
-      if (isMounted) setAppView('verify-email');
+      if (isMounted && appViewRef.current !== 'verify-email') {
+        appViewRef.current = 'verify-email';
+        setAppView('verify-email');
+      }
+      processingRouteRef.current = false;
       return;
     }
     
@@ -381,19 +464,34 @@ const App = () => {
             const isAdmin = await isSuperAdmin();
             if (isMounted) {
               if (isAdmin) {
-                setAppView('admin-landing');
+                if (appViewRef.current !== 'admin-landing') {
+                  appViewRef.current = 'admin-landing';
+                  setAppView('admin-landing');
+                }
               } else {
-                setAppView('admin-login');
+                if (appViewRef.current !== 'admin-login') {
+                  appViewRef.current = 'admin-login';
+                  setAppView('admin-login');
+                }
               }
             }
           } catch (error) {
             console.warn('Error checking super admin status:', error);
-            if (isMounted) setAppView('admin-login');
+            if (isMounted && appViewRef.current !== 'admin-login') {
+              appViewRef.current = 'admin-login';
+              setAppView('admin-login');
+            }
+          } finally {
+            processingRouteRef.current = false;
           }
         };
         checkSuperAdmin();
       } else {
-        if (isMounted) setAppView('admin-login');
+        if (isMounted && appViewRef.current !== 'admin-login') {
+          appViewRef.current = 'admin-login';
+          setAppView('admin-login');
+        }
+        processingRouteRef.current = false;
       }
       return;
     }
@@ -407,28 +505,39 @@ const App = () => {
           if (isMounted) {
             if (isAdmin) {
               // Super admin accessing regular routes, redirect to superadmin
-              window.history.pushState({}, '', '/superadmin');
-              setAppView('admin-landing');
+              if (appViewRef.current !== 'admin-landing') {
+                window.history.pushState({}, '', '/superadmin');
+                appViewRef.current = 'admin-landing';
+                setAppView('admin-landing');
+              }
             } else {
-              setAppView('user');
+              if (appViewRef.current !== 'user') {
+                appViewRef.current = 'user';
+                setAppView('user');
+              }
             }
           }
         } catch (error) {
           console.warn('Error checking super admin status:', error);
-          if (isMounted) setAppView('user');
+          if (isMounted && appViewRef.current !== 'user') {
+            appViewRef.current = 'user';
+            setAppView('user');
+          }
+        } finally {
+          processingRouteRef.current = false;
         }
       };
       checkSuperAdmin();
     } else {
-      if (isMounted) setAppView('home');
+      if (isMounted && appViewRef.current !== 'home') {
+        appViewRef.current = 'home';
+        setAppView('home');
+      }
+      processingRouteRef.current = false;
     }
 
     return () => {
       isMounted = false;
-      // Reset processing flag after a short delay to allow route processing
-      setTimeout(() => {
-        processingRouteRef.current = false;
-      }, 100);
     };
   }, [loading, user?.id]); // Only depend on user ID, not the whole user object
 
