@@ -145,21 +145,6 @@ const App = () => {
     setFavicon();
   }, []);
 
-  // Inject ClickBlock Tracking Snippet
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.async = true;
-    script.src = 'https://clickblock.co/tracking.js';
-    script.setAttribute('data-snippet-id', 'AG-B4C29A7U');
-    
-    const s = document.getElementsByTagName('script')[0];
-    if (s && s.parentNode) {
-      s.parentNode.insertBefore(script, s);
-    } else {
-      document.head.appendChild(script);
-    }
-  }, []);
 
   // Initialize auth state and listen for changes
   useEffect(() => {
