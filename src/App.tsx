@@ -13,7 +13,6 @@ import {
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder } from './components/CampaignBuilder';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
-import { CSVValidator } from './components/CSVValidator';
 import { CSVValidator2 } from './components/CSVValidator2';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
@@ -586,7 +585,6 @@ const App = () => {
     { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
-    { id: 'csv-validator', label: 'CSV Validator', icon: FileCheck },
     { id: 'csv-validator-2', label: 'CSV Validator 2.0', icon: FileCheck },
     { id: 'history', label: 'History', icon: FileCheck }, // Using FileCheck as placeholder for History icon if needed, or import History
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -607,8 +605,6 @@ const App = () => {
         return <CampaignBuilder initialData={activeTab === 'campaign-builder' ? historyData : null} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
-      case 'csv-validator':
-        return <CSVValidator />;
       case 'csv-validator-2':
         return <CSVValidator2 />;
       case 'keyword-planner':
