@@ -31,7 +31,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     }
 
     // Handle email verification from Supabase
-    supabase.auth.onAuthStateChange((event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         // User has verified their email
         if (session.user.email_confirmed_at) {
@@ -61,6 +61,11 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     };
 
     checkVerification();
+
+    // Cleanup: unsubscribe from auth state changes
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [onVerificationSuccess]);
 
   const handleResendEmail = async () => {

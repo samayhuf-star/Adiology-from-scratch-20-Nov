@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package
 } from 'lucide-react';
@@ -48,11 +48,6 @@ const App = () => {
   const [historyData, setHistoryData] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const prevUserIdRef = React.useRef<string | null>(null);
-  const processingRouteRef = React.useRef(false);
-  const routeProcessedRef = React.useRef<string | null>(null); // Track processed routes
-  const appViewRef = React.useRef<AppView>('home'); // Track current appView to prevent unnecessary updates
-  const lastAppViewRef = React.useRef<AppView | null>(null); // Track last appView to prevent duplicate updates
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Campaign Created', message: 'Your campaign "Summer Sale" has been created successfully', time: '2 hours ago', read: false },
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
@@ -170,7 +165,6 @@ const App = () => {
     
     setFavicon();
   }, []);
-
 
   // Initialize auth state and listen for changes
   useEffect(() => {
@@ -348,248 +342,109 @@ const App = () => {
     };
   }, []);
 
-  // Check URL path and authentication on mount
+  // Handle route/view state when auth or URL changes
   useEffect(() => {
-    if (loading) return; // Wait for auth to initialize
-    if (processingRouteRef.current) return; // Already processing a route change
+    if (loading) return;
 
-    let isMounted = true;
+    let isActive = true;
     const path = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
-    
-    // Personal bypass link - direct access to dashboard without auth
     const bypassKey = urlParams.get('bypass');
-    if (bypassKey === 'adiology2025dev' || bypassKey === 'samay2025') {
-      // Set a dummy user object for bypass access
-      const bypassUser = {
-        id: 'bypass-user-id',
-        email: 'dev@adiology.com',
-        full_name: 'Developer Access',
-        role: 'user',
-        subscription_plan: 'free',
-        subscription_status: 'active',
-      };
-      
-      // Only set user if not already set or if it's different
-      if (!user || user.id !== 'bypass-user-id') {
-        setUser(bypassUser);
-      }
-      
-      // Direct to dashboard view
-      if (isMounted && appViewRef.current !== 'user' && lastAppViewRef.current !== 'user') {
-        lastAppViewRef.current = 'user';
-        appViewRef.current = 'user';
-        setAppView('user');
-        setActiveTab('dashboard');
-        // Clean URL - remove bypass parameter
-        window.history.replaceState({}, '', '/');
-      }
-      setTimeout(() => { processingRouteRef.current = false; }, 0);
-      return;
-    }
-    
-    const userId = user?.id || null; // Use only the ID, not the whole object
-    const currentUserId = prevUserIdRef.current;
-    
-    // Create a unique key for this route/user combination
-    const routeKey = `${path}-${userId || 'anonymous'}`;
-    
-    // Only process if route/user combination actually changed
-    if (routeProcessedRef.current === routeKey) {
-      // Already processed this exact route/user combination
-      return;
-    }
-    
-    // Only process if user ID actually changed OR if we haven't processed yet
-    if (currentUserId === userId && currentUserId !== null && routeProcessedRef.current !== null) {
-      // User ID hasn't changed and we've processed before - skip unless route changed
-      const currentPath = window.location.pathname;
-      if (routeProcessedRef.current?.startsWith(currentPath)) {
-        return;
-      }
-    }
-    
-    // Mark as processing to prevent concurrent runs
-    processingRouteRef.current = true;
-    prevUserIdRef.current = userId;
-    routeProcessedRef.current = routeKey;
-    
-    // Check if user is accessing /reset-password route
-    if (path === '/reset-password' || path.startsWith('/reset-password')) {
-      if (isMounted && appViewRef.current !== 'reset-password' && lastAppViewRef.current !== 'reset-password') {
-        lastAppViewRef.current = 'reset-password';
-        appViewRef.current = 'reset-password';
-        setAppView('reset-password');
-      }
-      setTimeout(() => { processingRouteRef.current = false; }, 0);
-      return;
-    }
-    
-    // Check if user is accessing /payment-success route
-    if (path === '/payment-success' || path.startsWith('/payment-success')) {
-      const planName = urlParams.get('plan') || 'Selected Plan';
-      const amountParam = urlParams.get('amount') || '0.00';
-      const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
-      const isSubscription = urlParams.get('subscription') === 'true';
-      
-      if (isMounted && appViewRef.current !== 'payment-success' && lastAppViewRef.current !== 'payment-success') {
-        setSelectedPlan({
-          name: planName,
-          priceId: urlParams.get('priceId') || '',
-          amount,
-          isSubscription
-        });
-        lastAppViewRef.current = 'payment-success';
-        appViewRef.current = 'payment-success';
-        setAppView('payment-success');
-      }
-      processingRouteRef.current = false;
-      return;
-    }
-    
-    // Check if user is accessing /payment route
-    if (path === '/payment' || path.startsWith('/payment')) {
+
+    const setView = (next: AppView) => {
+      setAppView(prev => (prev === next ? prev : next));
+    };
+
+    const applyPlanFromParams = () => {
       const planName = urlParams.get('plan') || 'Lifetime Unlimited';
       const priceId = urlParams.get('priceId') || '';
-      const amount = parseFloat(urlParams.get('amount') || '199');
+      const amountParam = urlParams.get('amount') || '199';
+      const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
       const isSubscription = urlParams.get('subscription') === 'true';
-      
-      // Check if user is logged in
-      if (!userId) {
-        // Redirect to signup
-        if (isMounted && appViewRef.current !== 'auth' && lastAppViewRef.current !== 'auth') {
-          window.history.pushState({}, '', '/');
-          setAuthMode('signup');
-          lastAppViewRef.current = 'auth';
-          appViewRef.current = 'auth';
-          setAppView('auth');
-        }
-        processingRouteRef.current = false;
+      setSelectedPlan({
+        name: planName,
+        priceId,
+        amount,
+        isSubscription
+      });
+    };
+
+    const handleSuperAdminRoute = () => {
+      if (!user) {
+        setView('admin-login');
         return;
       }
-      
-      if (isMounted && appViewRef.current !== 'payment' && lastAppViewRef.current !== 'payment') {
-        setSelectedPlan({
-          name: planName,
-          priceId,
-          amount,
-          isSubscription
-        });
-        lastAppViewRef.current = 'payment';
-        appViewRef.current = 'payment';
-        setAppView('payment');
-      }
-      processingRouteRef.current = false;
-      return;
-    }
-    
-    // Check if user is accessing /verify-email route
-    if (path === '/verify-email' || path.startsWith('/verify-email')) {
-      if (isMounted && appViewRef.current !== 'verify-email' && lastAppViewRef.current !== 'verify-email') {
-        lastAppViewRef.current = 'verify-email';
-        appViewRef.current = 'verify-email';
-        setAppView('verify-email');
-      }
-      processingRouteRef.current = false;
-      return;
-    }
-    
-    // Check if user is accessing /superadmin route
-    if (path === '/superadmin' || path.startsWith('/superadmin/')) {
-      if (userId) {
-        const checkSuperAdmin = async () => {
-          try {
-            const isAdmin = await isSuperAdmin();
-            if (isMounted) {
-              if (isAdmin) {
-                if (appViewRef.current !== 'admin-landing' && lastAppViewRef.current !== 'admin-landing') {
-                  lastAppViewRef.current = 'admin-landing';
-                  appViewRef.current = 'admin-landing';
-                  setAppView('admin-landing');
-                }
-              } else {
-                if (appViewRef.current !== 'admin-login' && lastAppViewRef.current !== 'admin-login') {
-                  lastAppViewRef.current = 'admin-login';
-                  appViewRef.current = 'admin-login';
-                  setAppView('admin-login');
-                }
-              }
-            }
-          } catch (error) {
-            console.warn('Error checking super admin status:', error);
-            if (isMounted && appViewRef.current !== 'admin-login' && lastAppViewRef.current !== 'admin-login') {
-              lastAppViewRef.current = 'admin-login';
-              appViewRef.current = 'admin-login';
-              setAppView('admin-login');
-            }
-          } finally {
-            processingRouteRef.current = false;
-          }
-        };
-        checkSuperAdmin();
-      } else {
-        if (isMounted && appViewRef.current !== 'admin-login' && lastAppViewRef.current !== 'admin-login') {
-          lastAppViewRef.current = 'admin-login';
-          appViewRef.current = 'admin-login';
-          setAppView('admin-login');
-        }
-        processingRouteRef.current = false;
-      }
-      return;
-    }
-
-    // Regular routes - only run once per user change
-    if (userId) {
-      // Check if superadmin
-      const checkSuperAdmin = async () => {
+      (async () => {
         try {
           const isAdmin = await isSuperAdmin();
-          if (isMounted) {
-            if (isAdmin) {
-              // Super admin accessing regular routes, redirect to superadmin
-              if (appViewRef.current !== 'admin-landing' && lastAppViewRef.current !== 'admin-landing') {
-                window.history.pushState({}, '', '/superadmin');
-                lastAppViewRef.current = 'admin-landing';
-                appViewRef.current = 'admin-landing';
-                setAppView('admin-landing');
-              }
-            } else {
-              if (appViewRef.current !== 'user' && lastAppViewRef.current !== 'user') {
-                lastAppViewRef.current = 'user';
-                appViewRef.current = 'user';
-                setAppView('user');
-              }
-            }
-          }
+          if (!isActive) return;
+          setView(isAdmin ? 'admin-landing' : 'admin-login');
         } catch (error) {
-          console.warn('Error checking super admin status:', error);
-          if (isMounted && appViewRef.current !== 'user' && lastAppViewRef.current !== 'user') {
-            lastAppViewRef.current = 'user';
-            appViewRef.current = 'user';
-            setAppView('user');
-          }
-        } finally {
-          processingRouteRef.current = false;
+          if (!isActive) return;
+          setView('admin-login');
         }
-      };
-      checkSuperAdmin();
-    } else {
-      if (isMounted && appViewRef.current !== 'home' && lastAppViewRef.current !== 'home') {
-        lastAppViewRef.current = 'home';
-        appViewRef.current = 'home';
-        setAppView('home');
+      })();
+    };
+
+    const handleRoute = () => {
+      if (bypassKey === 'adiology2025dev' || bypassKey === 'samay2025') {
+        if (!user || user.id !== 'bypass-user-id') {
+          setUser({
+            id: 'bypass-user-id',
+            email: 'dev@adiology.com',
+            full_name: 'Developer Access',
+            role: 'user',
+            subscription_plan: 'free',
+            subscription_status: 'active',
+          });
+        }
+        setActiveTab('dashboard');
+        setView('user');
+        window.history.replaceState({}, '', '/');
+        return;
       }
-      processingRouteRef.current = false;
-    }
+
+      if (path.startsWith('/reset-password')) {
+        setView('reset-password');
+        return;
+      }
+
+      if (path.startsWith('/verify-email')) {
+        setView('verify-email');
+        return;
+      }
+
+      if (path.startsWith('/payment-success')) {
+        applyPlanFromParams();
+        setView('payment-success');
+        return;
+      }
+
+      if (path.startsWith('/payment')) {
+        applyPlanFromParams();
+        if (user) {
+          setView('payment');
+        } else {
+          setAuthMode('signup');
+          setView('auth');
+        }
+        return;
+      }
+
+      if (path.startsWith('/superadmin')) {
+        handleSuperAdminRoute();
+        return;
+      }
+
+      setView(user ? 'user' : 'home');
+    };
+
+    handleRoute();
 
     return () => {
-      isMounted = false;
-      // Reset processing flag on cleanup
-      setTimeout(() => {
-        processingRouteRef.current = false;
-      }, 100);
+      isActive = false;
     };
-  }, [loading, user?.id]); // Only depend on user ID, not the whole user object
+  }, [loading, user?.id]);
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -636,6 +491,24 @@ const App = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [user]);
 
+  // Ensure session exists when user view is requested
+  useEffect(() => {
+    if (!user && appView === 'user' && !loading) {
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setTimeout(() => {
+            setAppView('home');
+            setAuthMode('login');
+          }, 1000);
+        }
+      };
+      const timeout = setTimeout(checkSession, 500);
+      return () => clearTimeout(timeout);
+    }
+    return undefined;
+  }, [user, appView, loading]);
+
   // Function to handle plan selection
   const handleSelectPlan = async (planName: string, priceId: string, amount: number, isSubscription: boolean) => {
     // Check if user is logged in
@@ -651,6 +524,98 @@ const App = () => {
     setSelectedPlan({ name: planName, priceId, amount, isSubscription });
     window.history.pushState({}, '', `/payment?plan=${encodeURIComponent(planName)}&priceId=${encodeURIComponent(priceId)}&amount=${amount}&subscription=${isSubscription}`);
     setAppView('payment');
+  };
+
+  // Default: User view (protected) navigation structure
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+    { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },
+    { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
+    { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
+    { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
+    { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
+    { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
+    { id: 'csv-validator-2', label: 'CSV Validator 2.0', icon: FileCheck },
+    { id: 'history', label: 'History', icon: FileCheck },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
+  ];
+
+  // Bug_64: Generate search suggestions based on query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const suggestions: string[] = [];
+
+    menuItems.forEach(item => {
+      if (item.label.toLowerCase().includes(query)) {
+        suggestions.push(item.label);
+      }
+    });
+
+    const commonTerms = [
+      'marketing', 'market analysis', 'market research',
+      'campaign', 'campaigns', 'ad campaign',
+      'keywords', 'keyword research', 'keyword planning',
+      'ads', 'advertising', 'ad builder',
+      'negative keywords', 'exclude keywords',
+      'csv', 'export', 'import', 'validator',
+      'settings', 'billing', 'account',
+      'help', 'support', 'documentation'
+    ];
+
+    commonTerms.forEach(term => {
+      if (term.toLowerCase().includes(query) && !suggestions.includes(term)) {
+        suggestions.push(term);
+      }
+    });
+
+    setSearchSuggestions(suggestions.slice(0, 8));
+    setShowSearchSuggestions(suggestions.length > 0);
+  }, [searchQuery]);
+
+  // Bug_64: Handle search suggestion click
+  const handleSearchSuggestionClick = (suggestion: string) => {
+    const matchingItem = menuItems.find(item => 
+      item.label.toLowerCase() === suggestion.toLowerCase()
+    );
+    
+    if (matchingItem) {
+      setActiveTab(matchingItem.id);
+      setSearchQuery('');
+      setShowSearchSuggestions(false);
+    } else {
+      const termMap: Record<string, string> = {
+        'marketing': 'campaign-builder',
+        'campaign': 'campaign-builder',
+        'campaigns': 'campaign-builder',
+        'keywords': 'keyword-planner',
+        'keyword research': 'keyword-planner',
+        'keyword planning': 'keyword-planner',
+        'ads': 'ads-builder',
+        'advertising': 'ads-builder',
+        'negative keywords': 'negative-keywords',
+        'csv': 'csv-validator-2',
+        'export': 'csv-validator-2',
+        'settings': 'settings',
+        'billing': 'settings',
+        'help': 'support-help',
+        'support': 'support-help'
+      };
+
+      const matchedTab = termMap[suggestion.toLowerCase()];
+      if (matchedTab) {
+        setActiveTab(matchedTab);
+      }
+      setSearchQuery('');
+      setShowSearchSuggestions(false);
+    }
   };
 
   // Render based on app view
@@ -853,35 +818,6 @@ const App = () => {
   // Protect user view - require authentication (unless bypass)
   // Wait for user to load from auth listener - it should happen quickly after login
   if (!user && appView === 'user' && !loading) {
-    // Check if bypass key is in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const bypassKey = urlParams.get('bypass');
-    
-    // Allow bypass access
-    if (bypassKey === 'adiology2025dev' || bypassKey === 'samay2025') {
-      const bypassUser = {
-        id: 'bypass-user-id',
-        email: 'dev@adiology.com',
-        full_name: 'Developer Access',
-        role: 'user',
-        subscription_plan: 'free',
-        subscription_status: 'active',
-      };
-      setUser(bypassUser);
-      // Show loading while user is being set - will re-render with user
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
-          <div className="text-white text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p>Loading...</p>
-          </div>
-        </div>
-      );
-    }
-    
-    // No user, no bypass - check if session exists (user is being loaded by auth listener)
-    // If no session after a moment, redirect to login
-    // The auth listener will load the user if session exists, so just show loading for now
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
         <div className="text-white text-center">
@@ -892,25 +828,6 @@ const App = () => {
     );
   }
   
-  // Add useEffect to check session and redirect if no session after timeout
-  useEffect(() => {
-    if (!user && appView === 'user' && !loading) {
-      const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          // No session - redirect to login after a brief delay
-          setTimeout(() => {
-            setAppView('home');
-            setAuthMode('login');
-          }, 1000);
-        }
-      };
-      // Wait a bit for auth listener to set user, then check
-      const timeout = setTimeout(checkSession, 500);
-      return () => clearTimeout(timeout);
-    }
-  }, [user, appView, loading]);
-
   // Show loading state while checking auth
   if (loading) {
     return (
@@ -922,102 +839,6 @@ const App = () => {
       </div>
     );
   }
-
-  // Default: User view (protected)
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
-    { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },
-    { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
-    { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
-    { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
-    { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
-    { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
-    { id: 'csv-validator-2', label: 'CSV Validator 2.0', icon: FileCheck },
-    { id: 'history', label: 'History', icon: FileCheck }, // Using FileCheck as placeholder for History icon if needed, or import History
-    { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
-  ];
-
-  // Bug_64: Generate search suggestions based on query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchSuggestions([]);
-      setShowSearchSuggestions(false);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase().trim();
-    const suggestions: string[] = [];
-
-    // Add matching menu items
-    menuItems.forEach(item => {
-      if (item.label.toLowerCase().includes(query)) {
-        suggestions.push(item.label);
-      }
-    });
-
-    // Add common search terms
-    const commonTerms = [
-      'marketing', 'market analysis', 'market research',
-      'campaign', 'campaigns', 'ad campaign',
-      'keywords', 'keyword research', 'keyword planning',
-      'ads', 'advertising', 'ad builder',
-      'negative keywords', 'exclude keywords',
-      'csv', 'export', 'import', 'validator',
-      'settings', 'billing', 'account',
-      'help', 'support', 'documentation'
-    ];
-
-    commonTerms.forEach(term => {
-      if (term.toLowerCase().includes(query) && !suggestions.includes(term)) {
-        suggestions.push(term);
-      }
-    });
-
-    setSearchSuggestions(suggestions.slice(0, 8)); // Limit to 8 suggestions
-    setShowSearchSuggestions(suggestions.length > 0);
-  }, [searchQuery]);
-
-  // Bug_64: Handle search suggestion click
-  const handleSearchSuggestionClick = (suggestion: string) => {
-    // Find matching menu item
-    const matchingItem = menuItems.find(item => 
-      item.label.toLowerCase() === suggestion.toLowerCase()
-    );
-    
-    if (matchingItem) {
-      setActiveTab(matchingItem.id);
-      setSearchQuery('');
-      setShowSearchSuggestions(false);
-    } else {
-      // For common terms, try to match to a menu item
-      const termMap: Record<string, string> = {
-        'marketing': 'campaign-builder',
-        'campaign': 'campaign-builder',
-        'campaigns': 'campaign-builder',
-        'keywords': 'keyword-planner',
-        'keyword research': 'keyword-planner',
-        'keyword planning': 'keyword-planner',
-        'ads': 'ads-builder',
-        'advertising': 'ads-builder',
-        'negative keywords': 'negative-keywords',
-        'csv': 'csv-validator-2',
-        'export': 'csv-validator-2',
-        'settings': 'settings',
-        'billing': 'settings',
-        'help': 'support-help',
-        'support': 'support-help'
-      };
-
-      const matchedTab = termMap[suggestion.toLowerCase()];
-      if (matchedTab) {
-        setActiveTab(matchedTab);
-      }
-      setSearchQuery('');
-      setShowSearchSuggestions(false);
-    }
-  };
 
   const renderContent = () => {
     // Reset history data if leaving the tab to prevent stale data injection
