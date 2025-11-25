@@ -14,7 +14,7 @@ import { api } from '../utils/api';
 import { createCheckoutSession, createCustomerPortalSession, PLAN_PRICE_IDS } from '../utils/stripe';
 import { notifications } from '../utils/notifications';
 import { isPaidUser } from '../utils/userPlan';
-import { getCurrentUserProfile } from '../utils/auth';
+
 import { getCurrentUserProfile } from '../utils/auth';
 
 export const BillingPanel = () => {

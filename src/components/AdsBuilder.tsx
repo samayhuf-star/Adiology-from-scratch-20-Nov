@@ -371,7 +371,6 @@ export const AdsBuilder = () => {
             description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help!`,
             description2: `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today!`,
             phoneNumber: '+1-800-123-4567',
-            phone: '+1-800-123-4567',
             businessName: 'Your Business',
             selected: false,
             extensions: []
