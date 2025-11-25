@@ -355,6 +355,38 @@ const App = () => {
     let isMounted = true;
     const path = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Personal bypass link - direct access to dashboard without auth
+    const bypassKey = urlParams.get('bypass');
+    if (bypassKey === 'adiology2025dev' || bypassKey === 'samay2025') {
+      // Set a dummy user object for bypass access
+      const bypassUser = {
+        id: 'bypass-user-id',
+        email: 'dev@adiology.com',
+        full_name: 'Developer Access',
+        role: 'user',
+        subscription_plan: 'free',
+        subscription_status: 'active',
+      };
+      
+      // Only set user if not already set or if it's different
+      if (!user || user.id !== 'bypass-user-id') {
+        setUser(bypassUser);
+      }
+      
+      // Direct to dashboard view
+      if (isMounted && appViewRef.current !== 'user' && lastAppViewRef.current !== 'user') {
+        lastAppViewRef.current = 'user';
+        appViewRef.current = 'user';
+        setAppView('user');
+        setActiveTab('dashboard');
+        // Clean URL - remove bypass parameter
+        window.history.replaceState({}, '', '/');
+      }
+      setTimeout(() => { processingRouteRef.current = false; }, 0);
+      return;
+    }
+    
     const userId = user?.id || null; // Use only the ID, not the whole object
     const currentUserId = prevUserIdRef.current;
     
@@ -383,7 +415,8 @@ const App = () => {
     
     // Check if user is accessing /reset-password route
     if (path === '/reset-password' || path.startsWith('/reset-password')) {
-      if (isMounted && appViewRef.current !== 'reset-password') {
+      if (isMounted && appViewRef.current !== 'reset-password' && lastAppViewRef.current !== 'reset-password') {
+        lastAppViewRef.current = 'reset-password';
         appViewRef.current = 'reset-password';
         setAppView('reset-password');
       }
@@ -398,13 +431,14 @@ const App = () => {
       const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
       const isSubscription = urlParams.get('subscription') === 'true';
       
-      if (isMounted && appViewRef.current !== 'payment-success') {
+      if (isMounted && appViewRef.current !== 'payment-success' && lastAppViewRef.current !== 'payment-success') {
         setSelectedPlan({
           name: planName,
           priceId: urlParams.get('priceId') || '',
           amount,
           isSubscription
         });
+        lastAppViewRef.current = 'payment-success';
         appViewRef.current = 'payment-success';
         setAppView('payment-success');
       }
@@ -422,9 +456,10 @@ const App = () => {
       // Check if user is logged in
       if (!userId) {
         // Redirect to signup
-        if (isMounted && appViewRef.current !== 'auth') {
+        if (isMounted && appViewRef.current !== 'auth' && lastAppViewRef.current !== 'auth') {
           window.history.pushState({}, '', '/');
           setAuthMode('signup');
+          lastAppViewRef.current = 'auth';
           appViewRef.current = 'auth';
           setAppView('auth');
         }
@@ -432,13 +467,14 @@ const App = () => {
         return;
       }
       
-      if (isMounted && appViewRef.current !== 'payment') {
+      if (isMounted && appViewRef.current !== 'payment' && lastAppViewRef.current !== 'payment') {
         setSelectedPlan({
           name: planName,
           priceId,
           amount,
           isSubscription
         });
+        lastAppViewRef.current = 'payment';
         appViewRef.current = 'payment';
         setAppView('payment');
       }
@@ -448,7 +484,8 @@ const App = () => {
     
     // Check if user is accessing /verify-email route
     if (path === '/verify-email' || path.startsWith('/verify-email')) {
-      if (isMounted && appViewRef.current !== 'verify-email') {
+      if (isMounted && appViewRef.current !== 'verify-email' && lastAppViewRef.current !== 'verify-email') {
+        lastAppViewRef.current = 'verify-email';
         appViewRef.current = 'verify-email';
         setAppView('verify-email');
       }
@@ -464,12 +501,14 @@ const App = () => {
             const isAdmin = await isSuperAdmin();
             if (isMounted) {
               if (isAdmin) {
-                if (appViewRef.current !== 'admin-landing') {
+                if (appViewRef.current !== 'admin-landing' && lastAppViewRef.current !== 'admin-landing') {
+                  lastAppViewRef.current = 'admin-landing';
                   appViewRef.current = 'admin-landing';
                   setAppView('admin-landing');
                 }
               } else {
-                if (appViewRef.current !== 'admin-login') {
+                if (appViewRef.current !== 'admin-login' && lastAppViewRef.current !== 'admin-login') {
+                  lastAppViewRef.current = 'admin-login';
                   appViewRef.current = 'admin-login';
                   setAppView('admin-login');
                 }
@@ -477,7 +516,8 @@ const App = () => {
             }
           } catch (error) {
             console.warn('Error checking super admin status:', error);
-            if (isMounted && appViewRef.current !== 'admin-login') {
+            if (isMounted && appViewRef.current !== 'admin-login' && lastAppViewRef.current !== 'admin-login') {
+              lastAppViewRef.current = 'admin-login';
               appViewRef.current = 'admin-login';
               setAppView('admin-login');
             }
@@ -487,7 +527,8 @@ const App = () => {
         };
         checkSuperAdmin();
       } else {
-        if (isMounted && appViewRef.current !== 'admin-login') {
+        if (isMounted && appViewRef.current !== 'admin-login' && lastAppViewRef.current !== 'admin-login') {
+          lastAppViewRef.current = 'admin-login';
           appViewRef.current = 'admin-login';
           setAppView('admin-login');
         }
@@ -505,13 +546,15 @@ const App = () => {
           if (isMounted) {
             if (isAdmin) {
               // Super admin accessing regular routes, redirect to superadmin
-              if (appViewRef.current !== 'admin-landing') {
+              if (appViewRef.current !== 'admin-landing' && lastAppViewRef.current !== 'admin-landing') {
                 window.history.pushState({}, '', '/superadmin');
+                lastAppViewRef.current = 'admin-landing';
                 appViewRef.current = 'admin-landing';
                 setAppView('admin-landing');
               }
             } else {
-              if (appViewRef.current !== 'user') {
+              if (appViewRef.current !== 'user' && lastAppViewRef.current !== 'user') {
+                lastAppViewRef.current = 'user';
                 appViewRef.current = 'user';
                 setAppView('user');
               }
@@ -519,7 +562,8 @@ const App = () => {
           }
         } catch (error) {
           console.warn('Error checking super admin status:', error);
-          if (isMounted && appViewRef.current !== 'user') {
+          if (isMounted && appViewRef.current !== 'user' && lastAppViewRef.current !== 'user') {
+            lastAppViewRef.current = 'user';
             appViewRef.current = 'user';
             setAppView('user');
           }
@@ -529,7 +573,8 @@ const App = () => {
       };
       checkSuperAdmin();
     } else {
-      if (isMounted && appViewRef.current !== 'home') {
+      if (isMounted && appViewRef.current !== 'home' && lastAppViewRef.current !== 'home') {
+        lastAppViewRef.current = 'home';
         appViewRef.current = 'home';
         setAppView('home');
       }
@@ -538,6 +583,10 @@ const App = () => {
 
     return () => {
       isMounted = false;
+      // Reset processing flag on cleanup
+      setTimeout(() => {
+        processingRouteRef.current = false;
+      }, 100);
     };
   }, [loading, user?.id]); // Only depend on user ID, not the whole user object
 
