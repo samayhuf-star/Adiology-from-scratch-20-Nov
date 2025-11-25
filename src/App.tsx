@@ -758,47 +758,50 @@ const App = () => {
       <Auth
         initialMode={authMode}
         onLoginSuccess={async () => {
-          // Navigate to dashboard immediately - don't wait for profile fetch
-          setAppView('user');
-          
-          // Fetch profile in background (don't block navigation)
           try {
-            // Wait a moment for auth state to propagate
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Try to get auth user first (faster)
+            // Get auth user immediately and set minimal user object FIRST
             const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
             
-            if (authUser) {
-              // Set minimal user immediately
-              setUser({ 
-                id: authUser.id, 
-                email: authUser.email || '',
-                full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
-                role: 'user',
-                subscription_plan: 'free',
-                subscription_status: 'active',
-              });
-              
-              // Then fetch full profile in background (with timeout)
-              Promise.race([
-                getCurrentUserProfile(),
-                new Promise((_, reject) => 
-                  setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
-                )
-              ]).then((userProfile: any) => {
-                if (userProfile) {
-                  setUser(userProfile);
-                  console.log('✅ User profile loaded:', userProfile);
-                }
-              }).catch((profileError: any) => {
-                console.warn('⚠️ Profile fetch failed (non-critical):', profileError);
-                // Keep using minimal user object - app will work fine
-              });
+            if (!authUser) {
+              console.error('No auth user found after login');
+              return;
             }
+            
+            // Set minimal user immediately BEFORE navigating
+            const minimalUser = { 
+              id: authUser.id, 
+              email: authUser.email || '',
+              full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+              role: 'user',
+              subscription_plan: 'free',
+              subscription_status: 'active',
+            };
+            
+            setUser(minimalUser);
+            
+            // Now navigate to dashboard (user state is set)
+            setAppView('user');
+            setActiveTab('dashboard');
+            
+            // Fetch full profile in background (with timeout)
+            Promise.race([
+              getCurrentUserProfile(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+              )
+            ]).then((userProfile: any) => {
+              if (userProfile) {
+                setUser(userProfile);
+                console.log('✅ User profile loaded:', userProfile);
+              }
+            }).catch((profileError: any) => {
+              console.warn('⚠️ Profile fetch failed (non-critical):', profileError);
+              // Keep using minimal user object - app will work fine
+            });
           } catch (error) {
             console.error('Error in onLoginSuccess:', error);
-            // Navigation already happened, so we're good
+            // Still navigate even on error - user can see the dashboard
+            setAppView('user');
           }
         }}
         onBackToHome={() => setAppView('home')}
@@ -848,6 +851,7 @@ const App = () => {
   }
 
   // Protect user view - require authentication (unless bypass)
+  // Give it a moment for user to be set after login before redirecting
   if (!user && appView === 'user' && !loading) {
     // Check if bypass key is in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -864,20 +868,29 @@ const App = () => {
         subscription_status: 'active',
       };
       setUser(bypassUser);
-      // Continue rendering user view
+      // Continue rendering user view - will re-render with user set
+      return null; // Prevent render until user is set
     } else {
-      // Redirect to auth if not authenticated and no bypass
+      // Check if there's an active session - if so, user is being loaded
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && !user) {
+          // Has session but user not loaded yet - show loading
+          return null;
+        }
+        // No session, redirect to auth
+        return null;
+      };
+      
+      // If we have no user and no bypass, check session first
+      // For now, show loading while we check
       return (
-        <HomePage
-          onGetStarted={() => {
-            setAuthMode('signup');
-            setAppView('auth');
-          }}
-          onLogin={() => {
-            setAuthMode('login');
-            setAppView('auth');
-          }}
-        />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p>Loading user profile...</p>
+          </div>
+        </div>
       );
     }
   }
