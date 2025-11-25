@@ -672,7 +672,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   
   // Step 4: Geo Targeting
   const [targetCountry, setTargetCountry] = useState('United States');
-  const [targetType, setTargetType] = useState('ZIP');
+  const [targetType, setTargetType] = useState('COUNTRY');
   const [manualGeoInput, setManualGeoInput] = useState('');
   const [zipPreset, setZipPreset] = useState<string | null>(null);
   const [cityPreset, setCityPreset] = useState<string | null>(null);
@@ -3323,11 +3323,64 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </Label>
               
               <Tabs value={targetType} onValueChange={setTargetType} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-4">
-                  <TabsTrigger value="CITY">Cities</TabsTrigger>
-                  <TabsTrigger value="ZIP">Zip Codes</TabsTrigger>
-                  <TabsTrigger value="STATE">States/Provinces</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 mb-4 bg-slate-100 p-1 rounded-lg">
+                  <TabsTrigger 
+                    value="COUNTRY" 
+                    className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                  >
+                    Country
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="CITY"
+                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                  >
+                    Cities
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="ZIP"
+                    className="data-[state=active]:bg-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                  >
+                    Zip Codes
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="STATE"
+                    className="data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                  >
+                    States/Provinces
+                  </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="COUNTRY" className="space-y-4">
+                  <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-xl p-6 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-emerald-500 rounded-full p-3">
+                        <Globe className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-emerald-900 text-xl">Whole Country Targeting</h3>
+                        <p className="text-sm text-emerald-700 mt-1">
+                          Your campaign will target the entire country selected above
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white/70 rounded-lg p-4 border border-emerald-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-600 font-medium">Target Country:</p>
+                          <p className="text-2xl font-bold text-emerald-700 mt-1">{targetCountry}</p>
+                        </div>
+                        <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 bg-emerald-100 border border-emerald-300 rounded-lg p-4">
+                      <p className="text-sm text-emerald-800">
+                        <strong>✓ Nationwide Coverage:</strong> All cities, states, and regions within {targetCountry} will be included in your campaign targeting.
+                      </p>
+                    </div>
+                  </div>
+                </TabsContent>
 
                 <TabsContent value="ZIP" className="space-y-4">
                   <div className="flex flex-wrap gap-3 mb-4">
@@ -3339,7 +3392,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           setZipPreset(count);
                           setManualGeoInput('');
                         }}
-                        className="flex-1"
+                        className={`flex-1 font-semibold ${
+                          zipPreset === count 
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg' 
+                            : 'border-purple-300 text-purple-700 hover:bg-purple-50'
+                        }`}
                       >
                         {count} ZIPs
                       </Button>
@@ -3352,7 +3409,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           setManualGeoInput('');
                         }
                       }}
-                      className="flex-1 border-dashed"
+                      className={`flex-1 border-dashed font-semibold ${
+                        zipPreset === null && manualGeoInput
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg'
+                          : 'border-purple-300 text-purple-700 hover:bg-purple-50'
+                      }`}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Manual Entry
@@ -3386,7 +3447,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           const cities = getTopCitiesByIncome(targetCountry, count === '0' ? 0 : parseInt(count));
                           setManualGeoInput(cities.join(', '));
                         }}
-                        className="flex-1 min-w-[120px]"
+                        className={`flex-1 min-w-[120px] font-semibold ${
+                          cityPreset === count 
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg' 
+                            : 'border-blue-300 text-blue-700 hover:bg-blue-50'
+                        }`}
                       >
                         {count === '0' ? 'All Cities' : `Top ${count} Cities`}
                       </Button>
@@ -3399,7 +3464,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           setManualGeoInput('');
                         }
                       }}
-                      className="flex-1 border-dashed"
+                      className={`flex-1 border-dashed font-semibold ${
+                        cityPreset === null && manualGeoInput
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+                          : 'border-blue-300 text-blue-700 hover:bg-blue-50'
+                      }`}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Manual Entry
@@ -3438,7 +3507,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           const states = getTopStatesByPopulation(targetCountry, count === '0' ? 0 : parseInt(count));
                           setManualGeoInput(states.join(', '));
                         }}
-                        className="flex-1 min-w-[120px]"
+                        className={`flex-1 min-w-[120px] font-semibold ${
+                          statePreset === count 
+                            ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg' 
+                            : 'border-orange-300 text-orange-700 hover:bg-orange-50'
+                        }`}
                       >
                         {count === '0' ? 'All States' : `Top ${count} States`}
                       </Button>
@@ -3451,7 +3524,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           setManualGeoInput('');
                         }
                       }}
-                      className="flex-1 border-dashed"
+                      className={`flex-1 border-dashed font-semibold ${
+                        statePreset === null && manualGeoInput
+                          ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-lg'
+                          : 'border-orange-300 text-orange-700 hover:bg-orange-50'
+                      }`}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Manual Entry
