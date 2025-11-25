@@ -28,40 +28,70 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
   const handleLoadToBuilder = () => {
     if (!selectedPreset) return;
 
-    // Transform preset data to match CampaignBuilder format
+    // Bug_58, Bug_59, Bug_70: Transform preset data to match CampaignBuilder format with all required fields
+    const keywordObjects = selectedPreset.keywords.map((kw, idx) => ({
+      id: `preset-kw-${idx}`,
+      text: kw,
+      volume: 'High',
+      cpc: `$${selectedPreset.max_cpc.toFixed(2)}`,
+      type: 'Phrase',
+      selected: true
+    }));
+
+    // Convert preset ads to generatedAds format (array of ad objects)
+    const generatedAdsFromPreset = selectedPreset.ad_groups.map((group, groupIdx) => ({
+      id: Date.now() + groupIdx,
+      adGroup: group.name,
+      type: 'rsa',
+      headline1: selectedPreset.ads[0]?.headline1 || '',
+      headline2: selectedPreset.ads[0]?.headline2 || '',
+      headline3: selectedPreset.ads[0]?.headline3 || '',
+      description1: selectedPreset.ads[0]?.description1 || '',
+      description2: selectedPreset.ads[0]?.description2 || '',
+      finalUrl: selectedPreset.final_url || '',
+      path1: '',
+      path2: ''
+    }));
+
     const presetData = {
       name: selectedPreset.campaign_name,
-      step: 5, // Jump to review step
-      keywords: selectedPreset.keywords.map((kw, idx) => ({
-        id: `preset-kw-${idx}`,
-        text: kw,
-        volume: 'High',
-        cpc: `$${selectedPreset.max_cpc.toFixed(2)}`,
-        type: 'Phrase',
-        selected: true
-      })),
-      selectedKeywords: selectedPreset.keywords.map((kw, idx) => ({
-        id: `preset-kw-${idx}`,
-        text: kw,
-        volume: 'High',
-        cpc: `$${selectedPreset.max_cpc.toFixed(2)}`,
-        type: 'Phrase',
-        selected: true
-      })),
-      negativeKeywords: selectedPreset.negative_keywords.join(', '),
-      ads: selectedPreset.ad_groups.map((group, groupIdx) => ({
-        id: `preset-ad-${groupIdx}`,
-        groupName: group.name,
-        adType: 'RSA',
-        type: 'rsa',
-        headline1: selectedPreset.ads[0].headline1,
-        headline2: selectedPreset.ads[0].headline2,
-        headline3: selectedPreset.ads[0].headline3,
-        description1: selectedPreset.ads[0].description1,
-        description2: selectedPreset.ads[0].description2,
-        finalUrl: selectedPreset.final_url,
-        selected: true
-      })),
+      step: 1, // Start at step 1 to ensure all data loads properly, user can navigate
+      structure: 'SKAG', // Default structure
+      geo: 'ZIP', // Default geo strategy
+      matchTypes: { broad: true, phrase: true, exact: true }, // All match types enabled
+      url: selectedPreset.final_url || '', // Landing page URL
+      seedKeywords: selectedPreset.keywords.join('\n'), // Seed keywords for display
+      negativeKeywords: selectedPreset.negative_keywords.join('\n'), // Negative keywords
+      keywords: keywordObjects, // Full keyword objects
+      generatedKeywords: keywordObjects, // Generated keywords (same as keywords for presets)
+      selectedKeywords: selectedPreset.keywords, // Selected keyword texts
+      ads: {
+        rsa: {
+          headline1: selectedPreset.ads[0]?.headline1 || '',
+          headline2: selectedPreset.ads[0]?.headline2 || '',
+          headline3: selectedPreset.ads[0]?.headline3 || '',
+          description1: selectedPreset.ads[0]?.description1 || '',
+          description2: selectedPreset.ads[0]?.description2 || ''
+        },
+        dki: {
+          headline1: '{Keyword:Service}',
+          headline2: '',
+          headline3: '',
+          description1: '',
+          description2: '',
+          path1: '',
+          path2: ''
+        },
+        call: {
+          phone: '',
+          businessName: '',
+          headline1: '',
+          headline2: '',
+          description1: '',
+          description2: ''
+        }
+      },
+      generatedAds: generatedAdsFromPreset, // Convert ads to generatedAds array format
       enabledAdTypes: ['rsa'],
       targetCountry: 'United States',
       targetType: 'ZIP',
