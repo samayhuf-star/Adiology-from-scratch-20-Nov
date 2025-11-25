@@ -52,6 +52,7 @@ const App = () => {
   const processingRouteRef = React.useRef(false);
   const routeProcessedRef = React.useRef<string | null>(null); // Track processed routes
   const appViewRef = React.useRef<AppView>('home'); // Track current appView to prevent unnecessary updates
+  const lastAppViewRef = React.useRef<AppView | null>(null); // Track last appView to prevent duplicate updates
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Campaign Created', message: 'Your campaign "Summer Sale" has been created successfully', time: '2 hours ago', read: false },
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
@@ -846,21 +847,39 @@ const App = () => {
     );
   }
 
-  // Protect user view - require authentication
+  // Protect user view - require authentication (unless bypass)
   if (!user && appView === 'user' && !loading) {
-    // Redirect to auth if not authenticated
-    return (
-      <HomePage
-        onGetStarted={() => {
-          setAuthMode('signup');
-          setAppView('auth');
-        }}
-        onLogin={() => {
-          setAuthMode('login');
-          setAppView('auth');
-        }}
-      />
-    );
+    // Check if bypass key is in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const bypassKey = urlParams.get('bypass');
+    
+    // Allow bypass access
+    if (bypassKey === 'adiology2025dev' || bypassKey === 'samay2025') {
+      const bypassUser = {
+        id: 'bypass-user-id',
+        email: 'dev@adiology.com',
+        full_name: 'Developer Access',
+        role: 'user',
+        subscription_plan: 'free',
+        subscription_status: 'active',
+      };
+      setUser(bypassUser);
+      // Continue rendering user view
+    } else {
+      // Redirect to auth if not authenticated and no bypass
+      return (
+        <HomePage
+          onGetStarted={() => {
+            setAuthMode('signup');
+            setAppView('auth');
+          }}
+          onLogin={() => {
+            setAuthMode('login');
+            setAppView('auth');
+          }}
+        />
+      );
+    }
   }
 
   // Show loading state while checking auth
