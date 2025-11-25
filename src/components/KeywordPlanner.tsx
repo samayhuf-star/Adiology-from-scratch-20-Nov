@@ -346,6 +346,8 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             notifications.success('Keyword plan saved!', {
                 title: 'Saved Successfully'
             });
+            // Refresh the saved lists to show the newly saved item
+            await handleLoadSavedLists();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
@@ -391,6 +393,8 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             });
             setListName('');
             setShowSaveDialog(false);
+            // Refresh the saved lists to show the newly saved item
+            await handleLoadSavedLists();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
