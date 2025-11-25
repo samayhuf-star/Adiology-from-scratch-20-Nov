@@ -58,7 +58,7 @@ export const BillingPanel = () => {
                         const userProfile = await getCurrentUserProfile();
                         
                         let userPlan = "Free";
-                        let nextBillingDate = null;
+                        let nextBillingDate: string | null = null;
                         let subscriptionStatus = "inactive";
                         
                         if (userProfile) {
@@ -202,6 +202,124 @@ export const BillingPanel = () => {
 
     const handleViewPricing = () => {
         setShowPricingDialog(true);
+    };
+
+    // Card validation functions
+    const validateCardNumber = (value: string) => {
+        const cleanValue = value.replace(/\s/g, '');
+        if (!cleanValue) {
+            setCardErrors(prev => ({ ...prev, number: undefined }));
+            return;
+        }
+        if (cleanValue.length < 13 || cleanValue.length > 19) {
+            setCardErrors(prev => ({ ...prev, number: 'Card number must be between 13 and 19 digits' }));
+        } else if (!/^\d+$/.test(cleanValue)) {
+            setCardErrors(prev => ({ ...prev, number: 'Card number must contain only digits' }));
+        } else {
+            setCardErrors(prev => ({ ...prev, number: undefined }));
+        }
+    };
+
+    const validateCardName = (value: string) => {
+        if (!value.trim()) {
+            setCardErrors(prev => ({ ...prev, name: 'Cardholder name is required' }));
+        } else if (value.trim().length < 2) {
+            setCardErrors(prev => ({ ...prev, name: 'Cardholder name must be at least 2 characters' }));
+        } else {
+            setCardErrors(prev => ({ ...prev, name: undefined }));
+        }
+    };
+
+    const validateCardExpiry = (value: string) => {
+        if (!value) {
+            setCardErrors(prev => ({ ...prev, expiry: undefined }));
+            return;
+        }
+        const expiryMatch = value.match(/^(\d{2})\/(\d{2})$/);
+        if (!expiryMatch) {
+            setCardErrors(prev => ({ ...prev, expiry: 'Please enter a valid expiry date (MM/YY)' }));
+        } else {
+            const month = parseInt(expiryMatch[1], 10);
+            const year = parseInt(expiryMatch[2], 10);
+            const currentYear = new Date().getFullYear() % 100;
+            const currentMonth = new Date().getMonth() + 1;
+            
+            if (month < 1 || month > 12) {
+                setCardErrors(prev => ({ ...prev, expiry: 'Month must be between 01 and 12' }));
+            } else if (year < currentYear || (year === currentYear && month < currentMonth)) {
+                setCardErrors(prev => ({ ...prev, expiry: 'Card has expired' }));
+            } else {
+                setCardErrors(prev => ({ ...prev, expiry: undefined }));
+            }
+        }
+    };
+
+    const validateCardCVV = (value: string) => {
+        if (!value) {
+            setCardErrors(prev => ({ ...prev, cvv: undefined }));
+            return;
+        }
+        if (value.length < 3 || value.length > 4) {
+            setCardErrors(prev => ({ ...prev, cvv: 'CVV must be 3 or 4 digits' }));
+        } else if (!/^\d+$/.test(value)) {
+            setCardErrors(prev => ({ ...prev, cvv: 'CVV must contain only digits' }));
+        } else {
+            setCardErrors(prev => ({ ...prev, cvv: undefined }));
+        }
+    };
+
+    const resetCardForm = () => {
+        setCardNumber('');
+        setCardName('');
+        setCardExpiry('');
+        setCardCVV('');
+        setCardErrors({});
+    };
+
+    const handleAddCard = async () => {
+        if (!isCardFormValid()) {
+            notifications.error('Please fix all errors before adding the card', {
+                title: 'Validation Error',
+                description: 'All card fields must be valid.',
+            });
+            return;
+        }
+
+        setProcessing(true);
+        try {
+            // In a real implementation, you would call Stripe API here to add the payment method
+            // For now, we'll just simulate adding the card
+            const cardNumberClean = cardNumber.replace(/\s/g, '');
+            const last4 = cardNumberClean.slice(-4);
+            const expiryParts = cardExpiry.split('/');
+            
+            // Simulate adding card to saved cards
+            const newCard = {
+                id: Date.now().toString(),
+                brand: cardNumberClean.startsWith('4') ? 'visa' : cardNumberClean.startsWith('5') ? 'mastercard' : 'amex',
+                last4: last4,
+                expMonth: expiryParts[0] || '',
+                expYear: expiryParts[1] || '',
+                isDefault: savedCards.length === 0
+            };
+            
+            setSavedCards(prev => [...prev, newCard]);
+            setShowAddCardDialog(false);
+            resetCardForm();
+            
+            notifications.success('Card added successfully', {
+                title: 'Payment Method Added',
+                description: `Your card ending in ${last4} has been added.`,
+            });
+        } catch (error) {
+            console.error("Add card error", error);
+            notifications.error('Failed to add card. Please try again.', {
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Unknown error occurred',
+            });
+        } finally {
+            setProcessing(false);
+        }
     };
 
     // Validate card form

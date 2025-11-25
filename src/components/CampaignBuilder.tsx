@@ -707,6 +707,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             if (!selectedKeywords || selectedKeywords.length === 0) return [];
             if (!structure) return [];
             
+            type AdGroup = { name: string; keywords: string[] };
+            
             if (structure === 'SKAG') {
                 // Each keyword is its own ad group
                 return selectedKeywords.slice(0, 20).map(kw => ({
@@ -716,7 +718,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             } else if (structure === 'STAG') {
                 // Group keywords thematically (simplified grouping)
                 const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
-                const groups = [];
+                const groups: AdGroup[] = [];
                 for (let i = 0; i < selectedKeywords.length; i += groupSize) {
                     const groupKeywords = selectedKeywords.slice(i, i + groupSize);
                     groups.push({
@@ -727,7 +729,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 return groups.slice(0, 10);
             } else {
                 // Mix: Some SKAG, some STAG
-                const groups = [];
+                const groups: AdGroup[] = [];
                 // First 5 as SKAG
                 selectedKeywords.slice(0, 5).forEach(kw => {
                     groups.push({
@@ -1081,7 +1083,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
 
         // Show warning if approaching limits
-        const warning = usageTracker.checkWarnings('keyword-generation');
+        const warning = await usageTracker.checkWarnings('keyword-generation');
         if (warning) {
             notifications.warning(warning, {
                 title: 'Usage Warning',

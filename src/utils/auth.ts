@@ -193,117 +193,101 @@ export function clearProfileCache(userId?: string) {
 
 /**
  * Create or update user profile in users table
+ * Uses SECURITY DEFINER function to bypass RLS policies
  */
 export async function createUserProfile(userId: string, email: string, fullName: string) {
   try {
     console.log('Creating/updating user profile:', { userId, email, fullName });
     
-    // Check if user profile already exists
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
+    // Use SECURITY DEFINER function to create/update profile (bypasses RLS)
+    const { data, error } = await supabase.rpc('create_or_update_user_profile', {
+      p_user_id: userId,
+      p_email: email,
+      p_full_name: fullName || ''
+    });
 
-    // Handle PGRST205 - table not found in schema cache (table might not exist or schema issue)
-    if (checkError && checkError.code === 'PGRST205') {
-      // Silently return null - don't spam console with warnings
-      // The app will work with minimal user object from auth
-      return null;
-    }
-
-    // If error is not "not found", log it but continue
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.warn('Warning checking for existing user (continuing anyway):', checkError);
-    }
-
-    if (existingUser) {
-      console.log('User profile exists, updating...');
-      // Update existing profile
-      const { data, error } = await supabase
-        .from('users')
-        .update({
-          email,
-          full_name: fullName,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating user profile:', error);
-        throw error;
+    if (error) {
+      console.error('Error creating/updating user profile:', error);
+      
+      // Handle PGRST205 - table not found in schema cache
+      if (error.code === 'PGRST205') {
+        console.warn('⚠️ Table "users" not found in schema cache. Profile creation skipped.');
+        return null;
       }
-      console.log('✅ User profile updated successfully');
-      return data;
-    } else {
-      console.log('Creating new user profile...');
-      // Create new profile
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email,
-          full_name: fullName,
-          role: 'user',
-          subscription_plan: 'free',
-          subscription_status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error inserting user profile:', error);
+      
+      // If function doesn't exist yet, return null gracefully (migration not applied)
+      if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+        console.warn('⚠️ Function not found - migration may not be applied yet. Profile creation skipped.');
+        return null;
+      }
+      
+      // If it's a permission error (RLS), try to fetch existing profile
+      if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
+        console.warn('⚠️ RLS policy error, checking if profile already exists:', error);
         
-        // Handle PGRST205 - table not found in schema cache
-        if (error.code === 'PGRST205') {
-          console.warn('⚠️ Table "users" not found in schema cache. Profile creation skipped.');
-          // Return null instead of throwing - app will work with minimal user object
-          return null;
+        // Try to fetch existing profile as fallback
+        const { data: existingData, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (!fetchError && existingData) {
+          console.log('✅ Found existing user profile');
+          return existingData;
         }
+      }
+      
+      // If it's a duplicate key error, try to fetch the existing profile
+      if (error.code === '23505' || error.message?.includes('duplicate')) {
+        console.log('Profile already exists (duplicate key), fetching it...');
+        const { data: existingData, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
         
-        // If it's a duplicate key error, try to fetch the existing profile
-        if (error.code === '23505' || error.message?.includes('duplicate')) {
-          console.log('Profile already exists (duplicate key), fetching it...');
-          const { data: existingData, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-          
-          if (fetchError) {
-            console.error('Error fetching existing profile:', fetchError);
-            // If fetch also fails with PGRST205, return null
-            if (fetchError.code === 'PGRST205') {
-              console.warn('⚠️ Table "users" not found when fetching existing profile.');
-              return null;
-            }
-            throw fetchError;
-          }
+        if (!fetchError && existingData) {
           console.log('✅ Fetched existing user profile');
           return existingData;
         }
         
-        // If it's a permission error (RLS), log it but don't throw - we'll handle it gracefully
-        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
-          console.warn('⚠️ RLS policy may be blocking profile creation:', error);
-          // Return null instead of throwing - app will work with minimal user object
-          return null;
+        if (fetchError) {
+          console.error('Error fetching existing profile:', fetchError);
+          // If fetch also fails with PGRST205, return null
+          if (fetchError.code === 'PGRST205') {
+            console.warn('⚠️ Table "users" not found when fetching existing profile.');
+            return null;
+          }
+          throw fetchError;
         }
-        
-        throw error;
       }
       
-      if (!data) {
-        throw new Error('Profile creation returned no data');
-      }
-      
-      console.log('✅ User profile created successfully:', data.id);
-      return data;
+      throw error;
     }
+    
+    // Function returns TABLE, so data is an array
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      // Try fetching the profile directly as fallback
+      const { data: fetchedData, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (!fetchError && fetchedData) {
+        console.log('✅ Fetched user profile after function call');
+        return fetchedData;
+      }
+      
+      console.warn('⚠️ Profile creation returned no data, but continuing...');
+      return null;
+    }
+    
+    // Function returns TABLE (array), extract first row
+    const profileData = Array.isArray(data) ? data[0] : data;
+    console.log('✅ User profile created/updated successfully:', profileData?.id);
+    return profileData;
   } catch (error: any) {
     console.error('❌ Error creating/updating user profile:', {
       error,
@@ -312,6 +296,13 @@ export async function createUserProfile(userId: string, email: string, fullName:
       details: error?.details,
       hint: error?.hint,
     });
+    
+    // Don't throw for RLS errors - app can work with minimal user object
+    if (error?.code === '42501') {
+      console.warn('⚠️ RLS policy error - continuing without profile');
+      return null;
+    }
+    
     throw error;
   }
 }
