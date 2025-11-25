@@ -2078,7 +2078,91 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
 
   const handleSaveAd = (adId: number) => {
+    const ad = generatedAds.find(a => a.id === adId);
+    if (!ad) return;
+    
+    // Google Ads validation rules
+    const errors: string[] = [];
+    
+    if (ad.type === 'rsa' || ad.type === 'dki') {
+      // Headline validation (30 characters max)
+      if (ad.headline1 && ad.headline1.length > 30) {
+        errors.push(`Headline 1 exceeds 30 characters (${ad.headline1.length}/30)`);
+      }
+      if (ad.headline2 && ad.headline2.length > 30) {
+        errors.push(`Headline 2 exceeds 30 characters (${ad.headline2.length}/30)`);
+      }
+      if (ad.headline3 && ad.headline3.length > 30) {
+        errors.push(`Headline 3 exceeds 30 characters (${ad.headline3.length}/30)`);
+      }
+      
+      // Description validation (90 characters max)
+      if (ad.description1 && ad.description1.length > 90) {
+        errors.push(`Description 1 exceeds 90 characters (${ad.description1.length}/90)`);
+      }
+      if (ad.description2 && ad.description2.length > 90) {
+        errors.push(`Description 2 exceeds 90 characters (${ad.description2.length}/90)`);
+      }
+      
+      // Required fields
+      if (!ad.headline1 || !ad.headline1.trim()) {
+        errors.push('Headline 1 is required');
+      }
+      if (!ad.description1 || !ad.description1.trim()) {
+        errors.push('Description 1 is required');
+      }
+      if (!ad.finalUrl || !ad.finalUrl.trim()) {
+        errors.push('Final URL is required');
+      }
+    } else if (ad.type === 'callonly') {
+      // Call-only ad validation
+      if (ad.headline1 && ad.headline1.length > 30) {
+        errors.push(`Headline 1 exceeds 30 characters (${ad.headline1.length}/30)`);
+      }
+      if (ad.headline2 && ad.headline2.length > 30) {
+        errors.push(`Headline 2 exceeds 30 characters (${ad.headline2.length}/30)`);
+      }
+      if (ad.description1 && ad.description1.length > 90) {
+        errors.push(`Description 1 exceeds 90 characters (${ad.description1.length}/90)`);
+      }
+      if (ad.description2 && ad.description2.length > 90) {
+        errors.push(`Description 2 exceeds 90 characters (${ad.description2.length}/90)`);
+      }
+      if (!ad.phone || !ad.phone.trim()) {
+        errors.push('Phone number is required for call-only ads');
+      }
+      if (!ad.businessName || !ad.businessName.trim()) {
+        errors.push('Business name is required for call-only ads');
+      }
+    }
+    
+    // Display validation errors
+    if (errors.length > 0) {
+      notifications.error(
+        <div className="space-y-2">
+          <p className="font-bold text-red-900">⚠️ Google Ads Validation Failed</p>
+          <ul className="list-disc pl-4 space-y-1 text-sm">
+            {errors.map((error, idx) => (
+              <li key={idx} className="text-red-800">{error}</li>
+            ))}
+          </ul>
+          <p className="text-xs text-red-700 mt-2">Please fix these issues before saving.</p>
+        </div>,
+        {
+          title: 'Invalid Ad Content',
+          description: 'Your ad violates Google Ads policies or character limits.',
+          duration: 8000,
+        }
+      );
+      return; // Don't save if there are errors
+    }
+    
+    // Save if validation passes
     setEditingAdId(null);
+    notifications.success('Ad saved successfully', {
+      title: 'Changes Saved',
+      description: 'Your ad has been updated and is ready to export.',
+    });
   };
 
   const handleCancelEdit = () => {
@@ -2092,8 +2176,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
 
   const handleDuplicateAd = (ad: any) => {
-    const newAd = { ...ad, id: Date.now() };
+    const newAd = { 
+      ...ad, 
+      id: Date.now() + Math.random() * 1000, // Ensure unique ID
+      extensions: ad.extensions ? [...ad.extensions] : [] // Deep copy extensions
+    };
     setGeneratedAds([...generatedAds, newAd]);
+    setSelectedAdIds([...selectedAdIds, newAd.id]); // Auto-select the duplicated ad
     notifications.success('Ad duplicated successfully', {
       title: 'Ad Duplicated',
       description: 'A copy of the ad has been created. You can edit it as needed.',
@@ -2108,6 +2197,22 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     notifications.success('Ad deleted successfully', {
       title: 'Ad Removed',
       description: 'The ad has been removed from your campaign.',
+    });
+  };
+  
+  const handleRemoveExtension = (adId: number, extensionIndex: number) => {
+    const updatedAds = generatedAds.map(ad => {
+      if (ad.id === adId && ad.extensions) {
+        const newExtensions = [...ad.extensions];
+        newExtensions.splice(extensionIndex, 1);
+        return { ...ad, extensions: newExtensions };
+      }
+      return ad;
+    });
+    setGeneratedAds(updatedAds);
+    notifications.success('Extension removed', {
+      title: 'Extension Deleted',
+      description: 'The extension has been removed from this ad.',
     });
   };
 
@@ -2783,7 +2888,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         </div>
                       ) : (
                         // Show regular ad preview with LiveAdPreview component
-                        <LiveAdPreview ad={ad} />
+                        <LiveAdPreview 
+                          ad={ad} 
+                          onRemoveExtension={(extIndex) => handleRemoveExtension(ad.id, extIndex)}
+                        />
                       )}
                     </div>
                     
@@ -3611,10 +3719,28 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                               <div key={ad.id || adIdx} className="space-y-2 text-sm border-b border-indigo-200/50 pb-3 last:border-0 last:pb-0 bg-gradient-to-r from-purple-50/30 to-indigo-50/30 p-3 rounded-lg">
                                 <div className="flex items-start gap-2">
                                   <div className="flex-1">
-                                    {(ad.type === 'rsa' || ad.type === 'dki') && (
+                                    {ad.type === 'rsa' && (
                                       <>
                                         <div className="text-indigo-700 font-semibold hover:text-purple-700 hover:underline cursor-pointer transition-colors">
                                           {ad.headline1} {ad.headline2 && `| ${ad.headline2}`} {ad.headline3 && `| ${ad.headline3}`}
+                                        </div>
+                                        <div className="text-emerald-600 font-medium text-xs mt-1">
+                                          {ad.finalUrl || url || 'www.example.com'}/{ad.path1 || ''}/{ad.path2 || ''}
+                                        </div>
+                                        <div className="text-slate-700 text-xs mt-1.5 leading-relaxed">
+                                          {ad.description1}
+                                        </div>
+                                        {ad.description2 && (
+                                          <div className="text-slate-600 text-xs mt-1 leading-relaxed">
+                                            {ad.description2}
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
+                                    {ad.type === 'dki' && (
+                                      <>
+                                        <div className="text-purple-700 font-semibold hover:text-purple-800 hover:underline cursor-pointer transition-colors">
+                                          {ad.headline1}
                                         </div>
                                         <div className="text-emerald-600 font-medium text-xs mt-1">
                                           {ad.finalUrl || url || 'www.example.com'}/{ad.path1 || ''}/{ad.path2 || ''}
