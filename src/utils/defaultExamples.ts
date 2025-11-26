@@ -15,17 +15,7 @@ export const DEFAULT_URL = "https://www.yourplumbingcompany.com";
 
 export const DEFAULT_CAMPAIGN_NAME = "Plumbing Services - Local Campaign";
 
-export const DEFAULT_NEGATIVE_KEYWORDS = `free
-cheap
-diy
-jobs
-training
-school
-courses
-salary
-wholesale
-parts
-supplies`;
+export const DEFAULT_NEGATIVE_KEYWORDS = "free, cheap, diy, jobs, training, school, courses, salary, wholesale, parts, supplies";
 
 export const DEFAULT_AD_HEADLINES = {
   headline1: "24/7 Emergency Plumber",
