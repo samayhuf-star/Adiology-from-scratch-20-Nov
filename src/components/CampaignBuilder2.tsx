@@ -1533,18 +1533,18 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   </div>
                   <Badge variant="outline">{selectedKeywords.length} selected</Badge>
                 </div>
-                <ScrollArea className="h-64 border border-slate-200 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <ScrollArea className="h-96 border border-slate-200 rounded-lg">
+                  <div className="p-2">
                     {generatedKeywords.map((keyword) => {
                       const keywordText = keyword.text || keyword.id;
                       const isSelected = selectedKeywords.includes(keywordText);
                       return (
                         <div
                           key={keyword.id || keywordText}
-                          className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer transition-colors ${
                             isSelected 
-                              ? 'bg-indigo-50 border-2 border-indigo-500' 
-                              : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100'
+                              ? 'bg-indigo-50' 
+                              : 'hover:bg-slate-50'
                           }`}
                           onClick={(e) => {
                             // Prevent double-triggering from checkbox click
@@ -1570,10 +1570,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                               });
                             }}
                             onClick={(e) => e.stopPropagation()}
+                            className="h-4 w-4"
                           />
-                          <Label className="cursor-pointer flex-1" onClick={(e) => e.stopPropagation()}>{keywordText}</Label>
+                          <Label className="cursor-pointer flex-1 text-sm" onClick={(e) => e.stopPropagation()}>{keywordText}</Label>
                           {keyword.volume && (
-                            <Badge variant="secondary" className="text-xs">{keyword.volume}</Badge>
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0">{keyword.volume}</Badge>
                           )}
                         </div>
                       );
