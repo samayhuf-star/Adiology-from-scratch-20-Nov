@@ -197,8 +197,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <Card className="border border-slate-200 shadow-2xl bg-white backdrop-blur-xl relative overflow-visible">
-          <CardHeader className="space-y-1 pb-4">
+        <Card className="border border-slate-200 shadow-2xl bg-white backdrop-blur-xl relative overflow-visible p-8">
+          <CardHeader className="space-y-1 pb-6 px-0">
             <div className="flex items-center justify-between mb-4">
               <Button
                 variant="ghost"
@@ -236,8 +236,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                 : 'Start building winning campaigns today'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="relative">
-            <form onSubmit={handleSubmit} className="space-y-4 relative">
+          <CardContent className="relative px-0">
+            <form onSubmit={handleSubmit} className="space-y-6 relative">
               {error && (
                 <Alert variant="destructive" className="border-red-500 bg-red-50">
                   <AlertCircle className="w-4 h-4 text-red-600" />
@@ -246,8 +246,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
               )}
 
               {!isLogin && !SIGNUP_DISABLED && (
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-slate-900 font-semibold">Full Name</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="name" className="text-slate-900 font-semibold text-sm mb-2">Full Name</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <Input
@@ -256,7 +256,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                       placeholder="John Doe"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                      className="pl-10 pr-4 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
                       required={!isLogin}
                       disabled={SIGNUP_DISABLED}
                     />
@@ -264,8 +264,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-900 font-semibold">Email</Label>
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-slate-900 font-semibold text-sm mb-2">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <Input
@@ -274,7 +274,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                    className="pl-10 pr-4 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
                     required
                   />
                 </div>
@@ -282,8 +282,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
 
               {!isForgotPassword && (
                 <>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-900 font-semibold">Password</Label>
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-slate-900 font-semibold text-sm mb-2">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <Input
@@ -292,13 +292,13 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                     placeholder={isLogin ? 'Enter your password' : 'Create a password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                    className="pl-10 pr-12 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
                         required={!isForgotPassword}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 p-1"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -308,8 +308,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
               )}
 
               {!isLogin && !SIGNUP_DISABLED && !isForgotPassword && (
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-slate-900 font-semibold">Confirm Password</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="confirmPassword" className="text-slate-900 font-semibold text-sm mb-2">Confirm Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <Input
@@ -318,14 +318,14 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                       placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                      className="pl-10 pr-12 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
                       required={!isLogin}
                       disabled={SIGNUP_DISABLED}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 p-1"
                     >
                       {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -353,8 +353,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
               )}
 
               {isForgotPassword && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 mb-2">
+                <div className="p-5 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 mb-3">
                     Enter your email address and we'll send you a link to reset your password.
                   </p>
                   <button
@@ -373,7 +373,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 h-11"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 h-12 text-base font-semibold mt-2"
                 disabled={isLoading || (!isLogin && SIGNUP_DISABLED)}
               >
                 {isLoading ? (

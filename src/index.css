@@ -4962,3 +4962,100 @@ html {
     height: 0;
   }
 }
+
+/* Enhanced Padding for Better Spacing */
+.enhanced-padding input,
+.enhanced-padding textarea,
+.enhanced-padding select {
+  padding: 0.75rem 1rem !important;
+}
+
+.enhanced-padding button {
+  padding: 0.625rem 1.25rem !important;
+}
+
+.enhanced-padding .card,
+.enhanced-padding [class*="card"] {
+  padding: 1.5rem !important;
+}
+
+.enhanced-padding h1 {
+  margin-bottom: 1.5rem !important;
+}
+
+.enhanced-padding h2 {
+  margin-bottom: 1rem !important;
+}
+
+.enhanced-padding h3,
+.enhanced-padding h4 {
+  margin-bottom: 0.75rem !important;
+}
+
+.enhanced-padding p {
+  margin-bottom: 0.75rem !important;
+}
+
+.enhanced-padding label {
+  margin-bottom: 0.5rem !important;
+  display: block;
+}
+
+/* Global improved spacing */
+body {
+  padding: 0;
+  margin: 0;
+}
+
+/* Form field spacing */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  padding: 0.75rem 1rem;
+}
+
+/* Button spacing improvements */
+button:not(.unstyled) {
+  padding: 0.625rem 1.25rem;
+}
+
+/* Card and container improvements */
+.bg-white,
+.bg-gray-50,
+.bg-slate-50,
+[class*="rounded"] {
+  padding: 1.25rem;
+}
+
+/* Specific component padding */
+.auth-container input {
+  padding: 0.875rem 1rem !important;
+}
+
+.auth-container button {
+  padding: 0.75rem 1.5rem !important;
+}
+
+/* Dashboard and main content areas */
+main,
+.main-content {
+  padding: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  main,
+  .main-content {
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  main,
+  .main-content {
+    padding: 2.5rem;
+  }
+}

@@ -920,7 +920,7 @@ const App = () => {
         }}
       >
         {/* Logo Section */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200/60">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200/60">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-md shadow-purple-500/30">
@@ -940,7 +940,7 @@ const App = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-3 space-y-1">
+        <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -950,7 +950,7 @@ const App = () => {
                 onClick={() => {
                   setActiveTab(item.id);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
                   isActive
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-purple-500/30'
                     : 'text-slate-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50'
@@ -970,7 +970,7 @@ const App = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 shadow-sm">
+        <header className="h-16 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-6 sm:px-8 shadow-sm">
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -1003,7 +1003,7 @@ const App = () => {
                     }
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2 bg-slate-100/80 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white transition-all"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white transition-all h-11"
               />
               {/* Bug_64: Search suggestions dropdown */}
               {showSearchSuggestions && searchSuggestions.length > 0 && (
@@ -1167,7 +1167,7 @@ const App = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto p-6 sm:p-8">
           {renderContent()}
         </main>
       </div>
