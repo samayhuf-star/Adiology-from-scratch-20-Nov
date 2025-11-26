@@ -786,7 +786,7 @@ export const WebsiteTemplates: React.FC = () => {
       }
 
       notifications.success(
-        `Website is being deployed! ${deployment.state === 'READY' ? `Visit: ${deployment.url}` : 'We'll notify you when it's ready.'}`,
+        `Website is being deployed! ${deployment.state === 'READY' ? 'Visit: ' + deployment.url : 'We\'ll notify you when it\'s ready.'}`,
         { 
           title: 'Publishing...',
           duration: 10000,
