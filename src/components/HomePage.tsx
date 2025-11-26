@@ -35,18 +35,78 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
   }, []);
 
   const campaignStructures = [
-    { name: 'SKAG', icon: Zap, color: 'from-yellow-400 to-orange-500' },
-    { name: 'STAG', icon: TrendingUp, color: 'from-blue-400 to-cyan-500' },
-    { name: 'MIX', icon: Layers, color: 'from-indigo-400 to-purple-500' },
-    { name: 'STAG+', icon: Brain, color: 'from-purple-400 to-pink-500' },
-    { name: 'IBAG', icon: Target, color: 'from-green-400 to-emerald-500' },
-    { name: 'Alpha-Beta', icon: Split, color: 'from-red-400 to-rose-500' },
-    { name: 'Match-Type', icon: Filter, color: 'from-teal-400 to-cyan-500' },
-    { name: 'GEO', icon: Globe, color: 'from-blue-500 to-indigo-600' },
-    { name: 'Funnel', icon: Funnel, color: 'from-orange-400 to-red-500' },
-    { name: 'Brand Split', icon: Users, color: 'from-violet-400 to-purple-500' },
-    { name: 'Competitor', icon: TrendingDown, color: 'from-pink-400 to-rose-500' },
-    { name: 'Smart Cluster', icon: Network, color: 'from-indigo-500 to-purple-600' },
+    { 
+      name: 'SKAG', 
+      icon: Zap, 
+      color: 'from-yellow-400 to-orange-500',
+      description: 'Single Keyword Ad Groups for maximum relevance and Quality Score optimization.'
+    },
+    { 
+      name: 'STAG', 
+      icon: TrendingUp, 
+      color: 'from-blue-400 to-cyan-500',
+      description: 'Single Theme Ad Groups grouping related keywords for efficient campaign management.'
+    },
+    { 
+      name: 'MIX', 
+      icon: Layers, 
+      color: 'from-indigo-400 to-purple-500',
+      description: 'Hybrid approach combining SKAG and STAG for balanced performance and scalability.'
+    },
+    { 
+      name: 'STAG+', 
+      icon: Brain, 
+      color: 'from-purple-400 to-pink-500',
+      description: 'Enhanced STAG with AI-powered keyword clustering for better ad relevance.'
+    },
+    { 
+      name: 'IBAG', 
+      icon: Target, 
+      color: 'from-green-400 to-emerald-500',
+      description: 'Intent-Based Ad Groups organized by user search intent and buying stages.'
+    },
+    { 
+      name: 'Alpha-Beta', 
+      icon: Split, 
+      color: 'from-red-400 to-rose-500',
+      description: 'Separate testing and scaling campaigns for data-driven optimization.'
+    },
+    { 
+      name: 'Match-Type', 
+      icon: Filter, 
+      color: 'from-teal-400 to-cyan-500',
+      description: 'Organized by match types (exact, phrase, broad) for precise targeting control.'
+    },
+    { 
+      name: 'GEO', 
+      icon: Globe, 
+      color: 'from-blue-500 to-indigo-600',
+      description: 'Location-based campaigns optimized for specific geographic targeting needs.'
+    },
+    { 
+      name: 'Funnel', 
+      icon: Funnel, 
+      color: 'from-orange-400 to-red-500',
+      description: 'Structured by customer journey stages from awareness to conversion.'
+    },
+    { 
+      name: 'Brand Split', 
+      icon: Users, 
+      color: 'from-violet-400 to-purple-500',
+      description: 'Separate brand and non-brand campaigns for strategic budget allocation.'
+    },
+    { 
+      name: 'Competitor', 
+      icon: TrendingDown, 
+      color: 'from-pink-400 to-rose-500',
+      description: 'Target competitor keywords to capture market share and comparative shoppers.'
+    },
+    { 
+      name: 'Smart Cluster', 
+      icon: Network, 
+      color: 'from-indigo-500 to-purple-600',
+      description: 'AI-driven keyword clustering for automated campaign structure optimization.'
+    },
   ];
 
   return (
@@ -100,7 +160,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </nav>
 
       {/* Hero - Modern with Gradient Background */}
-      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
+      <section className="relative pt-32 pb-32 px-6 overflow-hidden">
         {/* Animated Background Blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full blur-3xl animate-pulse"></div>
@@ -141,24 +201,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               size="lg"
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-10 py-6 text-lg font-semibold shadow-2xl shadow-indigo-500/40 hover:shadow-indigo-500/60 hover:scale-105 transition-all group"
             >
-              Start Building Free
+              Start Building Now
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 
               variant="outline" 
               size="lg"
+              onClick={onLogin}
               className="border-2 border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50 px-10 py-6 text-lg font-semibold backdrop-blur-sm bg-white/50 hover:scale-105 transition-all"
             >
-              <Play className="w-5 h-5 mr-2" />
-              Watch Demo
+              Sign In
             </Button>
           </div>
 
           {/* Enhanced Trust Badges */}
           <div className="flex flex-wrap justify-center gap-8 text-sm animate-in fade-in duration-700" style={{ animationDelay: '500ms' }}>
             {[
-              { icon: CheckCircle2, text: 'No credit card required' },
-              { icon: Infinity, text: 'Free forever plan' },
+              { icon: ShieldCheck, text: 'Secure payments' },
+              { icon: Users, text: '10K+ users' },
               { icon: Timer, text: '5 minute setup' }
             ].map((badge, idx) => (
               <div key={idx} className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-slate-200 shadow-sm hover:shadow-md hover:scale-105 transition-all">
@@ -171,7 +231,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </section>
 
       {/* Stats Bar - Enhanced with Cards */}
-      <section className="py-20 px-6 relative">
+      <section className="py-24 px-6 relative">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
@@ -201,7 +261,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </section>
 
       {/* Campaign Structures - Modern Bento Grid */}
-      <section id="features" className="py-24 px-6 bg-gradient-to-b from-white to-slate-50/50">
+      <section id="features" className="py-32 px-6 bg-gradient-to-b from-white to-slate-50/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0 px-4 py-1.5 shadow-lg shadow-indigo-500/30">
@@ -219,7 +279,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {campaignStructures.map((structure, idx) => {
               const Icon = structure.icon;
               return (
@@ -236,9 +296,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${structure.color} flex items-center justify-center mb-4 shadow-lg group-hover:shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
                       <Icon className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="font-bold text-slate-900 text-lg group-hover:text-indigo-600 transition-colors">
+                    <h3 className="font-bold text-slate-900 text-lg mb-2 group-hover:text-indigo-600 transition-colors">
                       {structure.name}
                     </h3>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      {structure.description}
+                    </p>
                   </div>
                   
                   {/* Shimmer Effect */}
@@ -251,7 +314,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </section>
 
       {/* Features - Modern Cards with Icons */}
-      <section className="py-24 px-6 bg-gradient-to-b from-slate-50/50 to-white">
+      <section className="py-32 px-6 bg-gradient-to-b from-slate-50/50 to-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
@@ -323,7 +386,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </section>
 
       {/* Social Proof - Enhanced Testimonials */}
-      <section className="py-24 px-6 bg-gradient-to-b from-white to-indigo-50/30">
+      <section className="py-32 px-6 bg-gradient-to-b from-white to-indigo-50/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 px-4 py-1.5 shadow-lg">
@@ -394,7 +457,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </section>
 
       {/* Pricing - Modern Cards with Gradients */}
-      <section id="pricing" className="py-24 px-6 bg-gradient-to-b from-white via-indigo-50/30 to-white relative overflow-hidden">
+      <section id="pricing" className="py-32 px-6 bg-gradient-to-b from-white via-indigo-50/30 to-white relative overflow-hidden">
         {/* Background Decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 right-20 w-72 h-72 bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
@@ -515,7 +578,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
       </section>
 
       {/* CTA - Enhanced with Background */}
-      <section className="py-24 px-6 relative overflow-hidden">
+      <section className="py-32 px-6 relative overflow-hidden">
         {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600"></div>
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW9wYWNpdHk9Ii4wNSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9nPjwvc3ZnPg==')] opacity-10"></div>
@@ -535,7 +598,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
           </h2>
           <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed">
             Join thousands of marketers building better campaigns with Adiology.
-            <span className="block mt-2 font-semibold">Start free today, no credit card required.</span>
+            <span className="block mt-2 font-semibold">Start today and transform your campaigns.</span>
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -544,7 +607,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               size="lg"
               className="bg-white hover:bg-slate-50 text-indigo-600 px-12 py-7 text-lg font-bold shadow-2xl hover:shadow-3xl hover:scale-105 transition-all group"
             >
-              Start Building Free
+              Start Building Now
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 

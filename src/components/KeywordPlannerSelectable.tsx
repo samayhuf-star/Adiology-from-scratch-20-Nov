@@ -184,10 +184,40 @@ export const KeywordPlannerSelectable = ({
             
             // FALLBACK: Generate mock keywords locally when API is unavailable
             // Handle both comma-separated and newline-separated seed keywords
-            const seeds = seedKeywords.includes(',') 
+            let seeds = seedKeywords.includes(',') 
                 ? seedKeywords.split(',').map(s => s.trim()).filter(Boolean)
                 : seedKeywords.split('\n').map(s => s.trim()).filter(Boolean);
-                
+            
+            // Auto-split long seeds (>40 chars) into meaningful keywords
+            const processedSeeds: string[] = [];
+            seeds.forEach(seed => {
+                if (seed.length > 40) {
+                    // Split by spaces and extract 2-3 word phrases
+                    const words = seed.split(/[\s,;]+/).filter(w => w.length > 2);
+                    
+                    // Remove consecutive duplicates
+                    const uniqueWords: string[] = [];
+                    words.forEach(word => {
+                        if (uniqueWords.length === 0 || uniqueWords[uniqueWords.length - 1].toLowerCase() !== word.toLowerCase()) {
+                            uniqueWords.push(word);
+                        }
+                    });
+                    
+                    // Create 2-3 word phrases
+                    for (let i = 0; i < uniqueWords.length; i++) {
+                        if (i + 1 < uniqueWords.length) {
+                            processedSeeds.push(`${uniqueWords[i]} ${uniqueWords[i + 1]}`);
+                        }
+                        if (i + 2 < uniqueWords.length) {
+                            processedSeeds.push(`${uniqueWords[i]} ${uniqueWords[i + 1]} ${uniqueWords[i + 2]}`);
+                        }
+                    }
+                } else {
+                    processedSeeds.push(seed);
+                }
+            });
+            
+            seeds = [...new Set(processedSeeds)]; // Remove duplicates
             const negatives = negativeKeywords.split('\n').map(n => n.trim().toLowerCase()).filter(Boolean);
             
             const mockKeywords: string[] = [];

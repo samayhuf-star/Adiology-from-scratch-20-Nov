@@ -489,7 +489,41 @@ const getTopStatesByPopulation = (country: string, count: number): string[] => {
 // --- Helper Functions ---
 
 const generateMockKeywords = (seeds: string, negatives: string) => {
-    const seedList = seeds.split('\n').filter(s => s.trim());
+    // Split seeds by newlines first
+    let seedList = seeds.split('\n').filter(s => s.trim());
+    
+    // Auto-split long seeds (>40 chars) into individual keywords
+    // This handles cases where user pastes long phrases
+    const processedSeeds: string[] = [];
+    seedList.forEach(seed => {
+        const trimmed = seed.trim();
+        if (trimmed.length > 40) {
+            // Split by common delimiters and extract meaningful keywords
+            const words = trimmed.split(/[\s,;]+/).filter(w => w.length > 2);
+            
+            // Remove consecutive duplicates
+            const uniqueWords: string[] = [];
+            words.forEach(word => {
+                if (uniqueWords.length === 0 || uniqueWords[uniqueWords.length - 1].toLowerCase() !== word.toLowerCase()) {
+                    uniqueWords.push(word);
+                }
+            });
+            
+            // Create 2-3 word phrases from the words
+            for (let i = 0; i < uniqueWords.length; i++) {
+                if (i + 1 < uniqueWords.length) {
+                    processedSeeds.push(`${uniqueWords[i]} ${uniqueWords[i + 1]}`);
+                }
+                if (i + 2 < uniqueWords.length) {
+                    processedSeeds.push(`${uniqueWords[i]} ${uniqueWords[i + 1]} ${uniqueWords[i + 2]}`);
+                }
+            }
+        } else {
+            processedSeeds.push(trimmed);
+        }
+    });
+    
+    seedList = [...new Set(processedSeeds)]; // Remove duplicates
     const negativeList = negatives.split('\n').filter(n => n.trim());
     
     // --- Mock Expansion Data ---
@@ -528,38 +562,56 @@ const generateMockKeywords = (seeds: string, negatives: string) => {
         // 1. Seed Only
         results.push({ id: `k-${idCounter++}`, text: cleanSeed, volume: 'High', cpc: '$2.50', type: 'Seed' });
 
-        // 2. Prefix + Seed (20 variants)
+        // 2. Prefix + Seed (20 variants) - Only if result is reasonable length
         prefixes.forEach(prefix => {
-            results.push({ id: `k-${idCounter++}`, text: `${prefix} ${cleanSeed}`, volume: 'Medium', cpc: '$3.10', type: 'Phrase' });
+            const keyword = `${prefix} ${cleanSeed}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Medium', cpc: '$3.10', type: 'Phrase' });
+            }
         });
 
-        // 3. Seed + Suffix (18 variants)
+        // 3. Seed + Suffix (18 variants) - Only if result is reasonable length
         suffixes.forEach(suffix => {
-            results.push({ id: `k-${idCounter++}`, text: `${cleanSeed} ${suffix}`, volume: 'High', cpc: '$2.80', type: 'Phrase' });
+            const keyword = `${cleanSeed} ${suffix}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'High', cpc: '$2.80', type: 'Phrase' });
+            }
         });
 
         // 4. Prefix + Seed + Suffix (360 potential variants -> Limit to ~50 random)
         for (let i = 0; i < 50; i++) {
             const p = prefixes[Math.floor(Math.random() * prefixes.length)];
             const s = suffixes[Math.floor(Math.random() * suffixes.length)];
-            results.push({ id: `k-${idCounter++}`, text: `${p} ${cleanSeed} ${s}`, volume: 'Low', cpc: '$1.50', type: 'Broad' });
+            const keyword = `${p} ${cleanSeed} ${s}`;
+            if (keyword.length <= 60) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Low', cpc: '$1.50', type: 'Broad' });
+            }
         }
 
-        // 5. Intent + Seed (8 variants)
+        // 5. Intent + Seed (8 variants) - Only if result is reasonable length
         intents.forEach(intent => {
-            results.push({ id: `k-${idCounter++}`, text: `${intent} ${cleanSeed}`, volume: 'High', cpc: '$3.50', type: 'Exact' });
+            const keyword = `${intent} ${cleanSeed}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'High', cpc: '$3.50', type: 'Exact' });
+            }
         });
 
-        // 6. Seed + Location (35 variants)
+        // 6. Seed + Location (35 variants) - Only if result is reasonable length
         locations.forEach(loc => {
-            results.push({ id: `k-${idCounter++}`, text: `${cleanSeed} ${loc}`, volume: 'Medium', cpc: '$4.20', type: 'Local' });
+            const keyword = `${cleanSeed} ${loc}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Medium', cpc: '$4.20', type: 'Local' });
+            }
         });
 
         // 7. Prefix + Seed + Location (Limit to ~50 random)
         for (let i = 0; i < 50; i++) {
             const p = prefixes[Math.floor(Math.random() * prefixes.length)];
             const l = locations[Math.floor(Math.random() * locations.length)];
-            results.push({ id: `k-${idCounter++}`, text: `${p} ${cleanSeed} ${l}`, volume: 'Medium', cpc: '$3.90', type: 'Local' });
+            const keyword = `${p} ${cleanSeed} ${l}`;
+            if (keyword.length <= 60) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Medium', cpc: '$3.90', type: 'Local' });
+            }
         }
     });
 
@@ -3776,10 +3828,28 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const totalAds = generatedAds.length;
         const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
 
-        // Helper to format keyword display (keywords already have match type formatting)
+        // Helper to clean and format keyword display
         const formatKeywordDisplay = (keyword: string) => {
-            // Keywords are already formatted: broad=keyword, phrase="keyword", exact=[keyword]
-            return keyword;
+            // Remove match type brackets/quotes for base text
+            let cleanKeyword = keyword;
+            if (keyword.startsWith('[') && keyword.endsWith(']')) {
+                cleanKeyword = keyword.slice(1, -1);
+            } else if (keyword.startsWith('"') && keyword.endsWith('"')) {
+                cleanKeyword = keyword.slice(1, -1);
+            }
+            
+            // If keyword is too long (> 60 chars), truncate it
+            if (cleanKeyword.length > 60) {
+                cleanKeyword = cleanKeyword.substring(0, 57) + '...';
+            }
+            
+            // Re-add match type formatting
+            if (keyword.startsWith('[') && keyword.endsWith(']')) {
+                return `[${cleanKeyword}]`;
+            } else if (keyword.startsWith('"') && keyword.endsWith('"')) {
+                return `"${cleanKeyword}"`;
+            }
+            return cleanKeyword;
         };
 
         // Helper to get match type from keyword format
@@ -4048,20 +4118,40 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                     </div>
                                                 ) : (
                                                 <div className="space-y-2">
-                                                        {group.keywords.map((kw, kidx) => (
-                                                        <div key={kidx} className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100">
-                                                                <span className="text-purple-900 font-mono font-medium">
-                                                                    {formatKeywordDisplay(kw)}
-                                                                </span>
-                                                                <Badge variant="outline" className={`ml-2 text-xs ${
-                                                                    getMatchTypeDisplay(kw) === 'Exact' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
-                                                                    getMatchTypeDisplay(kw) === 'Phrase' ? 'bg-blue-100 text-blue-700 border-blue-300' :
-                                                                    'bg-amber-100 text-amber-700 border-amber-300'
-                                                                }`}>
-                                                                    {getMatchTypeDisplay(kw)}
-                                                                </Badge>
-                                                        </div>
-                                                    ))}
+                                                        {group.keywords.slice(0, 10).map((kw, kidx) => {
+                                                            // Remove match type brackets for raw keyword
+                                                            let rawKeyword = kw;
+                                                            if (kw.startsWith('[') && kw.endsWith(']')) {
+                                                                rawKeyword = kw.slice(1, -1);
+                                                            } else if (kw.startsWith('"') && kw.endsWith('"')) {
+                                                                rawKeyword = kw.slice(1, -1);
+                                                            }
+                                                            const isTruncated = rawKeyword.length > 60;
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={kidx} 
+                                                                    className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100 hover:bg-purple-100/70 transition-colors"
+                                                                    title={isTruncated ? rawKeyword : undefined}
+                                                                >
+                                                                    <span className="text-purple-900 font-mono font-medium truncate max-w-[180px]">
+                                                                        {formatKeywordDisplay(kw)}
+                                                                    </span>
+                                                                    <Badge variant="outline" className={`ml-2 text-xs flex-shrink-0 ${
+                                                                        getMatchTypeDisplay(kw) === 'Exact' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
+                                                                        getMatchTypeDisplay(kw) === 'Phrase' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                                                        'bg-amber-100 text-amber-700 border-amber-300'
+                                                                    }`}>
+                                                                        {getMatchTypeDisplay(kw)}
+                                                                    </Badge>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        {group.keywords.length > 10 && (
+                                                            <div className="text-xs text-slate-500 italic px-2">
+                                                                +{group.keywords.length - 10} more keywords...
+                                                            </div>
+                                                        )}
                                                         <button 
                                                             onClick={() => handleEditKeywords(group.name, group.keywords)}
                                                             className="text-xs text-purple-600 hover:text-purple-700 font-semibold hover:underline mt-2 flex items-center gap-1"

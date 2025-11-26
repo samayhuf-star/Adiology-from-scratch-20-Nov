@@ -183,7 +183,21 @@ export const AdsBuilder = () => {
             const allGeneratedAds: GeneratedAd[] = [];
 
             for (const group of groupsToProcess) {
-                const keywords = group.keywords.split(',').map(k => k.trim()).filter(Boolean);
+                // Split by comma, newline, or semicolon to handle different input formats
+                const keywords = group.keywords
+                    .split(/[,\n;]+/)
+                    .map(k => k.trim())
+                    .filter(Boolean);
+                
+                // Debug: Log keywords array
+                console.log('Processing keywords for group:', group.name);
+                console.log('Keywords array:', keywords);
+                console.log('Number of keywords:', keywords.length);
+                
+                if (keywords.length === 0) {
+                    console.warn('No keywords found after splitting for group:', group.name);
+                    continue;
+                }
                 
                 // Generate RSA Ads
                 if (adConfig.rsaCount > 0) {
@@ -296,14 +310,60 @@ export const AdsBuilder = () => {
         }
     };
 
+    // Helper function for proper title casing (Google Ads best practice)
+    const toTitleCase = (str: string): string => {
+        const exceptions = ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'by', 'of', 'in'];
+        return str.toLowerCase().split(' ').map((word, index) => {
+            // Always capitalize first word, last word, and words not in exceptions
+            if (index === 0 || !exceptions.includes(word)) {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }
+            return word;
+        }).join(' ');
+    };
+
     const generateFallbackRSA = (groupName: string, keywords: string[], index: number): GeneratedAd => {
-        const mainKeyword = keywords[index % keywords.length];
+        // Select a keyword from the array, cycling through them
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = toTitleCase(selectedKeyword);
+        
+        // Google Ads Best Practices: Strong CTAs, Value Props, Urgency
         const variations = [
-            { h1: `${mainKeyword} - Best Deals Available`, h2: 'Shop Now & Save', h3: 'Limited Time Offer' },
-            { h1: `Professional ${mainKeyword} Service`, h2: 'Available 24/7', h3: 'Expert Support' },
-            { h1: `${mainKeyword} Solutions`, h2: 'Get Started Today', h3: 'Free Consultation' },
-            { h1: `Premium ${mainKeyword}`, h2: 'Trusted by Thousands', h3: 'Best Price Guarantee' },
-            { h1: `${mainKeyword} Experts`, h2: 'Fast & Reliable', h3: 'Contact Us Now' }
+            { 
+                h1: `${mainKeyword} - Best Deals Online`, 
+                h2: 'Shop Now & Save Big', 
+                h3: 'Limited Time Offer',
+                h4: 'Free Shipping Available',
+                h5: 'Order Today'
+            },
+            { 
+                h1: `Professional ${mainKeyword} Service`, 
+                h2: 'Available 24/7', 
+                h3: 'Expert Support Team',
+                h4: 'Get a Free Quote',
+                h5: 'Trusted by 10K+ Customers'
+            },
+            { 
+                h1: `${mainKeyword} Solutions You Need`, 
+                h2: 'Get Started Today', 
+                h3: 'Free Consultation',
+                h4: 'Premium Quality Guaranteed',
+                h5: 'Call Now for Info'
+            },
+            { 
+                h1: `Premium ${mainKeyword} Products`, 
+                h2: 'Trusted by Thousands', 
+                h3: 'Best Price Guarantee',
+                h4: '5-Star Rated Service',
+                h5: 'Shop the Collection'
+            },
+            { 
+                h1: `${mainKeyword} Experts Near You`, 
+                h2: 'Fast & Reliable', 
+                h3: 'Contact Us Now',
+                h4: 'Same-Day Service Available',
+                h5: 'Get Your Free Estimate'
+            }
         ];
         
         const variation = variations[index % variations.length];
@@ -313,35 +373,14 @@ export const AdsBuilder = () => {
             groupName,
             adType: 'RSA',
             type: 'rsa',
-            headline1: variation.h1,
-            headline2: variation.h2,
-            headline3: variation.h3,
-            headline4: `Quality ${mainKeyword}`,
-            headline5: 'Call Today',
-            description1: `Looking for ${mainKeyword}? We offer the best solutions with competitive pricing and excellent customer service.`,
-            description2: `Get your ${mainKeyword} today. Fast delivery, expert support, and satisfaction guaranteed. Contact us now!`,
+            headline1: variation.h1.substring(0, 30), // Google Ads limit: 30 chars
+            headline2: variation.h2.substring(0, 30),
+            headline3: variation.h3.substring(0, 30),
+            headline4: variation.h4.substring(0, 30),
+            headline5: variation.h5.substring(0, 30),
+            description1: `Looking for ${mainKeyword}? We offer the best solutions with competitive pricing and excellent customer service. Shop with confidence today.`.substring(0, 90),
+            description2: `Get your ${mainKeyword} today with fast delivery, expert support, and 100% satisfaction guaranteed. Contact us now for more information!`.substring(0, 90),
             path1: mainKeyword.toLowerCase().replace(/\s+/g, '-').substring(0, 15),
-            path2: 'shop',
-            finalUrl: baseUrl,
-            selected: false,
-            extensions: []
-        };
-    };
-
-    const generateFallbackDKI = (groupName: string, keywords: string[], index: number): GeneratedAd => {
-        const mainKeyword = keywords[index % keywords.length];
-        
-        return {
-            id: crypto.randomUUID(),
-            groupName,
-            adType: 'DKI',
-            type: 'dki',
-            headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-            headline2: 'Shop {KeyWord:' + mainKeyword + '}',
-            headline3: 'Best {KeyWord:' + mainKeyword + '} Deals',
-            description1: `Find the perfect {KeyWord:${mainKeyword}} for your needs. Compare options and get the best price available today.`,
-            description2: `Order your {KeyWord:${mainKeyword}} online with fast shipping and expert customer support. Satisfaction guaranteed!`,
-            path1: 'keyword',
             path2: 'deals',
             finalUrl: baseUrl,
             selected: false,
@@ -349,14 +388,59 @@ export const AdsBuilder = () => {
         };
     };
 
+    const generateFallbackDKI = (groupName: string, keywords: string[], index: number): GeneratedAd => {
+        // Select a keyword from the array, cycling through them
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = toTitleCase(selectedKeyword);
+        
+        // DKI Best Practices: Title case for default text, proper formatting
+        return {
+            id: crypto.randomUUID(),
+            groupName,
+            adType: 'DKI',
+            type: 'dki',
+            headline1: `{KeyWord:${mainKeyword}} - Official Site`.substring(0, 30),
+            headline2: `Shop {KeyWord:${mainKeyword}} Online`.substring(0, 30),
+            headline3: `Best {KeyWord:${mainKeyword}} Deals`.substring(0, 30),
+            headline4: `Buy {KeyWord:${mainKeyword}} Today`.substring(0, 30),
+            headline5: `Top Rated {KeyWord:${mainKeyword}}`.substring(0, 30),
+            description1: `Find the perfect {KeyWord:${mainKeyword}} for your needs. Compare options and get the best price available today.`.substring(0, 90),
+            description2: `Order your {KeyWord:${mainKeyword}} online with fast shipping and expert customer support. Satisfaction guaranteed!`.substring(0, 90),
+            path1: 'keyword'.substring(0, 15),
+            path2: 'deals'.substring(0, 15),
+            finalUrl: baseUrl,
+            selected: false,
+            extensions: []
+        };
+    };
+
     const generateFallbackCallOnly = (groupName: string, keywords: string[], index: number): GeneratedAd => {
-        const mainKeyword = keywords[index % keywords.length];
+        // Select a keyword from the array, cycling through them
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = toTitleCase(selectedKeyword);
+        
+        // Call-Only Best Practices: Strong CTAs with "Call" or "Contact"
         const variations = [
-            { h1: `${mainKeyword} - Call Now`, h2: 'Available 24/7' },
-            { h1: `Professional ${mainKeyword}`, h2: 'Speak to an Expert' },
-            { h1: `${mainKeyword} Support`, h2: 'Call for Free Quote' },
-            { h1: `${mainKeyword} Hotline`, h2: 'Immediate Assistance' },
-            { h1: `${mainKeyword} Service`, h2: 'Call for Best Price' }
+            { 
+                h1: `${mainKeyword} - Call Now`, 
+                h2: 'Available 24/7 - Free Quote'
+            },
+            { 
+                h1: `Professional ${mainKeyword}`, 
+                h2: 'Speak to an Expert Today'
+            },
+            { 
+                h1: `${mainKeyword} Support Near You`, 
+                h2: 'Call for Free Consultation'
+            },
+            { 
+                h1: `${mainKeyword} Hotline`, 
+                h2: 'Immediate Assistance Available'
+            },
+            { 
+                h1: `${mainKeyword} Service - Call Us`, 
+                h2: 'Get Your Best Price Now'
+            }
         ];
         
         const variation = variations[index % variations.length];
@@ -366,10 +450,10 @@ export const AdsBuilder = () => {
             groupName,
             adType: 'CallOnly',
             type: 'callonly',
-            headline1: variation.h1,
-            headline2: variation.h2,
-            description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help!`,
-            description2: `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today!`,
+            headline1: variation.h1.substring(0, 30),
+            headline2: variation.h2.substring(0, 30),
+            description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help you today!`.substring(0, 90),
+            description2: `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today for your free quote!`.substring(0, 90),
             phoneNumber: '+1-800-123-4567',
             businessName: 'Your Business',
             selected: false,

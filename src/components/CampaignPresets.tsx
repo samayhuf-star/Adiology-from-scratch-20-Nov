@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Search, Download, Edit, ExternalLink, CheckCircle, Package, Sparkles, Zap, TrendingUp, X } from 'lucide-react';
+import { Search, Download, Edit, ExternalLink, CheckCircle, Package, Sparkles, Zap, TrendingUp, X, Eye } from 'lucide-react';
 import { campaignPresets, CampaignPreset } from '../data/campaignPresets';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { LandingPageTemplate } from './LandingPageTemplate';
+import { notifications } from '../utils/notifications';
 
 interface CampaignPresetsProps {
   onLoadPreset: (presetData: any) => void;

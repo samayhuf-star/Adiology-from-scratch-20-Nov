@@ -513,6 +513,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 1: Setup
   const [campaignName, setCampaignName] = useState(generateDefaultCampaignName());
   const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
+  const [adTypes, setAdTypes] = useState({ rsa: true, dki: true, call: true });
   const [url, setUrl] = useState('https://example.com');
   
   // Step 2: Keywords
@@ -700,6 +701,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       step,
       url,
       matchTypes,
+      adTypes,
       seedKeywords,
       negativeKeywords,
       selectedKeywords,
@@ -738,6 +740,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       setCampaignName(initialData.campaignName || generateDefaultCampaignName());
       setStructureType(initialData.structureType || null);
       setUrl(initialData.url || 'https://example.com');
+      setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
+      setAdTypes(initialData.adTypes || { rsa: true, dki: true, call: true });
       setNegativeKeywords(initialData.negativeKeywords || DEFAULT_NEGATIVE_KEYWORDS);
       setSelectedKeywords(initialData.selectedKeywords || []);
       setGeneratedAds(initialData.generatedAds || []);
@@ -774,6 +778,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     setStep(data.step || 1);
     setUrl(data.url || 'https://example.com');
     setMatchTypes(data.matchTypes || { broad: true, phrase: true, exact: true });
+    setAdTypes(data.adTypes || { rsa: true, dki: true, call: true });
     setSeedKeywords(data.seedKeywords || '');
     setNegativeKeywords(data.negativeKeywords || DEFAULT_NEGATIVE_KEYWORDS);
     setSelectedKeywords(data.selectedKeywords || []);
@@ -926,6 +931,41 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
+        {/* Match Types - Keyword Match Types */}
+        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Match Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="broad"
+                  checked={matchTypes.broad}
+                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, broad: !!checked })}
+                />
+                <Label htmlFor="broad" className="cursor-pointer font-medium text-sm">Broad Match</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="phrase"
+                  checked={matchTypes.phrase}
+                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, phrase: !!checked })}
+                />
+                <Label htmlFor="phrase" className="cursor-pointer font-medium text-sm">Phrase Match</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="exact"
+                  checked={matchTypes.exact}
+                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, exact: !!checked })}
+                />
+                <Label htmlFor="exact" className="cursor-pointer font-medium text-sm">Exact Match</Label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Ad Types - Compact Checkboxes */}
         <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
           <CardHeader className="pb-4">
@@ -936,8 +976,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="ad-rsa"
-                  checked={matchTypes.broad}
-                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, broad: !!checked })}
+                  checked={adTypes.rsa}
+                  onCheckedChange={(checked) => setAdTypes({ ...adTypes, rsa: !!checked })}
                 />
                 <Label htmlFor="ad-rsa" className="cursor-pointer font-medium text-sm">
                   <span className="inline-flex items-center gap-1.5">
@@ -949,8 +989,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="ad-dki"
-                  checked={matchTypes.phrase}
-                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, phrase: !!checked })}
+                  checked={adTypes.dki}
+                  onCheckedChange={(checked) => setAdTypes({ ...adTypes, dki: !!checked })}
                 />
                 <Label htmlFor="ad-dki" className="cursor-pointer font-medium text-sm">
                   <span className="inline-flex items-center gap-1.5">
@@ -962,8 +1002,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="ad-call"
-                  checked={matchTypes.exact}
-                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, exact: !!checked })}
+                  checked={adTypes.call}
+                  onCheckedChange={(checked) => setAdTypes({ ...adTypes, call: !!checked })}
                 />
                 <Label htmlFor="ad-call" className="cursor-pointer font-medium text-sm">
                   <span className="inline-flex items-center gap-1.5">
