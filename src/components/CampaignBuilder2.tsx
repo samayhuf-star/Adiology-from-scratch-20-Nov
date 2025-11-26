@@ -2064,8 +2064,25 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         });
       }
 
-      setGeneratedAds(baseAds);
-  }, [structureType, selectedKeywords.length, url, selectedIntents]);
+      // Get all ad groups
+      const adGroups = getDynamicAdGroups();
+      
+      // Create copies of ads for each ad group
+      const allAds: any[] = [];
+      let adIdCounter = 1;
+      
+      adGroups.forEach(group => {
+        baseAds.forEach(baseAd => {
+          allAds.push({
+            ...baseAd,
+            id: adIdCounter++,
+            adGroup: group.name // Assign ad to this specific ad group
+          });
+        });
+      });
+
+      setGeneratedAds(allAds);
+  }, [structureType, selectedKeywords.length, url, selectedIntents, getDynamicAdGroups]);
 
   // Generate ads when step 3 is reached
   useEffect(() => {
