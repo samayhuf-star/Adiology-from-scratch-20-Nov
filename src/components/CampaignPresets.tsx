@@ -500,7 +500,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
       </div>
 
       {/* Presets Grid - Grouped by Structure */}
-      <div className="space-y-12">
+      <div className="space-y-0">
         {Object.keys(structureDescriptions).map((structureKey) => {
           const structure = structureKey as keyof typeof structureDescriptions;
           const structureInfo = structureDescriptions[structure];
@@ -521,14 +521,14 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
           };
           
           return (
-            <div key={structure} className="pb-8 border-b border-slate-200 last:border-b-0">
+            <div key={structure} className="pb-12 mb-12 border-b border-slate-200 last:border-b-0 last:mb-0 last:pb-0">
               {/* Structure Header */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-3xl">{structureInfo.icon}</span>
-                  <h2 className="text-2xl font-bold text-slate-900">{structureInfo.name}</h2>
+              <div className="mb-10">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-4xl">{structureInfo.icon}</span>
+                  <h2 className="text-3xl font-bold text-slate-900">{structureInfo.name}</h2>
                 </div>
-                <p className="text-base text-slate-600 ml-11">{structureInfo.description}</p>
+                <p className="text-lg text-slate-600 ml-14">{structureInfo.description}</p>
               </div>
               
               {/* Presets Grid/List for this Structure */}
