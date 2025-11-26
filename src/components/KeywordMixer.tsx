@@ -4,11 +4,12 @@ import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
+import { DEFAULT_MIXER_KEYWORDS } from '../utils/defaultExamples';
 
 export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     // Store each list as a string (newline-separated)
-    const [listA, setListA] = useState('');
-    const [listB, setListB] = useState('');
+    const [listA, setListA] = useState(DEFAULT_MIXER_KEYWORDS.set1);
+    const [listB, setListB] = useState(DEFAULT_MIXER_KEYWORDS.set2);
     const [listC, setListC] = useState('');
     const [mixedKeywords, setMixedKeywords] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);

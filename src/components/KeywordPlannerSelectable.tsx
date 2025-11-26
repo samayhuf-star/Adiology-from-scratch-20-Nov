@@ -10,6 +10,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { generateComprehensiveNegativeKeywords } from '../utils/negativeKeywords';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
+import { DEFAULT_SEED_KEYWORDS } from '../utils/defaultExamples';
 
 interface KeywordPlannerSelectableProps {
     initialData?: any;
@@ -24,7 +25,7 @@ export const KeywordPlannerSelectable = ({
     selectedKeywords: externalSelectedKeywords = [],
     onNegativeKeywordsChange
 }: KeywordPlannerSelectableProps) => {
-    const [seedKeywords, setSeedKeywords] = useState('');
+    const [seedKeywords, setSeedKeywords] = useState(DEFAULT_SEED_KEYWORDS);
     const [negativeKeywords, setNegativeKeywords] = useState('');
     const [negativeKeywordsCount, setNegativeKeywordsCount] = useState(750); // Slider value
     const [generatedKeywords, setGeneratedKeywords] = useState<string[]>([]);

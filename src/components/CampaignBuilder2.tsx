@@ -28,6 +28,7 @@ import { notifications } from '../utils/notifications';
 import { generateCampaignStructure, type StructureSettings } from '../utils/campaignStructureGenerator';
 import { exportCampaignToCSV } from '../utils/csvExporter';
 import { validateCampaignForExport, formatValidationErrors } from '../utils/csvValidator';
+import { DEFAULT_SEED_KEYWORDS, DEFAULT_URL, DEFAULT_CAMPAIGN_NAME, DEFAULT_NEGATIVE_KEYWORDS } from '../utils/defaultExamples';
 import { api } from '../utils/api';
 import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { projectId } from '../utils/supabase/info';
@@ -511,15 +512,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
   
   // Step 1: Setup
-  const [campaignName, setCampaignName] = useState(generateDefaultCampaignName());
+  const [campaignName, setCampaignName] = useState(DEFAULT_CAMPAIGN_NAME);
   const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
   const [adTypes, setAdTypes] = useState({ rsa: true, dki: true, call: true });
-  const [url, setUrl] = useState('https://example.com');
+  const [url, setUrl] = useState(DEFAULT_URL);
   
   // Step 2: Keywords
-  const [seedKeywords, setSeedKeywords] = useState('');
-  // Default negative keywords (comma-separated)
-  const DEFAULT_NEGATIVE_KEYWORDS = 'cheap, discount, reviews, job, headquater, apply, free, best, company, information, when, why, where, how, career, hiring, scam, feedback';
+  const [seedKeywords, setSeedKeywords] = useState(DEFAULT_SEED_KEYWORDS);
   const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
   const [generatedKeywords, setGeneratedKeywords] = useState<any[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);

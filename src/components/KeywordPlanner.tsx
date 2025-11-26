@@ -13,6 +13,7 @@ import { historyService } from '../utils/historyService';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { copyToClipboard } from '../utils/clipboard';
 import { notifications } from '../utils/notifications';
+import { DEFAULT_SEED_KEYWORDS, DEFAULT_NEGATIVE_KEYWORDS as DEFAULT_NEG_KW } from '../utils/defaultExamples';
 
 interface SavedList {
     id: string;
@@ -47,7 +48,7 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
 ].join('\n');
 
 export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
-    const [seedKeywords, setSeedKeywords] = useState('');
+    const [seedKeywords, setSeedKeywords] = useState(DEFAULT_SEED_KEYWORDS);
     const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
     const [generatedKeywords, setGeneratedKeywords] = useState<string[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
