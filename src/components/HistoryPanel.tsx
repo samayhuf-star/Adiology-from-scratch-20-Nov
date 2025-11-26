@@ -109,11 +109,11 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
     return (
         <div className="p-4 sm:p-8 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-6 sm:mb-8">
-                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <div className="mb-6 sm:mb-8 space-y-2">
+                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     Activity History
                 </h1>
-                <p className="text-slate-600">View, restore, or manage your past campaigns and keyword lists.</p>
+                <p className="text-slate-600 text-sm sm:text-base">View, restore, or manage your past campaigns and keyword lists.</p>
             </div>
 
             {/* Filters and Search */}
@@ -144,8 +144,8 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                     </div>
                     {/* Results Counter */}
                     {!loading && (
-                        <div className="mt-4 pt-4 border-t border-slate-200">
-                            <p className="text-sm text-slate-600">
+                        <div className="mt-4 pt-4 border-t border-slate-200 clear-both">
+                            <p className="text-sm text-slate-600 leading-relaxed">
                                 <span className="font-semibold text-slate-800">{filteredHistory.length}</span> {filteredHistory.length === 1 ? 'result' : 'results'} found
                             </p>
                         </div>
@@ -180,32 +180,32 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                                     key={item.id} 
                                     className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-lg transition-all gap-4"
                                 >
-                                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0 overflow-hidden">
                                         <div className="p-2.5 sm:p-3 bg-white rounded-lg group-hover:bg-indigo-50 transition-colors shadow-sm flex-shrink-0">
                                             {getTypeIcon(item.type)}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-semibold text-slate-900 truncate">{item.name}</h3>
+                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                            <div className="flex items-center gap-2 mb-1.5 overflow-hidden">
+                                                <h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate flex-shrink" title={item.name}>{item.name}</h3>
                                                 {item.status === 'draft' && (
-                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-xs">
+                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-xs flex-shrink-0">
                                                         Draft
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                                <Badge variant="secondary" className="text-xs">
+                                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                                <Badge variant="secondary" className="text-xs flex-shrink-0">
                                                     {getTypeLabel(item.type)}
                                                 </Badge>
-                                                <span className="text-xs text-slate-500 flex items-center gap-1">
+                                                <span className="text-slate-500 flex items-center gap-1 flex-shrink-0">
                                                     <Clock className="w-3 h-3" />
                                                     {new Date(item.timestamp).toLocaleDateString()}
                                                 </span>
-                                                <span className="hidden sm:inline text-xs text-slate-400">
+                                                <span className="hidden sm:inline text-slate-400 flex-shrink-0">
                                                     {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                                 {item.lastModified && item.status === 'draft' && (
-                                                    <span className="text-xs text-amber-600 flex items-center gap-1">
+                                                    <span className="text-amber-600 flex items-center gap-1 flex-shrink-0">
                                                         Last saved: {new Date(item.lastModified).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 )}
