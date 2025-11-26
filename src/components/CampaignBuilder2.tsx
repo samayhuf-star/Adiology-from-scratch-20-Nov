@@ -1138,11 +1138,42 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     'in city', 'in town', 'in state', 'in region', 'in area', 'in location'
                   ];
                   
+                  // Helper function to validate keyword length (2-4 words max)
+                  const isValidKeywordLength = (keyword: string): boolean => {
+                    const wordCount = keyword.trim().split(/\s+/).length;
+                    return wordCount >= 2 && wordCount <= 4;
+                  };
+                  
+                  // Helper function to get word count
+                  const getWordCount = (text: string): number => {
+                    return text.trim().split(/\s+/).length;
+                  };
+                  
                   seedList.forEach((seed, seedIdx) => {
                     const cleanSeed = seed.trim().toLowerCase();
                     let keywordCounter = 0;
                     
-                    // Add the seed keyword itself (if not in negatives)
+                    // Only use seeds that are 1-2 words
+                    const seedWordCount = getWordCount(cleanSeed);
+                    if (seedWordCount > 2) {
+                      // If seed is too long, split it into 2-word phrases
+                      const words = cleanSeed.split(/\s+/);
+                      for (let i = 0; i < words.length - 1; i++) {
+                        const shortSeed = `${words[i]} ${words[i + 1]}`;
+                        if (!negativeList.some(n => shortSeed.includes(n))) {
+                          mockKeywords.push({
+                            id: `kw-${seedIdx}-${keywordCounter++}`,
+                            text: shortSeed,
+                            volume: 'High',
+                            cpc: '$2.50',
+                            type: 'Seed'
+                          });
+                        }
+                      }
+                      return; // Skip this seed for further generation
+                    }
+                    
+                    // Add the seed keyword itself (if 1-2 words and not in negatives)
                     if (!negativeList.some(n => cleanSeed.includes(n))) {
                       mockKeywords.push({
                         id: `kw-${seedIdx}-${keywordCounter++}`,
@@ -1153,10 +1184,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       });
                     }
                     
-                    // Generate prefix + seed combinations (~50)
+                    // Generate prefix + seed combinations (only if result is 2-4 words)
                     prefixes.forEach((prefix, pIdx) => {
                       const keyword = `${prefix} ${cleanSeed}`;
-                      if (!negativeList.some(n => keyword.includes(n))) {
+                      const wordCount = getWordCount(keyword);
+                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
                         mockKeywords.push({
                           id: `kw-${seedIdx}-${keywordCounter++}`,
                           text: keyword,
@@ -1167,10 +1199,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       }
                     });
                     
-                    // Generate seed + suffix combinations (~50)
+                    // Generate seed + suffix combinations (only if result is 2-4 words)
                     suffixes.forEach((suffix, sIdx) => {
                       const keyword = `${cleanSeed} ${suffix}`;
-                      if (!negativeList.some(n => keyword.includes(n))) {
+                      const wordCount = getWordCount(keyword);
+                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
                         mockKeywords.push({
                           id: `kw-${seedIdx}-${keywordCounter++}`,
                           text: keyword,
@@ -1181,10 +1214,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       }
                     });
                     
-                    // Generate intent + seed combinations (~20)
+                    // Generate intent + seed combinations (only if result is 2-4 words)
                     intents.forEach((intent, iIdx) => {
                       const keyword = `${intent} ${cleanSeed}`;
-                      if (!negativeList.some(n => keyword.includes(n))) {
+                      const wordCount = getWordCount(keyword);
+                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
                         mockKeywords.push({
                           id: `kw-${seedIdx}-${keywordCounter++}`,
                           text: keyword,
@@ -1195,26 +1229,32 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       }
                     });
                     
-                    // Generate prefix + seed + suffix combinations (~100)
-                    for (let i = 0; i < 100; i++) {
-                      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-                      const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-                      const keyword = `${prefix} ${cleanSeed} ${suffix}`;
-                      if (!negativeList.some(n => keyword.includes(n))) {
-                        mockKeywords.push({
-                          id: `kw-${seedIdx}-${keywordCounter++}`,
-                          text: keyword,
-                          volume: ['High', 'Medium', 'Low'][i % 3],
-                          cpc: ['$2.50', '$1.80', '$1.20'][i % 3],
-                          type: ['Exact', 'Phrase', 'Broad'][i % 3]
-                        });
+                    // REMOVED: prefix + seed + suffix combinations (creates too long keywords)
+                    // Only add if seed is 1 word and we can make 3-word phrases
+                    if (seedWordCount === 1) {
+                      for (let i = 0; i < 50; i++) {
+                        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+                        const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+                        const keyword = `${prefix} ${cleanSeed} ${suffix}`;
+                        const wordCount = getWordCount(keyword);
+                        // Only add if total is 3-4 words
+                        if (wordCount >= 3 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
+                          mockKeywords.push({
+                            id: `kw-${seedIdx}-${keywordCounter++}`,
+                            text: keyword,
+                            volume: ['High', 'Medium', 'Low'][i % 3],
+                            cpc: ['$2.50', '$1.80', '$1.20'][i % 3],
+                            type: ['Exact', 'Phrase', 'Broad'][i % 3]
+                          });
+                        }
                       }
                     }
                     
-                    // Generate seed + location combinations (~30)
+                    // Generate seed + location combinations (only if result is 2-4 words)
                     locations.forEach((loc, lIdx) => {
                       const keyword = `${cleanSeed} ${loc}`;
-                      if (!negativeList.some(n => keyword.includes(n))) {
+                      const wordCount = getWordCount(keyword);
+                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
                         mockKeywords.push({
                           id: `kw-${seedIdx}-${keywordCounter++}`,
                           text: keyword,
@@ -1261,10 +1301,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
                     if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {                                                          
                       console.log("Google Ads API generation successful:", data.keywords.length, "keywords");                                                             
-                      // Filter out keywords containing negative keywords
+                      // Filter out keywords containing negative keywords AND ensure 2-4 words max
                       const filteredKeywords = data.keywords.filter((k: any) => {                                                                             
-                        const keywordText = (k.text || k.keyword || k.id || '').toLowerCase();                                                                             
-                        return !negativeList.some(neg => keywordText.includes(neg.toLowerCase()));                                                                          
+                        const keywordText = (k.text || k.keyword || k.id || '').toLowerCase();
+                        const wordCount = keywordText.trim().split(/\s+/).length;
+                        return wordCount >= 2 && wordCount <= 4 && !negativeList.some(neg => keywordText.includes(neg.toLowerCase()));                                                                          
                       });
                       keywords = filteredKeywords.length > 0 ? filteredKeywords : mockKeywords;                                                               
                     } else {
