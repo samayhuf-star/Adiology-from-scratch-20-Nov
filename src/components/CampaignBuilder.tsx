@@ -1776,44 +1776,46 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
             {/* Structure & Geo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                <Card className="border-2 border-purple-200/60 bg-gradient-to-br from-purple-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5 text-indigo-600"/> Base Structure</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5 text-purple-600"/> Base Structure</CardTitle>
+                        <CardDescription>Choose your campaign structure</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-3 gap-4">
                         {GEO_SEGMENTATION.map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => setStructure(item.id)}
-                                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
+                                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
                                     structure === item.id 
-                                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
-                                    : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                                    ? 'border-purple-500 bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-200' 
+                                    : 'border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50'
                                 }`}
                             >
-                                <item.icon className="w-6 h-6" />
+                                <item.icon className={`w-6 h-6 ${structure === item.id ? 'text-white' : 'text-purple-600'}`} />
                                 <span className="font-semibold text-sm">{item.name}</span>
                             </button>
                         ))}
                     </CardContent>
                 </Card>
 
-                <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                <Card className="border-2 border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5 text-indigo-600"/> Geo Strategy</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-600"/> Geo Strategy</CardTitle>
+                        <CardDescription>Select geographic targeting</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-4 gap-3">
                         {GEO_OPTIONS.map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => setGeo(item.id)}
-                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
+                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
                                     geo === item.id 
-                                    ? 'border-green-600 bg-green-50 text-green-700' 
-                                    : 'border-slate-200 hover:border-green-200 hover:bg-slate-50'
+                                    ? 'border-emerald-500 bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-200' 
+                                    : 'border-emerald-200 hover:border-emerald-300 bg-white hover:bg-emerald-50'
                                 }`}
                             >
-                                <item.icon className="w-5 h-5" />
+                                <item.icon className={`w-5 h-5 ${geo === item.id ? 'text-white' : 'text-emerald-600'}`} />
                                 <span className="font-semibold text-xs">{item.name}</span>
                             </button>
                         ))}
@@ -1822,24 +1824,31 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             </div>
 
             {/* Match Type & URL */}
-            <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+            <Card className="border-2 border-blue-200/60 bg-gradient-to-br from-blue-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
                 <CardHeader>
-                    <CardTitle>Campaign Settings</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-blue-600" />
+                        Campaign Settings
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8">
                     {/* Horizontal Match Types */}
                     <div className="space-y-3">
-                        <Label className="text-base">Match Types</Label>
-                        <div className="flex flex-wrap items-center gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                            <Hash className="w-4 h-4 text-blue-600" />
+                            Match Types
+                        </Label>
+                        <div className="flex flex-wrap items-center gap-6 p-5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border-2 border-blue-200/50">
                             {MATCH_TYPES.map(type => (
-                                <div key={type.id} className="flex items-center space-x-2">
+                                <div key={type.id} className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all">
                                     <Checkbox 
                                         id={type.id} 
                                         checked={matchTypes[type.id as keyof typeof matchTypes]}
                                         onCheckedChange={(c) => setMatchTypes(prev => ({ ...prev, [type.id]: !!c }))}
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                     />
-                                    <Label htmlFor={type.id} className="cursor-pointer font-medium">
-                                        {type.label} <span className="text-slate-400 font-normal text-xs ml-1">{type.example}</span>
+                                    <Label htmlFor={type.id} className="cursor-pointer font-medium text-slate-700">
+                                        {type.label} <span className="text-blue-500 font-mono text-xs ml-1">{type.example}</span>
                                     </Label>
                                 </div>
                             ))}
