@@ -878,31 +878,33 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Step Indicator
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-center mb-8 space-x-2 sm:space-x-4">
-      {[
-        { num: 1, label: 'Setup' },
-        { num: 2, label: 'Keywords' },
-        { num: 3, label: 'Ads & Extensions' },
-        { num: 4, label: 'Geo Target' },
-        { num: 5, label: 'Review' },
-        { num: 6, label: 'Validate' }
-      ].map((s, idx) => (
-        <div key={s.num} className="flex items-center">
-          <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${
-            step >= s.num 
-              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200' 
-              : 'bg-slate-100 text-slate-400'
-          }`}>
-            {s.num}
+    <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg py-4 px-4 sm:px-6 mb-8 border border-indigo-100/50 shadow-sm">
+      <div className="flex items-center justify-center space-x-2 sm:space-x-4">
+        {[
+          { num: 1, label: 'Setup' },
+          { num: 2, label: 'Keywords' },
+          { num: 3, label: 'Ads & Extensions' },
+          { num: 4, label: 'Geo Target' },
+          { num: 5, label: 'Review' },
+          { num: 6, label: 'Validate' }
+        ].map((s, idx) => (
+          <div key={s.num} className="flex items-center">
+            <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${
+              step >= s.num 
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200' 
+                : 'bg-white text-slate-400 border border-slate-200'
+            }`}>
+              {s.num}
+            </div>
+            <span className={`ml-3 font-medium hidden sm:block ${step >= s.num ? 'text-slate-800' : 'text-slate-500'}`}>
+              {s.label}
+            </span>
+            {idx < 5 && (
+              <div className={`w-6 sm:w-12 h-1 mx-2 sm:mx-3 rounded-full ${step > s.num ? 'bg-indigo-300' : 'bg-slate-200'}`} />
+            )}
           </div>
-          <span className={`ml-3 font-medium hidden sm:block ${step >= s.num ? 'text-slate-800' : 'text-slate-400'}`}>
-            {s.label}
-          </span>
-          {idx < 5 && (
-            <div className={`w-6 sm:w-12 h-1 mx-2 sm:mx-3 rounded-full ${step > s.num ? 'bg-indigo-200' : 'bg-slate-100'}`} />
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 
@@ -2909,82 +2911,82 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 </Button>
                 
                 {/* Extension Buttons */}
-                <div className="pt-2 border-t border-slate-200 bg-slate-100 rounded-lg p-3 -mx-2">
-                  <p className="text-xs text-slate-700 mb-2 font-semibold">EXTENSIONS</p>
+                <div className="pt-2 border-t border-slate-300 bg-white rounded-lg p-3 -mx-2 border-2">
+                  <p className="text-xs text-slate-800 mb-3 font-bold uppercase">EXTENSIONS</p>
                   <Button 
                     onClick={() => createNewAd('snippet')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('callout')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('sitelink')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SITELINK EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('call')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALL EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('price')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('app')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('location')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LOCATION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('message')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('leadform')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('promotion')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('image')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> IMAGE EXTENSION
                   </Button>
@@ -4762,31 +4764,31 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'builder' | 'saved')} className="w-full">
-        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-10">
+        <div className="bg-white border-b border-slate-300 fixed top-0 left-0 right-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <TabsList className="w-full justify-start bg-transparent h-16">
+            <TabsList className="w-full justify-start bg-white h-16 border-0">
               <TabsTrigger 
                 value="builder" 
-                className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 font-semibold px-6"
+                className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 font-semibold px-6 rounded-t-lg border-b-2 data-[state=active]:border-indigo-600 data-[state=inactive]:border-transparent"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Campaign Builder
               </TabsTrigger>
               <TabsTrigger 
                 value="saved" 
-                className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 font-semibold px-6"
+                className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 font-semibold px-6 rounded-t-lg border-b-2 data-[state=active]:border-indigo-600 data-[state=inactive]:border-transparent"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Saved Campaigns
                 {savedCampaigns.length > 0 && (
-                  <Badge className="ml-2 bg-indigo-600">{savedCampaigns.length}</Badge>
+                  <Badge className="ml-2 bg-white text-indigo-600">{savedCampaigns.length}</Badge>
                 )}
               </TabsTrigger>
             </TabsList>
           </div>
         </div>
 
-        <TabsContent value="builder" className="mt-0">
+        <TabsContent value="builder" className="mt-16">
           <div className="py-8 px-4 sm:px-6 lg:px-8">
       {renderStepIndicator()}
       

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sparkles, Download, Globe, Type, ShieldAlert, Save, Filter, BarChart3, FileText, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Sparkles, Download, Globe, Type, ShieldAlert, Save, Filter, BarChart3, FileText, CheckCircle2, RefreshCw, FolderOpen, Trash2, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -52,6 +52,8 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedKeywords, setGeneratedKeywords] = useState<GeneratedKeyword[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState('builder');
+    const [savedItems, setSavedItems] = useState<any[]>([]);
     
     // Filter & Export State
     const [selectedCategories, setSelectedCategories] = useState<Set<NegativeKeywordCategory>>(new Set());
@@ -133,6 +135,8 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 title: 'Saved',
                 description: 'Your negative keywords have been saved.'
             });
+            // Refresh saved items list
+            await loadSavedItems();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
@@ -142,6 +146,59 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             setIsSaving(false);
         }
     };
+
+    const loadSavedItems = async () => {
+        try {
+            const items = await historyService.getByType('negative-keywords');
+            items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setSavedItems(items);
+        } catch (error) {
+            console.error("Load saved items failed", error);
+        }
+    };
+
+    const handleLoadSavedItem = async (itemId: string) => {
+        try {
+            const allItems = await historyService.getAll();
+            const item = allItems.find(i => i.id === itemId);
+            if (item && item.data) {
+                setUrl(item.data.url || '');
+                setCoreKeywords(item.data.coreKeywords || '');
+                setUserGoal(item.data.userGoal || '');
+                setGeneratedKeywords(item.data.generatedKeywords || []);
+                setActiveTab('builder');
+                notifications.success('Saved item loaded successfully!', {
+                    title: 'Loaded'
+                });
+            }
+        } catch (error) {
+            console.error("Load failed", error);
+            notifications.error('Failed to load item. Please try again.', {
+                title: 'Load Failed'
+            });
+        }
+    };
+
+    const handleDeleteSavedItem = async (itemId: string) => {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+        
+        try {
+            await historyService.deleteHistory(itemId);
+            await loadSavedItems();
+            notifications.success('Item deleted successfully!', {
+                title: 'Deleted'
+            });
+        } catch (error) {
+            console.error("Delete failed", error);
+            notifications.error('Failed to delete item. Please try again.', {
+                title: 'Delete Failed'
+            });
+        }
+    };
+
+    useEffect(() => {
+        loadSavedItems();
+    }, []);
 
     // AI Generation Logic using Gemini
     const handleGenerate = async () => {
@@ -561,7 +618,14 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+                <TabsList>
+                    <TabsTrigger value="builder">Negative Keywords Builder</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="builder">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Panel: Inputs */}
                 <Card className="lg:col-span-1 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl h-fit">
                     <CardHeader>
@@ -855,7 +919,88 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                         )}
                     </CardContent>
                 </Card>
-            </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="history">
+                    <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Filter className="h-5 w-5 text-indigo-600" />
+                                Saved Negative Keyword Lists
+                            </CardTitle>
+                            <CardDescription>
+                                View, load, or delete your saved negative keyword lists
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {savedItems.length > 0 ? (
+                                <div className="space-y-4">
+                                    {savedItems.map(item => (
+                                        <div
+                                            key={item.id}
+                                            className="px-4 py-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <div className="space-y-1 flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-slate-800">{item.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        {item.data?.coreKeywords && (
+                                                            <span className="text-slate-600">
+                                                                {item.data.coreKeywords.substring(0, 30)}...
+                                                            </span>
+                                                        )}
+                                                        {item.data?.generatedKeywords && (
+                                                            <span className="text-slate-600">
+                                                                {item.data.generatedKeywords.length} keywords
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        onClick={() => handleLoadSavedItem(item.id)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="gap-2"
+                                                    >
+                                                        <FolderOpen className="w-4 h-4" />
+                                                        Load
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDeleteSavedItem(item.id)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="gap-2 bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        Delete
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center h-full py-20">
+                                    <div className="text-center">
+                                        <Filter className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                        <p className="text-slate-500">
+                                            No saved negative keyword lists found. Save your generated keywords to see them here.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };

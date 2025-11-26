@@ -19,14 +19,13 @@ import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
 import { AdsBuilder } from './components/AdsBuilder';
-import { HistoryPanel } from './components/HistoryPanel';
 import { BillingPanel } from './components/BillingPanel';
 import { SupportPanel } from './components/SupportPanel';
 import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
-import { HomePage } from './components/HomePage';
+import { HomePageNew } from './components/HomePageNew';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
 import { PaymentPage } from './components/PaymentPage';
@@ -63,7 +62,6 @@ const App = () => {
     'ads-builder',
     'negative-keywords',
     'csv-validator-2',
-    'history',
     'settings',
     'billing',
     'support',
@@ -574,16 +572,25 @@ const App = () => {
     // Check if user is logged in
     const authenticated = await isAuthenticated();
     if (!authenticated || !user) {
-      // User not logged in, redirect to signup
+      // User not logged in, redirect to signup and store plan selection
+      setSelectedPlan({ name: planName, priceId, amount, isSubscription });
       setAuthMode('signup');
       setAppView('auth');
       return;
     }
 
-    // User is logged in, redirect to payment page
-    setSelectedPlan({ name: planName, priceId, amount, isSubscription });
-    window.history.pushState({}, '', `/payment?plan=${encodeURIComponent(planName)}&priceId=${encodeURIComponent(priceId)}&amount=${amount}&subscription=${isSubscription}`);
-    setAppView('payment');
+    // User is logged in, create Stripe checkout session
+    try {
+      const { createCheckoutSession } = await import('./utils/stripe');
+      await createCheckoutSession(priceId, planName, user.id, user.email);
+      // User will be redirected to Stripe, so we don't need to change appView
+    } catch (error) {
+      console.error('Checkout error:', error);
+      // Fallback to payment page if Stripe fails
+      setSelectedPlan({ name: planName, priceId, amount, isSubscription });
+      window.history.pushState({}, '', `/payment?plan=${encodeURIComponent(planName)}&priceId=${encodeURIComponent(priceId)}&amount=${amount}&subscription=${isSubscription}`);
+      setAppView('payment');
+    }
   };
 
   // Default: User view (protected) navigation structure
@@ -597,7 +604,6 @@ const App = () => {
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
     { id: 'csv-validator-2', label: 'CSV Validator 2.0', icon: FileCheck },
-    { id: 'history', label: 'History', icon: FileCheck },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -681,7 +687,7 @@ const App = () => {
   // Render based on app view
   if (appView === 'home') {
     return (
-      <HomePage
+      <HomePageNew
         onGetStarted={() => {
           setAuthMode('signup');
           setAppView('auth');
@@ -924,8 +930,6 @@ const App = () => {
         return <NegativeKeywordsBuilder initialData={activeTab === 'negative-keywords' ? historyData : null} />;
       case 'ads-builder':
         return <AdsBuilder />;
-      case 'history':
-        return <HistoryPanel onLoadItem={handleLoadHistory} />;
       case 'support-help':
         return <SupportHelpCombined />;
       case 'support':
@@ -1209,7 +1213,7 @@ const App = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto p-6 sm:p-8">
+        <main className="flex-1 overflow-auto pl-4 pr-6 py-6 sm:pl-4 sm:pr-8 sm:py-8">
           {renderContent()}
         </main>
       </div>

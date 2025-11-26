@@ -57,18 +57,21 @@ export const AdsBuilder = () => {
     const [baseUrl, setBaseUrl] = useState('https://www.example.com');
     const [urlError, setUrlError] = useState('');
     
-    // Ad type selection with checkboxes
-    const [selectedAdTypes, setSelectedAdTypes] = useState({
-        rsa: true,
-        dki: true,
-        callOnly: true
-    });
+    // Ad type selection with dropdown (single selection)
+    const [selectedAdType, setSelectedAdType] = useState<string>('rsa'); // 'rsa' | 'dki' | 'callOnly' | 'all'
     
-    const [adConfig, setAdConfig] = useState({
-        rsaCount: 1,
-        dkiCount: 1,
-        callOnlyCount: 1
-    });
+    // Simplified ad config - will generate 1 ad of selected type
+    const getAdConfig = () => {
+        if (selectedAdType === 'all') {
+            return { rsaCount: 1, dkiCount: 1, callOnlyCount: 1 };
+        } else if (selectedAdType === 'rsa') {
+            return { rsaCount: 1, dkiCount: 0, callOnlyCount: 0 };
+        } else if (selectedAdType === 'dki') {
+            return { rsaCount: 0, dkiCount: 1, callOnlyCount: 0 };
+        } else {
+            return { rsaCount: 0, dkiCount: 0, callOnlyCount: 1 };
+        }
+    };
     
     const [generatedAds, setGeneratedAds] = useState<GeneratedAd[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -174,8 +177,11 @@ export const AdsBuilder = () => {
                 return;
             }
 
+            // Get ad config based on selected ad type
+            const currentAdConfig = getAdConfig();
+            
             // Calculate total ads that will be generated
-            const totalAdsPerGroup = adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount;
+            const totalAdsPerGroup = currentAdConfig.rsaCount + currentAdConfig.dkiCount + currentAdConfig.callOnlyCount;
             const totalAdsToGenerate = totalAdsPerGroup * groupsToProcess.length;
 
             // Limit total ads to 25
@@ -207,12 +213,12 @@ export const AdsBuilder = () => {
                 }
                 
                 // Generate RSA Ads
-                if (adConfig.rsaCount > 0) {
+                if (currentAdConfig.rsaCount > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'RSA',
-                            count: adConfig.rsaCount,
+                            count: currentAdConfig.rsaCount,
                             groupName: group.name
                         });
 
@@ -232,19 +238,19 @@ export const AdsBuilder = () => {
                     } catch (error) {
                         console.log('API unavailable, using fallback for RSA');
                         // Fallback RSA generation
-                        for (let i = 0; i < adConfig.rsaCount; i++) {
+                        for (let i = 0; i < currentAdConfig.rsaCount; i++) {
                             allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i));
                         }
                     }
                 }
 
                 // Generate DKI Ads
-                if (adConfig.dkiCount > 0) {
+                if (currentAdConfig.dkiCount > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'DKI',
-                            count: adConfig.dkiCount,
+                            count: currentAdConfig.dkiCount,
                             groupName: group.name
                         });
 
@@ -264,19 +270,19 @@ export const AdsBuilder = () => {
                     } catch (error) {
                         console.log('API unavailable, using fallback for DKI');
                         // Fallback DKI generation
-                        for (let i = 0; i < adConfig.dkiCount; i++) {
+                        for (let i = 0; i < currentAdConfig.dkiCount; i++) {
                             allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i));
                         }
                     }
                 }
 
                 // Generate Call Only Ads
-                if (adConfig.callOnlyCount > 0) {
+                if (currentAdConfig.callOnlyCount > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'CallOnly',
-                            count: adConfig.callOnlyCount,
+                            count: currentAdConfig.callOnlyCount,
                             groupName: group.name
                         });
 
@@ -298,7 +304,7 @@ export const AdsBuilder = () => {
                     } catch (error) {
                         console.log('API unavailable, using fallback for Call Only');
                         // Fallback Call Only generation
-                        for (let i = 0; i < adConfig.callOnlyCount; i++) {
+                        for (let i = 0; i < currentAdConfig.callOnlyCount; i++) {
                             allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i));
                         }
                     }
@@ -813,170 +819,120 @@ export const AdsBuilder = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Column 1: URL & Ad Types */}
-                <div className="space-y-3">
-                    {/* URL Section */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden">
-                        <CardContent className="p-4">
-                            <Label className="block text-xs font-semibold text-slate-700 mb-2">
-                                URL
-                            </Label>
-                            <Input
-                                type="url"
-                                placeholder="enter url here"
-                                value={baseUrl}
-                                onChange={(e) => {
-                                    setBaseUrl(e.target.value);
-                                    if (urlError) setUrlError('');
-                                }}
-                                onBlur={(e) => {
-                                    const urlValue = e.target.value.trim();
-                                    if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
-                                        setUrlError('Please enter a valid URL starting with http:// or https://');
-                                    } else {
-                                        setUrlError('');
-                                    }
-                                }}
-                                className={`bg-white border-slate-300 focus:border-indigo-500 h-9 text-sm ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            {urlError && (
-                                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    {urlError}
-                                </p>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Ad Type Selection */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden">
-                        <div className="bg-yellow-400 p-2 border-b border-slate-200">
-                            <CardTitle className="text-sm font-bold text-slate-900">
-                                Select Ad Types
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column: Single Form */}
+                <div className="space-y-4">
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold text-slate-900">
+                                Create Your Ads
                             </CardTitle>
-                        </div>
-                        <CardContent className="p-4">
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="responsive-ad"
-                                        checked={selectedAdTypes.rsa}
-                                        onCheckedChange={(checked) => {
-                                            setSelectedAdTypes({...selectedAdTypes, rsa: checked as boolean});
-                                            if (!checked) setAdConfig({...adConfig, rsaCount: 0});
-                                            else if (adConfig.rsaCount === 0) setAdConfig({...adConfig, rsaCount: 1});
-                                        }}
-                                    />
-                                    <Label htmlFor="responsive-ad" className="text-xs font-medium text-slate-700 cursor-pointer">
-                                        Responsive
-                                    </Label>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="dki-ads"
-                                        checked={selectedAdTypes.dki}
-                                        onCheckedChange={(checked) => {
-                                            setSelectedAdTypes({...selectedAdTypes, dki: checked as boolean});
-                                            if (!checked) setAdConfig({...adConfig, dkiCount: 0});
-                                            else if (adConfig.dkiCount === 0) setAdConfig({...adConfig, dkiCount: 1});
-                                        }}
-                                    />
-                                    <Label htmlFor="dki-ads" className="text-xs font-medium text-slate-700 cursor-pointer">
-                                        DKI Ads
-                                    </Label>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="call-ads"
-                                        checked={selectedAdTypes.callOnly}
-                                        onCheckedChange={(checked) => {
-                                            setSelectedAdTypes({...selectedAdTypes, callOnly: checked as boolean});
-                                            if (!checked) setAdConfig({...adConfig, callOnlyCount: 0});
-                                            else if (adConfig.callOnlyCount === 0) setAdConfig({...adConfig, callOnlyCount: 1});
-                                        }}
-                                    />
-                                    <Label htmlFor="call-ads" className="text-xs font-medium text-slate-700 cursor-pointer">
-                                        Call Ads
-                                    </Label>
+                            <CardDescription className="text-sm text-slate-600">
+                                Fill in the details below to generate your Google Ads
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* URL Input */}
+                            <div>
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    URL
+                                </Label>
+                                <Input
+                                    type="url"
+                                    placeholder="https://www.example.com"
+                                    value={baseUrl}
+                                    onChange={(e) => {
+                                        setBaseUrl(e.target.value);
+                                        if (urlError) setUrlError('');
+                                    }}
+                                    onBlur={(e) => {
+                                        const urlValue = e.target.value.trim();
+                                        if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                                            setUrlError('Please enter a valid URL starting with http:// or https://');
+                                        } else {
+                                            setUrlError('');
+                                        }
+                                    }}
+                                    className={`bg-white border-slate-300 focus:border-indigo-500 h-10 text-sm ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                                />
+                                {urlError && (
+                                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {urlError}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Ad Type Dropdown */}
+                            <div>
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Type of Ads
+                                </Label>
+                                <Select value={selectedAdType} onValueChange={setSelectedAdType}>
+                                    <SelectTrigger className="w-full h-10 text-sm">
+                                        <SelectValue placeholder="Select ad type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="rsa">Responsive Search Ads</SelectItem>
+                                        <SelectItem value="dki">Dynamic Keyword Insertion (DKI)</SelectItem>
+                                        <SelectItem value="callOnly">Call-Only Ads</SelectItem>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Mode Selection */}
+                            <div>
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Choose Your Mode
+                                </Label>
+                                <div className="flex items-center gap-3">
+                                    <Button
+                                        variant={mode === 'single' ? 'default' : 'outline'}
+                                        onClick={() => setMode('single')}
+                                        size="sm"
+                                        className={`flex-1 ${mode === 'single' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+                                    >
+                                        Single Ad Group
+                                    </Button>
+                                    <Button
+                                        variant={mode === 'multiple' ? 'default' : 'outline'}
+                                        onClick={() => setMode('multiple')}
+                                        size="sm"
+                                        className={`flex-1 ${mode === 'multiple' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+                                    >
+                                        Multiple Ad Groups
+                                    </Button>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* Generate Button */}
-                    <Button
-                        onClick={generateAds}
-                        disabled={isGenerating || (adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25}
-                        className="w-full theme-button-primary py-3 text-sm font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                        {isGenerating ? (
-                            <>
-                                <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <Zap className="w-4 h-4 mr-2" />
-                                Generate Ads
-                            </>
-                        )}
-                    </Button>
-                </div>
-
-                {/* Column 2: Mode & Keywords */}
-                <div className="space-y-3">
-                    {/* Mode Selection */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden">
-                        <div className="bg-yellow-400 p-2 border-b border-slate-200">
-                            <CardTitle className="text-sm font-bold text-slate-900">
-                                Choose Your Mode
-                            </CardTitle>
-                        </div>
-                        <CardContent className="p-4">
-                            <div className="flex items-center gap-3 mb-3">
-                                <Button
-                                    variant={mode === 'single' ? 'default' : 'outline'}
-                                    onClick={() => setMode('single')}
-                                    size="sm"
-                                    className={mode === 'single' ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border-slate-300'}
-                                >
-                                    Single
-                                </Button>
-                                <Button
-                                    variant={mode === 'multiple' ? 'default' : 'outline'}
-                                    onClick={() => setMode('multiple')}
-                                    size="sm"
-                                    className={mode === 'multiple' ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border-slate-300'}
-                                >
-                                    Multiple
-                                </Button>
-                            </div>
-                            
-                            {mode === 'single' && (
+                            {/* Keywords Input */}
+                            {mode === 'single' ? (
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-2">
-                                        Enter 3-4 Keywords (comma-separated)
-                                    </label>
+                                    <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Enter Keywords (comma-separated)
+                                    </Label>
                                     <Textarea
-                                        placeholder="airline number, contact airline, delta phone number, customer service"
+                                        placeholder="e.g., airline number, contact airline, delta phone number, customer service"
                                         value={singleKeywords}
                                         onChange={(e) => setSingleKeywords(e.target.value)}
                                         className="min-h-[120px] border-slate-300 text-sm"
                                     />
                                 </div>
-                            )}
-                            
-                            {mode === 'multiple' && (
+                            ) : (
                                 <div className="space-y-3">
+                                    <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Ad Groups & Keywords
+                                    </Label>
                                     <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                                        {adGroups.map((group, index) => (
+                                        {adGroups.map((group) => (
                                             <div key={group.id} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <Input
                                                         value={group.name}
                                                         onChange={(e) => updateAdGroup(group.id, 'name', e.target.value)}
-                                                        className="font-semibold max-w-[150px] h-8 text-xs"
+                                                        placeholder="Ad Group Name"
+                                                        className="font-semibold max-w-[200px] h-8 text-xs"
                                                     />
                                                     {adGroups.length > 1 && (
                                                         <Button
@@ -993,7 +949,7 @@ export const AdsBuilder = () => {
                                                     placeholder="Enter keywords (comma-separated)"
                                                     value={group.keywords}
                                                     onChange={(e) => updateAdGroup(group.id, 'keywords', e.target.value)}
-                                                    className="min-h-[60px] text-xs"
+                                                    className="min-h-[80px] text-xs"
                                                 />
                                             </div>
                                         ))}
@@ -1006,15 +962,34 @@ export const AdsBuilder = () => {
                                         className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50 text-xs"
                                     >
                                         <Plus className="w-3 h-3 mr-1" />
-                                        Add Group
+                                        Add Ad Group
                                     </Button>
                                 </div>
                             )}
+
+                            {/* Generate Button */}
+                            <Button
+                                onClick={generateAds}
+                                disabled={isGenerating}
+                                className="w-full theme-button-primary py-3 text-base font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                                        Generating Ads...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Zap className="w-4 h-4 mr-2" />
+                                        Generate Ads
+                                    </>
+                                )}
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Column 3: Generated Ads Results */}
+                {/* Right Column: Generated Ads Results */}
                 <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden lg:sticky lg:top-6 h-[calc(100vh-8rem)] flex flex-col">
                     <div className="bg-white p-3 border-b border-slate-300 flex-shrink-0">
                         <div className="flex justify-between items-center mb-2">

@@ -587,8 +587,8 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
       {/* Presets Grid/List - Simple flat display */}
       <div className={viewMode === 'grid' 
-        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6' 
-        : 'space-y-6'
+        ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3' 
+        : 'space-y-3'
       }>
         {filteredPresets.map((preset) => {
           // Get structure color based on type
@@ -613,18 +613,19 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
             onClick={() => handleSelectPreset(preset)}
           >
-                {/* Structure Tag */}
-                <div className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10 shadow-sm`}>
-                  {preset.structure || 'SKAG'}
-                </div>
-                
-                <div className="p-6 pr-32">
+                <div className="p-6">
                   <div className="flex items-start gap-6">
                     {/* Left: Title and Description */}
                     <div className="flex-1 pr-4">
-                      <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors leading-tight">
-                        {preset.title}
-                      </h3>
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <h3 className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight flex-1">
+                          {preset.title}
+                        </h3>
+                        {/* Structure Tag */}
+                        <div className={`px-2.5 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} shadow-sm shrink-0`}>
+                          {preset.structure || 'SKAG'}
+                        </div>
+                      </div>
                       <p className="text-sm text-slate-500 mb-4 leading-tight">{preset.campaign_name}</p>
                       
                       {/* Stats Row */}
@@ -696,74 +697,75 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
           return (
           <div
             key={preset.slug}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden p-4 sm:p-6 flex flex-col h-full"
+            className="bg-white rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-all cursor-pointer group relative overflow-hidden p-2.5 flex flex-col h-full"
             onClick={() => handleSelectPreset(preset)}
           >
-            {/* Structure Tag - Top Right Corner */}
-            <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-20 shadow-sm`}>
-              {preset.structure || 'SKAG'}
-            </div>
-            
             <div className="flex-1 flex flex-col">
-              <div className="mb-4 pr-20">
-                <h3 className="text-base font-semibold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors leading-tight">
-                  {preset.title}
-                </h3>
-                <p className="text-xs text-slate-500 leading-tight">{preset.campaign_name}</p>
+              <div className="mb-2">
+                <div className="flex items-start justify-between gap-1.5 mb-0.5">
+                  <h3 className="text-xs font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight flex-1 pr-12">
+                    {preset.title}
+                  </h3>
+                  {/* Structure Tag */}
+                  <div className={`px-1 py-0.5 rounded text-[8px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} shadow-sm shrink-0 absolute top-2 right-2 z-20 leading-tight`}>
+                    {preset.structure || 'SKAG'}
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-tight">{preset.campaign_name}</p>
               </div>
 
-              <div className="space-y-2 mb-4 flex-1">
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <Sparkles className="w-4 h-4 shrink-0" />
+              <div className="space-y-1 mb-2 flex-1">
+                <div className="flex items-center gap-1 text-[10px] text-slate-600">
+                  <Sparkles className="w-3 h-3 shrink-0" />
                   <span>{preset.keywords.length} keywords</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <Zap className="w-4 h-4 shrink-0" />
+                <div className="flex items-center gap-1 text-[10px] text-slate-600">
+                  <Zap className="w-3 h-3 shrink-0" />
                   <span>{preset.ad_groups.length} ad groups</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <CheckCircle className="w-4 h-4 shrink-0" />
+                <div className="flex items-center gap-1 text-[10px] text-slate-600">
+                  <CheckCircle className="w-3 h-3 shrink-0" />
                   <span>${preset.max_cpc.toFixed(2)} max CPC</span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 mb-4">
+              <div className="flex flex-wrap gap-1 mb-2">
                 {preset.ad_groups.slice(0, 2).map((group, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-[10px] py-0.5 px-2">
+                  <Badge key={idx} variant="secondary" className="text-[9px] py-0 px-1.5">
                     {group.name}
                   </Badge>
                 ))}
                 {preset.ad_groups.length > 2 && (
-                  <Badge variant="secondary" className="text-[10px] py-0.5 px-2">
-                    +{preset.ad_groups.length - 2} more
+                  <Badge variant="secondary" className="text-[9px] py-0 px-1.5">
+                    +{preset.ad_groups.length - 2}
                   </Badge>
                 )}
               </div>
 
-              <div className="flex gap-2 mt-auto">
+              <div className="flex gap-1.5 mt-auto">
               <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 border-slate-300 hover:bg-slate-50 text-xs h-8"
+                  className="flex-1 border-slate-300 hover:bg-slate-50 text-[10px] h-7 px-1.5"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSelectPreset(preset);
                 }}
                   title="View campaign details"
                 >
-                  <Eye className="w-3.5 h-3.5 mr-1" />
+                  <Eye className="w-3 h-3 mr-0.5" />
                   View
                 </Button>
                 <Button
                   size="sm"
-                  className="flex-1 theme-button-primary text-xs h-8"
+                  className="flex-1 theme-button-primary text-[10px] h-7 px-1.5"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleExportCSV(preset);
                   }}
                   title="Download Google Ads Editor CSV"
                 >
-                  <Download className="w-3.5 h-3.5 mr-1" />
+                  <Download className="w-3 h-3 mr-0.5" />
                   Export
               </Button>
               </div>

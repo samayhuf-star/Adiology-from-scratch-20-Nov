@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Shuffle, Plus, X, Download, Save, Sparkles } from 'lucide-react';
+import { Shuffle, Plus, X, Download, Save, Sparkles, FolderOpen, Trash2, Clock } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Button } from './ui/button';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
 import { DEFAULT_MIXER_KEYWORDS } from '../utils/defaultExamples';
@@ -30,6 +32,8 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     const [listC, setListC] = useState('');
     const [mixedKeywords, setMixedKeywords] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState('mixer');
+    const [savedItems, setSavedItems] = useState<any[]>([]);
     
     // Match types - all selected by default
     const [matchTypes, setMatchTypes] = useState({
@@ -92,6 +96,8 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
             notifications.success('Mixer result saved!', {
                 title: 'Saved Successfully'
             });
+            // Refresh saved items list
+            await loadSavedItems();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
@@ -101,6 +107,60 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
             setIsSaving(false);
         }
     };
+
+    const loadSavedItems = async () => {
+        try {
+            const items = await historyService.getByType('keyword-mixer');
+            items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setSavedItems(items);
+        } catch (error) {
+            console.error("Load saved items failed", error);
+        }
+    };
+
+    const handleLoadSavedItem = async (itemId: string) => {
+        try {
+            const allItems = await historyService.getAll();
+            const item = allItems.find(i => i.id === itemId);
+            if (item && item.data) {
+                setListA(item.data.listA || '');
+                setListB(item.data.listB || '');
+                setListC(item.data.listC || '');
+                setMixedKeywords(item.data.mixedKeywords || []);
+                setMatchTypes(item.data.matchTypes || { broad: true, phrase: true, exact: true });
+                setActiveTab('mixer');
+                notifications.success('Saved item loaded successfully!', {
+                    title: 'Loaded'
+                });
+            }
+        } catch (error) {
+            console.error("Load failed", error);
+            notifications.error('Failed to load item. Please try again.', {
+                title: 'Load Failed'
+            });
+        }
+    };
+
+    const handleDeleteSavedItem = async (itemId: string) => {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+        
+        try {
+            await historyService.deleteHistory(itemId);
+            await loadSavedItems();
+            notifications.success('Item deleted successfully!', {
+                title: 'Deleted'
+            });
+        } catch (error) {
+            console.error("Delete failed", error);
+            notifications.error('Failed to delete item. Please try again.', {
+                title: 'Delete Failed'
+            });
+        }
+    };
+
+    useEffect(() => {
+        loadSavedItems();
+    }, []);
 
     const mixKeywords = () => {
         // Parse each list - split by newlines and commas, trim, and filter empty
@@ -190,7 +250,14 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
                 </button>
             </div>
 
-            <div className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+                <TabsList>
+                    <TabsTrigger value="mixer">Keyword Mixer</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="mixer">
+                    <div className="space-y-4">
                 {/* Input Section - Horizontal Lists */}
                 <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg">
                     <h2 className="text-lg font-bold text-slate-800 mb-3">Keyword Lists</h2>
@@ -331,7 +398,75 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
                         )}
                     </div>
                 </div>
-            </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="history">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-xl p-6 border border-slate-200/60 shadow-lg">
+                        <h2 className="text-xl font-bold text-indigo-600 mb-6">
+                            Saved Mixes
+                        </h2>
+                        {savedItems.length > 0 ? (
+                            <div className="space-y-4">
+                                {savedItems.map(item => (
+                                    <div
+                                        key={item.id}
+                                        className="px-4 py-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <div className="space-y-1 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-800">{item.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                    {item.data?.mixedKeywords && (
+                                                        <span className="text-slate-600">
+                                                            {item.data.mixedKeywords.length} keywords
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => handleLoadSavedItem(item.id)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                >
+                                                    <FolderOpen className="w-4 h-4" />
+                                                    Load
+                                                </Button>
+                                                <Button
+                                                    onClick={() => handleDeleteSavedItem(item.id)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2 bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center h-full py-20">
+                                <div className="text-center">
+                                    <Shuffle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                    <p className="text-slate-500">
+                                        No saved mixes found. Save your mixed keywords to see them here.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };
