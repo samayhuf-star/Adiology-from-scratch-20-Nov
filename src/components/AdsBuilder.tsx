@@ -1278,9 +1278,10 @@ export const AdsBuilder = () => {
                     </CardContent>
                 </Card>
             </div>
+        </div>
 
-            {/* Extension Selection Dialog */}
-            <Dialog open={showExtensionDialog} onOpenChange={setShowExtensionDialog}>
+        {/* Extension Selection Dialog */}
+        <Dialog open={showExtensionDialog} onOpenChange={setShowExtensionDialog}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
