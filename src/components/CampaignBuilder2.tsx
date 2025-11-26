@@ -911,67 +911,163 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return (
       <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">Campaign Setup</h2>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Campaign Setup</h2>
           <p className="text-slate-600">Choose your campaign structure and configure basic settings</p>
         </div>
 
         {/* Campaign Name & URL - Compact */}
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+        <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-xl">
           <CardContent className="pt-6 space-y-4">
             <div>
-              <Label htmlFor="campaign-name" className="text-sm font-semibold mb-2 block">Campaign Name</Label>
+              <Label htmlFor="campaign-name" className="text-sm font-semibold mb-2 block text-indigo-900">Campaign Name</Label>
               <Input
                 id="campaign-name"
                 value={campaignName}
                 onChange={(e) => setCampaignName(e.target.value)}
                 placeholder="e.g., Summer Sale Campaign 2025"
+                className="border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400"
               />
             </div>
             <div>
-              <Label htmlFor="landing-url" className="text-sm font-semibold mb-2 block">Landing Page URL</Label>
+              <Label htmlFor="landing-url" className="text-sm font-semibold mb-2 block text-indigo-900">Landing Page URL</Label>
               <Input
                 id="landing-url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com"
+                className="border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Structure Selection */}
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Campaign Structure</CardTitle>
+        <Card className="border-purple-200/60 bg-gradient-to-br from-white via-purple-50/20 to-pink-50/20 backdrop-blur-xl shadow-xl">
+          <CardHeader className="pb-4 border-b border-purple-100/50">
+            <CardTitle className="text-lg text-purple-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              Campaign Structure
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {STRUCTURE_TYPES.map((structure) => {
                 const Icon = structure.icon;
                 const isSelected = structureType === structure.id;
+                
+                // Define color schemes for each structure
+                const colorSchemes: { [key: string]: { border: string; bg: string; iconBg: string; iconColor: string; hoverBorder: string } } = {
+                  skag: { 
+                    border: 'border-blue-200', 
+                    bg: 'bg-gradient-to-br from-blue-50 to-cyan-50/50',
+                    iconBg: 'bg-blue-600',
+                    iconColor: 'text-blue-600',
+                    hoverBorder: 'hover:border-blue-300'
+                  },
+                  stag: { 
+                    border: 'border-emerald-200', 
+                    bg: 'bg-gradient-to-br from-emerald-50 to-teal-50/50',
+                    iconBg: 'bg-emerald-600',
+                    iconColor: 'text-emerald-600',
+                    hoverBorder: 'hover:border-emerald-300'
+                  },
+                  mix: { 
+                    border: 'border-purple-200', 
+                    bg: 'bg-gradient-to-br from-purple-50 to-pink-50/50',
+                    iconBg: 'bg-purple-600',
+                    iconColor: 'text-purple-600',
+                    hoverBorder: 'hover:border-purple-300'
+                  },
+                  'stag-plus': { 
+                    border: 'border-amber-200', 
+                    bg: 'bg-gradient-to-br from-amber-50 to-orange-50/50',
+                    iconBg: 'bg-amber-600',
+                    iconColor: 'text-amber-600',
+                    hoverBorder: 'hover:border-amber-300'
+                  },
+                  ibag: { 
+                    border: 'border-rose-200', 
+                    bg: 'bg-gradient-to-br from-rose-50 to-pink-50/50',
+                    iconBg: 'bg-rose-600',
+                    iconColor: 'text-rose-600',
+                    hoverBorder: 'hover:border-rose-300'
+                  },
+                  'alpha-beta': { 
+                    border: 'border-violet-200', 
+                    bg: 'bg-gradient-to-br from-violet-50 to-purple-50/50',
+                    iconBg: 'bg-violet-600',
+                    iconColor: 'text-violet-600',
+                    hoverBorder: 'hover:border-violet-300'
+                  },
+                  'match-type': { 
+                    border: 'border-indigo-200', 
+                    bg: 'bg-gradient-to-br from-indigo-50 to-blue-50/50',
+                    iconBg: 'bg-indigo-600',
+                    iconColor: 'text-indigo-600',
+                    hoverBorder: 'hover:border-indigo-300'
+                  },
+                  'geo-segmented': { 
+                    border: 'border-teal-200', 
+                    bg: 'bg-gradient-to-br from-teal-50 to-cyan-50/50',
+                    iconBg: 'bg-teal-600',
+                    iconColor: 'text-teal-600',
+                    hoverBorder: 'hover:border-teal-300'
+                  },
+                  'funnel-based': { 
+                    border: 'border-cyan-200', 
+                    bg: 'bg-gradient-to-br from-cyan-50 to-sky-50/50',
+                    iconBg: 'bg-cyan-600',
+                    iconColor: 'text-cyan-600',
+                    hoverBorder: 'hover:border-cyan-300'
+                  },
+                  'brand-vs-nonbrand': { 
+                    border: 'border-slate-200', 
+                    bg: 'bg-gradient-to-br from-slate-50 to-gray-50/50',
+                    iconBg: 'bg-slate-600',
+                    iconColor: 'text-slate-600',
+                    hoverBorder: 'hover:border-slate-300'
+                  },
+                  'competitor': { 
+                    border: 'border-red-200', 
+                    bg: 'bg-gradient-to-br from-red-50 to-rose-50/50',
+                    iconBg: 'bg-red-600',
+                    iconColor: 'text-red-600',
+                    hoverBorder: 'hover:border-red-300'
+                  },
+                  'smart-cluster': { 
+                    border: 'border-fuchsia-200', 
+                    bg: 'bg-gradient-to-br from-fuchsia-50 to-pink-50/50',
+                    iconBg: 'bg-fuchsia-600',
+                    iconColor: 'text-fuchsia-600',
+                    hoverBorder: 'hover:border-fuchsia-300'
+                  },
+                };
+                
+                const colors = colorSchemes[structure.id] || colorSchemes.skag;
+                
                 return (
                   <Card
                     key={structure.id}
                     onClick={() => setStructureType(structure.id)}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
+                    className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${
                       isSelected 
-                        ? 'border-2 border-indigo-500 bg-indigo-50' 
-                        : 'border border-slate-200 hover:border-indigo-300'
+                        ? `border-2 ${colors.border} ${colors.bg} shadow-md` 
+                        : `border ${colors.border} bg-white/60 ${colors.hoverBorder}`
                     }`}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start gap-2">
                         <div className={`p-1.5 rounded-lg ${
-                          isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
+                          isSelected ? `${colors.iconBg} text-white shadow-sm` : `bg-gradient-to-br from-slate-100 to-slate-50 ${colors.iconColor}`
                         }`}>
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-slate-800 mb-0.5">{structure.name}</h3>
+                          <h3 className={`font-semibold text-sm mb-0.5 ${isSelected ? colors.iconColor : 'text-slate-800'}`}>{structure.name}</h3>
                           <p className="text-xs text-slate-600 line-clamp-2">{structure.description}</p>
                         </div>
                         {isSelected && (
-                          <CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+                          <CheckCircle2 className={`w-4 h-4 ${colors.iconColor} flex-shrink-0`} />
                         )}
                       </div>
                     </CardContent>
@@ -983,35 +1079,41 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         </Card>
 
         {/* Match Types - Keyword Match Types */}
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Match Types</CardTitle>
+        <Card className="border-teal-200/60 bg-gradient-to-br from-white via-teal-50/20 to-cyan-50/20 backdrop-blur-xl shadow-xl">
+          <CardHeader className="pb-4 border-b border-teal-100/50">
+            <CardTitle className="text-lg text-teal-900 flex items-center gap-2">
+              <Tag className="w-5 h-5 text-teal-600" />
+              Match Types
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center space-x-2 bg-amber-50/50 px-3 py-2 rounded-lg border border-amber-200/50">
                 <Checkbox
                   id="broad"
                   checked={matchTypes.broad}
                   onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, broad: !!checked })}
+                  className="border-amber-400"
                 />
-                <Label htmlFor="broad" className="cursor-pointer font-medium text-sm">Broad Match</Label>
+                <Label htmlFor="broad" className="cursor-pointer font-medium text-sm text-amber-900">Broad Match</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-blue-50/50 px-3 py-2 rounded-lg border border-blue-200/50">
                 <Checkbox
                   id="phrase"
                   checked={matchTypes.phrase}
                   onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, phrase: !!checked })}
+                  className="border-blue-400"
                 />
-                <Label htmlFor="phrase" className="cursor-pointer font-medium text-sm">Phrase Match</Label>
+                <Label htmlFor="phrase" className="cursor-pointer font-medium text-sm text-blue-900">Phrase Match</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-emerald-50/50 px-3 py-2 rounded-lg border border-emerald-200/50">
                 <Checkbox
                   id="exact"
                   checked={matchTypes.exact}
                   onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, exact: !!checked })}
+                  className="border-emerald-400"
                 />
-                <Label htmlFor="exact" className="cursor-pointer font-medium text-sm">Exact Match</Label>
+                <Label htmlFor="exact" className="cursor-pointer font-medium text-sm text-emerald-900">Exact Match</Label>
               </div>
             </div>
           </CardContent>

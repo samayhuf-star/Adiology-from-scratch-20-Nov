@@ -561,7 +561,7 @@ export const WebsiteTemplates: React.FC = () => {
     return sectionTypes.map(type => requiredSections[type]);
   };
 
-  const handleEditTemplate = (template?: SavedTemplate | Template, isBase: boolean = false) => {
+  const handleEditTemplate = async (template?: SavedTemplate | Template, isBase: boolean = false) => {
     if (template && 'customizedSections' in template) {
       // It's a saved template - ensure it has all sections
       const completedTemplate = {
@@ -570,7 +570,7 @@ export const WebsiteTemplates: React.FC = () => {
       };
       setEditingTemplate(completedTemplate);
     } else if (template && isBase) {
-      // Create new template from base template
+      // Create new template from base template - AUTO-SAVE to saved websites
       const baseTemplate = template as Template;
       const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(baseTemplate.sections)));
       const newTemplate: SavedTemplate = {
@@ -581,6 +581,25 @@ export const WebsiteTemplates: React.FC = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      
+      // Auto-save to saved templates when user clicks Edit
+      try {
+        await historyService.save(
+          'website-template',
+          newTemplate.name,
+          {
+            originalTemplateId: newTemplate.originalTemplateId,
+            sections: newTemplate.customizedSections
+          },
+          'draft'
+        );
+        await loadSavedTemplates();
+        notifications.success('Template saved to your collection!', { title: 'Saved' });
+      } catch (error) {
+        console.error('Failed to auto-save template:', error);
+        // Continue anyway - user can still edit
+      }
+      
       setEditingTemplate(newTemplate);
       setTemplateName(newTemplate.name);
     } else {
@@ -615,16 +634,16 @@ export const WebsiteTemplates: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
 
-      await historyService.save({
-        id: updatedTemplate.id,
-        type: 'website-template',
-        name: templateName,
-        timestamp: updatedTemplate.updatedAt,
-        data: {
+      await historyService.save(
+        'website-template',
+        templateName,
+        {
+          id: updatedTemplate.id,
           originalTemplateId: updatedTemplate.originalTemplateId,
           sections: updatedTemplate.customizedSections
-        }
-      });
+        },
+        'completed'
+      );
 
       await loadSavedTemplates();
       notifications.success('Template saved successfully!', { title: 'Saved' });
@@ -650,7 +669,27 @@ export const WebsiteTemplates: React.FC = () => {
     }
   };
 
-  const handleExportHTML = (template: SavedTemplate) => {
+  const handleExportHTML = async (template: SavedTemplate) => {
+    // Auto-save template to user's saved websites when exported/downloaded
+    try {
+      await historyService.save(
+        'website-template',
+        template.name,
+        {
+          id: template.id,
+          originalTemplateId: template.originalTemplateId,
+          sections: template.customizedSections,
+          exported: true,
+          exportedAt: new Date().toISOString()
+        },
+        'completed'
+      );
+      // Silent save - don't show notification to avoid interrupting user flow
+    } catch (error) {
+      console.error('Failed to auto-save exported template:', error);
+      // Continue anyway - user can still export
+    }
+
     const html = generateHTMLFromTemplate(template);
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -701,6 +740,28 @@ export const WebsiteTemplates: React.FC = () => {
         vercel_project_id: 'User websites',
         status: deployment.state === 'READY' ? 'ready' : 'deploying',
       });
+
+      // Auto-save template to user's saved websites when published
+      try {
+        await historyService.save(
+          'website-template',
+          publishWebsiteName,
+          {
+            id: editingTemplate.id,
+            originalTemplateId: editingTemplate.originalTemplateId,
+            sections: editingTemplate.customizedSections,
+            published: true,
+            publishedAt: new Date().toISOString(),
+            vercelUrl: deployment.url,
+            vercelDeploymentId: deployment.id
+          },
+          'completed'
+        );
+        // Silent save - don't show notification to avoid interrupting user flow
+      } catch (error) {
+        console.error('Failed to auto-save published template:', error);
+        // Continue anyway - website is already published
+      }
 
       // If still deploying, check status after a delay
       if (deployment.state !== 'READY') {

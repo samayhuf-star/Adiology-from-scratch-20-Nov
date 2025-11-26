@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { 
   TrendingUp, Users, DollarSign, Activity, Calendar, Zap, 
   Clock, CheckCircle2, AlertCircle, ArrowUpRight, ArrowDownRight,
-  Sparkles, Package, Target, FileText, BarChart3
+  Sparkles, Package, Target, FileText, BarChart3, Globe, FolderOpen, Layers
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { supabase } from '../utils/supabase/client';
+import { historyService } from '../utils/historyService';
+import { getUserPublishedWebsites } from '../utils/publishedWebsites';
 
 interface DashboardProps {
   user: any;
@@ -28,6 +30,12 @@ interface UserStats {
   activity: {
     lastLogin: string | null;
     totalActions: number;
+  };
+  userResources: {
+    myCampaigns: number;
+    myWebsites: number;
+    myPresets: number;
+    myDomains: number;
   };
 }
 
@@ -83,6 +91,52 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       const campaigns = usageData?.find(m => m.metric_type === 'campaigns')?.metric_value || 0;
       const keywords = usageData?.find(m => m.metric_type === 'keywords')?.metric_value || 0;
 
+      // Fetch user-specific resources
+      let myCampaigns = 0;
+      let myWebsites = 0;
+      let myPresets = 0;
+      let myDomains = 0;
+
+      try {
+        // Get campaigns from history
+        const allHistory = await historyService.getAll();
+        myCampaigns = allHistory.filter(item => 
+          item.type === 'builder-2-campaign' || 
+          item.type === 'campaign' ||
+          item.type?.includes('campaign')
+        ).length;
+
+        // Get saved templates/presets from history
+        myPresets = allHistory.filter(item => 
+          item.type === 'website-template' || 
+          item.type === 'campaign-preset' ||
+          item.type?.includes('preset') ||
+          item.type?.includes('template')
+        ).length;
+
+        // Get published websites
+        const websites = await getUserPublishedWebsites(user.id);
+        myWebsites = websites.length;
+        
+        // Domains - count unique domains from published websites
+        const uniqueDomains = new Set(
+          websites
+            .map(w => {
+              try {
+                const url = new URL(w.vercel_url || '');
+                return url.hostname.replace('www.', '');
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean)
+        );
+        myDomains = uniqueDomains.size;
+      } catch (error) {
+        console.error('Error fetching user resources:', error);
+        // Continue with 0 counts if there's an error
+      }
+
       setStats({
         subscription: {
           plan: user.subscription_plan || 'free',
@@ -97,6 +151,12 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
         activity: {
           lastLogin: user.last_login_at || null,
           totalActions: activityData?.length || 0,
+        },
+        userResources: {
+          myCampaigns,
+          myWebsites,
+          myPresets,
+          myDomains,
         },
       });
 
@@ -329,6 +389,91 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
             <p className="text-sm text-slate-600">Keywords Generated</p>
           </div>
         </Card>
+      </div>
+
+      {/* My Resources */}
+      <div>
+        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <FolderOpen className="w-5 h-5 text-indigo-600" />
+          My Resources
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          {/* My Campaigns */}
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <Layers className="w-6 h-6 text-white" />
+                </div>
+                <Badge className="bg-purple-100 text-purple-700 border-purple-300">
+                  Total
+                </Badge>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-1">
+                {(stats?.userResources?.myCampaigns || 0).toLocaleString()}
+              </h3>
+              <p className="text-sm text-slate-600">My Campaigns</p>
+            </div>
+          </Card>
+
+          {/* My Websites */}
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
+                  <Globe className="w-6 h-6 text-white" />
+                </div>
+                <Badge className="bg-blue-100 text-blue-700 border-blue-300">
+                  Published
+                </Badge>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-1">
+                {(stats?.userResources?.myWebsites || 0).toLocaleString()}
+              </h3>
+              <p className="text-sm text-slate-600">My Websites</p>
+            </div>
+          </Card>
+
+          {/* My Presets */}
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                  <Package className="w-6 h-6 text-white" />
+                </div>
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
+                  Saved
+                </Badge>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-1">
+                {(stats?.userResources?.myPresets || 0).toLocaleString()}
+              </h3>
+              <p className="text-sm text-slate-600">My Presets</p>
+            </div>
+          </Card>
+
+          {/* My Domains */}
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                  <Globe className="w-6 h-6 text-white" />
+                </div>
+                <Badge className="bg-amber-100 text-amber-700 border-amber-300">
+                  Active
+                </Badge>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-1">
+                {(stats?.userResources?.myDomains || 0).toLocaleString()}
+              </h3>
+              <p className="text-sm text-slate-600">My Domains</p>
+            </div>
+          </Card>
+        </div>
       </div>
 
       {/* Quick Actions */}

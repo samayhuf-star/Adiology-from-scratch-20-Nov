@@ -4,6 +4,7 @@ import { campaignPresets, CampaignPreset } from '../data/campaignPresets';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { notifications } from '../utils/notifications';
+import { historyService } from '../utils/historyService';
 
 interface CampaignPresetsProps {
   onLoadPreset: (presetData: any) => void;
@@ -20,9 +21,35 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
     preset.slug.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSelectPreset = (preset: CampaignPreset) => {
+  const handleSelectPreset = async (preset: CampaignPreset) => {
     setSelectedPreset(preset);
     setShowReview(true);
+    
+    // Auto-save preset to user's saved presets when viewed
+    try {
+      await historyService.save(
+        'campaign-preset',
+        preset.title,
+        {
+          presetId: preset.slug,
+          presetData: preset,
+          campaignName: preset.campaign_name,
+          structure: preset.structure,
+          keywords: preset.keywords,
+          adGroups: preset.ad_groups,
+          ads: preset.ads,
+          negativeKeywords: preset.negative_keywords,
+          finalUrl: preset.final_url,
+          maxCpc: preset.max_cpc,
+          dailyBudget: preset.daily_budget
+        },
+        'completed'
+      );
+      // Silent save - don't show notification to avoid interrupting user flow
+    } catch (error) {
+      console.error('Failed to auto-save preset:', error);
+      // Continue anyway - user can still view the preset
+    }
   };
 
   const handleLoadToBuilder = () => {
@@ -135,9 +162,37 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
     onLoadPreset(presetData);
   };
 
-  const handleExportCSV = (preset?: CampaignPreset) => {
+  const handleExportCSV = async (preset?: CampaignPreset) => {
     const exportPreset = preset || selectedPreset;
     if (!exportPreset) return;
+    
+    // Auto-save preset to user's saved presets when exported
+    try {
+      await historyService.save(
+        'campaign-preset',
+        exportPreset.title,
+        {
+          presetId: exportPreset.slug,
+          presetData: exportPreset,
+          campaignName: exportPreset.campaign_name,
+          structure: exportPreset.structure,
+          keywords: exportPreset.keywords,
+          adGroups: exportPreset.ad_groups,
+          ads: exportPreset.ads,
+          negativeKeywords: exportPreset.negative_keywords,
+          finalUrl: exportPreset.final_url,
+          maxCpc: exportPreset.max_cpc,
+          dailyBudget: exportPreset.daily_budget,
+          exported: true,
+          exportedAt: new Date().toISOString()
+        },
+        'completed'
+      );
+      // Silent save - don't show notification to avoid interrupting user flow
+    } catch (error) {
+      console.error('Failed to auto-save preset:', error);
+      // Continue anyway - user can still export
+    }
 
     const rows: string[] = [];
     
