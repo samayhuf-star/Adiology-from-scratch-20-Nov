@@ -234,14 +234,14 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold theme-gradient-text mb-2">
             Welcome back, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}!
           </h1>
           <p className="text-slate-600">Here's what's happening with your campaigns today.</p>
         </div>
         <Button
           onClick={() => onNavigate('builder-2')}
-          className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all"
+          className="theme-button-primary shadow-lg hover:shadow-xl transition-all"
         >
           <Sparkles className="w-4 h-4 mr-2" />
           New Campaign

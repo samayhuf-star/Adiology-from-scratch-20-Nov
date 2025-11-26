@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Theme, themes, defaultTheme, getStoredTheme, saveTheme } from '../utils/themes';
+import { Theme, themes, defaultTheme, getStoredTheme, saveTheme, applyThemeToDOM } from '../utils/themes';
 
 interface ThemeContextType {
   theme: Theme;
@@ -16,7 +16,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const newTheme = themes[themeId] || defaultTheme;
     setThemeState(newTheme);
     saveTheme(themeId);
+    applyThemeToDOM(newTheme);
   };
+
+  // Apply theme on mount
+  useEffect(() => {
+    applyThemeToDOM(theme);
+  }, [theme]);
 
   const availableThemes = Object.values(themes);
 

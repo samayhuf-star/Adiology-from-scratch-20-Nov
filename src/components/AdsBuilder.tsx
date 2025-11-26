@@ -750,7 +750,7 @@ export const AdsBuilder = () => {
             <div className="mb-8">
                 <div className="flex items-center justify-between">
                 <div>
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                        <h1 className="text-4xl font-bold theme-gradient-text mb-2">
                             Ads Builder
                     </h1>
                         <p className="text-slate-600 text-sm">
@@ -947,7 +947,7 @@ export const AdsBuilder = () => {
                     <Button
                         onClick={generateAds}
                         disabled={isGenerating || (adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25}
-                        className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-700 text-white py-7 text-lg font-semibold shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02]"
+                        className="w-full theme-button-primary py-7 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                         {isGenerating ? (
                             <>
@@ -1345,7 +1345,7 @@ export const AdsBuilder = () => {
                         }}>
                             Cancel
                         </Button>
-                        <Button onClick={handleConfirmExtensions} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <Button onClick={handleConfirmExtensions} className="theme-button-primary">
                             Add {selectedExtensions.length > 0 ? `${selectedExtensions.length} ` : ''}Extension{selectedExtensions.length !== 1 ? 's' : ''}
                         </Button>
                     </DialogFooter>

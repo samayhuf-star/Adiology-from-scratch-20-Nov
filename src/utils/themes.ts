@@ -266,3 +266,13 @@ export function getThemeClasses(theme: Theme) {
   };
 }
 
+// Apply theme to DOM by setting data attribute
+export function applyThemeToDOM(theme: Theme): void {
+  // Set the theme ID as a data attribute on the html element
+  document.documentElement.setAttribute('data-theme', theme.id);
+  
+  // Also set individual color classes for dynamic usage
+  document.documentElement.classList.remove('theme-purple', 'theme-ocean', 'theme-forest', 'theme-sunset');
+  document.documentElement.classList.add(`theme-${theme.id}`);
+}
+
