@@ -384,42 +384,42 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
               <div className="space-y-3 flex flex-col">
                 <Button
                   onClick={handleLoadToBuilder}
-                  className="w-full bg-white text-black hover:bg-gray-100 flex-shrink-0"
+                  className="w-full bg-white text-slate-800 hover:bg-gray-100 hover:text-slate-900 flex-shrink-0"
                   size="lg"
                 >
-                  <Edit className="w-4 h-4 mr-2" />
+                  <Edit className="w-4 h-4 mr-2 text-slate-700" />
                   Edit in Campaign Builder
                 </Button>
                 <Button
                   onClick={() => handleExportCSV()}
                   variant="outline"
-                  className="w-full border-white bg-white text-black hover:bg-gray-100 flex-shrink-0"
+                  className="w-full border-white bg-white text-slate-800 hover:bg-gray-100 hover:text-slate-900 flex-shrink-0"
                   size="lg"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="w-4 h-4 mr-2 text-slate-700" />
                   Export CSV
                 </Button>
               </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="font-semibold mb-3">Preset Stats</h3>
+              <h3 className="font-semibold mb-3 text-slate-800">Preset Stats</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-600">Keywords:</span>
-                  <span className="font-medium">{selectedPreset.keywords.length}</span>
+                  <span className="font-medium text-slate-800">{selectedPreset.keywords.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Ad Groups:</span>
-                  <span className="font-medium">{selectedPreset.ad_groups.length}</span>
+                  <span className="font-medium text-slate-800">{selectedPreset.ad_groups.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Negative Keywords:</span>
-                  <span className="font-medium">{selectedPreset.negative_keywords.length}</span>
+                  <span className="font-medium text-slate-800">{selectedPreset.negative_keywords.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Match Distribution:</span>
-                  <span className="font-medium">
+                  <span className="font-medium text-slate-800">
                     {Math.round(selectedPreset.match_distribution.exact * 100)}% Exact,{' '}
                     {Math.round(selectedPreset.match_distribution.phrase * 100)}% Phrase,{' '}
                     {Math.round(selectedPreset.match_distribution.broad_mod * 100)}% Broad

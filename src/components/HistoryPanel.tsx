@@ -142,6 +142,14 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                             />
                         </div>
                     </div>
+                    {/* Results Counter */}
+                    {!loading && (
+                        <div className="mt-4 pt-4 border-t border-slate-200">
+                            <p className="text-sm text-slate-600">
+                                <span className="font-semibold text-slate-800">{filteredHistory.length}</span> {filteredHistory.length === 1 ? 'result' : 'results'} found
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

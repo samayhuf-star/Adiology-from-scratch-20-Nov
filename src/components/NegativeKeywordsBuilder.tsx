@@ -56,7 +56,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
     // Filter & Export State
     const [selectedCategories, setSelectedCategories] = useState<Set<NegativeKeywordCategory>>(new Set());
     const [exportFormat, setExportFormat] = useState<'exact' | 'phrase' | 'broad' | 'all'>('all');
-    const [showStats, setShowStats] = useState(false);
+    const [showStats, setShowStats] = useState(true);
 
     // Load form data from localStorage on mount (Bug_34: Persist form fields)
     useEffect(() => {
@@ -753,7 +753,9 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                     <Filter className="h-4 w-4 text-slate-400" />
                                     <span className="text-xs font-medium text-slate-600">Filter by Category:</span>
                                 </div>
-                                {Object.entries(NEGATIVE_KEYWORD_CATEGORIES).map(([key, cat]) => {
+                                {Object.entries(NEGATIVE_KEYWORD_CATEGORIES)
+                                    .filter(([key]) => ['Intent-Mismatch', 'Low-Value', 'Irrelevant-Product', 'Competitor', 'Job/DIY'].includes(key))
+                                    .map(([key, cat]) => {
                                     const isSelected = selectedCategories.has(key as NegativeKeywordCategory);
                                     return (
                                         <div key={key} className="flex items-center space-x-1">
