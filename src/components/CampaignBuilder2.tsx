@@ -3826,16 +3826,31 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
         {/* Success Banner */}
         <div className="bg-gradient-to-r from-emerald-50 via-green-50 to-emerald-50 border-2 border-emerald-300 rounded-xl p-5 shadow-lg">
-          <div className="flex items-start gap-3">
-            <div className="bg-emerald-500 rounded-full p-2">
-              <CheckCircle2 className="w-6 h-6 text-white flex-shrink-0" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="bg-emerald-500 rounded-full p-2">
+                <CheckCircle2 className="w-6 h-6 text-white flex-shrink-0" />
+              </div>
+              <div>
+                <h3 className="font-bold text-emerald-900 text-lg">Everything looks good!</h3>
+                <p className="text-sm text-emerald-800 mt-1 font-medium">
+                  Review and customize your {totalAdGroups} ad groups below. All groups have ads created.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-emerald-900 text-lg">Everything looks good!</h3>
-              <p className="text-sm text-emerald-800 mt-1 font-medium">
-                Review and customize your {totalAdGroups} ad groups below. All groups have ads created.
-              </p>
-            </div>
+            <Button
+              onClick={() => {
+                const validateButton = document.getElementById('validate-campaign-button');
+                if (validateButton) {
+                  validateButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
+              variant="outline"
+              className="bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
+            >
+              <ChevronRight className="w-4 h-4 mr-2 rotate-90" />
+              Click to go down
+            </Button>
           </div>
         </div>
 
@@ -4145,6 +4160,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             </Button>
           </div>
           <Button 
+            id="validate-campaign-button"
             size="lg" 
             onClick={() => setStep(6)}
             className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
