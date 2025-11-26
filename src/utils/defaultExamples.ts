@@ -20,12 +20,12 @@ export const DEFAULT_NEGATIVE_KEYWORDS = "free, cheap, diy, jobs, training, scho
 export const DEFAULT_AD_HEADLINES = {
   headline1: "24/7 Emergency Plumber",
   headline2: "Licensed Local Plumber",
-  headline3: "Call Now - Fast Service",
+  headline3: "Call Now for Fast Service",
 };
 
 export const DEFAULT_AD_DESCRIPTIONS = {
-  description1: "Fast, licensed plumbers. Same-day service & up-front pricing. Call now for quick help.",
-  description2: "Leak repair, drain cleaning & water heater services. Free phone estimate available.",
+  description1: "Fast, licensed plumbers near you. Same day service and upfront pricing available.",
+  description2: "Expert leak repair, drain cleaning and water heater services. Call for free estimate.",
 };
 
 export const DEFAULT_BUSINESS_INFO = {

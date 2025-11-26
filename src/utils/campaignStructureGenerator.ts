@@ -3,6 +3,8 @@
  * Generates campaign structures based on selected structure type
  */
 
+import { generateSmartAdCopy } from './adCopyGenerator';
+
 export interface CampaignStructure {
   campaigns: Campaign[];
 }
@@ -620,13 +622,17 @@ function clusterByNGram(keywords: string[]): { [key: string]: string[] } {
 
 function getDefaultAds(settings: StructureSettings): Ad[] {
   const mainKeyword = settings.keywords[0] || 'your service';
+  
+  // Use smart ad copy generator for Google-compliant ads
+  const smartAd = generateSmartAdCopy(mainKeyword);
+  
   return [{
     type: 'rsa',
-    headline1: `${mainKeyword} - Best Deals`,
-    headline2: 'Shop Now & Save',
-    headline3: 'Fast Delivery',
-    description1: `Looking for ${mainKeyword}? We offer competitive prices.`,
-    description2: 'Get started today!',
+    headline1: smartAd.headline1,
+    headline2: smartAd.headline2,
+    headline3: smartAd.headline3,
+    description1: smartAd.description1,
+    description2: smartAd.description2,
     final_url: settings.url
   }];
 }
