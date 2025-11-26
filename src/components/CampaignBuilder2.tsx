@@ -2783,77 +2783,77 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <Button 
                     onClick={() => createNewAd('snippet')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('callout')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('sitelink')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SITELINK EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('call')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALL EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('price')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('app')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('location')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LOCATION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('message')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('leadform')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('promotion')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('image')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Plus className="mr-2 w-5 h-5" /> IMAGE EXTENSION
                   </Button>
