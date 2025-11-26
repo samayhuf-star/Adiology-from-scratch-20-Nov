@@ -5,8 +5,8 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
@@ -763,27 +763,16 @@ export const AdsBuilder = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 {/* Left Panel: Configuration */}
                 <div className="space-y-6">
-                    {/* Base URL Configuration - MOVED TO TOP */}
+                    {/* URL Section */}
                     <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 p-6 border-b border-slate-200/50">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Globe className="h-5 w-5 text-emerald-600" />
-                                    Base URL Configuration
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Set the landing page URL for all ads
-                                </CardDescription>
-                            </CardHeader>
-                        </div>
                         <CardContent className="p-6">
                             <div>
                                 <Label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Landing Page URL
+                                    URL
                                 </Label>
                                 <Input
                                     type="url"
-                                    placeholder="https://www.example.com"
+                                    placeholder="enter url here"
                                     value={baseUrl}
                                     onChange={(e) => {
                                         setBaseUrl(e.target.value);
@@ -805,36 +794,97 @@ export const AdsBuilder = () => {
                                         {urlError}
                                     </p>
                                 )}
-                                {!urlError && (
-                                    <p className="text-xs text-slate-500 mt-2">
-                                        This URL will be used for all generated ads. You can edit individual ad URLs after generation.
-                                    </p>
-                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Ad Type Selection */}
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <div className="bg-yellow-400 p-4 border-b border-slate-200">
+                            <CardTitle className="text-lg font-bold text-slate-900">
+                                2. Select Ad Types
+                            </CardTitle>
+                        </div>
+                        <CardContent className="p-6">
+                            <div className="space-y-3">
+                                {/* Checkboxes in a row */}
+                                <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-2">
+                                        <Label className="text-sm font-medium text-slate-700">CheckBox</Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="responsive-ad"
+                                            checked={selectedAdTypes.rsa}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedAdTypes({...selectedAdTypes, rsa: checked as boolean});
+                                                if (!checked) setAdConfig({...adConfig, rsaCount: 0});
+                                                else if (adConfig.rsaCount === 0) setAdConfig({...adConfig, rsaCount: 1});
+                                            }}
+                                        />
+                                        <Label htmlFor="responsive-ad" className="text-sm font-medium text-slate-700 cursor-pointer">
+                                            Responsive
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="dki-ads"
+                                            checked={selectedAdTypes.dki}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedAdTypes({...selectedAdTypes, dki: checked as boolean});
+                                                if (!checked) setAdConfig({...adConfig, dkiCount: 0});
+                                                else if (adConfig.dkiCount === 0) setAdConfig({...adConfig, dkiCount: 1});
+                                            }}
+                                        />
+                                        <Label htmlFor="dki-ads" className="text-sm font-medium text-slate-700 cursor-pointer">
+                                            DKI Ads
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox
+                                            id="call-ads"
+                                            checked={selectedAdTypes.callOnly}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedAdTypes({...selectedAdTypes, callOnly: checked as boolean});
+                                                if (!checked) setAdConfig({...adConfig, callOnlyCount: 0});
+                                                else if (adConfig.callOnlyCount === 0) setAdConfig({...adConfig, callOnlyCount: 1});
+                                            }}
+                                        />
+                                        <Label htmlFor="call-ads" className="text-sm font-medium text-slate-700 cursor-pointer">
+                                            Call Ads
+                                        </Label>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Mode Selection */}
                     <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 p-6 border-b border-slate-200/50">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Settings className="h-5 w-5 text-indigo-600" />
-                                    1. Choose Your Mode
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Select single or multiple keyword groups
-                                </CardDescription>
-                            </CardHeader>
+                        <div className="bg-yellow-400 p-4 border-b border-slate-200">
+                            <CardTitle className="text-lg font-bold text-slate-900">
+                                Choose Your Mode
+                            </CardTitle>
                         </div>
                         <CardContent className="p-6">
-                        <Tabs value={mode} onValueChange={(v) => setMode(v as 'single' | 'multiple')}>
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="single">Single Group</TabsTrigger>
-                                <TabsTrigger value="multiple">Multiple Groups</TabsTrigger>
-                            </TabsList>
+                            <div className="flex items-center gap-6 mb-4">
+                                <Button
+                                    variant={mode === 'single' ? 'default' : 'outline'}
+                                    onClick={() => setMode('single')}
+                                    className={mode === 'single' ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border-slate-300'}
+                                >
+                                    Single
+                                </Button>
+                                <Button
+                                    variant={mode === 'multiple' ? 'default' : 'outline'}
+                                    onClick={() => setMode('multiple')}
+                                    className={mode === 'multiple' ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border-slate-300'}
+                                >
+                                    Multiple
+                                </Button>
+                            </div>
                             
-                            <TabsContent value="single" className="mt-4">
+                            {mode === 'single' && (
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                                         Enter 3-4 Keywords (comma-separated)
@@ -843,20 +893,13 @@ export const AdsBuilder = () => {
                                         placeholder="airline number, contact airline, delta phone number, customer service"
                                         value={singleKeywords}
                                         onChange={(e) => setSingleKeywords(e.target.value)}
-                                        className="min-h-[100px]"
+                                        className="min-h-[100px] border-slate-300"
                                     />
-                                    <p className="text-xs text-slate-500 mt-2">
-                                        AI will generate optimized ads for these keywords
-                                    </p>
                                 </div>
-                            </TabsContent>
+                            )}
                             
-                            <TabsContent value="multiple" className="mt-4">
+                            {mode === 'multiple' && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-slate-600 mb-3">
-                                        Create ads for multiple keyword groups at once
-                                    </p>
-                                    
                                     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                                         {adGroups.map((group, index) => (
                                             <div key={group.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
@@ -896,189 +939,7 @@ export const AdsBuilder = () => {
                                         Add Another Group
                                     </Button>
                                 </div>
-                            </TabsContent>
-                        </Tabs>
-                        </CardContent>
-                    </Card>
-
-                    {/* Ad Type Configuration - Updated to use checkboxes */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Zap className="h-5 w-5 text-blue-600" />
-                                    2. Select Ad Types
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Choose which ad types to generate (max 25 total)
-                                </CardDescription>
-                            </CardHeader>
-                        </div>
-                        <CardContent className="p-6">
-                            <div className="space-y-4">
-                                {/* RSA Checkbox */}
-                                <div className="p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-lg border border-blue-200/50">
-                                    <div className="flex items-start gap-3">
-                                        <Checkbox
-                                            id="rsa-checkbox"
-                                            checked={selectedAdTypes.rsa}
-                                            onCheckedChange={(checked) => {
-                                                setSelectedAdTypes({...selectedAdTypes, rsa: checked as boolean});
-                                                if (!checked) setAdConfig({...adConfig, rsaCount: 0});
-                                                else if (adConfig.rsaCount === 0) setAdConfig({...adConfig, rsaCount: 1});
-                                            }}
-                                            className="mt-1"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 font-semibold">RSA</Badge>
-                                                <Label htmlFor="rsa-checkbox" className="text-sm font-semibold text-slate-800 cursor-pointer">
-                                                    Responsive Search Ads
-                                                </Label>
-                                            </div>
-                                            <p className="text-xs text-slate-600 mb-3">
-                                                Multiple headlines and descriptions for testing
-                                            </p>
-                                            {selectedAdTypes.rsa && (
-                                                <div className="flex items-center gap-2">
-                                                    <Label className="text-xs text-slate-600">Quantity:</Label>
-                                                    <Input
-                                                        type="number"
-                                                        min="1"
-                                                        max="25"
-                                                        value={adConfig.rsaCount}
-                                                        onChange={(e) => {
-                                                            const value = parseInt(e.target.value) || 1;
-                                                            const total = value + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0);
-                                                            if (total <= 25) {
-                                                                setAdConfig({...adConfig, rsaCount: value});
-                                                            } else {
-                                                                notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                                    title: 'Too Many Ads'
-                                                                });
-                                                            }
-                                                        }}
-                                                        className="w-20 h-8 text-center text-sm font-semibold border-blue-300 focus:border-blue-500"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* DKI Checkbox */}
-                                <div className="p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-lg border border-purple-200/50">
-                                    <div className="flex items-start gap-3">
-                                        <Checkbox
-                                            id="dki-checkbox"
-                                            checked={selectedAdTypes.dki}
-                                            onCheckedChange={(checked) => {
-                                                setSelectedAdTypes({...selectedAdTypes, dki: checked as boolean});
-                                                if (!checked) setAdConfig({...adConfig, dkiCount: 0});
-                                                else if (adConfig.dkiCount === 0) setAdConfig({...adConfig, dkiCount: 1});
-                                            }}
-                                            className="mt-1"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 font-semibold">DKI</Badge>
-                                                <Label htmlFor="dki-checkbox" className="text-sm font-semibold text-slate-800 cursor-pointer">
-                                                    Dynamic Keyword Insertion
-                                                </Label>
-                                            </div>
-                                            <p className="text-xs text-slate-600 mb-3">
-                                                Automatically inserts search keywords into ad text
-                                            </p>
-                                            {selectedAdTypes.dki && (
-                                                <div className="flex items-center gap-2">
-                                                    <Label className="text-xs text-slate-600">Quantity:</Label>
-                                                    <Input
-                                                        type="number"
-                                                        min="1"
-                                                        max="25"
-                                                        value={adConfig.dkiCount}
-                                                        onChange={(e) => {
-                                                            const value = parseInt(e.target.value) || 1;
-                                                            const total = (selectedAdTypes.rsa ? adConfig.rsaCount : 0) + value + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0);
-                                                            if (total <= 25) {
-                                                                setAdConfig({...adConfig, dkiCount: value});
-                                                            } else {
-                                                                notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                                    title: 'Too Many Ads'
-                                                                });
-                                                            }
-                                                        }}
-                                                        className="w-20 h-8 text-center text-sm font-semibold border-purple-300 focus:border-purple-500"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Call Only Ads Checkbox */}
-                                <div className="p-4 bg-gradient-to-r from-green-50/50 to-emerald-50/50 rounded-lg border border-green-200/50">
-                                    <div className="flex items-start gap-3">
-                                        <Checkbox
-                                            id="call-checkbox"
-                                            checked={selectedAdTypes.callOnly}
-                                            onCheckedChange={(checked) => {
-                                                setSelectedAdTypes({...selectedAdTypes, callOnly: checked as boolean});
-                                                if (!checked) setAdConfig({...adConfig, callOnlyCount: 0});
-                                                else if (adConfig.callOnlyCount === 0) setAdConfig({...adConfig, callOnlyCount: 1});
-                                            }}
-                                            className="mt-1"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 font-semibold">Call</Badge>
-                                                <Label htmlFor="call-checkbox" className="text-sm font-semibold text-slate-800 cursor-pointer">
-                                                    Call Only Ads
-                                                </Label>
-                                            </div>
-                                            <p className="text-xs text-slate-600 mb-3">
-                                                Mobile-only ads with click-to-call functionality
-                                            </p>
-                                            {selectedAdTypes.callOnly && (
-                                                <div className="flex items-center gap-2">
-                                                    <Label className="text-xs text-slate-600">Quantity:</Label>
-                                                    <Input
-                                                        type="number"
-                                                        min="1"
-                                                        max="25"
-                                                        value={adConfig.callOnlyCount}
-                                                        onChange={(e) => {
-                                                            const value = parseInt(e.target.value) || 1;
-                                                            const total = (selectedAdTypes.rsa ? adConfig.rsaCount : 0) + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + value;
-                                                            if (total <= 25) {
-                                                                setAdConfig({...adConfig, callOnlyCount: value});
-                                                            } else {
-                                                                notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                                    title: 'Too Many Ads'
-                                                                });
-                                                            }
-                                                        }}
-                                                        className="w-20 h-8 text-center text-sm font-semibold border-green-300 focus:border-green-500"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            
-                            {/* Total Ads Counter */}
-                                <div className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg border-2 border-indigo-200">
-                                <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-slate-700">Total Ads:</span>
-                                        <span className={`text-2xl font-bold ${((selectedAdTypes.rsa ? adConfig.rsaCount : 0) + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0)) > 25 ? 'text-red-600' : 'text-indigo-600'}`}>
-                                        {(selectedAdTypes.rsa ? adConfig.rsaCount : 0) + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0)} / 25
-                                    </span>
-                                </div>
-                                {(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 && (
-                                        <p className="text-xs text-red-600 mt-2 font-semibold">⚠️ Maximum limit exceeded. Please reduce quantities.</p>
-                                )}
-                            </div>
-                        </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -1105,16 +966,12 @@ export const AdsBuilder = () => {
 
                 {/* Right Panel: Generated Ads */}
                 <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden h-fit lg:sticky lg:top-6">
-                    <div className="bg-gradient-to-r from-slate-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
+                    <div className="bg-white p-6 border-b border-slate-300">
                         <div className="flex justify-between items-center mb-4">
                             <div>
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Eye className="h-5 w-5 text-indigo-600" />
-                            3. Review & Export Ads
+                                <CardTitle className="text-xl font-bold text-slate-900 text-center">
+                                    Generated Ads
                                 </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Preview and manage your generated ads
-                                </CardDescription>
                             </div>
                         {generatedAds.length > 0 && (
                             <div className="flex gap-2">
