@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,6 +34,7 @@ import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
+import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 
@@ -551,6 +552,7 @@ const App = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
     { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
+    { id: 'website-templates', label: 'Website Templates', icon: Layout },
     { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
     { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
@@ -871,6 +873,8 @@ const App = () => {
         }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
+      case 'website-templates':
+        return <WebsiteTemplates />;
       case 'csv-validator-2':
         return <CSVValidator2 />;
       case 'keyword-planner':
