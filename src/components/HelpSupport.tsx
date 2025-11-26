@@ -553,14 +553,14 @@ export const HelpSupport = () => {
                                     {selectedArticle.content.split('\n\n').map((paragraph: string, idx: number) => (
                                         <div key={idx} className="mb-4">
                                             {paragraph.startsWith('**') ? (
-                                                <h3 className="text-xl font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                                                <h3 className="text-lg font-normal text-slate-700 mb-3 flex items-center gap-2">
                                                     <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
                                                     {paragraph.replace(/\*\*/g, '')}
                                                 </h3>
                                             ) : paragraph.includes('**') ? (
                                                 <p className="text-slate-700 leading-relaxed">
                                                     {paragraph.split('**').map((part, i) => 
-                                                        i % 2 === 0 ? part : <strong key={i} className="text-indigo-700 font-semibold">{part}</strong>
+                                                        i % 2 === 0 ? part : <span key={i} className="text-slate-700 font-normal">{part}</span>
                                                     )}
                                                 </p>
                                             ) : paragraph.startsWith('-') || paragraph.match(/^\d\./) ? (
@@ -587,7 +587,7 @@ export const HelpSupport = () => {
                                         <div className="bg-indigo-600 rounded-lg p-2">
                                             <AlertCircle className="w-5 h-5 text-white" />
                                         </div>
-                                        <h4 className="font-bold text-slate-800 text-lg">Visual Example</h4>
+                                        <h4 className="font-normal text-slate-700 text-base">Visual Example</h4>
                                     </div>
                                     <div className="bg-white rounded-lg border-2 border-slate-300 p-6 mb-4">
                                         <div className="aspect-video bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg flex items-center justify-center border border-slate-200">
@@ -599,7 +599,7 @@ export const HelpSupport = () => {
                                         </div>
                                     </div>
                                     <p className="text-sm text-slate-600 leading-relaxed">
-                                        📸 <strong>Pro Tip:</strong> Follow the steps above while looking at your dashboard. 
+                                        📸 <span className="font-normal">Pro Tip:</span> Follow the steps above while looking at your dashboard. 
                                         The interface is intuitive and guides you through each action.
                                     </p>
                                 </div>
@@ -608,7 +608,7 @@ export const HelpSupport = () => {
                                 <div className="mt-8 p-6 bg-emerald-50 rounded-xl border-2 border-emerald-200">
                                     <div className="flex items-center gap-2 mb-3">
                                         <Zap className="w-5 h-5 text-emerald-600" />
-                                        <h4 className="font-bold text-emerald-900">Quick Tips</h4>
+                                        <h4 className="font-normal text-emerald-800">Quick Tips</h4>
                                     </div>
                                     <ul className="space-y-2 text-sm text-emerald-800">
                                         <li className="flex items-start gap-2">
@@ -630,7 +630,7 @@ export const HelpSupport = () => {
                                 <div className="mt-8 p-6 bg-blue-50 rounded-xl border-2 border-blue-200">
                                     <div className="flex items-center gap-2 mb-3">
                                         <Book className="w-5 h-5 text-blue-600" />
-                                        <h4 className="font-bold text-blue-900">Related Documentation</h4>
+                                        <h4 className="font-normal text-blue-800">Related Documentation</h4>
                                     </div>
                                     <p className="text-sm text-blue-700 mb-3">
                                         Continue learning with these related topics:
@@ -751,7 +751,7 @@ export const HelpSupport = () => {
                                                 className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition-all group"
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <h3 className="font-semibold text-slate-800 group-hover:text-indigo-700">
+                                                    <h3 className="font-normal text-slate-700 group-hover:text-indigo-600">
                                                         {article.title}
                                                     </h3>
                                                     <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />

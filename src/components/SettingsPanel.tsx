@@ -3,7 +3,7 @@ import { getCurrentUserProfile } from '../utils/auth';
 import { supabase } from '../utils/supabase/client';
 import { 
   User, Mail, Lock, Bell, Globe, Shield, 
-  Save, Eye, EyeOff, Trash2, Download, Upload,
+  Save, Eye, EyeOff, Download, Upload,
   CheckCircle2, AlertCircle, CreditCard, Palette
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
@@ -244,23 +244,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     URL.revokeObjectURL(url);
   };
 
-  const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      if (confirm('This will permanently delete all your data. Type DELETE to confirm.')) {
-        // Remove user from localStorage
-        const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-        const filteredUsers = savedUsers.filter((u: any) => u.email !== user?.email);
-        localStorage.setItem('adiology_users', JSON.stringify(filteredUsers));
-        
-        // Remove auth
-        localStorage.removeItem('auth_user');
-        localStorage.removeItem('user_settings');
-        
-        // Redirect to home
-        window.location.reload();
-      }
-    }
-  };
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
@@ -582,28 +565,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         </CardContent>
       </Card>
 
-      {/* Danger Zone */}
-      <Card className="border-red-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="w-5 h-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription>Irreversible and destructive actions</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-            <div>
-              <h3 className="font-semibold text-red-900">Delete Account</h3>
-              <p className="text-sm text-red-700">Permanently delete your account and all associated data</p>
-            </div>
-            <Button onClick={handleDeleteAccount} variant="destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Account
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
         </TabsContent>
         
         <TabsContent value="billing" className="mt-0">

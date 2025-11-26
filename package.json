@@ -63,11 +63,15 @@
             "@types/xlsx": "^0.0.35",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "dotenv": "^17.2.3",
+            "handlebars": "^4.7.8",
+            "fs-extra": "^11.2.0",
             "vite": "6.3.5"
       },
       "scripts": {
             "dev": "vite",
             "build": "vite build",
-            "test:lambdatest": "playwright test --config=playwright.lambdatest.config.ts"
+            "test:lambdatest": "playwright test --config=playwright.lambdatest.config.ts",
+            "generate:templates": "node scripts/generate.js",
+            "preview:templates": "node scripts/generate.js && npx serve dist"
       }
 }
