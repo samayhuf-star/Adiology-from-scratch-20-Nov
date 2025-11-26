@@ -378,18 +378,206 @@ export const WebsiteTemplates: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
+  // Function to ensure template has all required sections
+  const completeTemplateSections = (sections: TemplateSection[]): TemplateSection[] => {
+    const requiredSections: { [key: string]: TemplateSection } = {};
+    
+    // Map existing sections
+    sections.forEach(section => {
+      requiredSections[section.type] = section;
+    });
+    
+    // Add missing sections with default content
+    const sectionTypes: Array<'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer' | 'privacy' | 'terms'> = 
+      ['hero', 'features', 'services', 'testimonials', 'cta', 'footer', 'privacy', 'terms'];
+    
+    sectionTypes.forEach(type => {
+      if (!requiredSections[type]) {
+        // Create default section based on type
+        switch (type) {
+          case 'hero':
+            requiredSections[type] = {
+              id: 'hero-1',
+              type: 'hero',
+              title: 'Hero Section',
+              content: {
+                heading: 'Professional Services You Can Trust',
+                subheading: 'Expert solutions for your business needs with 24/7 support',
+                ctaText: 'Get Started Today',
+                ctaPhone: '1-800-123-4567',
+                backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop',
+              }
+            };
+            break;
+          case 'features':
+            requiredSections[type] = {
+              id: 'features-1',
+              type: 'features',
+              title: 'Features Section',
+              content: {
+                heading: 'Why Choose Us',
+                features: [
+                  { icon: '⚡', title: 'Fast Response', description: 'Quick turnaround time for all service requests' },
+                  { icon: '🎯', title: 'Expert Team', description: 'Certified professionals with years of experience' },
+                  { icon: '💯', title: 'Quality Guaranteed', description: '100% satisfaction guarantee on all services' },
+                  { icon: '🔒', title: 'Secure & Safe', description: 'Licensed, bonded, and fully insured' }
+                ]
+              }
+            };
+            break;
+          case 'services':
+            requiredSections[type] = {
+              id: 'services-1',
+              type: 'services',
+              title: 'Services Section',
+              content: {
+                heading: 'Our Services',
+                subheading: 'Comprehensive solutions tailored to your needs',
+                services: [
+                  {
+                    image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=300&fit=crop',
+                    title: 'Consultation',
+                    description: 'Expert consultation to assess your needs and provide tailored solutions',
+                    price: 'Starting at $99'
+                  },
+                  {
+                    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
+                    title: 'Implementation',
+                    description: 'Professional implementation of solutions with minimal disruption',
+                    price: 'Custom Pricing'
+                  },
+                  {
+                    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
+                    title: 'Support & Maintenance',
+                    description: 'Ongoing support and maintenance to ensure optimal performance',
+                    price: 'From $199/month'
+                  }
+                ]
+              }
+            };
+            break;
+          case 'testimonials':
+            requiredSections[type] = {
+              id: 'testimonials-1',
+              type: 'testimonials',
+              title: 'Testimonials Section',
+              content: {
+                heading: 'What Our Clients Say',
+                testimonials: [
+                  {
+                    name: 'John Smith',
+                    company: 'ABC Corporation',
+                    rating: 5,
+                    text: 'Outstanding service! They exceeded our expectations and delivered results quickly.',
+                    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
+                  },
+                  {
+                    name: 'Sarah Johnson',
+                    company: 'XYZ Industries',
+                    rating: 5,
+                    text: 'Professional, reliable, and efficient. Highly recommend their services!',
+                    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop'
+                  },
+                  {
+                    name: 'Michael Brown',
+                    company: 'Tech Solutions Inc',
+                    rating: 5,
+                    text: 'Best decision we made for our business. Great team and excellent results.',
+                    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop'
+                  }
+                ]
+              }
+            };
+            break;
+          case 'cta':
+            requiredSections[type] = {
+              id: 'cta-1',
+              type: 'cta',
+              title: 'Call to Action',
+              content: {
+                heading: 'Ready to Get Started?',
+                subheading: 'Contact us today for a free consultation',
+                ctaText: 'Call Now',
+                phone: '1-800-123-4567',
+                email: 'info@yourcompany.com',
+                hours: 'Available 24/7'
+              }
+            };
+            break;
+          case 'footer':
+            requiredSections[type] = {
+              id: 'footer-1',
+              type: 'footer',
+              title: 'Footer',
+              content: {
+                columns: [
+                  {
+                    title: 'Company',
+                    links: [
+                      { text: 'About Us', url: '#about' },
+                      { text: 'Services', url: '#services' },
+                      { text: 'Contact', url: '#contact' }
+                    ]
+                  },
+                  {
+                    title: 'Legal',
+                    links: [
+                      { text: 'Privacy Policy', url: '#privacy' },
+                      { text: 'Terms of Service', url: '#terms' }
+                    ]
+                  }
+                ],
+                copyright: `© ${new Date().getFullYear()} Your Company. All rights reserved.`
+              }
+            };
+            break;
+          case 'privacy':
+            requiredSections[type] = {
+              id: 'privacy-1',
+              type: 'privacy',
+              title: 'Privacy Policy',
+              content: {
+                lastUpdated: new Date().toISOString().split('T')[0],
+                content: defaultTemplate.sections.find(s => s.type === 'privacy')?.content.content || ''
+              }
+            };
+            break;
+          case 'terms':
+            requiredSections[type] = {
+              id: 'terms-1',
+              type: 'terms',
+              title: 'Terms of Service',
+              content: {
+                lastUpdated: new Date().toISOString().split('T')[0],
+                content: defaultTemplate.sections.find(s => s.type === 'terms')?.content.content || ''
+              }
+            };
+            break;
+        }
+      }
+    });
+    
+    // Return sections in the correct order
+    return sectionTypes.map(type => requiredSections[type]);
+  };
+
   const handleEditTemplate = (template?: SavedTemplate | Template, isBase: boolean = false) => {
     if (template && 'customizedSections' in template) {
-      // It's a saved template
-      setEditingTemplate(template);
+      // It's a saved template - ensure it has all sections
+      const completedTemplate = {
+        ...template,
+        customizedSections: completeTemplateSections(template.customizedSections)
+      };
+      setEditingTemplate(completedTemplate);
     } else if (template && isBase) {
       // Create new template from base template
       const baseTemplate = template as Template;
+      const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(baseTemplate.sections)));
       const newTemplate: SavedTemplate = {
         id: `template-${Date.now()}`,
         name: `${baseTemplate.name} (Custom)`,
         originalTemplateId: baseTemplate.id,
-        customizedSections: JSON.parse(JSON.stringify(baseTemplate.sections)),
+        customizedSections: completedSections,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -398,11 +586,12 @@ export const WebsiteTemplates: React.FC = () => {
     } else {
       // Create new template from first base template
       const firstTemplate = baseTemplates[0];
+      const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(firstTemplate.sections)));
       const newTemplate: SavedTemplate = {
         id: `template-${Date.now()}`,
         name: 'Untitled Template',
         originalTemplateId: firstTemplate.id,
-        customizedSections: JSON.parse(JSON.stringify(firstTemplate.sections)),
+        customizedSections: completedSections,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -1052,6 +1241,24 @@ const SectionEditor: React.FC<{
   section: TemplateSection;
   onUpdate: (field: string, value: any) => void;
 }> = ({ section, onUpdate }) => {
+  const updateNestedField = (path: string, value: any) => {
+    const keys = path.split('.');
+    const newContent = { ...section.content };
+    let current: any = newContent;
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) current[keys[i]] = {};
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+    onUpdate('content', newContent);
+  };
+
+  const updateArrayItem = (arrayName: string, index: number, field: string, value: any) => {
+    const newArray = [...(section.content[arrayName] || [])];
+    newArray[index] = { ...newArray[index], [field]: value };
+    onUpdate(arrayName, newArray);
+  };
+
   const renderFieldEditor = () => {
     switch (section.type) {
       case 'hero':
@@ -1060,7 +1267,7 @@ const SectionEditor: React.FC<{
             <div>
               <Label>Heading</Label>
               <Input
-                value={section.content.heading}
+                value={section.content.heading || ''}
                 onChange={(e) => onUpdate('heading', e.target.value)}
                 className="mt-2"
               />
@@ -1068,7 +1275,7 @@ const SectionEditor: React.FC<{
             <div>
               <Label>Subheading</Label>
               <Textarea
-                value={section.content.subheading}
+                value={section.content.subheading || ''}
                 onChange={(e) => onUpdate('subheading', e.target.value)}
                 className="mt-2"
                 rows={2}
@@ -1077,7 +1284,7 @@ const SectionEditor: React.FC<{
             <div>
               <Label>CTA Button Text</Label>
               <Input
-                value={section.content.ctaText}
+                value={section.content.ctaText || ''}
                 onChange={(e) => onUpdate('ctaText', e.target.value)}
                 className="mt-2"
               />
@@ -1085,7 +1292,7 @@ const SectionEditor: React.FC<{
             <div>
               <Label>Phone Number</Label>
               <Input
-                value={section.content.ctaPhone}
+                value={section.content.ctaPhone || ''}
                 onChange={(e) => onUpdate('ctaPhone', e.target.value)}
                 className="mt-2"
               />
@@ -1093,14 +1300,311 @@ const SectionEditor: React.FC<{
             <div>
               <Label>Background Image URL</Label>
               <Input
-                value={section.content.backgroundImage}
+                value={section.content.backgroundImage || ''}
                 onChange={(e) => onUpdate('backgroundImage', e.target.value)}
                 className="mt-2"
               />
             </div>
           </div>
         );
-      // Add more section type editors
+      
+      case 'features':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Section Heading</Label>
+              <Input
+                value={section.content.heading || ''}
+                onChange={(e) => onUpdate('heading', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Features</Label>
+              <ScrollArea className="h-64 border rounded-md p-4">
+                <div className="space-y-4">
+                  {(section.content.features || []).map((feature: any, idx: number) => (
+                    <div key={idx} className="border-b pb-4 space-y-2">
+                      <Input
+                        placeholder="Icon (emoji)"
+                        value={feature.icon || ''}
+                        onChange={(e) => updateArrayItem('features', idx, 'icon', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Input
+                        placeholder="Title"
+                        value={feature.title || ''}
+                        onChange={(e) => updateArrayItem('features', idx, 'title', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Textarea
+                        placeholder="Description"
+                        value={feature.description || ''}
+                        onChange={(e) => updateArrayItem('features', idx, 'description', e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        );
+      
+      case 'services':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Section Heading</Label>
+              <Input
+                value={section.content.heading || ''}
+                onChange={(e) => onUpdate('heading', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label>Subheading</Label>
+              <Textarea
+                value={section.content.subheading || ''}
+                onChange={(e) => onUpdate('subheading', e.target.value)}
+                className="mt-2"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Services</Label>
+              <ScrollArea className="h-64 border rounded-md p-4">
+                <div className="space-y-4">
+                  {(section.content.services || []).map((service: any, idx: number) => (
+                    <div key={idx} className="border-b pb-4 space-y-2">
+                      <Input
+                        placeholder="Image URL"
+                        value={service.image || ''}
+                        onChange={(e) => updateArrayItem('services', idx, 'image', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Input
+                        placeholder="Service Title"
+                        value={service.title || ''}
+                        onChange={(e) => updateArrayItem('services', idx, 'title', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Textarea
+                        placeholder="Description"
+                        value={service.description || ''}
+                        onChange={(e) => updateArrayItem('services', idx, 'description', e.target.value)}
+                        rows={2}
+                        className="mb-2"
+                      />
+                      <Input
+                        placeholder="Price (e.g., Starting at $99)"
+                        value={service.price || ''}
+                        onChange={(e) => updateArrayItem('services', idx, 'price', e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        );
+      
+      case 'testimonials':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Section Heading</Label>
+              <Input
+                value={section.content.heading || ''}
+                onChange={(e) => onUpdate('heading', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Testimonials</Label>
+              <ScrollArea className="h-64 border rounded-md p-4">
+                <div className="space-y-4">
+                  {(section.content.testimonials || []).map((testimonial: any, idx: number) => (
+                    <div key={idx} className="border-b pb-4 space-y-2">
+                      <Input
+                        placeholder="Name"
+                        value={testimonial.name || ''}
+                        onChange={(e) => updateArrayItem('testimonials', idx, 'name', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Input
+                        placeholder="Company"
+                        value={testimonial.company || ''}
+                        onChange={(e) => updateArrayItem('testimonials', idx, 'company', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Input
+                        placeholder="Avatar URL"
+                        value={testimonial.avatar || ''}
+                        onChange={(e) => updateArrayItem('testimonials', idx, 'avatar', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Input
+                        placeholder="Rating (1-5)"
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={testimonial.rating || ''}
+                        onChange={(e) => updateArrayItem('testimonials', idx, 'rating', parseInt(e.target.value))}
+                        className="mb-2"
+                      />
+                      <Textarea
+                        placeholder="Testimonial Text"
+                        value={testimonial.text || ''}
+                        onChange={(e) => updateArrayItem('testimonials', idx, 'text', e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        );
+      
+      case 'cta':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Heading</Label>
+              <Input
+                value={section.content.heading || ''}
+                onChange={(e) => onUpdate('heading', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label>Subheading</Label>
+              <Textarea
+                value={section.content.subheading || ''}
+                onChange={(e) => onUpdate('subheading', e.target.value)}
+                className="mt-2"
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label>CTA Button Text</Label>
+              <Input
+                value={section.content.ctaText || ''}
+                onChange={(e) => onUpdate('ctaText', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label>Phone Number</Label>
+              <Input
+                value={section.content.phone || ''}
+                onChange={(e) => onUpdate('phone', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                value={section.content.email || ''}
+                onChange={(e) => onUpdate('email', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label>Hours/Availability</Label>
+              <Input
+                value={section.content.hours || ''}
+                onChange={(e) => onUpdate('hours', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+          </div>
+        );
+      
+      case 'footer':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Copyright Text</Label>
+              <Input
+                value={section.content.copyright || ''}
+                onChange={(e) => onUpdate('copyright', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block">Footer Columns</Label>
+              <ScrollArea className="h-64 border rounded-md p-4">
+                <div className="space-y-4">
+                  {(section.content.columns || []).map((column: any, idx: number) => (
+                    <div key={idx} className="border-b pb-4 space-y-2">
+                      <Input
+                        placeholder="Column Title"
+                        value={column.title || ''}
+                        onChange={(e) => updateArrayItem('columns', idx, 'title', e.target.value)}
+                        className="mb-2"
+                      />
+                      <Label className="text-xs">Links</Label>
+                      {(column.links || []).map((link: any, linkIdx: number) => (
+                        <div key={linkIdx} className="flex gap-2 mb-2">
+                          <Input
+                            placeholder="Link Text"
+                            value={link.text || ''}
+                            onChange={(e) => {
+                              const newColumns = [...(section.content.columns || [])];
+                              if (!newColumns[idx].links) newColumns[idx].links = [];
+                              newColumns[idx].links[linkIdx] = { ...newColumns[idx].links[linkIdx], text: e.target.value };
+                              onUpdate('columns', newColumns);
+                            }}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="URL"
+                            value={link.url || ''}
+                            onChange={(e) => {
+                              const newColumns = [...(section.content.columns || [])];
+                              if (!newColumns[idx].links) newColumns[idx].links = [];
+                              newColumns[idx].links[linkIdx] = { ...newColumns[idx].links[linkIdx], url: e.target.value };
+                              onUpdate('columns', newColumns);
+                            }}
+                            className="flex-1"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        );
+      
+      case 'privacy':
+      case 'terms':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Last Updated Date</Label>
+              <Input
+                type="date"
+                value={section.content.lastUpdated || ''}
+                onChange={(e) => onUpdate('lastUpdated', e.target.value)}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label>Content</Label>
+              <Textarea
+                value={section.content.content || ''}
+                onChange={(e) => onUpdate('content', e.target.value)}
+                className="mt-2"
+                rows={15}
+              />
+            </div>
+          </div>
+        );
+      
       default:
         return (
           <div className="text-sm text-slate-500">
@@ -1155,14 +1659,14 @@ const renderSectionPreview = (section: TemplateSection) => {
     
     case 'features':
       return (
-        <div className="py-20 px-6">
+        <div className="py-20 px-6 bg-white">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-12">{section.content.heading}</h2>
+            <h2 className="text-4xl font-bold text-center mb-12 text-slate-900">{section.content.heading}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {section.content.features.map((feature: any, idx: number) => (
-                <div key={idx} className="text-center">
+              {section.content.features?.map((feature: any, idx: number) => (
+                <div key={idx} className="text-center p-6 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
                   <div className="text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <h3 className="text-xl font-semibold mb-2 text-slate-900">{feature.title}</h3>
                   <p className="text-slate-600">{feature.description}</p>
                 </div>
               ))}
@@ -1171,7 +1675,170 @@ const renderSectionPreview = (section: TemplateSection) => {
         </div>
       );
     
-    // Add more section renderers
+    case 'services':
+      return (
+        <div className="py-20 px-6 bg-slate-50">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-4xl font-bold text-center mb-4 text-slate-900">{section.content.heading}</h2>
+            {section.content.subheading && (
+              <p className="text-center text-slate-600 mb-12 text-lg">{section.content.subheading}</p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {section.content.services?.map((service: any, idx: number) => (
+                <div key={idx} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  {service.image && (
+                    <img 
+                      src={service.image} 
+                      alt={service.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-2 text-slate-900">{service.title}</h3>
+                    <p className="text-slate-600 mb-4">{service.description}</p>
+                    {service.price && (
+                      <p className="text-indigo-600 font-semibold">{service.price}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'testimonials':
+      return (
+        <div className="py-20 px-6 bg-white">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-4xl font-bold text-center mb-12 text-slate-900">{section.content.heading}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {section.content.testimonials?.map((testimonial: any, idx: number) => (
+                <div key={idx} className="bg-slate-50 p-6 rounded-lg">
+                  <div className="flex items-center mb-4">
+                    {testimonial.avatar && (
+                      <img 
+                        src={testimonial.avatar} 
+                        alt={testimonial.name}
+                        className="w-12 h-12 rounded-full mr-4 object-cover"
+                      />
+                    )}
+                    <div>
+                      <h4 className="font-semibold text-slate-900">{testimonial.name}</h4>
+                      {testimonial.company && (
+                        <p className="text-sm text-slate-600">{testimonial.company}</p>
+                      )}
+                    </div>
+                  </div>
+                  {testimonial.rating && (
+                    <div className="flex mb-3">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className={i < testimonial.rating ? 'text-yellow-400' : 'text-slate-300'}>★</span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-slate-700 italic">"{testimonial.text}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'cta':
+      return (
+        <div className="py-20 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl font-bold mb-4">{section.content.heading}</h2>
+            {section.content.subheading && (
+              <p className="text-xl mb-8 text-indigo-100">{section.content.subheading}</p>
+            )}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {section.content.phone && (
+                <a 
+                  href={`tel:${section.content.phone}`}
+                  className="bg-white text-indigo-600 px-8 py-4 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center gap-2"
+                >
+                  📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
+                </a>
+              )}
+              {section.content.email && (
+                <a 
+                  href={`mailto:${section.content.email}`}
+                  className="bg-indigo-700 text-white px-8 py-4 rounded-lg font-semibold hover:bg-indigo-800 transition-colors"
+                >
+                  ✉️ Email Us
+                </a>
+              )}
+            </div>
+            {section.content.hours && (
+              <p className="mt-6 text-indigo-100">{section.content.hours}</p>
+            )}
+          </div>
+        </div>
+      );
+    
+    case 'footer':
+      return (
+        <div className="py-12 px-6 bg-slate-900 text-white">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {section.content.columns?.map((column: any, idx: number) => (
+                <div key={idx}>
+                  {column.title && (
+                    <h4 className="font-semibold mb-4">{column.title}</h4>
+                  )}
+                  <ul className="space-y-2 text-slate-400">
+                    {column.links?.map((link: any, linkIdx: number) => (
+                      <li key={linkIdx}>
+                        <a href={link.url || '#'} className="hover:text-white transition-colors">
+                          {link.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            {section.content.copyright && (
+              <div className="mt-8 pt-8 border-t border-slate-800 text-center text-slate-400 text-sm">
+                {section.content.copyright}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    
+    case 'privacy':
+      return (
+        <div className="py-16 px-6 bg-white">
+          <div className="max-w-4xl mx-auto prose prose-slate max-w-none">
+            <h1 className="text-4xl font-bold mb-4 text-slate-900">Privacy Policy</h1>
+            {section.content.lastUpdated && (
+              <p className="text-slate-600 mb-8">Last Updated: {section.content.lastUpdated}</p>
+            )}
+            <div className="prose prose-slate max-w-none whitespace-pre-wrap text-slate-700">
+              {section.content.content}
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'terms':
+      return (
+        <div className="py-16 px-6 bg-white">
+          <div className="max-w-4xl mx-auto prose prose-slate max-w-none">
+            <h1 className="text-4xl font-bold mb-4 text-slate-900">Terms of Service</h1>
+            {section.content.lastUpdated && (
+              <p className="text-slate-600 mb-8">Last Updated: {section.content.lastUpdated}</p>
+            )}
+            <div className="prose prose-slate max-w-none whitespace-pre-wrap text-slate-700">
+              {section.content.content}
+            </div>
+          </div>
+        </div>
+      );
+    
     default:
       return <div className="p-8 text-slate-500">Section preview: {section.title}</div>;
   }

@@ -53,10 +53,39 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
       path2: ''
     }));
 
+    // Create ad groups with keywords for review page
+    const adGroupsWithKeywords = selectedPreset.ad_groups.map((group, groupIdx) => {
+      // Get keywords for this ad group (distribute keywords across groups)
+      const keywordsPerGroup = Math.ceil(selectedPreset.keywords.length / selectedPreset.ad_groups.length);
+      const startIdx = groupIdx * keywordsPerGroup;
+      const endIdx = Math.min(startIdx + keywordsPerGroup, selectedPreset.keywords.length);
+      const groupKeywords = selectedPreset.keywords.slice(startIdx, endIdx);
+      
+      // Apply match type formatting (70% phrase, 20% exact, 10% broad)
+      const formattedKeywords = groupKeywords.map((kw, idx) => {
+        const cleanKw = kw.replace(/^\[|\]$|^"|"$/g, '').trim();
+        const rand = (idx * 37) % 100;
+        if (rand < 70) {
+          return `"${cleanKw}"`; // Phrase match
+        } else if (rand < 90) {
+          return `[${cleanKw}]`; // Exact match
+        } else {
+          return cleanKw; // Broad match
+        }
+      });
+      
+      return {
+        name: group.name,
+        keywords: formattedKeywords
+      };
+    });
+
     const presetData = {
       name: selectedPreset.campaign_name,
-      step: 1, // Start at step 1 to ensure all data loads properly, user can navigate
-      structure: 'SKAG', // Default structure
+      campaignName: selectedPreset.campaign_name,
+      step: 5, // Navigate directly to review page (step 5)
+      structure: selectedPreset.structure || 'SKAG',
+      structureType: (selectedPreset.structure || 'SKAG').toLowerCase() as any,
       geo: 'ZIP', // Default geo strategy
       matchTypes: { broad: true, phrase: true, exact: true }, // All match types enabled
       url: selectedPreset.final_url || '', // Landing page URL
@@ -93,10 +122,12 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
       },
       generatedAds: generatedAdsFromPreset, // Convert ads to generatedAds array format
       enabledAdTypes: ['rsa'],
+      adTypes: { rsa: true, dki: false, call: false },
       targetCountry: 'United States',
       targetType: 'ZIP',
       manualGeoInput: '',
       adGroups: selectedPreset.ad_groups.map(g => g.name),
+      adGroupsWithKeywords: adGroupsWithKeywords, // Ad groups with formatted keywords for review
       maxCpc: selectedPreset.max_cpc,
       dailyBudget: selectedPreset.daily_budget
     };
@@ -528,18 +559,18 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             onClick={() => handleSelectPreset(preset)}
           >
                 {/* Structure Tag */}
-                <div className={`absolute top-4 right-4 px-3 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
+                <div className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-20 shadow-sm`}>
                   {preset.structure || 'SKAG'}
                 </div>
                 
                 <div className="p-6">
                   <div className="flex items-start gap-6">
                     {/* Left: Title and Description */}
-                    <div className="flex-1 pr-20">
-                      <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                    <div className="flex-1 pr-24">
+                      <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors leading-tight">
                         {preset.title}
                       </h3>
-                      <p className="text-sm text-slate-500 mb-4">{preset.campaign_name}</p>
+                      <p className="text-sm text-slate-500 mb-4 leading-tight">{preset.campaign_name}</p>
                       
                       {/* Stats Row */}
                       <div className="flex items-center gap-6 mb-4">
@@ -614,16 +645,16 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             onClick={() => handleSelectPreset(preset)}
           >
             {/* Structure Tag - Top Right Corner */}
-            <div className={`absolute top-3 right-3 px-2 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
+            <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-20 shadow-sm`}>
               {preset.structure || 'SKAG'}
             </div>
             
             <div className="flex-1 flex flex-col">
-              <div className="mb-4 pr-16">
-                <h3 className="text-base font-semibold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
+              <div className="mb-4 pr-20">
+                <h3 className="text-base font-semibold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors leading-tight">
                   {preset.title}
                 </h3>
-                <p className="text-xs text-slate-500">{preset.campaign_name}</p>
+                <p className="text-xs text-slate-500 leading-tight">{preset.campaign_name}</p>
               </div>
 
               <div className="space-y-2 mb-4 flex-1">

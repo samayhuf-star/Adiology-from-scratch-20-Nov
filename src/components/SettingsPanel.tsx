@@ -263,12 +263,12 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
           Settings
         </h1>
-        <p className="text-slate-500 mt-1">Manage your account settings, billing, and preferences</p>
+        <p className="text-slate-500 mt-1 text-sm">Manage your account settings, billing, and preferences</p>
       </div>
 
       <Tabs key={defaultTab} defaultValue={defaultTab} className="w-full">
@@ -277,7 +277,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="settings" className="space-y-8 mt-0">
+        <TabsContent value="settings" className="space-y-6 mt-0">
 
       {saveMessage && (
         <Alert 
@@ -309,7 +309,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="name"
                   value={name}
@@ -322,7 +322,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="email"
                   type="email"
@@ -334,10 +334,12 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               </div>
             </div>
           </div>
-          <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
-            <Save className="w-4 h-4 mr-2" />
-            Save Profile Changes
-          </Button>
+          <div className="flex justify-start">
+            <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
+              <Save className="w-4 h-4 mr-2" />
+              Save Profile Changes
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -354,7 +356,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
           <div className="space-y-2">
             <Label htmlFor="currentPassword">Current Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
               <Input
                 id="currentPassword"
                 type={showPassword ? 'text' : 'password'}
@@ -366,7 +368,8 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -376,7 +379,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="newPassword"
                   type={showNewPassword ? 'text' : 'password'}
@@ -388,7 +391,8 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                 >
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -397,7 +401,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
@@ -409,17 +413,20 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
           </div>
-          <Button onClick={handleChangePassword} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
-            <Lock className="w-4 h-4 mr-2" />
-            Change Password
-          </Button>
+          <div className="flex justify-start">
+            <Button onClick={handleChangePassword} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
+              <Lock className="w-4 h-4 mr-2" />
+              Change Password
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -611,6 +618,35 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
 const ThemeSelector = () => {
   const { theme, setTheme, availableThemes } = useTheme();
 
+  // Color mapping for theme previews
+  const getColorClass = (colorName: string) => {
+    const colorMap: Record<string, string> = {
+      'indigo-600': 'bg-indigo-600',
+      'indigo-50': 'bg-indigo-50',
+      'purple-600': 'bg-purple-600',
+      'pink-600': 'bg-pink-600',
+      'blue-600': 'bg-blue-600',
+      'blue-50': 'bg-blue-50',
+      'cyan-600': 'bg-cyan-600',
+      'cyan-50': 'bg-cyan-50',
+      'teal-600': 'bg-teal-600',
+      'teal-50': 'bg-teal-50',
+      'emerald-600': 'bg-emerald-600',
+      'emerald-50': 'bg-emerald-50',
+      'green-600': 'bg-green-600',
+      'green-50': 'bg-green-50',
+      'lime-600': 'bg-lime-600',
+      'lime-50': 'bg-lime-50',
+      'orange-600': 'bg-orange-600',
+      'orange-50': 'bg-orange-50',
+      'amber-600': 'bg-amber-600',
+      'amber-50': 'bg-amber-50',
+      'red-600': 'bg-red-600',
+      'red-50': 'bg-red-50',
+    };
+    return colorMap[colorName] || 'bg-slate-400';
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -638,9 +674,9 @@ const ThemeSelector = () => {
                   <div className={`w-full h-8 rounded bg-gradient-to-r ${t.colors.primaryGradient}`}></div>
                 </div>
                 <div className="flex gap-1">
-                  <div className={`flex-1 h-4 rounded bg-${t.colors.primary}`}></div>
-                  <div className={`flex-1 h-4 rounded bg-${t.colors.secondary}`}></div>
-                  <div className={`flex-1 h-4 rounded bg-${t.colors.accent}`}></div>
+                  <div className={`flex-1 h-4 rounded ${getColorClass(t.colors.primary)}`}></div>
+                  <div className={`flex-1 h-4 rounded ${getColorClass(t.colors.secondary)}`}></div>
+                  <div className={`flex-1 h-4 rounded ${getColorClass(t.colors.accent)}`}></div>
                 </div>
               </div>
 

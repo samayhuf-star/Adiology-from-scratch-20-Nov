@@ -798,132 +798,147 @@ export const AdsBuilder = () => {
 
     return (
         <>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-6 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-4">
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-4">
                 <div className="flex items-center justify-between">
-                <div>
-                        <h1 className="text-4xl font-bold theme-gradient-text mb-2">
+                    <div>
+                        <h1 className="text-2xl font-bold theme-gradient-text mb-1">
                             Ads Builder
-                    </h1>
-                        <p className="text-slate-600 text-sm">
-                        Generate high-converting Google Ads with AI optimization for maximum ad rank
-                    </p>
+                        </h1>
+                        <p className="text-slate-600 text-xs">
+                            Generate high-converting Google Ads with AI optimization
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                {/* Left Panel: Configuration */}
-                <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Column 1: URL & Ad Types */}
+                <div className="space-y-3">
                     {/* URL Section */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <CardContent className="p-6">
-                            <div>
-                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    URL
-                                </Label>
-                                <Input
-                                    type="url"
-                                    placeholder="enter url here"
-                                    value={baseUrl}
-                                    onChange={(e) => {
-                                        setBaseUrl(e.target.value);
-                                        if (urlError) setUrlError('');
-                                    }}
-                                    onBlur={(e) => {
-                                        const urlValue = e.target.value.trim();
-                                        if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
-                                            setUrlError('Please enter a valid URL starting with http:// or https://');
-                                        } else {
-                                            setUrlError('');
-                                        }
-                                    }}
-                                    className={`bg-white border-slate-300 focus:border-indigo-500 ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
-                                />
-                                {urlError && (
-                                    <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {urlError}
-                                    </p>
-                                )}
-                            </div>
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden">
+                        <CardContent className="p-4">
+                            <Label className="block text-xs font-semibold text-slate-700 mb-2">
+                                URL
+                            </Label>
+                            <Input
+                                type="url"
+                                placeholder="enter url here"
+                                value={baseUrl}
+                                onChange={(e) => {
+                                    setBaseUrl(e.target.value);
+                                    if (urlError) setUrlError('');
+                                }}
+                                onBlur={(e) => {
+                                    const urlValue = e.target.value.trim();
+                                    if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                                        setUrlError('Please enter a valid URL starting with http:// or https://');
+                                    } else {
+                                        setUrlError('');
+                                    }
+                                }}
+                                className={`bg-white border-slate-300 focus:border-indigo-500 h-9 text-sm ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                            />
+                            {urlError && (
+                                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {urlError}
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
 
                     {/* Ad Type Selection */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-yellow-400 p-4 border-b border-slate-200">
-                            <CardTitle className="text-lg font-bold text-slate-900">
-                                2. Select Ad Types
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden">
+                        <div className="bg-yellow-400 p-2 border-b border-slate-200">
+                            <CardTitle className="text-sm font-bold text-slate-900">
+                                Select Ad Types
                             </CardTitle>
                         </div>
-                        <CardContent className="p-6">
-                            <div className="space-y-3">
-                                {/* Checkboxes in a row */}
-                                <div className="flex items-center gap-6">
-                                    <div className="flex items-center gap-2">
-                                        <Label className="text-sm font-medium text-slate-700">CheckBox</Label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox
-                                            id="responsive-ad"
-                                            checked={selectedAdTypes.rsa}
-                                            onCheckedChange={(checked) => {
-                                                setSelectedAdTypes({...selectedAdTypes, rsa: checked as boolean});
-                                                if (!checked) setAdConfig({...adConfig, rsaCount: 0});
-                                                else if (adConfig.rsaCount === 0) setAdConfig({...adConfig, rsaCount: 1});
-                                            }}
-                                        />
-                                        <Label htmlFor="responsive-ad" className="text-sm font-medium text-slate-700 cursor-pointer">
-                                            Responsive
-                                        </Label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox
-                                            id="dki-ads"
-                                            checked={selectedAdTypes.dki}
-                                            onCheckedChange={(checked) => {
-                                                setSelectedAdTypes({...selectedAdTypes, dki: checked as boolean});
-                                                if (!checked) setAdConfig({...adConfig, dkiCount: 0});
-                                                else if (adConfig.dkiCount === 0) setAdConfig({...adConfig, dkiCount: 1});
-                                            }}
-                                        />
-                                        <Label htmlFor="dki-ads" className="text-sm font-medium text-slate-700 cursor-pointer">
-                                            DKI Ads
-                                        </Label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox
-                                            id="call-ads"
-                                            checked={selectedAdTypes.callOnly}
-                                            onCheckedChange={(checked) => {
-                                                setSelectedAdTypes({...selectedAdTypes, callOnly: checked as boolean});
-                                                if (!checked) setAdConfig({...adConfig, callOnlyCount: 0});
-                                                else if (adConfig.callOnlyCount === 0) setAdConfig({...adConfig, callOnlyCount: 1});
-                                            }}
-                                        />
-                                        <Label htmlFor="call-ads" className="text-sm font-medium text-slate-700 cursor-pointer">
-                                            Call Ads
-                                        </Label>
-                                    </div>
+                        <CardContent className="p-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        id="responsive-ad"
+                                        checked={selectedAdTypes.rsa}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedAdTypes({...selectedAdTypes, rsa: checked as boolean});
+                                            if (!checked) setAdConfig({...adConfig, rsaCount: 0});
+                                            else if (adConfig.rsaCount === 0) setAdConfig({...adConfig, rsaCount: 1});
+                                        }}
+                                    />
+                                    <Label htmlFor="responsive-ad" className="text-xs font-medium text-slate-700 cursor-pointer">
+                                        Responsive
+                                    </Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        id="dki-ads"
+                                        checked={selectedAdTypes.dki}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedAdTypes({...selectedAdTypes, dki: checked as boolean});
+                                            if (!checked) setAdConfig({...adConfig, dkiCount: 0});
+                                            else if (adConfig.dkiCount === 0) setAdConfig({...adConfig, dkiCount: 1});
+                                        }}
+                                    />
+                                    <Label htmlFor="dki-ads" className="text-xs font-medium text-slate-700 cursor-pointer">
+                                        DKI Ads
+                                    </Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        id="call-ads"
+                                        checked={selectedAdTypes.callOnly}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedAdTypes({...selectedAdTypes, callOnly: checked as boolean});
+                                            if (!checked) setAdConfig({...adConfig, callOnlyCount: 0});
+                                            else if (adConfig.callOnlyCount === 0) setAdConfig({...adConfig, callOnlyCount: 1});
+                                        }}
+                                    />
+                                    <Label htmlFor="call-ads" className="text-xs font-medium text-slate-700 cursor-pointer">
+                                        Call Ads
+                                    </Label>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
+                    {/* Generate Button */}
+                    <Button
+                        onClick={generateAds}
+                        disabled={isGenerating || (adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25}
+                        className="w-full theme-button-primary py-3 text-sm font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Zap className="w-4 h-4 mr-2" />
+                                Generate Ads
+                            </>
+                        )}
+                    </Button>
+                </div>
+
+                {/* Column 2: Mode & Keywords */}
+                <div className="space-y-3">
                     {/* Mode Selection */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-yellow-400 p-4 border-b border-slate-200">
-                            <CardTitle className="text-lg font-bold text-slate-900">
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden">
+                        <div className="bg-yellow-400 p-2 border-b border-slate-200">
+                            <CardTitle className="text-sm font-bold text-slate-900">
                                 Choose Your Mode
                             </CardTitle>
                         </div>
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-6 mb-4">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3 mb-3">
                                 <Button
                                     variant={mode === 'single' ? 'default' : 'outline'}
                                     onClick={() => setMode('single')}
+                                    size="sm"
                                     className={mode === 'single' ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border-slate-300'}
                                 >
                                     Single
@@ -931,6 +946,7 @@ export const AdsBuilder = () => {
                                 <Button
                                     variant={mode === 'multiple' ? 'default' : 'outline'}
                                     onClick={() => setMode('multiple')}
+                                    size="sm"
                                     className={mode === 'multiple' ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border-slate-300'}
                                 >
                                     Multiple
@@ -939,45 +955,45 @@ export const AdsBuilder = () => {
                             
                             {mode === 'single' && (
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-2">
                                         Enter 3-4 Keywords (comma-separated)
                                     </label>
                                     <Textarea
                                         placeholder="airline number, contact airline, delta phone number, customer service"
                                         value={singleKeywords}
                                         onChange={(e) => setSingleKeywords(e.target.value)}
-                                        className="min-h-[100px] border-slate-300"
+                                        className="min-h-[120px] border-slate-300 text-sm"
                                     />
                                 </div>
                             )}
                             
                             {mode === 'multiple' && (
-                                <div className="space-y-4">
-                                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                                <div className="space-y-3">
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                                         {adGroups.map((group, index) => (
-                                            <div key={group.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                                                <div className="flex items-center justify-between mb-3">
+                                            <div key={group.id} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                                                <div className="flex items-center justify-between mb-2">
                                                     <Input
                                                         value={group.name}
                                                         onChange={(e) => updateAdGroup(group.id, 'name', e.target.value)}
-                                                        className="font-semibold max-w-[200px]"
+                                                        className="font-semibold max-w-[150px] h-8 text-xs"
                                                     />
                                                     {adGroups.length > 1 && (
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => removeAdGroup(group.id)}
-                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
                                                         >
-                                                            <Trash2 className="w-4 h-4" />
+                                                            <Trash2 className="w-3 h-3" />
                                                         </Button>
                                                     )}
                                                 </div>
                                                 <Textarea
-                                                    placeholder="Enter keywords for this group (comma-separated)"
+                                                    placeholder="Enter keywords (comma-separated)"
                                                     value={group.keywords}
                                                     onChange={(e) => updateAdGroup(group.id, 'keywords', e.target.value)}
-                                                    className="min-h-[80px]"
+                                                    className="min-h-[60px] text-xs"
                                                 />
                                             </div>
                                         ))}
@@ -986,132 +1002,110 @@ export const AdsBuilder = () => {
                                     <Button
                                         onClick={addAdGroup}
                                         variant="outline"
-                                        className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                                        size="sm"
+                                        className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50 text-xs"
                                     >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Add Another Group
+                                        <Plus className="w-3 h-3 mr-1" />
+                                        Add Group
                                     </Button>
                                 </div>
                             )}
                         </CardContent>
                     </Card>
-
-                    {/* Generate Button */}
-                    <Button
-                        onClick={generateAds}
-                        disabled={isGenerating || (adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25}
-                        className="w-full theme-button-primary py-7 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                    >
-                        {isGenerating ? (
-                            <>
-                                <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                                Generating AI-Optimized Ads...
-                            </>
-                        ) : (
-                            <>
-                                <Zap className="w-5 h-5 mr-2" />
-                                Generate High-Performing Ads
-                            </>
-                        )}
-                    </Button>
-                </div>
                 </div>
 
-                {/* Right Panel: Generated Ads */}
-                <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden h-fit lg:sticky lg:top-6">
-                    <div className="bg-white p-6 border-b border-slate-300">
-                        <div className="flex justify-between items-center mb-4">
-                            <div>
-                                <CardTitle className="text-xl font-bold text-slate-900 text-center">
-                                    Generated Ads
-                                </CardTitle>
-                            </div>
+                {/* Column 3: Generated Ads Results */}
+                <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden lg:sticky lg:top-6 h-[calc(100vh-8rem)] flex flex-col">
+                    <div className="bg-white p-3 border-b border-slate-300 flex-shrink-0">
+                        <div className="flex justify-between items-center mb-2">
+                            <CardTitle className="text-sm font-bold text-slate-900">
+                                Generated Ads
+                            </CardTitle>
+                            {generatedAds.length > 0 && (
+                                <div className="flex gap-1">
+                                    <Button
+                                        onClick={selectAll}
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-slate-300 h-7 text-xs px-2"
+                                    >
+                                        {selectedAds.length === generatedAds.length ? (
+                                            <><Square className="w-3 h-3 mr-1" /> All</>
+                                        ) : (
+                                            <><CheckSquare className="w-3 h-3 mr-1" /> All</>
+                                        )}
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="border-slate-300 h-7 text-xs px-2">
+                                                <Download className="w-3 h-3 mr-1" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={exportToCSV} disabled={selectedAds.length === 0}>
+                                                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={copyToClipboard} disabled={selectedAds.length === 0}>
+                                                <Copy className="w-4 h-4 mr-2" />
+                                                Copy to Clipboard
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Compact Statistics */}
                         {generatedAds.length > 0 && (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={selectAll}
-                                    variant="outline"
-                                    size="sm"
-                                        className="border-slate-300"
-                                >
-                                    {selectedAds.length === generatedAds.length ? (
-                                        <><Square className="w-4 h-4 mr-1" /> Deselect All</>
-                                    ) : (
-                                        <><CheckSquare className="w-4 h-4 mr-1" /> Select All</>
-                                    )}
-                                </Button>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="border-slate-300">
-                                            <Download className="w-4 h-4 mr-1" />
-                                            Export
-                                            <ChevronDown className="w-3 h-3 ml-1" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={exportToCSV} disabled={selectedAds.length === 0}>
-                                            <FileSpreadsheet className="w-4 h-4 mr-2" />
-                                            CSV
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={copyToClipboard} disabled={selectedAds.length === 0}>
-                                            <Copy className="w-4 h-4 mr-2" />
-                                            Copy to Clipboard
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                            <div className="grid grid-cols-5 gap-1 mb-2">
+                                <div className="bg-blue-50 border border-blue-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-blue-600 font-medium">Total</div>
+                                    <div className="text-sm font-bold text-blue-700">{stats.total}</div>
+                                </div>
+                                <div className="bg-indigo-50 border border-indigo-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-indigo-600 font-medium">RSA</div>
+                                    <div className="text-sm font-bold text-indigo-700">{stats.rsa}</div>
+                                </div>
+                                <div className="bg-purple-50 border border-purple-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-purple-600 font-medium">DKI</div>
+                                    <div className="text-sm font-bold text-purple-700">{stats.dki}</div>
+                                </div>
+                                <div className="bg-green-50 border border-green-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-green-600 font-medium">Call</div>
+                                    <div className="text-sm font-bold text-green-700">{stats.callOnly}</div>
+                                </div>
+                                <div className="bg-orange-50 border border-orange-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-orange-600 font-medium">Sel</div>
+                                    <div className="text-sm font-bold text-orange-700">{stats.selected}</div>
+                                </div>
                             </div>
                         )}
-                    </div>
-                    
-                    {/* Statistics & Search/Filter Bar */}
-                    {generatedAds.length > 0 && (
-                        <div className="px-6 pb-4 space-y-3">
-                            {/* Statistics Cards */}
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
-                                    <div className="text-xs text-blue-600 font-medium mb-0.5">Total</div>
-                                    <div className="text-lg font-bold text-blue-700">{stats.total}</div>
-                                </div>
-                                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2 text-center">
-                                    <div className="text-xs text-indigo-600 font-medium mb-0.5">RSA</div>
-                                    <div className="text-lg font-bold text-indigo-700">{stats.rsa}</div>
-                                </div>
-                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-2 text-center">
-                                    <div className="text-xs text-purple-600 font-medium mb-0.5">DKI</div>
-                                    <div className="text-lg font-bold text-purple-700">{stats.dki}</div>
-                                </div>
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
-                                    <div className="text-xs text-green-600 font-medium mb-0.5">Call</div>
-                                    <div className="text-lg font-bold text-green-700">{stats.callOnly}</div>
-                                </div>
-                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 text-center">
-                                    <div className="text-xs text-orange-600 font-medium mb-0.5">Selected</div>
-                                    <div className="text-lg font-bold text-orange-700">{stats.selected}</div>
-                                </div>
-                            </div>
-                            
-                            {/* Search & Filters */}
-                            <div className="flex flex-wrap gap-2">
-                                <div className="flex-1 min-w-[200px] relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        
+                        {/* Compact Search & Filters */}
+                        {generatedAds.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                                <div className="flex-1 min-w-[120px] relative">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
                                     <Input
-                                        placeholder="Search ads by headline, description, or group..."
+                                        placeholder="Search..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-9 h-9 text-sm"
+                                        className="pl-7 h-7 text-xs"
                                     />
                                     {searchQuery && (
                                         <button
                                             onClick={() => setSearchQuery('')}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                                         >
-                                            <X className="w-4 h-4" />
+                                            <X className="w-3 h-3" />
                                         </button>
                                     )}
                                 </div>
                                 <Select value={filterAdType} onValueChange={setFilterAdType}>
-                                    <SelectTrigger className="w-[140px] h-9 text-sm">
-                                        <SelectValue placeholder="Ad Type" />
+                                    <SelectTrigger className="w-[100px] h-7 text-xs">
+                                        <SelectValue placeholder="Type" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Types</SelectItem>
@@ -1122,7 +1116,7 @@ export const AdsBuilder = () => {
                                 </Select>
                                 {uniqueGroups.length > 0 && (
                                     <Select value={filterGroup} onValueChange={setFilterGroup}>
-                                        <SelectTrigger className="w-[140px] h-9 text-sm">
+                                        <SelectTrigger className="w-[100px] h-7 text-xs">
                                             <SelectValue placeholder="Group" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1133,40 +1127,24 @@ export const AdsBuilder = () => {
                                         </SelectContent>
                                     </Select>
                                 )}
-                                {(searchQuery || filterAdType !== 'all' || filterGroup !== 'all') && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            setSearchQuery('');
-                                            setFilterAdType('all');
-                                            setFilterGroup('all');
-                                        }}
-                                        className="h-9 text-xs"
-                                    >
-                                        <X className="w-3 h-3 mr-1" />
-                                        Clear Filters
-                                    </Button>
-                                )}
                             </div>
-                        </div>
-                    )}
+                        )}
                     </div>
-                    <CardContent className="p-6">
-                    {generatedAds.length > 0 && (
-                            <div className="mb-4 px-3 py-2 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-indigo-50/50 rounded-lg border border-indigo-200/50 text-center">
+                    <CardContent className="p-3 flex-1 overflow-hidden flex flex-col">
+                        {generatedAds.length > 0 && (
+                            <div className="mb-2 px-2 py-1 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-indigo-50/50 rounded border border-indigo-200/50 text-center flex-shrink-0">
                                 <p className="text-xs font-semibold text-slate-800">
-                                Showing {filteredAds.length} of {generatedAds.length} ads
-                                {selectedAds.length > 0 && (
+                                    Showing {filteredAds.length} of {generatedAds.length} ads
+                                    {selectedAds.length > 0 && (
                                         <span className="ml-2 text-indigo-600">
-                                        • {selectedAds.length} selected
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-                    )}
+                                            • {selectedAds.length} selected
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        )}
 
-                        <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
+                        <div className="space-y-2 flex-1 overflow-y-auto pr-1">
                         {filteredAds.length > 0 ? (
                                 filteredAds.map((ad) => {
                                     // Convert GeneratedAd to LiveAdPreview format
@@ -1191,45 +1169,45 @@ export const AdsBuilder = () => {
                                     return (
                                 <div
                                     key={ad.id}
-                                            className={`border-2 rounded-xl p-4 transition-all ${
+                                    className={`border rounded-lg p-2.5 transition-all ${
                                         selectedAds.includes(ad.id)
-                                                    ? 'border-indigo-400 bg-indigo-50/50 shadow-md'
-                                                    : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
+                                            ? 'border-indigo-400 bg-indigo-50/50 shadow-sm'
+                                            : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
                                     }`}
                                 >
-                                            <div className="flex items-start gap-3 mb-3">
+                                    <div className="flex items-start gap-2 mb-2">
                                         <Checkbox
                                             checked={selectedAds.includes(ad.id)}
                                             onCheckedChange={() => toggleAdSelection(ad.id)}
-                                            className="mt-1"
+                                            className="mt-0.5"
                                         />
-                                        <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <Badge variant="outline" className="text-xs font-semibold bg-slate-100">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                                                <Badge variant="outline" className="text-[10px] font-semibold bg-slate-100 px-1.5 py-0.5">
                                                     {ad.groupName}
                                                 </Badge>
                                                 <Badge 
                                                     variant="outline"
-                                                    className={
-                                                                ad.adType === 'RSA' ? 'bg-blue-100 text-blue-700 border-blue-300 font-semibold' :
-                                                                ad.adType === 'DKI' ? 'bg-purple-100 text-purple-700 border-purple-300 font-semibold' :
-                                                                'bg-green-100 text-green-700 border-green-300 font-semibold'
-                                                    }
+                                                    className={`text-[10px] font-semibold px-1.5 py-0.5 ${
+                                                        ad.adType === 'RSA' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                                        ad.adType === 'DKI' ? 'bg-purple-100 text-purple-700 border-purple-300' :
+                                                        'bg-green-100 text-green-700 border-green-300'
+                                                    }`}
                                                 >
                                                     {ad.adType}
                                                 </Badge>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleAddExtensions(ad.id);
-                                                            }}
-                                                            className="ml-auto text-xs h-7 border-purple-300 text-purple-700 hover:bg-purple-50"
-                                                        >
-                                                            <Plus className="w-3 h-3 mr-1" />
-                                                            Extensions
-                                                        </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAddExtensions(ad.id);
+                                                    }}
+                                                    className="ml-auto text-[10px] h-6 border-purple-300 text-purple-700 hover:bg-purple-50 px-2"
+                                                >
+                                                    <Plus className="w-2.5 h-2.5 mr-0.5" />
+                                                    Ext
+                                                </Button>
                                             </div>
 
                                                     {/* Live Ad Preview */}
@@ -1238,11 +1216,11 @@ export const AdsBuilder = () => {
                                                         onRemoveExtension={(extensionId) => handleRemoveExtension(ad.id, extensionId)}
                                                     />
 
-                                                    {/* Editable URL for RSA/DKI */}
-                                                    {(ad.adType === 'RSA' || ad.adType === 'DKI') && (
-                                                        <div className="mt-3 pt-3 border-t border-slate-200">
-                                                            <Label className="text-xs font-semibold text-slate-700 mb-1 block">Final URL</Label>
-                                                            <div className="flex items-center gap-2">
+                                            {/* Editable URL for RSA/DKI */}
+                                            {(ad.adType === 'RSA' || ad.adType === 'DKI') && (
+                                                <div className="mt-2 pt-2 border-t border-slate-200">
+                                                    <Label className="text-[10px] font-semibold text-slate-700 mb-1 block">Final URL</Label>
+                                                    <div className="flex items-center gap-1">
                                                         <Input
                                                             type="url"
                                                             value={ad.finalUrl || baseUrl}
@@ -1251,11 +1229,11 @@ export const AdsBuilder = () => {
                                                                     a.id === ad.id ? { ...a, finalUrl: e.target.value } : a
                                                                 ));
                                                             }}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="text-xs h-8 text-green-700 border-green-200 focus:border-green-400 flex-1"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-[10px] h-6 text-green-700 border-green-200 focus:border-green-400 flex-1"
                                                             placeholder="Enter URL"
                                                         />
-                                                        <span className="text-xs text-slate-500 whitespace-nowrap">/{ad.path1}/{ad.path2}</span>
+                                                        <span className="text-[10px] text-slate-500 whitespace-nowrap">/{ad.path1}/{ad.path2}</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -1265,10 +1243,10 @@ export const AdsBuilder = () => {
                                     );
                                 })
                         ) : generatedAds.length > 0 ? (
-                            <div className="flex items-center justify-center h-[300px]">
+                            <div className="flex items-center justify-center h-full">
                                 <div className="text-center">
-                                    <Filter className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                                    <p className="text-slate-600 font-medium mb-1">No ads match your filters</p>
+                                    <Filter className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                                    <p className="text-xs text-slate-600 font-medium mb-1">No ads match your filters</p>
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -1277,21 +1255,21 @@ export const AdsBuilder = () => {
                                             setFilterAdType('all');
                                             setFilterGroup('all');
                                         }}
-                                        className="mt-2"
+                                        className="mt-2 h-7 text-xs"
                                     >
                                         Clear Filters
                                     </Button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex items-center justify-center h-[400px]">
+                            <div className="flex items-center justify-center h-full">
                                 <div className="text-center">
-                                        <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
-                                            <Sparkles className="w-10 h-10 text-indigo-400" />
-                                        </div>
-                                        <p className="text-slate-600 font-medium mb-1">No ads generated yet</p>
-                                        <p className="text-sm text-slate-500">
-                                        Configure your settings and click "Generate" to create optimized ads
+                                    <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+                                        <Sparkles className="w-6 h-6 text-indigo-400" />
+                                    </div>
+                                    <p className="text-xs text-slate-600 font-medium mb-1">No ads generated yet</p>
+                                    <p className="text-[10px] text-slate-500">
+                                        Configure settings and click "Generate"
                                     </p>
                                 </div>
                             </div>

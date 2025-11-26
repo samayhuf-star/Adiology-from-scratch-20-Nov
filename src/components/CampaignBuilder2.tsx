@@ -590,6 +590,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [tempNegatives, setTempNegatives] = useState('');
   // Bug_37: Store negative keywords per group
   const [groupNegativeKeywords, setGroupNegativeKeywords] = useState<{ [groupName: string]: string[] }>({});
+  // Preset ad groups - used when loading from preset
+  const [presetAdGroups, setPresetAdGroups] = useState<Array<{ name: string; keywords: string[] }> | null>(null);
   
   // Helper function to apply match type formatting to keywords
   const applyMatchTypeFormatting = (keywords: string[]): string[] => {
@@ -765,14 +767,33 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Load initial data
   useEffect(() => {
     if (initialData) {
-      setCampaignName(initialData.campaignName || generateDefaultCampaignName());
-      setStructureType(initialData.structureType || null);
+      setCampaignName(initialData.campaignName || initialData.name || generateDefaultCampaignName());
+      setStructureType(initialData.structureType || (initialData.structure ? initialData.structure.toLowerCase() : null));
       setUrl(initialData.url || 'https://example.com');
       setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
       setAdTypes(initialData.adTypes || { rsa: true, dki: true, call: true });
       setNegativeKeywords(initialData.negativeKeywords || DEFAULT_NEGATIVE_KEYWORDS);
       setSelectedKeywords(initialData.selectedKeywords || []);
       setGeneratedAds(initialData.generatedAds || []);
+      
+      // If preset has adGroupsWithKeywords, store them for the review page
+      if (initialData.adGroupsWithKeywords && Array.isArray(initialData.adGroupsWithKeywords)) {
+        setPresetAdGroups(initialData.adGroupsWithKeywords);
+        // Extract all keywords from ad groups and ensure they're in selectedKeywords
+        const allPresetKeywords = initialData.adGroupsWithKeywords.flatMap((group: any) => 
+          group.keywords || []
+        );
+        // Merge with existing selectedKeywords, removing duplicates
+        const uniqueKeywords = Array.from(new Set([...allPresetKeywords, ...(initialData.selectedKeywords || [])]));
+        setSelectedKeywords(uniqueKeywords);
+      } else {
+        setPresetAdGroups(null);
+      }
+      
+      // Navigate to review page (step 5) if preset data is loaded
+      if (initialData.step === 5) {
+        setStep(5);
+      }
     }
   }, [initialData]);
 
@@ -3688,8 +3709,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Step 5: Detailed Review - shows all ad groups with editable content
   const renderStep5 = () => {
-    // Use dynamicAdGroups to get proper ad groups based on structure
-    const reviewAdGroups = getDynamicAdGroups();
+    // Use preset ad groups if available (from preset), otherwise use dynamic ad groups
+    const reviewAdGroups = presetAdGroups || getDynamicAdGroups();
     
     // Calculate stats based on actual data
     const totalAdGroups = reviewAdGroups.length;
