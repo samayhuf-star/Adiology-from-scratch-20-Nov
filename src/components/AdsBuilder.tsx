@@ -57,6 +57,13 @@ export const AdsBuilder = () => {
     const [baseUrl, setBaseUrl] = useState('https://www.example.com');
     const [urlError, setUrlError] = useState('');
     
+    // Ad type selection with checkboxes
+    const [selectedAdTypes, setSelectedAdTypes] = useState({
+        rsa: true,
+        dki: true,
+        callOnly: true
+    });
+    
     const [adConfig, setAdConfig] = useState({
         rsaCount: 1,
         dkiCount: 1,
@@ -756,13 +763,64 @@ export const AdsBuilder = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 {/* Left Panel: Configuration */}
                 <div className="space-y-6">
+                    {/* Base URL Configuration - MOVED TO TOP */}
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 p-6 border-b border-slate-200/50">
+                            <CardHeader className="p-0">
+                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
+                                    <Globe className="h-5 w-5 text-emerald-600" />
+                                    Base URL Configuration
+                                </CardTitle>
+                                <CardDescription className="text-slate-600 mt-1">
+                                    Set the landing page URL for all ads
+                                </CardDescription>
+                            </CardHeader>
+                        </div>
+                        <CardContent className="p-6">
+                            <div>
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Landing Page URL
+                                </Label>
+                                <Input
+                                    type="url"
+                                    placeholder="https://www.example.com"
+                                    value={baseUrl}
+                                    onChange={(e) => {
+                                        setBaseUrl(e.target.value);
+                                        if (urlError) setUrlError('');
+                                    }}
+                                    onBlur={(e) => {
+                                        const urlValue = e.target.value.trim();
+                                        if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                                            setUrlError('Please enter a valid URL starting with http:// or https://');
+                                        } else {
+                                            setUrlError('');
+                                        }
+                                    }}
+                                    className={`bg-white border-slate-300 focus:border-indigo-500 ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                                />
+                                {urlError && (
+                                    <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
+                                        <AlertCircle className="w-4 h-4" />
+                                        {urlError}
+                                    </p>
+                                )}
+                                {!urlError && (
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        This URL will be used for all generated ads. You can edit individual ad URLs after generation.
+                                    </p>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Mode Selection */}
                     <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
                         <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 p-6 border-b border-slate-200/50">
                             <CardHeader className="p-0">
                                 <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
                                     <Settings className="h-5 w-5 text-indigo-600" />
-                            1. Choose Your Mode
+                                    1. Choose Your Mode
                                 </CardTitle>
                                 <CardDescription className="text-slate-600 mt-1">
                                     Select single or multiple keyword groups
@@ -843,170 +901,177 @@ export const AdsBuilder = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Base URL Configuration */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 p-6 border-b border-slate-200/50">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Globe className="h-5 w-5 text-emerald-600" />
-                            Base URL Configuration
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Set the landing page URL for all ads
-                                </CardDescription>
-                            </CardHeader>
-                        </div>
-                        <CardContent className="p-6">
-                        <div>
-                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Landing Page URL
-                                </Label>
-                            <Input
-                                type="url"
-                                placeholder="https://www.example.com"
-                                value={baseUrl}
-                                onChange={(e) => {
-                                    setBaseUrl(e.target.value);
-                                    // Clear validation error when user starts typing
-                                    if (urlError) setUrlError('');
-                                }}
-                                onBlur={(e) => {
-                                    // Bug_27: Validate URL on blur
-                                    const urlValue = e.target.value.trim();
-                                    if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
-                                        setUrlError('Please enter a valid URL starting with http:// or https://');
-                                    } else {
-                                        setUrlError('');
-                                    }
-                                }}
-                                className={`bg-white border-slate-300 focus:border-indigo-500 ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            {urlError && (
-                                <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {urlError}
-                                </p>
-                            )}
-                            {!urlError && (
-                                <p className="text-xs text-slate-500 mt-2">
-                                    This URL will be used for all generated ads. You can edit individual ad URLs after generation.
-                                </p>
-                            )}
-                        </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Ad Type Configuration */}
+                    {/* Ad Type Configuration - Updated to use checkboxes */}
                     <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
                         <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
                             <CardHeader className="p-0">
                                 <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
                                     <Zap className="h-5 w-5 text-blue-600" />
-                            2. Configure Ad Types & Quantity
+                                    2. Select Ad Types
                                 </CardTitle>
                                 <CardDescription className="text-slate-600 mt-1">
-                                    Select ad types and quantities (max 25 total)
+                                    Choose which ad types to generate (max 25 total)
                                 </CardDescription>
                             </CardHeader>
                         </div>
                         <CardContent className="p-6">
-                            <div className="space-y-6">
+                            <div className="space-y-4">
+                                {/* RSA Checkbox */}
                                 <div className="p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-lg border border-blue-200/50">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 font-semibold">RSA</Badge>
-                                            <Label className="text-sm font-semibold text-slate-800">Responsive Search Ads</Label>
+                                    <div className="flex items-start gap-3">
+                                        <Checkbox
+                                            id="rsa-checkbox"
+                                            checked={selectedAdTypes.rsa}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedAdTypes({...selectedAdTypes, rsa: checked as boolean});
+                                                if (!checked) setAdConfig({...adConfig, rsaCount: 0});
+                                                else if (adConfig.rsaCount === 0) setAdConfig({...adConfig, rsaCount: 1});
+                                            }}
+                                            className="mt-1"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 font-semibold">RSA</Badge>
+                                                <Label htmlFor="rsa-checkbox" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                                                    Responsive Search Ads
+                                                </Label>
+                                            </div>
+                                            <p className="text-xs text-slate-600 mb-3">
+                                                Multiple headlines and descriptions for testing
+                                            </p>
+                                            {selectedAdTypes.rsa && (
+                                                <div className="flex items-center gap-2">
+                                                    <Label className="text-xs text-slate-600">Quantity:</Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max="25"
+                                                        value={adConfig.rsaCount}
+                                                        onChange={(e) => {
+                                                            const value = parseInt(e.target.value) || 1;
+                                                            const total = value + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0);
+                                                            if (total <= 25) {
+                                                                setAdConfig({...adConfig, rsaCount: value});
+                                                            } else {
+                                                                notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
+                                                                    title: 'Too Many Ads'
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="w-20 h-8 text-center text-sm font-semibold border-blue-300 focus:border-blue-500"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    max="25"
-                                    value={adConfig.rsaCount}
-                                    onChange={(e) => {
-                                        const value = parseInt(e.target.value) || 0;
-                                        const total = value + adConfig.dkiCount + adConfig.callOnlyCount;
-                                        if (total <= 25) {
-                                            setAdConfig({...adConfig, rsaCount: value});
-                                        } else {
-                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                title: 'Too Many Ads'
-                                            });
-                                        }
-                                    }}
-                                            className="w-20 text-center font-semibold border-blue-300 focus:border-blue-500"
-                                />
                                     </div>
-                                    <p className="text-xs text-slate-600">
-                                    Multiple headlines and descriptions for testing
-                                </p>
-                            </div>
+                                </div>
 
+                                {/* DKI Checkbox */}
                                 <div className="p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-lg border border-purple-200/50">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 font-semibold">DKI</Badge>
-                                            <Label className="text-sm font-semibold text-slate-800">Dynamic Keyword Insertion</Label>
+                                    <div className="flex items-start gap-3">
+                                        <Checkbox
+                                            id="dki-checkbox"
+                                            checked={selectedAdTypes.dki}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedAdTypes({...selectedAdTypes, dki: checked as boolean});
+                                                if (!checked) setAdConfig({...adConfig, dkiCount: 0});
+                                                else if (adConfig.dkiCount === 0) setAdConfig({...adConfig, dkiCount: 1});
+                                            }}
+                                            className="mt-1"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 font-semibold">DKI</Badge>
+                                                <Label htmlFor="dki-checkbox" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                                                    Dynamic Keyword Insertion
+                                                </Label>
+                                            </div>
+                                            <p className="text-xs text-slate-600 mb-3">
+                                                Automatically inserts search keywords into ad text
+                                            </p>
+                                            {selectedAdTypes.dki && (
+                                                <div className="flex items-center gap-2">
+                                                    <Label className="text-xs text-slate-600">Quantity:</Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max="25"
+                                                        value={adConfig.dkiCount}
+                                                        onChange={(e) => {
+                                                            const value = parseInt(e.target.value) || 1;
+                                                            const total = (selectedAdTypes.rsa ? adConfig.rsaCount : 0) + value + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0);
+                                                            if (total <= 25) {
+                                                                setAdConfig({...adConfig, dkiCount: value});
+                                                            } else {
+                                                                notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
+                                                                    title: 'Too Many Ads'
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="w-20 h-8 text-center text-sm font-semibold border-purple-300 focus:border-purple-500"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    max="25"
-                                    value={adConfig.dkiCount}
-                                    onChange={(e) => {
-                                        const value = parseInt(e.target.value) || 0;
-                                        const total = adConfig.rsaCount + value + adConfig.callOnlyCount;
-                                        if (total <= 25) {
-                                            setAdConfig({...adConfig, dkiCount: value});
-                                        } else {
-                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                title: 'Too Many Ads'
-                                            });
-                                        }
-                                    }}
-                                            className="w-20 text-center font-semibold border-purple-300 focus:border-purple-500"
-                                />
                                     </div>
-                                    <p className="text-xs text-slate-600">
-                                    Automatically inserts search keywords into ad text
-                                </p>
-                            </div>
+                                </div>
 
+                                {/* Call Only Ads Checkbox */}
                                 <div className="p-4 bg-gradient-to-r from-green-50/50 to-emerald-50/50 rounded-lg border border-green-200/50">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 font-semibold">Call</Badge>
-                                            <Label className="text-sm font-semibold text-slate-800">Call Only Ads</Label>
+                                    <div className="flex items-start gap-3">
+                                        <Checkbox
+                                            id="call-checkbox"
+                                            checked={selectedAdTypes.callOnly}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedAdTypes({...selectedAdTypes, callOnly: checked as boolean});
+                                                if (!checked) setAdConfig({...adConfig, callOnlyCount: 0});
+                                                else if (adConfig.callOnlyCount === 0) setAdConfig({...adConfig, callOnlyCount: 1});
+                                            }}
+                                            className="mt-1"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 font-semibold">Call</Badge>
+                                                <Label htmlFor="call-checkbox" className="text-sm font-semibold text-slate-800 cursor-pointer">
+                                                    Call Only Ads
+                                                </Label>
+                                            </div>
+                                            <p className="text-xs text-slate-600 mb-3">
+                                                Mobile-only ads with click-to-call functionality
+                                            </p>
+                                            {selectedAdTypes.callOnly && (
+                                                <div className="flex items-center gap-2">
+                                                    <Label className="text-xs text-slate-600">Quantity:</Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max="25"
+                                                        value={adConfig.callOnlyCount}
+                                                        onChange={(e) => {
+                                                            const value = parseInt(e.target.value) || 1;
+                                                            const total = (selectedAdTypes.rsa ? adConfig.rsaCount : 0) + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + value;
+                                                            if (total <= 25) {
+                                                                setAdConfig({...adConfig, callOnlyCount: value});
+                                                            } else {
+                                                                notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
+                                                                    title: 'Too Many Ads'
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="w-20 h-8 text-center text-sm font-semibold border-green-300 focus:border-green-500"
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    max="25"
-                                    value={adConfig.callOnlyCount}
-                                    onChange={(e) => {
-                                        const value = parseInt(e.target.value) || 0;
-                                        const total = adConfig.rsaCount + adConfig.dkiCount + value;
-                                        if (total <= 25) {
-                                            setAdConfig({...adConfig, callOnlyCount: value});
-                                        } else {
-                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                title: 'Too Many Ads'
-                                            });
-                                        }
-                                    }}
-                                            className="w-20 text-center font-semibold border-green-300 focus:border-green-500"
-                                />
                                     </div>
-                                    <p className="text-xs text-slate-600">
-                                    Mobile-only ads with click-to-call functionality
-                                </p>
-                            </div>
+                                </div>
                             
                             {/* Total Ads Counter */}
                                 <div className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg border-2 border-indigo-200">
                                 <div className="flex items-center justify-between">
                                         <span className="text-sm font-bold text-slate-700">Total Ads:</span>
-                                        <span className={`text-2xl font-bold ${(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 ? 'text-red-600' : 'text-indigo-600'}`}>
-                                        {adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount} / 25
+                                        <span className={`text-2xl font-bold ${((selectedAdTypes.rsa ? adConfig.rsaCount : 0) + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0)) > 25 ? 'text-red-600' : 'text-indigo-600'}`}>
+                                        {(selectedAdTypes.rsa ? adConfig.rsaCount : 0) + (selectedAdTypes.dki ? adConfig.dkiCount : 0) + (selectedAdTypes.callOnly ? adConfig.callOnlyCount : 0)} / 25
                                     </span>
                                 </div>
                                 {(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 && (
