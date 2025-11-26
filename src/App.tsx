@@ -37,7 +37,6 @@ import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
-import { MyWebsites } from './components/MyWebsites';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 
@@ -59,7 +58,6 @@ const App = () => {
     'campaign-presets',
     'builder-2',
     'website-templates',
-    'my-websites',
     'keyword-planner',
     'keyword-mixer',
     'ads-builder',
@@ -594,7 +592,6 @@ const App = () => {
     { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
     { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
     { id: 'website-templates', label: 'Website Templates', icon: Layout },
-    { id: 'my-websites', label: 'My Websites', icon: Globe },
     { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
     { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
@@ -917,8 +914,6 @@ const App = () => {
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
       case 'website-templates':
         return <WebsiteTemplates />;
-      case 'my-websites':
-        return <MyWebsites />;
       case 'csv-validator-2':
         return <CSVValidator2 />;
       case 'keyword-planner':

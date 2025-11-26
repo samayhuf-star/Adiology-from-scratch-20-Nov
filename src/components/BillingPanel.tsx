@@ -56,41 +56,72 @@ export const BillingPanel = () => {
                     
                     try {
                         const userProfile = await getCurrentUserProfile();
+                        const { supabase } = await import('../utils/supabase/client');
                     
-                    let userPlan = "Free";
+                        let userPlan = "Free";
                         let nextBillingDate: string | null = null;
-                    let subscriptionStatus = "inactive";
+                        let subscriptionStatus = "inactive";
+                        let invoices: any[] = [];
                     
                         if (userProfile) {
-                            // Map subscription_plan from database to display format
-                            const planMap: Record<string, string> = {
-                                'free': 'Free',
-                                'starter': 'Monthly Limited',
-                                'professional': 'Monthly Unlimited',
-                                'enterprise': 'Lifetime Unlimited'
-                            };
+                            // Fetch subscription from subscriptions table
+                            const { data: subscription, error: subError } = await supabase
+                                .from('subscriptions')
+                                .select('*')
+                                .eq('user_id', userProfile.id)
+                                .order('created_at', { ascending: false })
+                                .limit(1)
+                                .single();
                             
-                            userPlan = planMap[userProfile.subscription_plan] || userProfile.subscription_plan || "Free";
-                            subscriptionStatus = userProfile.subscription_status || "inactive";
-                            
-                            // Get next billing date from subscriptions table if available
-                            // For now, calculate if it's a subscription plan
-                            if (userPlan.includes('Monthly') || userPlan.includes('month')) {
-                        const nextDate = new Date();
-                        nextDate.setMonth(nextDate.getMonth() + 1);
-                        nextBillingDate = nextDate.toISOString().split('T')[0];
+                            if (!subError && subscription) {
+                                userPlan = subscription.plan_name || "Free";
+                                subscriptionStatus = subscription.status || "inactive";
+                                
+                                if (subscription.current_period_end) {
+                                    nextBillingDate = new Date(subscription.current_period_end).toISOString().split('T')[0];
+                                } else if (userPlan.includes('Monthly')) {
+                                    // Calculate next billing date if not set
+                                    const nextDate = new Date();
+                                    nextDate.setMonth(nextDate.getMonth() + 1);
+                                    nextBillingDate = nextDate.toISOString().split('T')[0];
+                                }
+                            } else {
+                                // Fallback to user profile data
+                                const planMap: Record<string, string> = {
+                                    'free': 'Free',
+                                    'starter': 'Monthly Limited',
+                                    'professional': 'Monthly Unlimited',
+                                    'enterprise': 'Lifetime Unlimited'
+                                };
+                                
+                                userPlan = planMap[userProfile.subscription_plan] || userProfile.subscription_plan || "Free";
+                                subscriptionStatus = userProfile.subscription_status || "inactive";
                             }
-                    }
+                            
+                            // Fetch invoices
+                            const { data: invoiceData, error: invError } = await supabase
+                                .from('invoices')
+                                .select('*')
+                                .eq('user_id', userProfile.id)
+                                .order('created_at', { ascending: false })
+                                .limit(10);
+                            
+                            if (!invError && invoiceData) {
+                                invoices = invoiceData.map(inv => ({
+                                    id: inv.stripe_invoice_id || inv.id,
+                                    date: new Date(inv.created_at).toISOString().split('T')[0],
+                                    amount: `$${inv.amount.toFixed(2)}`,
+                                    status: inv.status === 'paid' ? 'Paid' : 'Pending'
+                                }));
+                            }
+                        }
                     
-                    setInfo({
-                        plan: userPlan,
-                        nextBillingDate: nextBillingDate || (userPlan.includes('Lifetime') ? null : "2025-12-01"),
-                        subscriptionStatus: subscriptionStatus,
-                        invoices: [
-                            { id: "inv_1", date: new Date().toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" },
-                            { id: "inv_2", date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" }
-                        ]
-                    });
+                        setInfo({
+                            plan: userPlan,
+                            nextBillingDate: nextBillingDate,
+                            subscriptionStatus: subscriptionStatus,
+                            invoices: invoices
+                        });
                         setLoading(false);
                     } catch (profileError) {
                         console.error('Error loading user profile:', profileError);
@@ -130,6 +161,32 @@ export const BillingPanel = () => {
             }
         };
         checkPaidStatus();
+        
+        // Handle Stripe checkout return
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session_id');
+        const canceled = urlParams.get('canceled');
+        
+        if (sessionId) {
+            // Payment successful - refresh subscription data
+            notifications.success('Payment successful! Your subscription is now active.', {
+                title: 'Welcome!',
+                description: 'You now have access to all premium features.',
+            });
+            // Remove session_id from URL
+            window.history.replaceState({}, '', window.location.pathname);
+            // Refresh subscription data
+            setTimeout(() => {
+                fetchInfo();
+                checkPaidStatus();
+            }, 1000);
+        } else if (canceled) {
+            notifications.info('Payment was canceled. You can try again anytime.', {
+                title: 'Payment Canceled',
+            });
+            // Remove canceled param from URL
+            window.history.replaceState({}, '', window.location.pathname);
+        }
     }, []);
 
     const handleSubscribe = async (planName?: string, priceId?: string) => {

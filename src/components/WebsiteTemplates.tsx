@@ -17,9 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { notifications } from '../utils/notifications';
 import { historyService } from '../utils/historyService';
 import { allTemplates as importedTemplates, serviceCategories } from '../data/websiteTemplateLibrary';
-import { deployWebsiteToVercel, getDeploymentStatus } from '../utils/vercel';
-import { savePublishedWebsite, getUserPublishedWebsites, updatePublishedWebsiteStatus } from '../utils/publishedWebsites';
-import { supabase } from '../utils/supabase';
+// Removed publish-related imports
 
 interface Template {
   id: string;
@@ -342,10 +340,7 @@ export const WebsiteTemplates: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('hero-1');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
-  const [showPublishDialog, setShowPublishDialog] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [publishWebsiteName, setPublishWebsiteName] = useState('');
-  const [vercelToken, setVercelToken] = useState('');
+  const [showPreviewDialog, setShowPreviewDialog] = useState<Template | SavedTemplate | null>(null);
 
   useEffect(() => {
     loadSavedTemplates();
@@ -561,6 +556,56 @@ export const WebsiteTemplates: React.FC = () => {
     return sectionTypes.map(type => requiredSections[type]);
   };
 
+  const handleViewTemplate = (template: Template | SavedTemplate) => {
+    setShowPreviewDialog(template);
+  };
+
+  const handleMakeCopy = async (template: Template | SavedTemplate) => {
+    try {
+      let sections: TemplateSection[];
+      let originalId: string;
+      let templateName: string;
+
+      if ('customizedSections' in template) {
+        // It's a saved template
+        sections = JSON.parse(JSON.stringify(template.customizedSections));
+        originalId = template.originalTemplateId;
+        templateName = `${template.name} (Copy)`;
+      } else {
+        // It's a base template
+        sections = completeTemplateSections(JSON.parse(JSON.stringify(template.sections)));
+        originalId = template.id;
+        templateName = `${template.name} (Copy)`;
+      }
+
+      const newTemplate: SavedTemplate = {
+        id: `template-${Date.now()}`,
+        name: templateName,
+        originalTemplateId: originalId,
+        customizedSections: sections,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Save the copy
+      await historyService.save(
+        'website-template',
+        newTemplate.name,
+        {
+          originalTemplateId: newTemplate.originalTemplateId,
+          sections: newTemplate.customizedSections
+        },
+        'draft'
+      );
+
+      await loadSavedTemplates();
+      notifications.success('Template copied successfully!', { title: 'Copied' });
+    } catch (error) {
+      console.error('Failed to copy template:', error);
+      notifications.error('Failed to copy template', { title: 'Error' });
+    }
+  };
+
   const handleEditTemplate = async (template?: SavedTemplate | Template, isBase: boolean = false) => {
     if (template && 'customizedSections' in template) {
       // It's a saved template - ensure it has all sections
@@ -570,7 +615,7 @@ export const WebsiteTemplates: React.FC = () => {
       };
       setEditingTemplate(completedTemplate);
     } else if (template && isBase) {
-      // Create new template from base template - AUTO-SAVE to saved websites
+      // Create new template from base template
       const baseTemplate = template as Template;
       const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(baseTemplate.sections)));
       const newTemplate: SavedTemplate = {
@@ -581,24 +626,6 @@ export const WebsiteTemplates: React.FC = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      
-      // Auto-save to saved templates when user clicks Edit
-      try {
-        await historyService.save(
-          'website-template',
-          newTemplate.name,
-          {
-            originalTemplateId: newTemplate.originalTemplateId,
-            sections: newTemplate.customizedSections
-          },
-          'draft'
-        );
-        await loadSavedTemplates();
-        notifications.success('Template saved to your collection!', { title: 'Saved' });
-      } catch (error) {
-        console.error('Failed to auto-save template:', error);
-        // Continue anyway - user can still edit
-      }
       
       setEditingTemplate(newTemplate);
       setTemplateName(newTemplate.name);
@@ -701,111 +728,7 @@ export const WebsiteTemplates: React.FC = () => {
     notifications.success('Template exported successfully!', { title: 'Exported' });
   };
 
-  const handlePublishWebsite = async () => {
-    if (!editingTemplate || !publishWebsiteName.trim()) {
-      notifications.error('Please enter a website name', { title: 'Name Required' });
-      return;
-    }
-
-    if (!vercelToken.trim()) {
-      notifications.error('Please enter your Vercel API token', { title: 'Token Required' });
-      return;
-    }
-
-    setIsPublishing(true);
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('You must be logged in to publish websites');
-      }
-
-      // Generate HTML from template
-      const htmlContent = generateHTMLFromTemplate(editingTemplate);
-      
-      // Deploy to Vercel
-      const deployment = await deployWebsiteToVercel({
-        name: publishWebsiteName,
-        htmlContent,
-        vercelToken: vercelToken.trim(),
-      });
-
-      // Save to database
-      const publishedWebsite = await savePublishedWebsite(user.id, {
-        name: publishWebsiteName,
-        template_id: editingTemplate.id,
-        template_data: editingTemplate,
-        vercel_deployment_id: deployment.id,
-        vercel_url: deployment.url,
-        vercel_project_id: 'User websites',
-        status: deployment.state === 'READY' ? 'ready' : 'deploying',
-      });
-
-      // Auto-save template to user's saved websites when published
-      try {
-        await historyService.save(
-          'website-template',
-          publishWebsiteName,
-          {
-            id: editingTemplate.id,
-            originalTemplateId: editingTemplate.originalTemplateId,
-            sections: editingTemplate.customizedSections,
-            published: true,
-            publishedAt: new Date().toISOString(),
-            vercelUrl: deployment.url,
-            vercelDeploymentId: deployment.id
-          },
-          'completed'
-        );
-        // Silent save - don't show notification to avoid interrupting user flow
-      } catch (error) {
-        console.error('Failed to auto-save published template:', error);
-        // Continue anyway - website is already published
-      }
-
-      // If still deploying, check status after a delay
-      if (deployment.state !== 'READY') {
-        setTimeout(async () => {
-          try {
-            const updatedDeployment = await getDeploymentStatus(deployment.id, vercelToken.trim());
-            await updatePublishedWebsiteStatus(
-              publishedWebsite.id,
-              updatedDeployment.state === 'READY' ? 'ready' : 'error',
-              updatedDeployment.url
-            );
-            if (updatedDeployment.state === 'READY') {
-              notifications.success(`Website published successfully! Visit: ${updatedDeployment.url}`, {
-                title: 'Published!',
-                duration: 10000,
-              });
-            }
-          } catch (error) {
-            console.error('Failed to check deployment status:', error);
-          }
-        }, 10000); // Check after 10 seconds
-      }
-
-      notifications.success(
-        `Website is being deployed! ${deployment.state === 'READY' ? 'Visit: ' + deployment.url : 'We\'ll notify you when it\'s ready.'}`,
-        { 
-          title: 'Publishing...',
-          duration: 10000,
-        }
-      );
-
-      setShowPublishDialog(false);
-      setPublishWebsiteName('');
-      setVercelToken('');
-    } catch (error: any) {
-      console.error('Failed to publish website:', error);
-      notifications.error(
-        error.message || 'Failed to publish website. Please check your Vercel token and try again.',
-        { title: 'Publish Error' }
-      );
-    } finally {
-      setIsPublishing(false);
-    }
-  };
+  // Removed handlePublishWebsite function
 
   const generateHTMLFromTemplate = (template: SavedTemplate): string => {
     // Generate complete HTML document
@@ -974,18 +897,52 @@ export const WebsiteTemplates: React.FC = () => {
                     <Badge variant="outline" className="text-xs">Mobile Responsive</Badge>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      onClick={() => handleViewTemplate(template)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
+                    <Button 
+                      onClick={() => handleMakeCopy(template)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copy
+                    </Button>
                     <Button 
                       onClick={() => handleEditTemplate(template, true)}
-                      className="flex-1"
+                      variant="outline"
                       size="sm"
+                      className="flex-1"
                     >
-                      <Edit className="w-4 h-4 mr-2" />
+                      <Edit className="w-4 h-4 mr-1" />
                       Edit
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="w-4 h-4 mr-2" />
-                      Preview
+                    <Button 
+                      onClick={() => {
+                        const savedTemplate: SavedTemplate = {
+                          id: template.id,
+                          name: template.name,
+                          originalTemplateId: template.id,
+                          customizedSections: template.sections,
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString()
+                        };
+                        handleExportHTML(savedTemplate);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Download
                     </Button>
                   </div>
                 </Card>
@@ -1022,7 +979,25 @@ export const WebsiteTemplates: React.FC = () => {
                     </Badge>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => handleViewTemplate(template)}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      View
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => handleMakeCopy(template)}
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copy
+                    </Button>
                     <Button 
                       size="sm" 
                       variant="outline" 
@@ -1035,15 +1010,17 @@ export const WebsiteTemplates: React.FC = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
+                      className="flex-1"
                       onClick={() => handleExportHTML(template)}
                     >
                       <Download className="w-3 h-3 mr-1" />
-                      Export
+                      Download
                     </Button>
                     <Button 
                       size="sm" 
                       variant="outline"
                       onClick={() => handleDeleteTemplate(template.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
@@ -1085,87 +1062,54 @@ export const WebsiteTemplates: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Publish Website Dialog */}
-      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
-        <DialogContent className="max-w-md">
+      {/* Preview Dialog */}
+      <Dialog open={showPreviewDialog !== null} onOpenChange={() => setShowPreviewDialog(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Rocket className="w-5 h-5 text-indigo-600" />
-              Publish Website to Vercel
+            <DialogTitle>
+              {showPreviewDialog && ('name' in showPreviewDialog ? showPreviewDialog.name : showPreviewDialog.name)}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="website-name">Website Name</Label>
-              <Input
-                id="website-name"
-                value={publishWebsiteName}
-                onChange={(e) => setPublishWebsiteName(e.target.value)}
-                placeholder="My Awesome Website"
-                className="mt-2"
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                This will be used as the project name in Vercel
-              </p>
-            </div>
-            <div>
-              <Label htmlFor="vercel-token">Vercel API Token</Label>
-              <Input
-                id="vercel-token"
-                type="password"
-                value={vercelToken}
-                onChange={(e) => setVercelToken(e.target.value)}
-                placeholder="Enter your Vercel API token"
-                className="mt-2"
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Get your token from{' '}
-                <a 
-                  href="https://vercel.com/account/tokens" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline"
-                >
-                  vercel.com/account/tokens
-                </a>
-              </p>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Your website will be deployed to a project called "User websites" in Vercel. 
-                The deployment URL will be shared with you once ready.
-              </p>
-            </div>
+          <div className="py-4">
+            {showPreviewDialog && (
+              <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+                {('customizedSections' in showPreviewDialog ? showPreviewDialog : {
+                  id: showPreviewDialog.id,
+                  name: showPreviewDialog.name,
+                  originalTemplateId: showPreviewDialog.id,
+                  customizedSections: showPreviewDialog.sections,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                } as SavedTemplate).customizedSections.map(section => (
+                  <div key={section.id}>
+                    {renderSectionPreview(section)}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setShowPublishDialog(false);
-                setPublishWebsiteName('');
-                setVercelToken('');
-              }}
-              disabled={isPublishing}
-            >
-              Cancel
+            <Button variant="outline" onClick={() => setShowPreviewDialog(null)}>
+              Close
             </Button>
-            <Button 
-              onClick={handlePublishWebsite}
-              disabled={isPublishing || !publishWebsiteName.trim() || !vercelToken.trim()}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-            >
-              {isPublishing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Publishing...
-                </>
-              ) : (
-                <>
-                  <Rocket className="w-4 h-4 mr-2" />
-                  Publish Website
-                </>
-              )}
-            </Button>
+            {showPreviewDialog && (
+              <Button 
+                onClick={() => {
+                  if (showPreviewDialog) {
+                    if ('customizedSections' in showPreviewDialog) {
+                      handleEditTemplate(showPreviewDialog);
+                    } else {
+                      handleEditTemplate(showPreviewDialog, true);
+                    }
+                    setShowPreviewDialog(null);
+                  }
+                }}
+                className="theme-button-primary"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Template
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1235,13 +1179,12 @@ const TemplateEditor: React.FC<{
             <Button 
               onClick={() => {
                 if (!editingTemplate) return;
-                setPublishWebsiteName(editingTemplate.name);
-                setShowPublishDialog(true);
+                handleExportHTML(editingTemplate);
               }}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
             >
-              <Rocket className="w-4 h-4 mr-2" />
-              Publish Website
+              <Download className="w-4 h-4 mr-2" />
+              Download Template
             </Button>
           </div>
         </div>

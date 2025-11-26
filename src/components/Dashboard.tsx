@@ -334,25 +334,6 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
             </div>
           </Card>
 
-          {/* My Websites */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
-                  <Globe className="w-6 h-6 text-white" />
-                </div>
-                <Badge className="bg-blue-100 text-blue-700 border-blue-300">
-                  Published
-                </Badge>
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-1">
-                {(stats?.userResources?.myWebsites || 0).toLocaleString()}
-              </h3>
-              <p className="text-sm text-slate-600">My Websites</p>
-            </div>
-          </Card>
-
           {/* My Presets */}
           <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>

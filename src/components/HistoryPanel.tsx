@@ -482,24 +482,26 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                                 >
                                     <CardContent className="p-4">
                                         {/* Header */}
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-start gap-3 flex-1">
-                                                <div className="p-2 bg-slate-100 rounded-lg">
+                                        <div className="flex items-start justify-between mb-4 gap-4">
+                                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                                                <div className="p-2 bg-slate-100 rounded-lg flex-shrink-0">
                                                     {getTypeIcon(item.type)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className="font-semibold text-slate-900 text-base truncate" title={item.name}>
+                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                        <h3 className="font-semibold text-slate-900 text-base truncate max-w-[400px]" title={item.name}>
                                                             {item.name}
                                                         </h3>
-                                                        {item.status === 'draft' && (
-                                                            <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-xs">
-                                                                Draft
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                            {item.status === 'draft' && (
+                                                                <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-xs whitespace-nowrap">
+                                                                    Draft
+                                                                </Badge>
+                                                            )}
+                                                            <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                                                                {getTypeLabel(item.type)}
                                                             </Badge>
-                                                        )}
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            {getTypeLabel(item.type)}
-                                                        </Badge>
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center gap-3 text-xs text-slate-500">
                                                         <span className="flex items-center gap-1">
@@ -514,7 +516,7 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-shrink-0">
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm"
@@ -538,7 +540,7 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                                                 <Button 
                                                     size="sm"
                                                     onClick={() => onLoadItem(item.type, item.data)}
-                                                    className="bg-indigo-600 text-white hover:bg-indigo-700"
+                                                    className="bg-indigo-600 text-white hover:bg-indigo-700 whitespace-nowrap"
                                                 >
                                                     Restore <ArrowRight className="w-4 h-4 ml-2" />
                                                 </Button>
