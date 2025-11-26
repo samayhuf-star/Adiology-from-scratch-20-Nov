@@ -590,6 +590,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [tempNegatives, setTempNegatives] = useState('');
   // Bug_37: Store negative keywords per group
   const [groupNegativeKeywords, setGroupNegativeKeywords] = useState<{ [groupName: string]: string[] }>({});
+  // Track which groups have expanded keywords view
+  const [expandedKeywords, setExpandedKeywords] = useState<{ [groupName: string]: boolean }>({});
   // Preset ad groups - used when loading from preset
   const [presetAdGroups, setPresetAdGroups] = useState<Array<{ name: string; keywords: string[] }> | null>(null);
   
@@ -4066,7 +4068,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {group.keywords.map((kw, kidx) => (
+                            {(expandedKeywords[group.name] ? group.keywords : group.keywords.slice(0, 10)).map((kw, kidx) => (
                               <div key={kidx} className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100">
                                 <span className="text-purple-900 font-mono font-medium">
                                   {formatKeywordDisplay(kw)}
@@ -4080,6 +4082,28 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                                 </Badge>
                               </div>
                             ))}
+                            {group.keywords.length > 10 && !expandedKeywords[group.name] && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setExpandedKeywords(prev => ({ ...prev, [group.name]: true }))}
+                                className="w-full h-7 text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 mt-2"
+                              >
+                                <ChevronRight className="w-3 h-3 mr-1 rotate-90" />
+                                Show More ({group.keywords.length - 10} more keywords)
+                              </Button>
+                            )}
+                            {expandedKeywords[group.name] && group.keywords.length > 10 && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setExpandedKeywords(prev => ({ ...prev, [group.name]: false }))}
+                                className="w-full h-7 text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 mt-2"
+                              >
+                                <ChevronRight className="w-3 h-3 mr-1 -rotate-90" />
+                                Show Less
+                              </Button>
+                            )}
                             <button 
                               onClick={() => handleEditKeywords(group.name, group.keywords)}
                               className="text-xs text-purple-600 hover:text-purple-700 font-semibold hover:underline mt-2 flex items-center gap-1"
