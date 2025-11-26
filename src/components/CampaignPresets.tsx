@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Download, Edit, CheckCircle, Package, Sparkles, Zap, TrendingUp, X, Eye } from 'lucide-react';
-import { campaignPresets, CampaignPreset } from '../data/campaignPresets';
+import { campaignPresets, CampaignPreset, structureDescriptions } from '../data/campaignPresets';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { notifications } from '../utils/notifications';
@@ -470,9 +470,29 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
         </div>
       </div>
 
-      {/* Presets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredPresets.map((preset) => (
+      {/* Presets Grid - Grouped by Structure */}
+      <div className="space-y-12">
+        {Object.keys(structureDescriptions).map((structureKey) => {
+          const structure = structureKey as keyof typeof structureDescriptions;
+          const structureInfo = structureDescriptions[structure];
+          const presetsForStructure = filteredPresets.filter(p => p.structure === structure);
+          
+          if (presetsForStructure.length === 0) return null;
+          
+          return (
+            <div key={structure}>
+              {/* Structure Header */}
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">{structureInfo.icon}</span>
+                  <h2 className="text-2xl font-bold text-slate-800">{structureInfo.name}</h2>
+                </div>
+                <p className="text-slate-600 ml-12">{structureInfo.description}</p>
+              </div>
+              
+              {/* Presets Grid for this Structure */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                {presetsForStructure.map((preset) => (
           <div
             key={preset.slug}
             className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all cursor-pointer group"
@@ -546,7 +566,11 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
               </div>
             </div>
           </div>
-        ))}
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {filteredPresets.length === 0 && (
