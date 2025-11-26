@@ -197,7 +197,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <Card className="border border-slate-200 shadow-2xl bg-white backdrop-blur-xl">
+        <Card className="border border-slate-200 shadow-2xl bg-white backdrop-blur-xl relative overflow-visible">
           <CardHeader className="space-y-1 pb-4">
             <div className="flex items-center justify-between mb-4">
               <Button
@@ -236,8 +236,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                 : 'Start building winning campaigns today'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="relative">
+            <form onSubmit={handleSubmit} className="space-y-4 relative">
               {error && (
                 <Alert variant="destructive" className="border-red-500 bg-red-50">
                   <AlertCircle className="w-4 h-4 text-red-600" />
