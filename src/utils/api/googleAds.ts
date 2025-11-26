@@ -4,7 +4,8 @@ import { captureError } from '../errorTracking';
 const GOOGLE_ADS_API_TOKEN = 'UzifgEs9SwOBo5bP_vmi2A';
 const GOOGLE_ADS_API_BASE = 'https://googleads.googleapis.com/v16/customers';
 const AI_API_KEY = 'AIzaSyBYyBnc99JTLGvUY3qdGFksUlf7roGUdao';
-const AI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+// Use gemini-1.5-flash (gemini-pro is deprecated)
+const AI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 interface KeywordGenerationRequest {
   seedKeywords: string[];
@@ -49,7 +50,7 @@ export async function generateKeywords(
     negativeKeywords = []
   } = request;
 
-  // Try Google Ads API first
+  // Try Google Ads API first (will immediately throw due to CORS)
   try {
     const keywords = await generateKeywordsFromGoogleAds({
       seedKeywords,
@@ -74,12 +75,8 @@ export async function generateKeywords(
       };
     }
   } catch (error) {
-    console.warn('Google Ads API failed, falling back to AI:', error);
-    captureError(error instanceof Error ? error : new Error('Google Ads API error'), {
-      module: 'googleAds',
-      action: 'generateKeywords',
-      metadata: { seedKeywords }
-    });
+    // Silently fall back to AI (expected due to CORS restrictions)
+    // Don't log or capture expected CORS errors
   }
 
   // Fallback to AI
@@ -121,80 +118,17 @@ export async function generateKeywords(
 
 /**
  * Generate keywords using Google Ads Keyword Planner API
- * Uses the provided API token for authentication
- * Note: Google Ads API typically requires OAuth2 authentication and a customer ID
- * If authentication fails, this will throw an error to trigger AI fallback
+ * Note: Direct browser calls to Google Ads API are blocked by CORS
+ * This function immediately throws to trigger AI fallback
+ * In production, Google Ads API calls should be made from a backend server
  */
 async function generateKeywordsFromGoogleAds(
   request: KeywordGenerationRequest & { location: string; language: string }
 ): Promise<KeywordResult[]> {
-  const { seedKeywords, location, language, maxResults, negativeKeywords } = request;
-  
-  try {
-    // Google Ads API endpoint for generating keyword ideas
-    // Note: This requires proper OAuth2 setup with access token and customer ID
-    // The token provided might be a developer token, which requires additional OAuth2 flow
-    
-    // Try direct API call first (may fail without OAuth2)
-    const response = await fetch(
-      'https://googleads.googleapis.com/v16/customers:generateKeywordIdeas',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GOOGLE_ADS_API_TOKEN}`,
-          'Content-Type': 'application/json',
-          'developer-token': GOOGLE_ADS_API_TOKEN
-        },
-        body: JSON.stringify({
-          // Note: customerId is required but may not be available without OAuth2
-          // This will likely fail and trigger AI fallback
-          keywordSeed: {
-            keywords: seedKeywords
-          },
-          geoTargetConstants: [`geoTargetConstants/${location}`],
-          languageConstant: `languageConstants/${language}`,
-          pageSize: Math.min(maxResults, 10000), // Google Ads API limit
-          includeAdultKeywords: false
-        })
-      }
-    );
-
-    if (!response.ok) {
-      // If authentication fails (401/403), throw to trigger AI fallback
-      if (response.status === 401 || response.status === 403) {
-        throw new Error('Google Ads API authentication failed - using AI fallback');
-      }
-      const errorText = await response.text();
-      console.error('Google Ads API error:', response.status, errorText);
-      throw new Error(`Google Ads API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // Transform Google Ads API response to our format
-    const keywords: KeywordResult[] = [];
-    
-    if (data.results && Array.isArray(data.results)) {
-      for (const result of data.results) {
-        const keywordText = result.text || result.keywordText;
-        if (keywordText && !containsNegativeKeyword(keywordText, negativeKeywords)) {
-          const metrics = result.keywordIdeaMetrics || result.keyword_idea_metrics || {};
-          keywords.push({
-            keyword: keywordText,
-            avgMonthlySearches: parseInt(metrics.avgMonthlySearches || metrics.avg_monthly_searches || '0'),
-            competition: mapCompetition(metrics.competition),
-            competitionIndex: parseInt(metrics.competitionIndex || metrics.competition_index || '0')
-          });
-        }
-      }
-    }
-    
-    return keywords.slice(0, maxResults);
-  } catch (error) {
-    // If Google Ads API fails (e.g., authentication issues, CORS, etc.), throw to trigger fallback
-    console.warn('Google Ads API call failed, will use AI fallback:', error);
-    throw error;
-  }
+  // Google Ads API cannot be called directly from browser due to CORS restrictions
+  // Always throw to use AI fallback instead
+  // TODO: Implement backend endpoint for Google Ads API if needed
+  throw new Error('Google Ads API requires backend proxy - using AI fallback');
 }
 
 /**
@@ -343,7 +277,9 @@ function mapCompetition(competition?: string): 'low' | 'medium' | 'high' | undef
 
 /**
  * Simplified Google Ads API call using Keyword Planner API
- * Note: This requires proper OAuth2 setup in production
+ * Note: Direct browser calls to Google Ads API are blocked by CORS
+ * This function immediately throws to trigger AI fallback
+ * In production, Google Ads API calls should be made from a backend server
  */
 export async function generateKeywordsFromGoogleAdsSimplified(
   seedKeywords: string[],
@@ -352,64 +288,9 @@ export async function generateKeywordsFromGoogleAdsSimplified(
   maxResults: number = 300,
   negativeKeywords: string[] = []
 ): Promise<KeywordResult[]> {
-  // This is a placeholder for the actual Google Ads API implementation
-  // In production, you would:
-  // 1. Implement OAuth2 flow to get access token
-  // 2. Get customer ID from authenticated user
-  // 3. Call Google Ads API with proper authentication
-  
-  // For now, we'll use a direct API approach if the token works
-  // Otherwise fall back to AI
-  
-  try {
-    // Attempt to use Google Ads API directly
-    // Note: This may not work without proper OAuth2 setup
-    const response = await fetch(
-      'https://googleads.googleapis.com/v16/customers:generateKeywordIdeas',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GOOGLE_ADS_API_TOKEN}`,
-          'Content-Type': 'application/json',
-          'developer-token': GOOGLE_ADS_API_TOKEN
-        },
-        body: JSON.stringify({
-          customerId: 'YOUR_CUSTOMER_ID', // Would need from OAuth
-          keywordSeed: {
-            keywords: seedKeywords
-          },
-          geoTargetConstants: [`geoTargetConstants/${locationId}`],
-          languageConstant: `languageConstants/${languageId}`,
-          pageSize: maxResults
-        })
-      }
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-      const keywords: KeywordResult[] = [];
-      
-      if (data.results) {
-        for (const result of data.results) {
-          const keyword = result.text;
-          if (keyword && !containsNegativeKeyword(keyword, negativeKeywords)) {
-            keywords.push({
-              keyword,
-              avgMonthlySearches: result.keywordIdeaMetrics?.avgMonthlySearches,
-              competition: mapCompetition(result.keywordIdeaMetrics?.competition),
-              competitionIndex: result.keywordIdeaMetrics?.competitionIndex
-            });
-          }
-        }
-      }
-      
-      return keywords.slice(0, maxResults);
-    }
-    
-    throw new Error('Google Ads API request failed');
-  } catch (error) {
-    // Re-throw to trigger AI fallback
-    throw error;
-  }
+  // Google Ads API cannot be called directly from browser due to CORS restrictions
+  // Always throw to use AI fallback instead
+  // TODO: Implement backend endpoint for Google Ads API if needed
+  throw new Error('Google Ads API requires backend proxy - using AI fallback');
 }
 
