@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Layout, Eye, Edit, Copy, Save, Download, Globe, 
   CheckCircle, AlertCircle, Palette, Type, Image as ImageIcon,
-  Settings, Code, Smartphone, Monitor, X, Plus, Trash2
+  Settings, Code, Smartphone, Monitor, X, Plus, Trash2, Search, Filter
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -13,7 +13,10 @@ import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { notifications } from '../utils/notifications';
+import { historyService } from '../utils/historyService';
+import { allTemplates as importedTemplates, serviceCategories } from '../data/websiteTemplateLibrary';
 
 interface Template {
   id: string;
@@ -21,6 +24,7 @@ interface Template {
   description: string;
   thumbnail: string;
   category: string;
+  color?: string;
   sections: TemplateSection[];
 }
 
@@ -325,9 +329,12 @@ For questions about these Terms, contact us:
 };
 
 export const WebsiteTemplates: React.FC = () => {
+  const [baseTemplates] = useState<Template[]>(importedTemplates as Template[]);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<SavedTemplate | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [activeSection, setActiveSection] = useState<string>('hero-1');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -337,27 +344,58 @@ export const WebsiteTemplates: React.FC = () => {
     loadSavedTemplates();
   }, []);
 
-  const loadSavedTemplates = () => {
+  const loadSavedTemplates = async () => {
     try {
-      const saved = localStorage.getItem('website_templates');
-      if (saved) {
-        setSavedTemplates(JSON.parse(saved));
-      }
+      const saved = await historyService.getByType('website-template');
+      const converted = saved.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        originalTemplateId: item.data?.originalTemplateId || 'unknown',
+        customizedSections: item.data?.sections || [],
+        createdAt: item.timestamp,
+        updatedAt: item.timestamp
+      }));
+      setSavedTemplates(converted);
     } catch (error) {
       console.error('Failed to load saved templates', error);
     }
   };
 
-  const handleEditTemplate = (template?: SavedTemplate) => {
-    if (template) {
+  // Filter templates based on category and search
+  const filteredTemplates = baseTemplates.filter((template) => {
+    const matchesCategory = selectedCategory === 'All' || template.category === selectedCategory;
+    const matchesSearch = searchQuery === '' || 
+      template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      template.category.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleEditTemplate = (template?: SavedTemplate | Template, isBase: boolean = false) => {
+    if (template && 'customizedSections' in template) {
+      // It's a saved template
       setEditingTemplate(template);
+    } else if (template && isBase) {
+      // Create new template from base template
+      const baseTemplate = template as Template;
+      const newTemplate: SavedTemplate = {
+        id: `template-${Date.now()}`,
+        name: `${baseTemplate.name} (Custom)`,
+        originalTemplateId: baseTemplate.id,
+        customizedSections: JSON.parse(JSON.stringify(baseTemplate.sections)),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      setEditingTemplate(newTemplate);
+      setTemplateName(newTemplate.name);
     } else {
-      // Create new template from default
+      // Create new template from first base template
+      const firstTemplate = baseTemplates[0];
       const newTemplate: SavedTemplate = {
         id: `template-${Date.now()}`,
         name: 'Untitled Template',
-        originalTemplateId: defaultTemplate.id,
-        customizedSections: JSON.parse(JSON.stringify(defaultTemplate.sections)),
+        originalTemplateId: firstTemplate.id,
+        customizedSections: JSON.parse(JSON.stringify(firstTemplate.sections)),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -366,7 +404,7 @@ export const WebsiteTemplates: React.FC = () => {
     setShowEditor(true);
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!editingTemplate) return;
 
     if (!templateName.trim()) {
@@ -374,24 +412,23 @@ export const WebsiteTemplates: React.FC = () => {
       return;
     }
 
-    const updatedTemplate = {
-      ...editingTemplate,
-      name: templateName,
-      updatedAt: new Date().toISOString()
-    };
+    try {
+      const updatedTemplate = {
+        ...editingTemplate,
+        name: templateName,
+        updatedAt: new Date().toISOString()
+      };
 
-    const existingIndex = savedTemplates.findIndex(t => t.id === updatedTemplate.id);
-    let updatedTemplates;
-
-    if (existingIndex >= 0) {
-      updatedTemplates = [...savedTemplates];
-      updatedTemplates[existingIndex] = updatedTemplate;
-    } else {
-      updatedTemplates = [...savedTemplates, updatedTemplate];
-    }
-
-    setSavedTemplates(updatedTemplates);
-    localStorage.setItem('website_templates', JSON.stringify(updatedTemplates));
+      await historyService.save({
+        id: updatedTemplate.id,
+        type: 'website-template',
+        name: templateName,
+        timestamp: updatedTemplate.updatedAt,
+        data: {
+          originalTemplateId: updatedTemplate.originalTemplateId,
+          sections: updatedTemplate.customizedSections
+        }
+      });
 
     notifications.success('Template saved successfully!', { title: 'Saved' });
     setShowSaveDialog(false);

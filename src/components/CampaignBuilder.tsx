@@ -1878,7 +1878,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         setUrlError('');
                                     }
                                 }}
-                                className={`pl-10 py-6 text-lg bg-white ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`pl-10 pr-4 py-6 text-lg bg-white ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
                         </div>
                         {urlError && (
