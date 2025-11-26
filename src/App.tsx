@@ -52,6 +52,35 @@ const App = () => {
   const [historyData, setHistoryData] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Valid tab IDs - used for route validation
+  const validTabIds = new Set([
+    'dashboard',
+    'campaign-presets',
+    'builder-2',
+    'website-templates',
+    'my-websites',
+    'keyword-planner',
+    'keyword-mixer',
+    'ads-builder',
+    'negative-keywords',
+    'csv-validator-2',
+    'history',
+    'settings',
+    'billing',
+    'support',
+    'support-help'
+  ]);
+
+  // Safe setActiveTab wrapper that validates and redirects to dashboard if invalid
+  const setActiveTabSafe = (tabId: string) => {
+    if (validTabIds.has(tabId)) {
+      setActiveTab(tabId);
+    } else {
+      console.warn(`Invalid tab ID "${tabId}" - redirecting to dashboard`);
+      setActiveTab('dashboard');
+    }
+  };
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Campaign Created', message: 'Your campaign "Summer Sale" has been created successfully', time: '2 hours ago', read: false },
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
@@ -79,7 +108,7 @@ const App = () => {
     
     const targetTab = typeToTabMap[type] || type;
     setHistoryData(data);
-    setActiveTab(targetTab);
+    setActiveTabSafe(targetTab);
     
     // Show success notification
     notifications.success('History item restored successfully', {
@@ -99,18 +128,18 @@ const App = () => {
     // Redirect based on notification type
     const title = notification.title.toLowerCase();
     if (title.includes('campaign')) {
-      setActiveTab('builder-2');
+      setActiveTabSafe('builder-2');
     } else if (title.includes('export') || title.includes('csv')) {
-      setActiveTab('csv-validator');
+      setActiveTabSafe('csv-validator-2');
     } else if (title.includes('billing') || title.includes('subscription')) {
-      setActiveTab('settings');
+      setActiveTabSafe('settings');
       // Optionally open billing tab in settings
       const settingsPanel = document.querySelector('[data-settings-tab="billing"]');
       if (settingsPanel) {
         (settingsPanel as HTMLElement).click();
       }
     } else if (title.includes('keyword')) {
-      setActiveTab('keyword-planner');
+      setActiveTabSafe('keyword-planner');
     }
   };
 
@@ -118,7 +147,7 @@ const App = () => {
     // Navigate to a notifications view or show all notifications
     // For now, we'll just scroll to show all notifications in the dropdown
     // In a full implementation, this could open a dedicated notifications panel
-    setActiveTab('settings');
+    setActiveTabSafe('settings');
     // You could also create a dedicated notifications tab/page
   };
 
@@ -367,6 +396,14 @@ const App = () => {
     };
   }, []);
 
+  // Validate activeTab and redirect to dashboard if invalid
+  useEffect(() => {
+    if (!validTabIds.has(activeTab)) {
+      console.warn(`Invalid activeTab "${activeTab}" - redirecting to dashboard`);
+      setActiveTab('dashboard');
+    }
+  }, [activeTab]);
+
   // Handle route/view state when auth or URL changes
   useEffect(() => {
     if (loading) return;
@@ -423,7 +460,7 @@ const App = () => {
             subscription_status: 'active',
           });
         }
-        setActiveTab('dashboard');
+        setActiveTabSafe('dashboard');
         setView('user');
         window.history.replaceState({}, '', '/');
       return;
@@ -613,7 +650,7 @@ const App = () => {
     );
     
     if (matchingItem) {
-      setActiveTab(matchingItem.id);
+      setActiveTabSafe(matchingItem.id);
       setSearchQuery('');
       setShowSearchSuggestions(false);
     } else {
@@ -637,7 +674,7 @@ const App = () => {
 
       const matchedTab = termMap[suggestion.toLowerCase()];
       if (matchedTab) {
-        setActiveTab(matchedTab);
+        setActiveTabSafe(matchedTab);
       }
       setSearchQuery('');
       setShowSearchSuggestions(false);
@@ -706,7 +743,7 @@ const App = () => {
           if (authenticated && user) {
             window.history.pushState({}, '', '/');
             setAppView('user');
-            setActiveTab('dashboard');
+            setActiveTabSafe('dashboard');
           } else {
             window.history.pushState({}, '', '/');
             setAppView('home');
@@ -772,7 +809,7 @@ const App = () => {
             
             // Now navigate to dashboard (user state is set)
             setAppView('user');
-            setActiveTab('dashboard');
+            setActiveTabSafe('dashboard');
             
             // Fetch full profile in background (with timeout)
             Promise.race([
@@ -874,7 +911,7 @@ const App = () => {
       case 'campaign-presets':
         return <CampaignPresets onLoadPreset={(presetData) => {
           setHistoryData(presetData);
-          setActiveTab('builder-2');
+          setActiveTabSafe('builder-2');
         }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
@@ -903,9 +940,12 @@ const App = () => {
       case 'billing':
         return <SettingsPanel defaultTab="billing" />;
       case 'dashboard':
-        return <Dashboard user={user} onNavigate={setActiveTab} />;
+        return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
       default:
-        return <Dashboard user={user} onNavigate={setActiveTab} />;
+        // Fallback: redirect to dashboard for any invalid/missing route
+        console.warn(`Invalid route/tab "${activeTab}" - redirecting to dashboard`);
+        setActiveTabSafe('dashboard');
+        return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
     }
   };
 
@@ -955,7 +995,7 @@ const App = () => {
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id);
+                  setActiveTabSafe(item.id);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
                   isActive
@@ -1003,7 +1043,7 @@ const App = () => {
                         item.label.toLowerCase().includes(searchQuery.toLowerCase())
                       );
                       if (matchingItem) {
-                        setActiveTab(matchingItem.id);
+                        setActiveTabSafe(matchingItem.id);
                         setSearchQuery('');
                         setShowSearchSuggestions(false);
                       }
@@ -1148,15 +1188,15 @@ const App = () => {
             </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setActiveTab('settings')}>
+                <DropdownMenuItem onClick={() => setActiveTabSafe('settings')}>
                   <User className="w-4 h-4 mr-2 shrink-0" />
                   Account Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab('billing')}>
+                <DropdownMenuItem onClick={() => setActiveTabSafe('billing')}>
                   <Shield className="w-4 h-4 mr-2 shrink-0" />
                   Billing
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab('support')}>
+                <DropdownMenuItem onClick={() => setActiveTabSafe('support')}>
                   <HelpCircle className="w-4 h-4 mr-2 shrink-0" />
                   Support
                 </DropdownMenuItem>

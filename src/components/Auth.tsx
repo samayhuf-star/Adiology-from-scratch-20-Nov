@@ -139,8 +139,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
           
           if (result?.user) {
             notifications.success('Account created successfully!', {
-              title: 'Check Your Email',
-              description: 'We\'ve sent a verification link to your email. Please verify your email before signing in.',
+              title: 'Welcome to Adiology',
+              description: 'Please verify your email, then select a plan to get started.',
             });
 
             // Clear form
@@ -149,15 +149,17 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
             setConfirmPassword('');
             setName('');
             
-            // Switch to login mode and stay on this page (don't redirect)
-            setIsLogin(true);
-            setError('');
             setIsLoading(false);
             
-            // Show a message that they can login after verification
-            notifications.info('Please verify your email, then sign in.', {
-              title: 'Verification Required',
-              description: 'Check your inbox and click the verification link. Once verified, you can sign in below.',
+            // Redirect to login, then user can go to billing to select plan
+            // Note: User needs to verify email first, but we'll show billing after login
+            setIsLogin(true);
+            setError('');
+            
+            // Show info about next steps
+            notifications.info('Verify your email, then sign in to select a plan.', {
+              title: 'Next Steps',
+              description: '1. Check your email and verify your account. 2. Sign in. 3. Go to Billing to select a plan.',
             });
             return;
           } else {

@@ -139,18 +139,19 @@ export const BillingPanel = () => {
             const selectedPlan = planName || 'Lifetime Unlimited';
             const selectedPriceId = priceId || PLAN_PRICE_IDS.lifetime_unlimited;
             
-            // Get plan amount
-            const planAmounts: Record<string, number> = {
-                'Lifetime Limited': 99.99,
-                'Lifetime Unlimited': 199,
-                'Monthly Limited': 49.99,
-                'Monthly Unlimited': 99.99,
-            };
-            const amount = planAmounts[selectedPlan] || 199;
-            const isSubscription = selectedPlan.includes('Monthly');
+            // Get current user for checkout
+            const { getCurrentAuthUser } = await import('../utils/auth');
+            const user = await getCurrentAuthUser();
             
-            // Redirect to payment page
-            window.location.href = `/payment?plan=${encodeURIComponent(selectedPlan)}&priceId=${encodeURIComponent(selectedPriceId)}&amount=${amount}&subscription=${isSubscription}`;
+            if (!user) {
+                throw new Error('You must be logged in to subscribe');
+            }
+            
+            // Create Stripe checkout session
+            await createCheckoutSession(selectedPriceId, selectedPlan, user.id, user.email);
+            
+            // Note: User will be redirected to Stripe, so we don't need to setProcessing(false)
+            // The redirect happens in createCheckoutSession
         } catch (error) {
             console.error("Subscription error", error);
             notifications.error('Failed to initiate checkout. Please try again.', {

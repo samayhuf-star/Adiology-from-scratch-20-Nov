@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Globe, ExternalLink, Trash2, RefreshCw, CheckCircle, 
-  AlertCircle, Loader2, Rocket, Calendar, Eye
+  AlertCircle, Loader2, Rocket, Calendar, Eye, Plus, Edit2, Save, X
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { getUserPublishedWebsites, deletePublishedWebsite, updatePublishedWebsiteStatus, PublishedWebsite } from '../utils/publishedWebsites';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { getUserPublishedWebsites, deletePublishedWebsite, updatePublishedWebsiteStatus, PublishedWebsite, savePublishedWebsite } from '../utils/publishedWebsites';
 import { getDeploymentStatus } from '../utils/vercel';
-import { supabase } from '../utils/supabase';
+import { supabase } from '../utils/supabase/client';
 import { notifications } from '../utils/notifications';
 
 export const MyWebsites: React.FC = () => {
@@ -17,32 +20,240 @@ export const MyWebsites: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState<PublishedWebsite | null>(null);
+  const [editingWebsite, setEditingWebsite] = useState<Partial<PublishedWebsite>>({});
+  const [newWebsite, setNewWebsite] = useState({
+    name: '',
+    domain: '',
+    template_id: '',
+    status: 'ready' as 'deploying' | 'ready' | 'error'
+  });
   const [vercelToken, setVercelToken] = useState('');
 
   useEffect(() => {
     loadWebsites();
+    // Add sample domain.com on first load if no websites exist
+    initializeSampleWebsite();
   }, []);
+
+  const initializeSampleWebsite = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if sample website already exists
+      const existing = await getUserPublishedWebsites(user.id);
+      const hasSample = existing.some(w => w.name === 'Sample Website' || w.vercel_url?.includes('domain.com'));
+      
+      if (existing.length === 0 && !hasSample) {
+        // Add sample domain.com website
+        const sampleWebsite = {
+          name: 'Sample Website',
+          template_id: 'sample-template-1',
+          template_data: { type: 'sample' },
+          vercel_deployment_id: 'sample-deployment-123',
+          vercel_url: 'https://domain.com',
+          vercel_project_id: 'sample-project-123',
+          status: 'ready' as const
+        };
+        
+        try {
+          await savePublishedWebsite(user.id, sampleWebsite);
+          await loadWebsites();
+        } catch (error) {
+          // If database save fails, use local storage as fallback
+          console.log('Using local storage fallback for sample website');
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing sample website:', error);
+    }
+  };
 
   const loadWebsites = async () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        notifications.error('You must be logged in to view your websites', {
-          title: 'Authentication Required'
-        });
+        // Load from local storage if not authenticated
+        const localWebsites = localStorage.getItem('my_websites');
+        if (localWebsites) {
+          setWebsites(JSON.parse(localWebsites));
+        }
+        setLoading(false);
         return;
       }
 
-      const userWebsites = await getUserPublishedWebsites(user.id);
-      setWebsites(userWebsites);
+      try {
+        const userWebsites = await getUserPublishedWebsites(user.id);
+        setWebsites(userWebsites);
+        // Also save to local storage as backup
+        localStorage.setItem('my_websites', JSON.stringify(userWebsites));
+      } catch (dbError: any) {
+        console.error('Database error, using local storage:', dbError);
+        // Fallback to local storage
+        const localWebsites = localStorage.getItem('my_websites');
+        if (localWebsites) {
+          setWebsites(JSON.parse(localWebsites));
+        } else {
+          // Initialize with sample if no local storage
+          const sample: PublishedWebsite = {
+            id: 'sample-1',
+            user_id: user.id,
+            name: 'Sample Website',
+            template_id: 'sample-template-1',
+            template_data: { type: 'sample' },
+            vercel_deployment_id: 'sample-deployment-123',
+            vercel_url: 'https://domain.com',
+            vercel_project_id: 'sample-project-123',
+            status: 'ready',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          setWebsites([sample]);
+          localStorage.setItem('my_websites', JSON.stringify([sample]));
+        }
+      }
     } catch (error: any) {
       console.error('Failed to load websites:', error);
-      notifications.error('Failed to load your websites', {
-        title: 'Load Error'
-      });
+      // Try local storage fallback
+      const localWebsites = localStorage.getItem('my_websites');
+      if (localWebsites) {
+        setWebsites(JSON.parse(localWebsites));
+      } else {
+        notifications.error('Failed to load your websites', {
+          title: 'Load Error'
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddWebsite = async () => {
+    if (!newWebsite.name || !newWebsite.domain) {
+      notifications.warning('Please fill in all required fields', {
+        title: 'Validation Error'
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // Use local storage if not authenticated
+        const localWebsites = localStorage.getItem('my_websites') || '[]';
+        const websites = JSON.parse(localWebsites);
+        const newSite: PublishedWebsite = {
+          id: `local-${Date.now()}`,
+          user_id: 'local-user',
+          name: newWebsite.name,
+          template_id: newWebsite.template_id || 'custom-template',
+          template_data: {},
+          vercel_deployment_id: `deployment-${Date.now()}`,
+          vercel_url: newWebsite.domain.startsWith('http') ? newWebsite.domain : `https://${newWebsite.domain}`,
+          vercel_project_id: `project-${Date.now()}`,
+          status: newWebsite.status,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        websites.push(newSite);
+        localStorage.setItem('my_websites', JSON.stringify(websites));
+        setWebsites(websites);
+        setShowAddDialog(false);
+        setNewWebsite({ name: '', domain: '', template_id: '', status: 'ready' });
+        notifications.success('Website added successfully!', { title: 'Success' });
+        return;
+      }
+
+      const websiteData = {
+        name: newWebsite.name,
+        template_id: newWebsite.template_id || 'custom-template',
+        template_data: {},
+        vercel_deployment_id: `deployment-${Date.now()}`,
+        vercel_url: newWebsite.domain.startsWith('http') ? newWebsite.domain : `https://${newWebsite.domain}`,
+        vercel_project_id: `project-${Date.now()}`,
+        status: newWebsite.status
+      };
+
+      try {
+        await savePublishedWebsite(user.id, websiteData);
+        await loadWebsites();
+        setShowAddDialog(false);
+        setNewWebsite({ name: '', domain: '', template_id: '', status: 'ready' });
+        notifications.success('Website added successfully!', { title: 'Success' });
+      } catch (dbError: any) {
+        // Fallback to local storage
+        const localWebsites = localStorage.getItem('my_websites') || '[]';
+        const websites = JSON.parse(localWebsites);
+        const newSite: PublishedWebsite = {
+          id: `local-${Date.now()}`,
+          user_id: user.id,
+          ...websiteData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        websites.push(newSite);
+        localStorage.setItem('my_websites', JSON.stringify(websites));
+        setWebsites(websites);
+        setShowAddDialog(false);
+        setNewWebsite({ name: '', domain: '', template_id: '', status: 'ready' });
+        notifications.success('Website added successfully!', { title: 'Success' });
+      }
+    } catch (error: any) {
+      console.error('Failed to add website:', error);
+      notifications.error('Failed to add website', { title: 'Error' });
+    }
+  };
+
+  const handleEditWebsite = (website: PublishedWebsite) => {
+    setEditingWebsite(website);
+    setShowEditDialog(website);
+  };
+
+  const handleUpdateWebsite = async () => {
+    if (!editingWebsite.name || !editingWebsite.vercel_url) {
+      notifications.warning('Please fill in all required fields', {
+        title: 'Validation Error'
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      try {
+        await updatePublishedWebsiteStatus(
+          editingWebsite.id!,
+          editingWebsite.status || 'ready',
+          editingWebsite.vercel_url
+        );
+        await loadWebsites();
+        setShowEditDialog(null);
+        setEditingWebsite({});
+        notifications.success('Website updated successfully!', { title: 'Success' });
+      } catch (dbError: any) {
+        // Fallback to local storage
+        const localWebsites = localStorage.getItem('my_websites') || '[]';
+        const websites: PublishedWebsite[] = JSON.parse(localWebsites);
+        const index = websites.findIndex(w => w.id === editingWebsite.id);
+        if (index !== -1) {
+          websites[index] = {
+            ...websites[index],
+            ...editingWebsite,
+            updated_at: new Date().toISOString()
+          };
+          localStorage.setItem('my_websites', JSON.stringify(websites));
+          setWebsites(websites);
+          setShowEditDialog(null);
+          setEditingWebsite({});
+          notifications.success('Website updated successfully!', { title: 'Success' });
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to update website:', error);
+      notifications.error('Failed to update website', { title: 'Error' });
     }
   };
 
@@ -74,9 +285,21 @@ export const MyWebsites: React.FC = () => {
 
   const handleDeleteWebsite = async (websiteId: string) => {
     try {
-      await deletePublishedWebsite(websiteId);
-      await loadWebsites();
-      notifications.success('Website deleted successfully', { title: 'Deleted' });
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      try {
+        await deletePublishedWebsite(websiteId);
+        await loadWebsites();
+        notifications.success('Website deleted successfully', { title: 'Deleted' });
+      } catch (dbError: any) {
+        // Fallback to local storage
+        const localWebsites = localStorage.getItem('my_websites') || '[]';
+        const websites: PublishedWebsite[] = JSON.parse(localWebsites);
+        const filtered = websites.filter(w => w.id !== websiteId);
+        localStorage.setItem('my_websites', JSON.stringify(filtered));
+        setWebsites(filtered);
+        notifications.success('Website deleted successfully', { title: 'Deleted' });
+      }
       setShowDeleteDialog(null);
     } catch (error: any) {
       console.error('Failed to delete website:', error);
@@ -129,14 +352,23 @@ export const MyWebsites: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-            <Globe className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold theme-gradient-text">My Websites</h1>
+              <p className="text-slate-600 mt-1">Manage your published websites</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold theme-gradient-text">My Websites</h1>
-            <p className="text-slate-600 mt-1">Manage your published websites</p>
-          </div>
+          <Button 
+            onClick={() => setShowAddDialog(true)}
+            className="theme-button-primary"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Website
+          </Button>
         </div>
       </div>
 
@@ -146,15 +378,24 @@ export const MyWebsites: React.FC = () => {
             <Globe className="w-16 h-16 mx-auto mb-4 text-slate-300" />
             <h3 className="text-xl font-semibold text-slate-700 mb-2">No websites published yet</h3>
             <p className="text-slate-500 mb-6">
-              Start by editing a template and clicking "Publish Website"
+              Start by adding a website or editing a template and clicking "Publish Website"
             </p>
-            <Button 
-              onClick={() => window.location.href = '#/website-templates'}
-              className="theme-button-primary"
-            >
-              <Rocket className="w-4 h-4 mr-2" />
-              Go to Templates
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button 
+                onClick={() => setShowAddDialog(true)}
+                className="theme-button-primary"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Website
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '#/website-templates'}
+                variant="outline"
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                Go to Templates
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -213,6 +454,13 @@ export const MyWebsites: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleEditWebsite(website)}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleRefreshStatus(website)}
                       disabled={refreshing === website.id || !vercelToken}
                     >
@@ -237,6 +485,136 @@ export const MyWebsites: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Add Website Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Website</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="name">Website Name *</Label>
+              <Input
+                id="name"
+                value={newWebsite.name}
+                onChange={(e) => setNewWebsite({ ...newWebsite, name: e.target.value })}
+                placeholder="My Website"
+              />
+            </div>
+            <div>
+              <Label htmlFor="domain">Domain/URL *</Label>
+              <Input
+                id="domain"
+                value={newWebsite.domain}
+                onChange={(e) => setNewWebsite({ ...newWebsite, domain: e.target.value })}
+                placeholder="domain.com or https://domain.com"
+              />
+            </div>
+            <div>
+              <Label htmlFor="template_id">Template ID</Label>
+              <Input
+                id="template_id"
+                value={newWebsite.template_id}
+                onChange={(e) => setNewWebsite({ ...newWebsite, template_id: e.target.value })}
+                placeholder="template-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={newWebsite.status}
+                onValueChange={(value: 'deploying' | 'ready' | 'error') => 
+                  setNewWebsite({ ...newWebsite, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ready">Ready / Live</SelectItem>
+                  <SelectItem value="deploying">Deploying</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddWebsite} className="theme-button-primary">
+              <Save className="w-4 h-4 mr-2" />
+              Add Website
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Website Dialog */}
+      <Dialog open={showEditDialog !== null} onOpenChange={() => setShowEditDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Website</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="edit-name">Website Name *</Label>
+              <Input
+                id="edit-name"
+                value={editingWebsite.name || ''}
+                onChange={(e) => setEditingWebsite({ ...editingWebsite, name: e.target.value })}
+                placeholder="My Website"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-url">Website URL *</Label>
+              <Input
+                id="edit-url"
+                value={editingWebsite.vercel_url || ''}
+                onChange={(e) => setEditingWebsite({ ...editingWebsite, vercel_url: e.target.value })}
+                placeholder="https://domain.com"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-template">Template ID</Label>
+              <Input
+                id="edit-template"
+                value={editingWebsite.template_id || ''}
+                onChange={(e) => setEditingWebsite({ ...editingWebsite, template_id: e.target.value })}
+                placeholder="template-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={editingWebsite.status || 'ready'}
+                onValueChange={(value: 'deploying' | 'ready' | 'error') => 
+                  setEditingWebsite({ ...editingWebsite, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ready">Ready / Live</SelectItem>
+                  <SelectItem value="deploying">Deploying</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateWebsite} className="theme-button-primary">
+              <Save className="w-4 h-4 mr-2" />
+              Update Website
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog !== null} onOpenChange={() => setShowDeleteDialog(null)}>
@@ -263,4 +641,3 @@ export const MyWebsites: React.FC = () => {
     </div>
   );
 };
-

@@ -2,7 +2,7 @@
  * Published Websites Database Utilities
  */
 
-import { supabase } from './supabase';
+import { supabase } from './supabase/client';
 
 export interface PublishedWebsite {
   id: string;

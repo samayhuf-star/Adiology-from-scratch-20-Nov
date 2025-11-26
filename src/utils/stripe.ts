@@ -16,30 +16,62 @@ export const getStripe = () => {
 /**
  * Create a Stripe Checkout session for subscription
  */
-export async function createCheckoutSession(priceId: string, planName: string) {
+export async function createCheckoutSession(priceId: string, planName: string, userId?: string, userEmail?: string) {
   try {
     // Check if Stripe is properly configured
     if (STRIPE_PUBLISHABLE_KEY === 'pk_test_placeholder') {
       throw new Error('Stripe is not configured. Please set VITE_STRIPE_PUBLISHABLE_KEY environment variable.');
     }
 
-    const response = await fetch('/api/create-checkout-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        priceId,
-        planName,
-      }),
-    });
+    // Get Supabase project ID and anon key
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || 'kkdnnrwhzofttzajnwlj';
+    const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+    
+    // Get current user if not provided
+    let currentUserId = userId;
+    let currentUserEmail = userEmail;
+    
+    if (!currentUserId || !currentUserEmail) {
+      try {
+        const { getCurrentAuthUser } = await import('./auth');
+        const user = await getCurrentAuthUser();
+        currentUserId = currentUserId || user?.id;
+        currentUserEmail = currentUserEmail || user?.email;
+      } catch (e) {
+        console.warn('Could not get current user:', e);
+      }
+    }
+
+    // Call Supabase Edge Function
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/create-checkout-session`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify({
+          priceId,
+          planName,
+          userId: currentUserId,
+          userEmail: currentUserEmail,
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `Failed to create checkout session: ${response.statusText}`);
     }
 
-    const { sessionId } = await response.json();
+    const { sessionId, url } = await response.json();
+    
+    if (url) {
+      // If we have a direct URL, redirect to it
+      window.location.href = url;
+      return;
+    }
     
     if (!sessionId) {
       throw new Error('No session ID returned from server');
