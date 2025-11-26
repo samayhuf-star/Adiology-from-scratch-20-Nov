@@ -277,11 +277,11 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
   if (showReview && selectedPreset) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800 mb-2">Review Preset: {selectedPreset.title}</h1>
-            <p className="text-slate-600">Review and customize your campaign before exporting</p>
+            <h1 className="text-2xl font-bold text-slate-800 mb-1">Review Preset: {selectedPreset.title}</h1>
+            <p className="text-sm text-slate-600">Review and customize your campaign before exporting</p>
           </div>
           <Button
             variant="outline"
@@ -299,8 +299,8 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
           <div className="lg:col-span-2 space-y-6">
             {/* Campaign Info */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-xl font-semibold mb-4">Campaign Details</h2>
-              <div className="space-y-3">
+              <h2 className="text-lg font-semibold mb-4">Campaign Details</h2>
+              <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-slate-600">Campaign Name</label>
                   <p className="text-slate-900 mt-1">{selectedPreset.campaign_name}</p>
@@ -328,10 +328,10 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
             {/* Keywords */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-xl font-semibold mb-4">Keywords ({selectedPreset.keywords.length})</h2>
+              <h2 className="text-lg font-semibold mb-4">Keywords ({selectedPreset.keywords.length})</h2>
               <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
                 {selectedPreset.keywords.map((keyword, idx) => (
-                  <Badge key={idx} variant="outline" className="text-sm">
+                  <Badge key={idx} variant="outline">
                     {keyword}
                   </Badge>
                 ))}
@@ -340,10 +340,10 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
             {/* Negative Keywords */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-xl font-semibold mb-4">Negative Keywords</h2>
+              <h2 className="text-lg font-semibold mb-4">Negative Keywords</h2>
               <div className="flex flex-wrap gap-2">
                 {selectedPreset.negative_keywords.map((keyword, idx) => (
-                  <Badge key={idx} variant="destructive" className="text-sm">
+                  <Badge key={idx} variant="destructive">
                     -{keyword}
                   </Badge>
                 ))}
@@ -352,7 +352,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
             {/* Ad Copy */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-xl font-semibold mb-4">Ad Copy</h2>
+              <h2 className="text-lg font-semibold mb-4">Ad Copy</h2>
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-slate-600">Headlines</label>
@@ -377,14 +377,14 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
           <div className="space-y-6">
             {/* Bug_69: Ensure all buttons are visible by removing overflow constraints */}
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-              <h3 className="text-lg font-semibold mb-4">Ready to Launch</h3>
+              <h3 className="text-base font-semibold mb-3">Ready to Launch</h3>
               <p className="text-sm text-indigo-100 mb-6">
                 This preset is optimized for high-intent pay-per-call campaigns. Review the details and export when ready.
               </p>
-              <div className="space-y-3 flex flex-col">
+              <div className="flex flex-col gap-3">
                 <Button
                   onClick={handleLoadToBuilder}
-                  className="w-full bg-white text-slate-800 hover:bg-gray-100 hover:text-slate-900 flex-shrink-0"
+                  className="w-full bg-white text-slate-800 hover:bg-gray-100 hover:text-slate-900"
                   size="lg"
                 >
                   <Edit className="w-4 h-4 mr-2 text-slate-700" />
@@ -393,7 +393,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 <Button
                   onClick={() => handleExportCSV()}
                   variant="outline"
-                  className="w-full border-white bg-white text-slate-800 hover:bg-gray-100 hover:text-slate-900 flex-shrink-0"
+                  className="w-full border-white bg-white text-slate-800 hover:bg-gray-100 hover:text-slate-900"
                   size="lg"
                 >
                   <Download className="w-4 h-4 mr-2 text-slate-700" />
@@ -403,23 +403,23 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="font-semibold mb-3 text-slate-800">Preset Stats</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+              <h3 className="text-base font-semibold mb-4 text-slate-800">Preset Stats</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-600">Keywords:</span>
                   <span className="font-medium text-slate-800">{selectedPreset.keywords.length}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-600">Ad Groups:</span>
                   <span className="font-medium text-slate-800">{selectedPreset.ad_groups.length}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-slate-600">Negative Keywords:</span>
                   <span className="font-medium text-slate-800">{selectedPreset.negative_keywords.length}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-start">
                   <span className="text-slate-600">Match Distribution:</span>
-                  <span className="font-medium text-slate-800">
+                  <span className="font-medium text-slate-800 text-right">
                     {Math.round(selectedPreset.match_distribution.exact * 100)}% Exact,{' '}
                     {Math.round(selectedPreset.match_distribution.phrase * 100)}% Phrase,{' '}
                     {Math.round(selectedPreset.match_distribution.broad_mod * 100)}% Broad
@@ -435,15 +435,15 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-10">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 rounded-xl theme-gradient-primary flex items-center justify-center shadow-lg">
-            <Package className="w-7 h-7 text-white" />
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-xl theme-gradient-primary flex items-center justify-center shadow-lg shrink-0">
+            <Package className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold theme-gradient-text">Campaign Presets</h1>
-            <p className="text-slate-600 mt-2 text-base">Plug-and-play Google Ads campaigns for high-intent home services</p>
+            <h1 className="text-2xl font-bold theme-gradient-text">Campaign Presets</h1>
+            <p className="text-sm text-slate-600 mt-1">Plug-and-play Google Ads campaigns for high-intent home services</p>
           </div>
         </div>
 
@@ -455,7 +455,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             placeholder="Search presets..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full pl-10 pr-10 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
           {/* Bug_68: Cross icon to reset search box */}
           {searchQuery && (
@@ -471,7 +471,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
       </div>
 
       {/* Presets Grid - Grouped by Structure */}
-      <div className="space-y-16">
+      <div className="space-y-12">
         {Object.keys(structureDescriptions).map((structureKey) => {
           const structure = structureKey as keyof typeof structureDescriptions;
           const structureInfo = structureDescriptions[structure];
@@ -494,55 +494,53 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
           return (
             <div key={structure} className="pb-8 border-b border-slate-200 last:border-b-0">
               {/* Structure Header */}
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-4xl">{structureInfo.icon}</span>
-                  <h2 className="text-3xl font-bold text-slate-900">{structureInfo.name}</h2>
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-3xl">{structureInfo.icon}</span>
+                  <h2 className="text-2xl font-bold text-slate-900">{structureInfo.name}</h2>
                 </div>
-                <p className="text-lg text-slate-600 ml-14">{structureInfo.description}</p>
+                <p className="text-base text-slate-600 ml-11">{structureInfo.description}</p>
               </div>
               
               {/* Presets Grid for this Structure */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
                 {presetsForStructure.map((preset) => {
                   const colorScheme = getStructureColor(preset.structure || '');
                   return (
           <div
             key={preset.slug}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
+            className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden p-4 sm:p-6 flex flex-col h-full"
             onClick={() => handleSelectPreset(preset)}
           >
             {/* Structure Tag - Top Right Corner */}
-            <div className={`absolute top-3 right-3 px-3 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
+            <div className={`absolute top-3 right-3 px-2 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
               {preset.structure || 'SKAG'}
             </div>
             
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4 pr-16">
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
-                    {preset.title}
-                  </h3>
-                  <p className="text-xs text-slate-500">{preset.campaign_name}</p>
-                </div>
+            <div className="flex-1 flex flex-col">
+              <div className="mb-4 pr-16">
+                <h3 className="text-base font-semibold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
+                  {preset.title}
+                </h3>
+                <p className="text-xs text-slate-500">{preset.campaign_name}</p>
               </div>
 
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <Sparkles className="w-3.5 h-3.5" />
+              <div className="space-y-2 mb-4 flex-1">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <Sparkles className="w-4 h-4 shrink-0" />
                   <span>{preset.keywords.length} keywords</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <Zap className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <Zap className="w-4 h-4 shrink-0" />
                   <span>{preset.ad_groups.length} ad groups</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <CheckCircle className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
                   <span>${preset.max_cpc.toFixed(2)} max CPC</span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 mb-5">
+              <div className="flex flex-wrap gap-1.5 mb-4">
                 {preset.ad_groups.slice(0, 2).map((group, idx) => (
                   <Badge key={idx} variant="secondary" className="text-[10px] py-0.5 px-2">
                     {group.name}
@@ -555,7 +553,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-auto">
                 <Button
                   variant="outline"
                   size="sm"
@@ -566,7 +564,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                   }}
                   title="View campaign details"
                 >
-                  <Eye className="w-3.5 h-3.5 mr-1.5" />
+                  <Eye className="w-3.5 h-3.5 mr-1" />
                   View
                 </Button>
                 <Button
@@ -578,7 +576,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                   }}
                   title="Download Google Ads Editor CSV"
                 >
-                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  <Download className="w-3.5 h-3.5 mr-1" />
                   Export
                 </Button>
               </div>
@@ -594,7 +592,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
       {filteredPresets.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-slate-500">No presets found matching "{searchQuery}"</p>
+          <p className="text-sm text-slate-500">No presets found matching "{searchQuery}"</p>
         </div>
       )}
     </div>

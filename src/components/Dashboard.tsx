@@ -230,14 +230,14 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   ];
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold theme-gradient-text mb-2">
+          <h1 className="text-2xl font-bold theme-gradient-text mb-1">
             Welcome back, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}!
           </h1>
-          <p className="text-slate-600">Here's what's happening with your campaigns today.</p>
+          <p className="text-sm text-slate-600">Here's what's happening with your campaigns today.</p>
         </div>
         <Button
           onClick={() => onNavigate('builder-2')}
@@ -249,11 +249,11 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {/* Subscription Card */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group">
+        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
           <div className={`absolute inset-0 bg-gradient-to-br ${getPlanColor(stats?.subscription.plan || 'free')} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
-          <div className="p-6 relative">
+          <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getPlanColor(stats?.subscription.plan || 'free')} flex items-center justify-center shadow-lg`}>
                 <TrendingUp className="w-6 h-6 text-white" />
@@ -262,7 +262,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                 {(stats?.subscription.plan || 'free').charAt(0).toUpperCase() + (stats?.subscription.plan || 'free').slice(1)}
               </Badge>
             </div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-1">Your Plan</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-1">Your Plan</h3>
             <p className="text-sm text-slate-600">
               {stats?.subscription.status === 'active' ? 'Active' : stats?.subscription.status}
               {stats?.subscription.periodEnd && (
@@ -273,19 +273,19 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
         </Card>
 
         {/* API Usage Card */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group">
+        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-          <div className="p-6 relative">
+          <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
                 <Activity className="w-6 h-6 text-white" />
               </div>
-              <div className="flex items-center text-green-600">
+              <div className="flex items-center gap-1 text-green-600">
                 <ArrowUpRight className="w-4 h-4" />
-                <span className="text-xs font-medium ml-1">Active</span>
+                <span className="text-xs font-medium">Active</span>
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-1">
+            <h3 className="text-xl font-bold text-slate-800 mb-1">
               {stats?.usage.apiCalls.toLocaleString() || 0}
             </h3>
             <p className="text-sm text-slate-600">API Calls (30 days)</p>
@@ -293,9 +293,9 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
         </Card>
 
         {/* Campaigns Card */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group">
+        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
           <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-          <div className="p-6 relative">
+          <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
                 <BarChart3 className="w-6 h-6 text-white" />
@@ -304,7 +304,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                 Total
               </Badge>
             </div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-1">
+            <h3 className="text-xl font-bold text-slate-800 mb-1">
               {stats?.usage.campaigns.toLocaleString() || 0}
             </h3>
             <p className="text-sm text-slate-600">Campaigns Created</p>
@@ -312,9 +312,9 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
         </Card>
 
         {/* Keywords Card */}
-        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group">
+        <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-          <div className="p-6 relative">
+          <div className="relative">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg">
                 <Target className="w-6 h-6 text-white" />
@@ -323,7 +323,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                 Generated
               </Badge>
             </div>
-            <h3 className="text-2xl font-bold text-slate-800 mb-1">
+            <h3 className="text-xl font-bold text-slate-800 mb-1">
               {stats?.usage.keywords.toLocaleString() || 0}
             </h3>
             <p className="text-sm text-slate-600">Keywords Generated</p>
@@ -333,11 +333,11 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center">
-          <Zap className="w-6 h-6 mr-2 text-indigo-600" />
+        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-indigo-600" />
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
@@ -349,7 +349,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                 <div className={`w-12 h-12 rounded-xl ${action.bgColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                   <Icon className={`w-6 h-6 ${action.iconColor}`} />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-1">{action.title}</h3>
+                <h3 className="text-base font-semibold text-slate-800 mb-1">{action.title}</h3>
                 <p className="text-sm text-slate-600">{action.description}</p>
               </Card>
             );
@@ -359,71 +359,69 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-4 flex items-center">
-          <Clock className="w-6 h-6 mr-2 text-indigo-600" />
+        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-indigo-600" />
           Recent Activity
         </h2>
-        <Card className="border-2">
-          <div className="p-6">
-            {recentActivity.length > 0 ? (
-              <div className="space-y-4">
-                {recentActivity.slice(0, 8).map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-start space-x-4">
-                      <div className={`p-2 rounded-lg ${getActionColor(activity.action)}`}>
-                        {getActionIcon(activity.action)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-800">
-                          {activity.action.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                        </p>
-                        {activity.resourceType && (
-                          <p className="text-sm text-slate-600">
-                            {activity.resourceType.charAt(0).toUpperCase() + activity.resourceType.slice(1)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-sm text-slate-500">
-                      {formatRelativeTime(activity.timestamp || activity.created_at)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-600 mb-2">No recent activity</h3>
-                <p className="text-slate-500 mb-6">
-                  Start creating campaigns to see your activity here
-                </p>
-                <Button
-                  onClick={() => onNavigate('builder-2')}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+        <Card className="border-2 p-6">
+          {recentActivity.length > 0 ? (
+            <div className="space-y-3">
+              {recentActivity.slice(0, 8).map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-start justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors gap-4"
                 >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Create First Campaign
-                </Button>
-              </div>
-            )}
-          </div>
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${getActionColor(activity.action)}`}>
+                      {getActionIcon(activity.action)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-800">
+                        {activity.action.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </p>
+                      {activity.resourceType && (
+                        <p className="text-sm text-slate-600 mt-0.5">
+                          {activity.resourceType.charAt(0).toUpperCase() + activity.resourceType.slice(1)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-sm text-slate-500 shrink-0">
+                    {formatRelativeTime(activity.timestamp || activity.created_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-600 mb-2">No recent activity</h3>
+              <p className="text-sm text-slate-500 mb-6">
+                Start creating campaigns to see your activity here
+              </p>
+              <Button
+                onClick={() => onNavigate('builder-2')}
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Create First Campaign
+              </Button>
+            </div>
+          )}
         </Card>
       </div>
 
       {/* Account Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Last Login */}
         <Card className="border-2 p-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
               <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-slate-600">Last Login</p>
-              <p className="text-lg font-bold text-slate-800">
+              <p className="text-base font-semibold text-slate-800 mt-0.5">
                 {formatRelativeTime(stats?.activity.lastLogin || null)}
               </p>
             </div>
@@ -432,13 +430,13 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
         {/* Total Actions */}
         <Card className="border-2 p-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0">
               <Activity className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-slate-600">Total Actions (Recent)</p>
-              <p className="text-lg font-bold text-slate-800">
+              <p className="text-base font-semibold text-slate-800 mt-0.5">
                 {stats?.activity.totalActions || 0}
               </p>
             </div>

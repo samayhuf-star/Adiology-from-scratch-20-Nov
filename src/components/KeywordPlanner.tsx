@@ -479,12 +479,12 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     }, []);
 
     return (
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
             <div className="mb-6">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
                     AI Keyword Planner and Negative List Builder
                 </h1>
-                <p className="text-slate-500">
+                <p className="text-sm text-slate-500">
                     Generate comprehensive keyword lists using AI based on your seed keywords and negative filters
                 </p>
             </div>
@@ -497,16 +497,16 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                 </TabsList>
                 
                 <TabsContent value="planner">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Left Panel: Define Your Strategy */}
                         <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-                            <h2 className="text-xl font-bold text-indigo-600 mb-6">
+                            <h2 className="text-lg font-semibold text-indigo-600 mb-4">
                                 1. Define Your Strategy
                             </h2>
 
                             {/* Seed Keywords */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
                                     Seed Keywords (3-5 Core Ideas, comma-separated)
                                 </label>
                                 <Input
@@ -515,17 +515,17 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                     onChange={(e) => setSeedKeywords(e.target.value)}
                                     className="bg-white border-slate-300"
                                 />
-                                <p className="text-xs text-slate-500 mt-1">
+                                <p className="text-xs text-slate-500 mt-1.5">
                                     These are the primary topics the AI will build upon.
                                 </p>
                             </div>
 
                             {/* Target Match Types */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
                                     Target Match Types
                                 </label>
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Checkbox 
                                             id="broad-planner" 

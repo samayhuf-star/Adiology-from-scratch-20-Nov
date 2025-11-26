@@ -916,9 +916,9 @@ const App = () => {
         }}
       >
         {/* Logo Section */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200/60">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200/60">
           {sidebarOpen && (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-md shadow-purple-500/30">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
@@ -936,7 +936,7 @@ const App = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-3 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -946,13 +946,13 @@ const App = () => {
                 onClick={() => {
                   setActiveTab(item.id);
                 }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer ${
                   isActive
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-purple-500/30'
                     : 'text-slate-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-indigo-600'}`} />
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-indigo-600'}`} />
                 {sidebarOpen && (
                   <span className="font-medium">{item.label}</span>
                 )}
@@ -966,8 +966,8 @@ const App = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-6 shadow-sm">
-          <div className="flex items-center space-x-4 flex-1 max-w-2xl">
+        <header className="h-16 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 shadow-sm">
+          <div className="flex items-center gap-4 flex-1 max-w-2xl">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
@@ -1003,12 +1003,12 @@ const App = () => {
               />
               {/* Bug_64: Search suggestions dropdown */}
               {showSearchSuggestions && searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
                   {searchSuggestions.map((suggestion, index) => (
                     <button
                       key={index}
                       onClick={() => handleSearchSuggestionClick(suggestion)}
-                      className="w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center gap-2"
                     >
                       <Search className="w-4 h-4 text-slate-400" />
                       <span className="text-slate-700">{suggestion}</span>
@@ -1019,8 +1019,8 @@ const App = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-slate-800 mr-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-slate-800 hidden lg:block">
               {getCurrentPageTitle()}
             </h2>
             
@@ -1061,20 +1061,20 @@ const App = () => {
                         }`}
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <div className="flex items-start justify-between w-full">
+                        <div className="flex items-start justify-between w-full gap-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               {!notification.read && (
-                                <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                                <span className="w-2 h-2 bg-indigo-500 rounded-full shrink-0"></span>
                               )}
                               <span className="font-medium text-sm text-slate-800">
                                 {notification.title}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-600 mt-1 ml-4">
+                            <p className="text-xs text-slate-600 mt-1.5 ml-0">
                               {notification.message}
                             </p>
-                            <span className="text-xs text-slate-400 mt-1 ml-4 block">
+                            <span className="text-xs text-slate-400 mt-1 ml-0 block">
                               {notification.time}
                             </span>
                           </div>
@@ -1113,7 +1113,7 @@ const App = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-2">
+                  <div className="flex flex-col gap-1.5">
                     {user ? (
                       <>
                         <div className="font-semibold text-slate-900">
@@ -1123,7 +1123,7 @@ const App = () => {
                           {user.email || 'user@example.com'}
                           </div>
                         {user.subscription_plan && user.subscription_plan !== 'free' && (
-                          <Badge className="w-fit bg-indigo-100 text-indigo-700 border-indigo-200">
+                          <Badge className="w-fit bg-indigo-100 text-indigo-700 border-indigo-200 mt-1">
                             {user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1)}
                               </Badge>
                         )}
@@ -1138,15 +1138,15 @@ const App = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setActiveTab('settings')}>
-                  <User className="w-4 h-4 mr-2" />
+                  <User className="w-4 h-4 mr-2 shrink-0" />
                   Account Settings
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab('billing')}>
-                  <Shield className="w-4 h-4 mr-2" />
+                  <Shield className="w-4 h-4 mr-2 shrink-0" />
                   Billing
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab('support')}>
-                  <HelpCircle className="w-4 h-4 mr-2" />
+                  <HelpCircle className="w-4 h-4 mr-2 shrink-0" />
                   Support
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
