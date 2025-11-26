@@ -5,6 +5,7 @@
   import { Toaster } from "./components/ui/sonner";
   import { notifications } from "./utils/notifications";
   import { toast } from "sonner";
+  import { ThemeProvider } from "./contexts/ThemeContext";
 
   // Initialize notification service
   notifications.setToastInstance(toast);
@@ -42,9 +43,9 @@
   }
 
   createRoot(document.getElementById("root")!).render(
-    <>
+    <ThemeProvider>
       <App />
       <Toaster position="top-right" richColors closeButton />
-    </>
+    </ThemeProvider>
   );
   

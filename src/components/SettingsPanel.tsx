@@ -4,8 +4,9 @@ import { supabase } from '../utils/supabase/client';
 import { 
   User, Mail, Lock, Bell, Globe, Shield, 
   Save, Eye, EyeOff, Trash2, Download, Upload,
-  CheckCircle2, AlertCircle, CreditCard
+  CheckCircle2, AlertCircle, CreditCard, Palette
 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -422,6 +423,9 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         </CardContent>
       </Card>
 
+      {/* Theme Settings */}
+      <ThemeSelector />
+
       {/* Notification Settings */}
       <Card>
         <CardHeader>
@@ -600,6 +604,75 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         </TabsContent>
       </Tabs>
     </div>
+  );
+};
+
+// Theme Selector Component
+const ThemeSelector = () => {
+  const { theme, setTheme, availableThemes } = useTheme();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Palette className="w-5 h-5 text-indigo-600" />
+          Color Theme
+        </CardTitle>
+        <CardDescription>Choose your preferred color scheme for the dashboard</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {availableThemes.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              className={`relative p-4 rounded-xl border-2 transition-all hover:scale-105 ${
+                theme.id === t.id
+                  ? 'border-indigo-500 bg-indigo-50 shadow-lg'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              }`}
+            >
+              {/* Theme Preview */}
+              <div className="mb-3">
+                <div className="flex gap-1 mb-2">
+                  <div className={`w-full h-8 rounded bg-gradient-to-r ${t.colors.primaryGradient}`}></div>
+                </div>
+                <div className="flex gap-1">
+                  <div className={`flex-1 h-4 rounded bg-${t.colors.primary}`}></div>
+                  <div className={`flex-1 h-4 rounded bg-${t.colors.secondary}`}></div>
+                  <div className={`flex-1 h-4 rounded bg-${t.colors.accent}`}></div>
+                </div>
+              </div>
+
+              {/* Theme Info */}
+              <div className="text-left">
+                <h3 className="font-semibold text-sm text-slate-900 mb-1">{t.name}</h3>
+                <p className="text-xs text-slate-500">{t.description}</p>
+              </div>
+
+              {/* Selected Badge */}
+              {theme.id === t.id && (
+                <div className="absolute top-2 right-2">
+                  <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex gap-2 items-start">
+            <Globe className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-blue-900 mb-1">Theme Applied Globally</p>
+              <p className="text-xs text-blue-700">
+                Your selected theme will be applied across all pages including Dashboard, Builder 2.0, and all tools.
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
