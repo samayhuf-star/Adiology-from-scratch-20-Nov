@@ -117,11 +117,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
           <div className="flex items-center gap-3 group cursor-pointer">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-all group-hover:scale-105">
               <Sparkles className="w-5 h-5 text-white" />
-            </div>
+      </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Adiology
+                  Adiology
             </span>
-          </div>
+              </div>
           
           <div className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-sm font-medium text-slate-700 hover:text-indigo-600 transition-colors relative group">
@@ -137,15 +137,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             </Button>
             <Button onClick={onGetStarted} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all">
               Get Started
-            </Button>
+              </Button>
           </div>
 
           <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
-        </div>
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </Button>
+          </div>
           
-        {mobileMenuOpen && (
+          {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200/50 bg-white/95 backdrop-blur-xl animate-in slide-in-from-top duration-300">
             <div className="px-6 py-4 space-y-3">
               <a href="#features" className="block text-slate-700 hover:text-indigo-600 font-medium transition-colors">Features</a>
@@ -153,10 +153,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               <Button variant="ghost" onClick={onLogin} className="w-full justify-start font-medium">Sign In</Button>
               <Button onClick={onGetStarted} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
                 Get Started
-              </Button>
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </nav>
 
       {/* Hero - Modern with Gradient Background */}
@@ -179,8 +179,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-8 tracking-tight leading-tight">
             <span className="inline-block bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-700">
               Build Winning
-            </span>
-            <br />
+              </span>
+              <br />
             <span className="inline-block text-slate-900 animate-in slide-in-from-bottom duration-700" style={{ animationDelay: '100ms' }}>
               Google Ads Campaigns
             </span>
@@ -188,19 +188,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             <span className="inline-block text-3xl md:text-5xl text-slate-600 animate-in slide-in-from-bottom duration-700" style={{ animationDelay: '200ms' }}>
               in Minutes, Not Days ⚡
             </span>
-          </h1>
+            </h1>
             
           <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed animate-in fade-in duration-700" style={{ animationDelay: '300ms' }}>
             The AI-powered platform that transforms campaign creation from days to minutes. 
             <span className="block mt-2 font-semibold text-indigo-600">Professional campaigns, zero complexity.</span>
-          </p>
+            </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-in fade-in-50 duration-700" style={{ animationDelay: '400ms' }}>
-            <Button 
-              onClick={onGetStarted}
+              <Button 
+                onClick={onGetStarted}
               size="lg"
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-10 py-6 text-lg font-semibold shadow-2xl shadow-indigo-500/40 hover:shadow-indigo-500/60 hover:scale-105 transition-all group"
-            >
+              >
               Start Building Now
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -211,8 +211,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               className="border-2 border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50 px-10 py-6 text-lg font-semibold backdrop-blur-sm bg-white/50 hover:scale-105 transition-all"
             >
               Sign In
-            </Button>
-          </div>
+              </Button>
+            </div>
 
           {/* Enhanced Trust Badges */}
           <div className="flex flex-wrap justify-center gap-8 text-sm animate-in fade-in duration-700" style={{ animationDelay: '500ms' }}>
@@ -226,7 +226,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <span className="font-medium text-slate-700">{badge.text}</span>
               </div>
             ))}
-          </div>
+            </div>
         </div>
       </section>
 
@@ -254,8 +254,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 
                 {/* Hover Effect Gradient */}
                 <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
-              </div>
-            ))}
+                </div>
+              ))}
           </div>
         </div>
       </section>
@@ -273,11 +273,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Structures
               </span>
-            </h2>
+              </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
               Professional structures optimized for maximum ROI from day one
-            </p>
-          </div>
+              </p>
+                </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {campaignStructures.map((structure, idx) => {
@@ -302,50 +302,50 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <p className="text-sm text-slate-600 leading-relaxed">
                       {structure.description}
                     </p>
-                  </div>
+                </div>
                   
                   {/* Shimmer Effect */}
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
                 </div>
               );
             })}
-          </div>
-        </div>
+              </div>
+            </div>
       </section>
 
       {/* Features - Modern Cards with Icons */}
       <section className="py-32 px-6 bg-gradient-to-b from-slate-50/50 to-white">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              { 
-                icon: Zap, 
+              {[
+                { 
+                  icon: Zap, 
                 title: 'AI-Powered Keywords',
                 desc: 'Generate 1000+ relevant keywords instantly with our advanced AI engine',
                 gradient: 'from-yellow-500 to-orange-500',
                 bgGradient: 'from-yellow-50 to-orange-50'
-              },
-              { 
-                icon: Target, 
+                },
+                { 
+                  icon: Target, 
                 title: 'Smart Campaigns',
                 desc: 'Professional campaign structures ready in just 5 minutes',
                 gradient: 'from-blue-500 to-cyan-500',
                 bgGradient: 'from-blue-50 to-cyan-50'
-              },
-              { 
+                },
+                { 
                 icon: FileCheck,
                 title: 'Zero Errors',
                 desc: 'Automatic validation and error checking before export',
                 gradient: 'from-emerald-500 to-green-500',
                 bgGradient: 'from-emerald-50 to-green-50'
-              },
-              { 
+                },
+                { 
                 icon: Globe,
                 title: 'Geo-Targeting',
                 desc: 'Precise location-based campaigns with advanced targeting',
                 gradient: 'from-indigo-500 to-purple-500',
                 bgGradient: 'from-indigo-50 to-purple-50'
-              },
+                },
               {
                 icon: Wand2,
                 title: 'AI Ad Copy',
@@ -426,21 +426,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                   
                   <div className="relative z-10">
                     <div className="flex gap-1 mb-6">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
                     <p className="text-lg text-slate-700 mb-8 leading-relaxed italic font-medium">
                       "{testimonial.quote}"
                     </p>
-                    <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
                           {testimonial.avatar}
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-900">{testimonial.author}</p>
-                          <p className="text-sm text-slate-600">{testimonial.role}</p>
+                    <div>
+                      <p className="font-bold text-slate-900">{testimonial.author}</p>
+                      <p className="text-sm text-slate-600">{testimonial.role}</p>
                           <p className="text-xs text-slate-500">{testimonial.company}</p>
                         </div>
                       </div>
@@ -474,7 +474,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               <span className="block mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Perfect Plan
               </span>
-            </h2>
+              </h2>
             <p className="text-xl text-slate-600">
               No hidden fees • Cancel anytime • 14-day money back guarantee
             </p>
@@ -489,21 +489,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             ].map((plan, idx) => {
               const Icon = plan.icon;
               return (
-                <div
-                  key={idx}
+              <div
+                key={idx}
                   className={`relative bg-white rounded-3xl p-6 border-2 transition-all duration-300 hover:-translate-y-2 overflow-hidden group ${
                     plan.popular 
                       ? 'border-indigo-500 shadow-2xl shadow-indigo-500/30 scale-105 lg:scale-110' 
                       : 'border-slate-200 hover:border-indigo-300 hover:shadow-xl'
-                  }`}
-                >
-                  {plan.popular && (
+                }`}
+              >
+                {plan.popular && (
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
                       <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0 px-6 py-1.5 shadow-lg font-bold">
                         ⭐ Popular
                       </Badge>
-                    </div>
-                  )}
+              </div>
+                )}
                   
                   {/* Gradient Background */}
                   <div className={`absolute inset-0 ${
@@ -517,42 +517,42 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                     <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${plan.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
                       <Icon className="w-7 h-7 text-white" />
                     </div>
-
-                    <div className="text-center mb-6">
+                
+                <div className="text-center mb-6">
                       <h3 className="text-xl font-bold text-slate-900 mb-4">{plan.name}</h3>
                       <div className="text-5xl font-black bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent mb-1">
                         {plan.price}
                       </div>
                       <div className="text-sm font-medium text-slate-600">{plan.period}</div>
-                    </div>
+                </div>
 
-                    <ul className="space-y-3 mb-6 text-sm">
-                      {[
-                        `${plan.campaigns} campaigns`,
-                        'AI keyword generation',
-                        'All campaign structures',
-                        'CSV export',
+                <ul className="space-y-3 mb-6 text-sm">
+                  {[
+                    `${plan.campaigns} campaigns`,
+                    'AI keyword generation',
+                    'All campaign structures',
+                    'CSV export',
                         '24/7 priority support'
-                      ].map((feature, fIdx) => (
+                  ].map((feature, fIdx) => (
                         <li key={fIdx} className="flex items-center gap-2 text-slate-700">
                           <div className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
                             <Check className="w-2.5 h-2.5 text-white" />
                           </div>
                           <span className="font-medium">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  </li>
+                  ))}
+                </ul>
 
-                    <Button 
-                      onClick={onGetStarted}
+                <Button 
+                  onClick={onGetStarted}
                       className={`w-full font-bold shadow-lg transition-all duration-300 ${
                         plan.popular 
                           ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-indigo-500/40 hover:shadow-xl hover:scale-105' 
                           : 'bg-white hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 text-slate-900 hover:text-white border-2 border-slate-300 hover:border-transparent hover:scale-105'
                       }`}
-                    >
-                      Get Started
-                    </Button>
+                >
+                  Get Started
+                </Button>
                   </div>
                 </div>
               );
@@ -570,8 +570,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
                 <div key={idx} className="flex items-center gap-2 text-slate-600">
                   <item.icon className="w-5 h-5 text-emerald-500" />
                   <span className="font-medium">{item.text}</span>
-                </div>
-              ))}
+              </div>
+            ))}
             </div>
           </div>
         </div>
@@ -595,18 +595,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             Ready to transform
             <br />
             your campaigns? 🚀
-          </h2>
+            </h2>
           <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed">
             Join thousands of marketers building better campaigns with Adiology.
             <span className="block mt-2 font-semibold">Start today and transform your campaigns.</span>
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              onClick={onGetStarted}
-              size="lg"
+                <Button 
+            onClick={onGetStarted}
+                  size="lg"
               className="bg-white hover:bg-slate-50 text-indigo-600 px-12 py-7 text-lg font-bold shadow-2xl hover:shadow-3xl hover:scale-105 transition-all group"
-            >
+                >
               Start Building Now
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
@@ -617,7 +617,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
               className="border-2 border-white/50 hover:bg-white/10 text-white backdrop-blur-sm px-12 py-7 text-lg font-bold hover:scale-105 transition-all"
             >
               Sign In
-            </Button>
+                </Button>
           </div>
 
           {/* Stats */}
@@ -647,7 +647,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onGetStarted, onLogin, onSel
             <div className="md:col-span-1">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-5 h-5 text-white" />
+                <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-white">Adiology</span>
               </div>

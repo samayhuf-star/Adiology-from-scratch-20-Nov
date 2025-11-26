@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Layout, Eye, Edit, Copy, Save, Download, Globe, 
   CheckCircle, AlertCircle, Palette, Type, Image as ImageIcon,
-  Settings, Code, Smartphone, Monitor, X, Plus, Trash2, Search, Filter
+  Settings, Code, Smartphone, Monitor, X, Plus, Trash2, Search, Filter, Rocket, ExternalLink, Loader2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -17,6 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { notifications } from '../utils/notifications';
 import { historyService } from '../utils/historyService';
 import { allTemplates as importedTemplates, serviceCategories } from '../data/websiteTemplateLibrary';
+import { deployWebsiteToVercel, getDeploymentStatus } from '../utils/vercel';
+import { savePublishedWebsite, getUserPublishedWebsites, updatePublishedWebsiteStatus } from '../utils/publishedWebsites';
+import { supabase } from '../utils/supabase';
 
 interface Template {
   id: string;
@@ -339,6 +342,10 @@ export const WebsiteTemplates: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('hero-1');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishWebsiteName, setPublishWebsiteName] = useState('');
+  const [vercelToken, setVercelToken] = useState('');
 
   useEffect(() => {
     loadSavedTemplates();
@@ -464,6 +471,90 @@ export const WebsiteTemplates: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
     notifications.success('Template exported successfully!', { title: 'Exported' });
+  };
+
+  const handlePublishWebsite = async () => {
+    if (!editingTemplate || !publishWebsiteName.trim()) {
+      notifications.error('Please enter a website name', { title: 'Name Required' });
+      return;
+    }
+
+    if (!vercelToken.trim()) {
+      notifications.error('Please enter your Vercel API token', { title: 'Token Required' });
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to publish websites');
+      }
+
+      // Generate HTML from template
+      const htmlContent = generateHTMLFromTemplate(editingTemplate);
+      
+      // Deploy to Vercel
+      const deployment = await deployWebsiteToVercel({
+        name: publishWebsiteName,
+        htmlContent,
+        vercelToken: vercelToken.trim(),
+      });
+
+      // Save to database
+      const publishedWebsite = await savePublishedWebsite(user.id, {
+        name: publishWebsiteName,
+        template_id: editingTemplate.id,
+        template_data: editingTemplate,
+        vercel_deployment_id: deployment.id,
+        vercel_url: deployment.url,
+        vercel_project_id: 'User websites',
+        status: deployment.state === 'READY' ? 'ready' : 'deploying',
+      });
+
+      // If still deploying, check status after a delay
+      if (deployment.state !== 'READY') {
+        setTimeout(async () => {
+          try {
+            const updatedDeployment = await getDeploymentStatus(deployment.id, vercelToken.trim());
+            await updatePublishedWebsiteStatus(
+              publishedWebsite.id,
+              updatedDeployment.state === 'READY' ? 'ready' : 'error',
+              updatedDeployment.url
+            );
+            if (updatedDeployment.state === 'READY') {
+              notifications.success(`Website published successfully! Visit: ${updatedDeployment.url}`, {
+                title: 'Published!',
+                duration: 10000,
+              });
+            }
+          } catch (error) {
+            console.error('Failed to check deployment status:', error);
+          }
+        }, 10000); // Check after 10 seconds
+      }
+
+      notifications.success(
+        `Website is being deployed! ${deployment.state === 'READY' ? `Visit: ${deployment.url}` : 'We'll notify you when it's ready.'}`,
+        { 
+          title: 'Publishing...',
+          duration: 10000,
+        }
+      );
+
+      setShowPublishDialog(false);
+      setPublishWebsiteName('');
+      setVercelToken('');
+    } catch (error: any) {
+      console.error('Failed to publish website:', error);
+      notifications.error(
+        error.message || 'Failed to publish website. Please check your Vercel token and try again.',
+        { title: 'Publish Error' }
+      );
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const generateHTMLFromTemplate = (template: SavedTemplate): string => {
@@ -743,6 +834,91 @@ export const WebsiteTemplates: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Publish Website Dialog */}
+      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-indigo-600" />
+              Publish Website to Vercel
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="website-name">Website Name</Label>
+              <Input
+                id="website-name"
+                value={publishWebsiteName}
+                onChange={(e) => setPublishWebsiteName(e.target.value)}
+                placeholder="My Awesome Website"
+                className="mt-2"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                This will be used as the project name in Vercel
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="vercel-token">Vercel API Token</Label>
+              <Input
+                id="vercel-token"
+                type="password"
+                value={vercelToken}
+                onChange={(e) => setVercelToken(e.target.value)}
+                placeholder="Enter your Vercel API token"
+                className="mt-2"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Get your token from{' '}
+                <a 
+                  href="https://vercel.com/account/tokens" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 hover:underline"
+                >
+                  vercel.com/account/tokens
+                </a>
+              </p>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Your website will be deployed to a project called "User websites" in Vercel. 
+                The deployment URL will be shared with you once ready.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowPublishDialog(false);
+                setPublishWebsiteName('');
+                setVercelToken('');
+              }}
+              disabled={isPublishing}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handlePublishWebsite}
+              disabled={isPublishing || !publishWebsiteName.trim() || !vercelToken.trim()}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+            >
+              {isPublishing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  <Rocket className="w-4 h-4 mr-2" />
+                  Publish Website
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -801,10 +977,23 @@ const TemplateEditor: React.FC<{
               <Smartphone className="w-4 h-4" />
             </Button>
           </div>
-          <Button onClick={onSave}>
-            <Save className="w-4 h-4 mr-2" />
-            Save Template
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={onSave} variant="outline">
+              <Save className="w-4 h-4 mr-2" />
+              Save Template
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!editingTemplate) return;
+                setPublishWebsiteName(editingTemplate.name);
+                setShowPublishDialog(true);
+              }}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+            >
+              <Rocket className="w-4 h-4 mr-2" />
+              Publish Website
+            </Button>
+          </div>
         </div>
       </div>
 

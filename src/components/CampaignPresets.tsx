@@ -151,13 +151,13 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
         const hasPhrase = exportPreset.match_distribution.phrase > 0;
         const hasBroad = exportPreset.match_distribution.broad_mod > 0;
 
-        // Exact match
+      // Exact match
         if (hasExact) {
-          const row = [
+        const row = [
             escapeCSV(exportPreset.campaign_name),
             escapeCSV(adGroup.name),
             escapeCSV(`[${keyword}]`), // Exact match syntax
-            'Exact',
+          'Exact',
             escapeCSV(exportPreset.max_cpc.toFixed(2)),
             'Enabled',
             'Enabled',
@@ -176,15 +176,15 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             escapeCSV('')
           ];
           rows.push(row.join(','));
-        }
+      }
 
-        // Phrase match
+      // Phrase match
         if (hasPhrase) {
-          const row = [
+        const row = [
             escapeCSV(exportPreset.campaign_name),
             escapeCSV(adGroup.name),
             escapeCSV(`"${keyword}"`), // Phrase match syntax
-            'Phrase',
+          'Phrase',
             escapeCSV(exportPreset.max_cpc.toFixed(2)),
             'Enabled',
             'Enabled',
@@ -201,7 +201,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             'Daily',
             'Expanded text ad',
             escapeCSV('')
-          ];
+        ];
           rows.push(row.join(','));
         }
 
@@ -230,7 +230,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             escapeCSV('')
           ];
           rows.push(row.join(','));
-        }
+      }
       });
 
       // Add negative keywords (campaign level)
@@ -451,24 +451,24 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
         {/* Search and View Toggle */}
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search presets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            {/* Bug_68: Cross icon to reset search box */}
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search presets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          {/* Bug_68: Cross icon to reset search box */}
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label="Clear search"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
           </div>
           
           {/* View Mode Toggle */}
@@ -522,11 +522,11 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
           // List View Layout
           if (viewMode === 'list') {
             return (
-              <div
-                key={preset.slug}
+          <div
+            key={preset.slug}
                 className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
-                onClick={() => handleSelectPreset(preset)}
-              >
+            onClick={() => handleSelectPreset(preset)}
+          >
                 {/* Structure Tag */}
                 <div className={`absolute top-4 right-4 px-3 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
                   {preset.structure || 'SKAG'}
@@ -543,20 +543,20 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                       
                       {/* Stats Row */}
                       <div className="flex items-center gap-6 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Sparkles className="w-4 h-4" />
-                          <span>{preset.keywords.length} keywords</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Zap className="w-4 h-4" />
-                          <span>{preset.ad_groups.length} ad groups</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <CheckCircle className="w-4 h-4" />
-                          <span>${preset.max_cpc.toFixed(2)} max CPC</span>
-                        </div>
-                      </div>
-                      
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <Sparkles className="w-4 h-4" />
+                  <span>{preset.keywords.length} keywords</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <Zap className="w-4 h-4" />
+                  <span>{preset.ad_groups.length} ad groups</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>${preset.max_cpc.toFixed(2)} max CPC</span>
+                </div>
+              </div>
+
                       {/* Ad Groups */}
                       <div className="flex flex-wrap gap-2">
                         {preset.ad_groups.slice(0, 4).map((group, idx) => (
@@ -655,14 +655,14 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
               </div>
 
               <div className="flex gap-2 mt-auto">
-                <Button
+              <Button
                   variant="outline"
                   size="sm"
                   className="flex-1 border-slate-300 hover:bg-slate-50 text-xs h-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelectPreset(preset);
-                  }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectPreset(preset);
+                }}
                   title="View campaign details"
                 >
                   <Eye className="w-3.5 h-3.5 mr-1" />
@@ -679,7 +679,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 >
                   <Download className="w-3.5 h-3.5 mr-1" />
                   Export
-                </Button>
+              </Button>
               </div>
             </div>
           </div>
