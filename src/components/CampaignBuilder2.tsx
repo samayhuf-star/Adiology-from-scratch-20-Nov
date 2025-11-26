@@ -853,36 +853,43 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 1: Setup with Structure Selection
   const renderStep1 = () => {
     return (
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
+      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-slate-800 mb-2">Campaign Setup</h2>
           <p className="text-slate-600">Choose your campaign structure and configure basic settings</p>
         </div>
 
-        {/* Campaign Name */}
+        {/* Campaign Name & URL - Compact */}
         <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Campaign Name</CardTitle>
-            <CardDescription>Give your campaign a descriptive name</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Input
-              value={campaignName}
-              onChange={(e) => setCampaignName(e.target.value)}
-              placeholder="e.g., Summer Sale Campaign 2025"
-              className="max-w-md"
-            />
+          <CardContent className="pt-6 space-y-4">
+            <div>
+              <Label htmlFor="campaign-name" className="text-sm font-semibold mb-2 block">Campaign Name</Label>
+              <Input
+                id="campaign-name"
+                value={campaignName}
+                onChange={(e) => setCampaignName(e.target.value)}
+                placeholder="e.g., Summer Sale Campaign 2025"
+              />
+            </div>
+            <div>
+              <Label htmlFor="landing-url" className="text-sm font-semibold mb-2 block">Landing Page URL</Label>
+              <Input
+                id="landing-url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com"
+              />
+            </div>
           </CardContent>
         </Card>
 
         {/* Structure Selection */}
         <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Select Campaign Structure</CardTitle>
-            <CardDescription>Choose the structure that best fits your campaign goals</CardDescription>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Campaign Structure</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {STRUCTURE_TYPES.map((structure) => {
                 const Icon = structure.icon;
                 const isSelected = structureType === structure.id;
@@ -890,25 +897,25 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <Card
                     key={structure.id}
                     onClick={() => setStructureType(structure.id)}
-                    className={`cursor-pointer transition-all hover:shadow-lg ${
+                    className={`cursor-pointer transition-all hover:shadow-md ${
                       isSelected 
                         ? 'border-2 border-indigo-500 bg-indigo-50' 
                         : 'border border-slate-200 hover:border-indigo-300'
                     }`}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <div className={`p-1.5 rounded-lg ${
                           isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
                         }`}>
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-4 h-4" />
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-slate-800 mb-1">{structure.name}</h3>
-                          <p className="text-xs text-slate-600">{structure.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm text-slate-800 mb-0.5">{structure.name}</h3>
+                          <p className="text-xs text-slate-600 line-clamp-2">{structure.description}</p>
                         </div>
                         {isSelected && (
-                          <CheckCircle2 className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                          <CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                         )}
                       </div>
                     </CardContent>
@@ -919,55 +926,53 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
-        {/* Match Types */}
+        {/* Ad Types - Compact Checkboxes */}
         <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Match Types</CardTitle>
-            <CardDescription>Select which match types to include</CardDescription>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Ad Types</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap gap-4">
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="broad"
+                  id="ad-rsa"
                   checked={matchTypes.broad}
                   onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, broad: !!checked })}
                 />
-                <Label htmlFor="broad" className="cursor-pointer">Broad Match</Label>
+                <Label htmlFor="ad-rsa" className="cursor-pointer font-medium text-sm">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold px-2 py-0.5 bg-blue-100 text-blue-700 rounded">RSA</span>
+                    Responsive Search Ads
+                  </span>
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="phrase"
+                  id="ad-dki"
                   checked={matchTypes.phrase}
                   onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, phrase: !!checked })}
                 />
-                <Label htmlFor="phrase" className="cursor-pointer">Phrase Match</Label>
+                <Label htmlFor="ad-dki" className="cursor-pointer font-medium text-sm">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold px-2 py-0.5 bg-purple-100 text-purple-700 rounded">DKI</span>
+                    Dynamic Keyword Insertion
+                  </span>
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="exact"
+                  id="ad-call"
                   checked={matchTypes.exact}
                   onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, exact: !!checked })}
                 />
-                <Label htmlFor="exact" className="cursor-pointer">Exact Match</Label>
+                <Label htmlFor="ad-call" className="cursor-pointer font-medium text-sm">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold px-2 py-0.5 bg-green-100 text-green-700 rounded">Call</span>
+                    Call Only Ads
+                  </span>
+                </Label>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Landing Page URL */}
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle>Landing Page URL</CardTitle>
-            <CardDescription>Where should your ads direct users?</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="max-w-md"
-            />
           </CardContent>
         </Card>
 

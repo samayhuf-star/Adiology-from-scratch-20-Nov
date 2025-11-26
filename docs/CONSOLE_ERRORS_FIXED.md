@@ -1,183 +1,128 @@
-# Console Errors Fixed
+# Console Errors - Fixed
 
-This document summarizes all the console errors that were fixed in the application.
+## Overview
+This document details the console errors that were present and how they were resolved.
 
-## Date: November 26, 2025
+## Issues Fixed
 
-### Errors Fixed
-
-#### 1. Content Security Policy (CSP) Error - Stripe.js Loading Blocked ✅
+### 1. Content Security Policy (CSP) Violation - 'unsafe-eval'
 
 **Error:**
 ```
-Loading the script 'https://js.stripe.com/clover/stripe.js' violates the following Content Security Policy directive: "script-src 'self' *.jam.dev"
+EvalError: Evaluating a string as JavaScript violates the following Content Security Policy directive because 'unsafe-eval' is not an allowed source of script: script-src 'self' *.jam.dev https://js.stripe.com
 ```
 
 **Root Cause:**
-The Content Security Policy in `index.html` was too restrictive and didn't allow loading Stripe.js from `https://js.stripe.com`.
+Jam.dev's error tracking and capture scripts (`recorder.js` and `capture.js`) use `eval()` internally for certain operations. The CSP policy in `index.html` was blocking this.
 
-**Fix:**
-Updated the CSP meta tag in `index.html` to allow:
-- Stripe.js scripts from `https://js.stripe.com`
-- Stripe frames from `*.stripe.com`
-- Stripe API connections via `connect-src`
-- Inline styles (needed for some UI components)
-
-**File Changed:** `index.html`
+**Solution:**
+Updated the CSP policy in `index.html` to include `'unsafe-eval'` in the `script-src` directive:
 
 ```html
 <meta
   http-equiv="Content-Security-Policy"
-  content="frame-src 'self' *.jam.dev *.stripe.com; script-src 'self' *.jam.dev https://js.stripe.com; connect-src 'self' *.jam.dev *.stripe.com https://*.supabase.co; style-src 'self' 'unsafe-inline';"
+  content="frame-src 'self' *.jam.dev *.stripe.com; script-src 'self' 'unsafe-eval' *.jam.dev https://js.stripe.com; connect-src 'self' *.jam.dev *.stripe.com https://*.supabase.co; style-src 'self' 'unsafe-inline';"
 />
 ```
 
----
+**File Changed:** `index.html`
 
-#### 2. "Target is not defined" ReferenceError ✅
-
-**Error:**
-```
-Uncaught ReferenceError: Target is not defined at index-BMGLmUkh.js:949:79
-```
-
-**Root Cause:**
-The Vite build target was set to `esnext`, which can cause issues with certain browser environments and module resolution.
-
-**Fix:**
-Changed the Vite build target to `es2015` (more compatible) and added proper build configuration:
-
-**File Changed:** `vite.config.ts`
-
-```typescript
-build: {
-  target: 'es2015',
-  outDir: 'build',
-  minify: 'esbuild',
-  sourcemap: false,
-  modulePreload: {
-    polyfill: false,
-  },
-}
-```
+**Security Note:** 
+While `'unsafe-eval'` reduces security slightly, it's necessary for Jam.dev's debugging tools to function. This is acceptable in development environments. For production, consider:
+- Using Jam.dev's alternate integration methods if available
+- Removing Jam.dev scripts entirely in production builds
+- Using environment-specific CSP policies
 
 ---
 
-#### 3. Auth Session Missing Error ✅
+### 2. Auto-Execution of createUser on Import
 
-**Error:**
+**Error Messages:**
 ```
-Error getting current user: AuthSessionMissingError: Auth session missing!
+User already exists: s@s.com
+ℹ️ User already exists
 ```
 
 **Root Cause:**
-The application was logging `AuthSessionMissingError` as a critical error even though it's expected behavior when a user is not logged in. This error was being captured by Jam.dev's error tracking.
+The `src/utils/createUser.ts` file was automatically executing code on import (lines 44-52), creating a test user `s@s.com` every time the module was loaded. This caused:
+- Repetitive console messages
+- Multiple EvalError exceptions from Jam.dev trying to track this code execution
+- Unnecessary localStorage operations
 
-**Fix:**
-Updated error handling in both `src/utils/auth.ts` and `src/utils/supabase/client.ts` to silently handle `AuthSessionMissingError` since it's expected when users are not authenticated:
+**Solution:**
+Commented out the auto-execution block in `createUser.ts` and removed the import from `App.tsx`:
 
 **Files Changed:**
-- `src/utils/auth.ts`
-- `src/utils/supabase/client.ts`
+- `src/utils/createUser.ts` - Commented out lines 44-56
+- `src/App.tsx` - Removed `import './utils/createUser';` on line 39
 
-```typescript
-// Only log if it's not a session missing error (expected when not logged in)
-if (error?.name !== 'AuthSessionMissingError' && !error?.message?.includes('session_missing')) {
-  console.error('Error getting current user:', error);
-}
-```
+**Benefits:**
+- Cleaner console output
+- No unnecessary code execution on app load
+- Reduces CSP eval errors
+- The `createUser` function is still available for manual use when needed
 
 ---
 
-#### 4. Preload Resource Warnings ✅
+### 3. Preload Warning (Informational)
 
-**Error:**
+**Warning:**
 ```
 The resource data:application/octet-stream;base64,... was preloaded using link preload but not used within a few seconds from the window's load event.
 ```
 
 **Root Cause:**
-Vite's default module preloading was creating preload links for base64-encoded modules that weren't being used immediately, causing browser warnings.
+This appears to be related to Jam.dev's capture.js trying to preload resources that aren't immediately used.
 
-**Fix:**
-Disabled Vite's module preload polyfill to prevent unnecessary preload warnings:
+**Resolution:**
+This is an informational warning from Jam.dev's internal workings. It doesn't affect functionality and will be suppressed by fixing the CSP issues above, as it's related to how Jam.dev instruments the page.
 
-**File Changed:** `vite.config.ts`
-
-```typescript
-build: {
-  // ... other config
-  modulePreload: {
-    polyfill: false,
-  },
-}
-```
-
----
-
-#### 5. TypeScript Linter Error ✅
-
-**Error:**
-```
-Property 'catch' does not exist on type 'PromiseLike<void>'
-```
-
-**Root Cause:**
-Supabase's query builder returns a `PromiseLike` (not a full `Promise`), which doesn't have a `.catch()` method.
-
-**Fix:**
-Wrapped the non-blocking database update in an async IIFE (Immediately Invoked Function Expression) with proper error handling:
-
-**File Changed:** `src/utils/auth.ts`
-
-```typescript
-// Fire-and-forget update (don't await)
-void (async () => {
-  try {
-    await supabase
-      .from('users')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('id', data.user!.id);
-    console.log('Last login updated successfully');
-  } catch (profileError) {
-    console.warn('Error updating last login (non-critical):', profileError);
-  }
-})();
-```
+**Note:** If this warning persists and becomes problematic, consider:
+- Updating to the latest version of Jam.dev scripts
+- Contacting Jam.dev support for optimization recommendations
+- Removing preload hints if they're explicitly set somewhere
 
 ---
 
 ## Testing
 
-To verify all fixes are working:
+After these changes, the following console messages should no longer appear:
+- ❌ EvalError related to 'unsafe-eval' CSP directive
+- ❌ "User already exists: s@s.com" 
+- ❌ "ℹ️ User already exists"
 
-1. **Build the application:**
-   ```bash
-   npm run build
-   ```
+The following should still work correctly:
+- ✅ Jam.dev error tracking and capture functionality
+- ✅ Manual user creation when needed via `createUser()` function
+- ✅ All existing application features
 
-2. **Check for console errors in production build:**
-   - Open the built application
-   - Check browser console for errors
-   - All previous errors should be resolved
+---
 
-3. **Test Stripe integration:**
-   - Navigate to payment page
-   - Verify Stripe.js loads without CSP errors
-   - Test payment flow
+## Summary of Changes
 
-4. **Test authentication:**
-   - Verify no "Auth session missing" errors when logged out
-   - Test login/logout functionality
+| File | Change | Reason |
+|------|--------|--------|
+| `index.html` | Added `'unsafe-eval'` to CSP script-src | Allow Jam.dev scripts to use eval() |
+| `src/utils/createUser.ts` | Commented out auto-execution block | Prevent unnecessary code execution and console noise |
+| `src/App.tsx` | Removed createUser import | No longer needed since auto-execution is disabled |
 
-## Summary
+---
 
-All console errors have been successfully fixed:
-- ✅ CSP now allows Stripe.js
-- ✅ Build target fixed for better compatibility
-- ✅ Auth errors are handled gracefully
-- ✅ Module preload warnings eliminated
-- ✅ TypeScript linter errors resolved
+## Recommendations
 
-The application should now run without any console errors in both development and production environments.
+1. **For Development:** The current setup with `'unsafe-eval'` and Jam.dev is appropriate.
 
+2. **For Production:** 
+   - Consider removing Jam.dev scripts or using a production-safe integration
+   - Tighten CSP policy by removing `'unsafe-eval'` if Jam.dev is not needed
+   - Use environment variables to conditionally include debugging tools
+
+3. **Code Hygiene:**
+   - Avoid auto-executing code on module import
+   - Use initialization functions instead
+   - Keep side effects explicit and controllable
+
+---
+
+*Fixed on: November 26, 2025*
+*Author: AI Assistant*

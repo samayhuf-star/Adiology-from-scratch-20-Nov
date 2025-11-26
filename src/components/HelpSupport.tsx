@@ -23,7 +23,7 @@ const documentationSections = [
             },
             {
                 title: 'Quick Start Guide',
-                content: `1. Navigate to "Campaign Builder" from the main menu
+                content: `1. Navigate to "Builder 2.0" from the main menu
 2. Choose your campaign structure (SKAG, STAG, or Mix)
 3. Use the Keyword Planner to generate 100-1000 keywords
 4. Select keywords for your campaign
@@ -42,12 +42,12 @@ const documentationSections = [
     },
     {
         id: 'campaign-builder',
-        title: 'Campaign Builder',
+        title: 'Builder 2.0',
         icon: Target,
         articles: [
             {
                 title: '5-Step Campaign Builder Overview',
-                content: `The Campaign Builder guides you through creating professional Google Ads campaigns in 5 simple steps:
+                content: `Builder 2.0 guides you through creating professional Google Ads campaigns in 5 simple steps:
 
 **Step 1: Setup**
 Configure your campaign structure (SKAG/STAG/Mix), geo segmentation, match types, and landing page URL.

@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from './components/ui/dropdown-menu';
 import { Badge } from './components/ui/badge';
-import { CampaignBuilder } from './components/CampaignBuilder';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
 import { CSVValidator2 } from './components/CSVValidator2';
 import { KeywordPlanner } from './components/KeywordPlanner';
@@ -66,7 +65,7 @@ const App = () => {
   const handleLoadHistory = (type: string, data: any) => {
     // Map history types to actual tab IDs
     const typeToTabMap: Record<string, string> = {
-      'campaign': 'campaign-builder',
+      'campaign': 'builder-2',
       'keyword-planner': 'keyword-planner',
       'keyword-mixer': 'keyword-mixer',
       'negative-keywords': 'negative-keywords'
@@ -94,7 +93,7 @@ const App = () => {
     // Redirect based on notification type
     const title = notification.title.toLowerCase();
     if (title.includes('campaign')) {
-      setActiveTab('campaign-builder');
+      setActiveTab('builder-2');
     } else if (title.includes('export') || title.includes('csv')) {
       setActiveTab('csv-validator');
     } else if (title.includes('billing') || title.includes('subscription')) {
@@ -550,7 +549,6 @@ const App = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
-    { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },
     { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
     { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
     { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
@@ -612,9 +610,9 @@ const App = () => {
       setShowSearchSuggestions(false);
     } else {
       const termMap: Record<string, string> = {
-        'marketing': 'campaign-builder',
-        'campaign': 'campaign-builder',
-        'campaigns': 'campaign-builder',
+        'marketing': 'builder-2',
+        'campaign': 'builder-2',
+        'campaigns': 'builder-2',
         'keywords': 'keyword-planner',
         'keyword research': 'keyword-planner',
         'keyword planning': 'keyword-planner',
@@ -868,10 +866,8 @@ const App = () => {
       case 'campaign-presets':
         return <CampaignPresets onLoadPreset={(presetData) => {
           setHistoryData(presetData);
-          setActiveTab('campaign-builder');
+          setActiveTab('builder-2');
         }} />;
-      case 'campaign-builder':
-        return <CampaignBuilder initialData={activeTab === 'campaign-builder' ? historyData : null} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
       case 'csv-validator-2':
