@@ -2909,8 +2909,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 </Button>
                 
                 {/* Extension Buttons */}
-                <div className="pt-2 border-t border-slate-200">
-                  <p className="text-xs text-slate-500 mb-2 font-semibold">EXTENSIONS</p>
+                <div className="pt-2 border-t border-slate-200 bg-slate-100 rounded-lg p-3 -mx-2">
+                  <p className="text-xs text-slate-700 mb-2 font-semibold">EXTENSIONS</p>
                   <Button 
                     onClick={() => createNewAd('snippet')}
                     disabled={selectedKeywords.length === 0}

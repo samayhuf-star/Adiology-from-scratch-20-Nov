@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Input } from './ui/input';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { api } from '../utils/api';
 import { notifications } from '../utils/notifications';
 
@@ -31,6 +32,7 @@ export const CSVValidator2 = () => {
     const [editorBehavior, setEditorBehavior] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [fixing, setFixing] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
     const [editValue, setEditValue] = useState('');
 
@@ -152,27 +154,110 @@ export const CSVValidator2 = () => {
     }, [detectMatchTypeFormat, isValidKeywordForMatch]);
 
     // Handle file upload
-    const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                const normalizedHeaders = normalizeHeaders(results.meta.fields || []);
-                setHeaders(normalizedHeaders);
-                setRows(results.data || []);
-                setProblems([]);
-                setEditorBehavior([]);
-            },
-            error: (error) => {
-                console.error('CSV parsing error:', error);
-                notifications.error('Error parsing CSV: ' + error.message, {
-                    title: 'Parse Error'
+        setUploading(true);
+        setHeaders([]);
+        setRows([]);
+        setProblems([]);
+        setEditorBehavior([]);
+
+        try {
+            const fileExtension = file.name.split('.').pop()?.toLowerCase();
+            
+            // Handle Excel files (.xlsx, .xls)
+            if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // Get first sheet
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convert to JSON
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        if (jsonData.length === 0) {
+                            throw new Error('Excel file is empty');
+                        }
+                        
+                        // First row is headers
+                        const excelHeaders = (jsonData[0] as any[]).map((h: any) => String(h || '').trim()).filter(h => h);
+                        const normalizedHeaders = normalizeHeaders(excelHeaders);
+                        
+                        // Rest are rows
+                        const excelRows = jsonData.slice(1)
+                            .filter((row: any[]) => row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== ''))
+                            .map((row: any[]) => {
+                                const rowObj: any = {};
+                                excelHeaders.forEach((header, idx) => {
+                                    rowObj[header] = row[idx] !== null && row[idx] !== undefined ? String(row[idx]) : '';
+                                });
+                                return rowObj;
+                            });
+                        
+                        setHeaders(normalizedHeaders);
+                        setRows(excelRows);
+                        setProblems([]);
+                        setEditorBehavior([]);
+                        setUploading(false);
+                        
+                        notifications.success(`Successfully loaded ${excelRows.length} rows from Excel file`, {
+                            title: 'File Loaded'
+                        });
+                    } catch (error: any) {
+                        console.error('Excel parsing error:', error);
+                        notifications.error('Error parsing Excel file: ' + (error.message || 'Unknown error'), {
+                            title: 'Parse Error'
+                        });
+                        setUploading(false);
+                    }
+                };
+                reader.onerror = () => {
+                    notifications.error('Error reading Excel file', {
+                        title: 'Read Error'
+                    });
+                    setUploading(false);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                // Handle CSV files
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        const normalizedHeaders = normalizeHeaders(results.meta.fields || []);
+                        setHeaders(normalizedHeaders);
+                        setRows(results.data || []);
+                        setProblems([]);
+                        setEditorBehavior([]);
+                        setUploading(false);
+                        
+                        notifications.success(`Successfully loaded ${results.data?.length || 0} rows from CSV file`, {
+                            title: 'File Loaded'
+                        });
+                    },
+                    error: (error) => {
+                        console.error('CSV parsing error:', error);
+                        notifications.error('Error parsing CSV: ' + error.message, {
+                            title: 'Parse Error'
+                        });
+                        setUploading(false);
+                    }
                 });
             }
-        });
+        } catch (error: any) {
+            console.error('File upload error:', error);
+            notifications.error('Error uploading file: ' + (error.message || 'Unknown error'), {
+                title: 'Upload Error'
+            });
+            setUploading(false);
+        }
     }, [normalizeHeaders]);
 
     // Validate
@@ -469,29 +554,52 @@ export const CSVValidator2 = () => {
                 {/* Upload Section */}
                 <Card className="mb-6 border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl">
                     <CardContent className="p-6">
-                        <div className="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center hover:border-indigo-500 transition-all duration-300 hover:bg-indigo-50/30">
+                        <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
+                            uploading 
+                                ? 'border-indigo-500 bg-indigo-50/50 cursor-wait' 
+                                : 'border-indigo-300 hover:border-indigo-500 hover:bg-indigo-50/30'
+                        }`}>
                             <input
                                 type="file"
                                 id="csvFile2"
-                                accept=".csv"
+                                accept=".csv,.xlsx,.xls"
                                 onChange={handleFileUpload}
+                                disabled={uploading}
                                 className="hidden"
                             />
                             <label
                                 htmlFor="csvFile2"
-                                className="cursor-pointer flex flex-col items-center gap-4"
+                                className={`flex flex-col items-center gap-4 ${uploading ? 'cursor-wait' : 'cursor-pointer'}`}
                             >
-                                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                                    <Upload className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <p className="text-lg font-semibold text-slate-700 mb-1">
-                                        Click to Upload CSV File
-                                    </p>
-                                    <p className="text-sm text-slate-500">
-                                        or drag and drop your file here
-                                    </p>
-                                </div>
+                                {uploading ? (
+                                    <>
+                                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                            <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-semibold text-slate-700 mb-1">
+                                                Uploading and Processing...
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                Please wait while we process your file
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                            <Upload className="w-8 h-8 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-semibold text-slate-700 mb-1">
+                                                Click to Upload CSV or Excel File
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                or drag and drop your file here (.csv, .xlsx, .xls)
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
                             </label>
                         </div>
                     </CardContent>
