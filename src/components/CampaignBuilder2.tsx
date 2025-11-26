@@ -3260,10 +3260,16 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
 
     return (
-      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-slate-800">Geo Targeting Configuration</h2>
-          <p className="text-slate-500">Select the specific locations where your ads will be shown.</p>
+      <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* Enhanced Header with Gradient */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/30 mb-4">
+            <Globe className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+            Geo Targeting Configuration
+          </h2>
+          <p className="text-slate-600 text-lg">Select the specific locations where your ads will be shown.</p>
         </div>
 
         {/* GEO-Segmented Structure Warning */}
@@ -3297,14 +3303,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </Card>
         )}
 
-        <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+        <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-2xl">
           <CardContent className="p-8 space-y-8">
             
-            {/* Country Selector */}
+            {/* Country Selector with Enhanced Design */}
             <div className="space-y-4">
-              <Label className="text-lg font-semibold flex items-center gap-2">
-                <Globe className="w-5 h-5 text-indigo-600"/> Target Country
-              </Label>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg">
+                  <Globe className="w-5 h-5 text-blue-600"/>
+                </div>
+                <Label className="text-lg font-bold text-slate-800">Target Country</Label>
+              </div>
               <Select value={targetCountry} onValueChange={(value) => {
                 setTargetCountry(value);
                 // Reset presets when country changes
@@ -3317,7 +3326,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   setManualGeoInput('');
                 }
               }}>
-                <SelectTrigger className="w-full text-lg py-6 bg-white/80">
+                <SelectTrigger className="w-full text-lg py-7 bg-gradient-to-r from-white to-blue-50 border-2 border-blue-200 hover:border-blue-400 transition-all shadow-sm hover:shadow-md">
                   <SelectValue placeholder="Select Country" />
                 </SelectTrigger>
                 <SelectContent>
@@ -3328,70 +3337,81 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </Select>
             </div>
 
-            <Separator className="bg-slate-200" />
+            <Separator className="bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
 
-            {/* Location Detail */}
-            <div className="space-y-4">
-              <Label className="text-lg font-semibold flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-indigo-600"/> Specific Locations
-              </Label>
+            {/* Location Detail with Enhanced Design */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
+                  <MapPin className="w-5 h-5 text-purple-600"/>
+                </div>
+                <Label className="text-lg font-bold text-slate-800">Specific Locations</Label>
+              </div>
               
               <Tabs value={targetType} onValueChange={setTargetType} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-4 bg-slate-100 p-1 rounded-lg">
+                <TabsList className="grid w-full grid-cols-4 mb-6 bg-gradient-to-r from-slate-100 to-slate-50 p-1.5 rounded-xl shadow-inner">
                   <TabsTrigger 
                     value="COUNTRY" 
-                    className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/30 transition-all font-semibold rounded-lg"
                   >
                     Country
                   </TabsTrigger>
                   <TabsTrigger 
                     value="CITY"
-                    className="data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 transition-all font-semibold rounded-lg"
                   >
                     Cities
                   </TabsTrigger>
                   <TabsTrigger 
                     value="ZIP"
-                    className="data-[state=active]:bg-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 transition-all font-semibold rounded-lg"
                   >
                     Zip Codes
                   </TabsTrigger>
                   <TabsTrigger 
                     value="STATE"
-                    className="data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/30 transition-all font-semibold rounded-lg"
                   >
                     States/Provinces
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="COUNTRY" className="space-y-4">
-                  <div className="bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-300 rounded-xl p-6 shadow-lg">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-emerald-500 rounded-full p-3">
-                        <Globe className="w-6 h-6 text-white" />
+                <TabsContent value="COUNTRY" className="space-y-4 mt-6">
+                  <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-300 rounded-2xl p-8 shadow-xl relative overflow-hidden">
+                    {/* Decorative gradient overlay */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-200/20 to-transparent rounded-full blur-3xl"></div>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-4 shadow-lg shadow-emerald-500/30">
+                          <Globe className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-emerald-900 text-2xl">Whole Country Targeting</h3>
+                          <p className="text-base text-emerald-700 mt-1">
+                            Your campaign will target the entire country selected above
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-bold text-emerald-900 text-xl">Whole Country Targeting</h3>
-                        <p className="text-sm text-emerald-700 mt-1">
-                          Your campaign will target the entire country selected above
+                      
+                      <div className="bg-white rounded-xl p-6 border-2 border-emerald-200 shadow-md">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 font-semibold uppercase tracking-wide">Target Country:</p>
+                            <p className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mt-2">{targetCountry}</p>
+                          </div>
+                          <div className="bg-emerald-100 rounded-full p-3">
+                            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-6 bg-gradient-to-r from-emerald-100 to-green-100 border-2 border-emerald-300 rounded-xl p-5 shadow-sm">
+                        <p className="text-base text-emerald-900 flex items-start gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                          <span><strong className="font-bold">Nationwide Coverage:</strong> All cities, states, and regions within {targetCountry} will be included in your campaign targeting.</span>
                         </p>
                       </div>
-                    </div>
-                    
-                    <div className="bg-white/70 rounded-lg p-4 border border-emerald-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-slate-600 font-medium">Target Country:</p>
-                          <p className="text-2xl font-bold text-emerald-700 mt-1">{targetCountry}</p>
-                        </div>
-                        <CheckCircle2 className="w-12 h-12 text-emerald-500" />
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 bg-emerald-100 border border-emerald-300 rounded-lg p-4">
-                      <p className="text-sm text-emerald-800">
-                        <strong>✓ Nationwide Coverage:</strong> All cities, states, and regions within {targetCountry} will be included in your campaign targeting.
-                      </p>
                     </div>
                   </div>
                 </TabsContent>
