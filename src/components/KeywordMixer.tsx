@@ -1,10 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Shuffle, Plus, X, Download, Save } from 'lucide-react';
+import { Shuffle, Plus, X, Download, Save, Sparkles } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
 import { DEFAULT_MIXER_KEYWORDS } from '../utils/defaultExamples';
+
+// Plumbing service keywords for sample data
+const PLUMBING_KEYWORDS = {
+    services: [
+        'plumber', 'plumbing', 'drain cleaning', 'pipe repair', 'water heater',
+        'leak repair', 'sewer repair', 'toilet repair', 'faucet repair', 
+        'emergency plumber', 'plumbing service', 'drain service'
+    ],
+    locations: [
+        'near me', 'local', 'emergency', '24 hour', 'same day',
+        'residential', 'commercial', 'licensed', 'certified', 'professional'
+    ],
+    extras: [
+        'repair', 'installation', 'replacement', 'maintenance', 'service',
+        'fix', 'contractor', 'company', 'specialist', 'expert'
+    ]
+};
 
 export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     // Store each list as a string (newline-separated)
@@ -41,6 +58,27 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
             setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
         }
     }, [initialData]);
+
+    const fillSampleInfo = () => {
+        // Helper to get random items from array (1-2 words max)
+        const getRandomItems = (arr: string[], count: number) => {
+            const shuffled = [...arr].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, count).filter(item => item.split(' ').length <= 2);
+        };
+
+        // Fill each list with random plumbing keywords
+        const samplesA = getRandomItems(PLUMBING_KEYWORDS.services, 4);
+        const samplesB = getRandomItems(PLUMBING_KEYWORDS.locations, 4);
+        const samplesC = getRandomItems(PLUMBING_KEYWORDS.extras, 3);
+
+        setListA(samplesA.join('\n'));
+        setListB(samplesB.join('\n'));
+        setListC(samplesC.join('\n'));
+
+        notifications.success('Sample plumbing keywords filled!', {
+            title: 'Sample Data Loaded'
+        });
+    };
 
     const handleSave = async () => {
         if (mixedKeywords.length === 0) return;
@@ -134,13 +172,22 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
 
     return (
         <div className="p-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                    Keyword Mixer
-                </h1>
-                <p className="text-slate-500">
-                    Mix and match multiple keyword lists to generate all possible combinations
-                </p>
+            <div className="mb-8 flex items-start justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                        Keyword Mixer
+                    </h1>
+                    <p className="text-slate-500">
+                        Mix and match multiple keyword lists to generate all possible combinations
+                    </p>
+                </div>
+                <button
+                    onClick={fillSampleInfo}
+                    className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2"
+                >
+                    <Sparkles className="w-4 h-4" />
+                    Fill Sample Info
+                </button>
             </div>
 
             <div className="space-y-6">
