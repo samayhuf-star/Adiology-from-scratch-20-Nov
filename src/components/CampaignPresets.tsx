@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Download, Edit, CheckCircle, Package, Sparkles, Zap, TrendingUp, X, Eye, Grid3x3, List } from 'lucide-react';
-import { campaignPresets, CampaignPreset, structureDescriptions } from '../data/campaignPresets';
+import { campaignPresets, CampaignPreset } from '../data/campaignPresets';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { notifications } from '../utils/notifications';
@@ -499,15 +499,12 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
         </div>
       </div>
 
-      {/* Presets Grid - Grouped by Structure */}
-      <div className="space-y-0">
-        {Object.keys(structureDescriptions).map((structureKey) => {
-          const structure = structureKey as keyof typeof structureDescriptions;
-          const structureInfo = structureDescriptions[structure];
-          const presetsForStructure = filteredPresets.filter(p => p.structure === structure);
-          
-          if (presetsForStructure.length === 0) return null;
-          
+      {/* Presets Grid/List - Simple flat display */}
+      <div className={viewMode === 'grid' 
+        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5' 
+        : 'space-y-4'
+      }>
+        {filteredPresets.map((preset) => {
           // Get structure color based on type
           const getStructureColor = (struct: string) => {
             switch(struct) {
@@ -520,114 +517,97 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             }
           };
           
-          return (
-            <div key={structure} className="pb-12 mb-12 border-b border-slate-200 last:border-b-0 last:mb-0 last:pb-0">
-              {/* Structure Header */}
-              <div className="mb-10">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-4xl">{structureInfo.icon}</span>
-                  <h2 className="text-3xl font-bold text-slate-900">{structureInfo.name}</h2>
+          const colorScheme = getStructureColor(preset.structure || '');
+          
+          // List View Layout
+          if (viewMode === 'list') {
+            return (
+              <div
+                key={preset.slug}
+                className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
+                onClick={() => handleSelectPreset(preset)}
+              >
+                {/* Structure Tag */}
+                <div className={`absolute top-4 right-4 px-3 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
+                  {preset.structure || 'SKAG'}
                 </div>
-                <p className="text-lg text-slate-600 ml-14">{structureInfo.description}</p>
-              </div>
-              
-              {/* Presets Grid/List for this Structure */}
-              <div className={viewMode === 'grid' 
-                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6' 
-                : 'space-y-4'
-              }>
-                {presetsForStructure.map((preset) => {
-                  const colorScheme = getStructureColor(preset.structure || '');
-                  
-                  // List View Layout
-                  if (viewMode === 'list') {
-                    return (
-                      <div
-                        key={preset.slug}
-                        className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
-                        onClick={() => handleSelectPreset(preset)}
-                      >
-                        {/* Structure Tag */}
-                        <div className={`absolute top-4 right-4 px-3 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
-                          {preset.structure || 'SKAG'}
+                
+                <div className="p-6">
+                  <div className="flex items-start gap-6">
+                    {/* Left: Title and Description */}
+                    <div className="flex-1 pr-20">
+                      <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                        {preset.title}
+                      </h3>
+                      <p className="text-sm text-slate-500 mb-4">{preset.campaign_name}</p>
+                      
+                      {/* Stats Row */}
+                      <div className="flex items-center gap-6 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Sparkles className="w-4 h-4" />
+                          <span>{preset.keywords.length} keywords</span>
                         </div>
-                        
-                        <div className="p-6">
-                          <div className="flex items-start gap-6">
-                            {/* Left: Title and Description */}
-                            <div className="flex-1 pr-20">
-                              <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                                {preset.title}
-                              </h3>
-                              <p className="text-sm text-slate-500 mb-4">{preset.campaign_name}</p>
-                              
-                              {/* Stats Row */}
-                              <div className="flex items-center gap-6 mb-4">
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                  <Sparkles className="w-4 h-4" />
-                                  <span>{preset.keywords.length} keywords</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                  <Zap className="w-4 h-4" />
-                                  <span>{preset.ad_groups.length} ad groups</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span>${preset.max_cpc.toFixed(2)} max CPC</span>
-                                </div>
-                              </div>
-                              
-                              {/* Ad Groups */}
-                              <div className="flex flex-wrap gap-2">
-                                {preset.ad_groups.slice(0, 4).map((group, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {group.name}
-                                  </Badge>
-                                ))}
-                                {preset.ad_groups.length > 4 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{preset.ad_groups.length - 4} more
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Right: Actions */}
-                            <div className="flex items-center gap-3">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-slate-300 hover:bg-slate-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectPreset(preset);
-                                }}
-                                title="View campaign details"
-                              >
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="theme-button-primary"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleExportCSV(preset);
-                                }}
-                                title="Download Google Ads Editor CSV"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Export
-                              </Button>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Zap className="w-4 h-4" />
+                          <span>{preset.ad_groups.length} ad groups</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span>${preset.max_cpc.toFixed(2)} max CPC</span>
                         </div>
                       </div>
-                    );
-                  }
-                  
-                  // Grid View Layout (existing)
-                  return (
+                      
+                      {/* Ad Groups */}
+                      <div className="flex flex-wrap gap-2">
+                        {preset.ad_groups.slice(0, 4).map((group, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {group.name}
+                          </Badge>
+                        ))}
+                        {preset.ad_groups.length > 4 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{preset.ad_groups.length - 4} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-slate-300 hover:bg-slate-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectPreset(preset);
+                        }}
+                        title="View campaign details"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="theme-button-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportCSV(preset);
+                        }}
+                        title="Download Google Ads Editor CSV"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          
+          // Grid View Layout (existing)
+          return (
           <div
             key={preset.slug}
             className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden p-4 sm:p-6 flex flex-col h-full"
@@ -703,10 +683,6 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
               </div>
             </div>
           </div>
-                  );
-                })}
-              </div>
-            </div>
           );
         })}
       </div>
