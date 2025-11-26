@@ -177,7 +177,14 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                                             {getTypeIcon(item.type)}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-slate-900 mb-1 truncate">{item.name}</h3>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-semibold text-slate-900 truncate">{item.name}</h3>
+                                                {item.status === 'draft' && (
+                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-xs">
+                                                        Draft
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                                 <Badge variant="secondary" className="text-xs">
                                                     {getTypeLabel(item.type)}
@@ -189,6 +196,11 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                                                 <span className="hidden sm:inline text-xs text-slate-400">
                                                     {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
+                                                {item.lastModified && item.status === 'draft' && (
+                                                    <span className="text-xs text-amber-600 flex items-center gap-1">
+                                                        Last saved: {new Date(item.lastModified).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

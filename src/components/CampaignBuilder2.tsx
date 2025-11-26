@@ -32,6 +32,7 @@ import { api } from '../utils/api';
 import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { projectId } from '../utils/supabase/info';
 import { historyService } from '../utils/historyService';
+import { useAutoSave } from '../hooks/useAutoSave';
 
 // Geo Targeting Constants
 const COUNTRIES = [
@@ -689,6 +690,48 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 6: Validate
   const [validationResults, setValidationResults] = useState<any>(null);
 
+  // Auto-save hook - saves drafts automatically
+  const { saveCompleted, clearDraft, currentDraftId } = useAutoSave({
+    type: 'campaign',
+    name: campaignName,
+    data: {
+      campaignName,
+      structureType,
+      step,
+      url,
+      matchTypes,
+      seedKeywords,
+      negativeKeywords,
+      selectedKeywords,
+      generatedKeywords,
+      generatedAds,
+      ads,
+      intentGroups,
+      selectedIntents,
+      alphaKeywords,
+      betaKeywords,
+      funnelGroups,
+      brandKeywords,
+      nonBrandKeywords,
+      competitorKeywords,
+      smartClusters,
+      targetCountry,
+      targetType,
+      selectedStates,
+      selectedCities,
+      selectedZips,
+      reviewData,
+      validationResults,
+      groupNegativeKeywords,
+      geoType
+    },
+    enabled: Boolean(campaignName && (structureType || selectedKeywords.length > 0 || generatedAds.length > 0)),
+    delay: 3000, // Save after 3 seconds of inactivity
+    onSave: (draftId) => {
+      console.log('✅ Draft auto-saved:', draftId);
+    }
+  });
+
   // Load initial data
   useEffect(() => {
     if (initialData) {
@@ -706,72 +749,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     loadSavedCampaigns();
   }, []);
 
-  // Auto-save campaign state
-  useEffect(() => {
-    // Only auto-save if there's meaningful data (campaign name or structure selected)
-    if (campaignName && (structureType || selectedKeywords.length > 0 || generatedAds.length > 0)) {
-      const saveTimeout = setTimeout(() => {
-        autoSaveCampaign();
-      }, 2000); // Debounce: save 2 seconds after last change
-
-      return () => clearTimeout(saveTimeout);
-    }
-  }, [campaignName, structureType, step, selectedKeywords, generatedAds, seedKeywords, negativeKeywords, url, matchTypes]);
-
-  // Auto-save function
-  const autoSaveCampaign = async () => {
-    try {
-      const campaignData = {
-        campaignName,
-        structureType,
-        step,
-        url,
-        matchTypes,
-        seedKeywords,
-        negativeKeywords,
-        selectedKeywords,
-        generatedKeywords,
-        generatedAds,
-        ads,
-        intentGroups,
-        selectedIntents,
-        alphaKeywords,
-        betaKeywords,
-        funnelGroups,
-        brandKeywords,
-        nonBrandKeywords,
-        competitorKeywords,
-        smartClusters,
-        targetCountry,
-        targetType,
-        selectedStates,
-        selectedCities,
-        selectedZips,
-        reviewData,
-        validationResults,
-        groupNegativeKeywords,
-        timestamp: new Date().toISOString(),
-        status: step === 6 ? 'completed' : step > 1 ? 'in_progress' : 'started'
-      };
-
-      // Use existing campaign ID or create new one
-      const campaignId = currentCampaignId || crypto.randomUUID();
-      if (!currentCampaignId) {
-        setCurrentCampaignId(campaignId);
-      }
-
-      // Save to history service (which handles server/localStorage fallback)
-      await historyService.save('builder-2-campaign', campaignName, {
-        ...campaignData,
-        id: campaignId
-      });
-
-      // Update local saved campaigns list
-      await loadSavedCampaigns();
-    } catch (error) {
-      console.error('Failed to auto-save campaign:', error);
-    }
-  };
+  // Note: Auto-save is now handled by the useAutoSave hook above
 
   // Load saved campaigns
   const loadSavedCampaigns = async () => {
@@ -4138,6 +4116,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         // Export to CSV
         const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
         exportCampaignToCSV(structure, filename);
+        
+        // Mark draft as completed (removes draft status in history)
+        saveCompleted();
         
         notifications.success('Campaign exported successfully!', { 
           title: '✅ Export Complete',
