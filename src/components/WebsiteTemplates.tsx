@@ -430,18 +430,28 @@ export const WebsiteTemplates: React.FC = () => {
         }
       });
 
-    notifications.success('Template saved successfully!', { title: 'Saved' });
-    setShowSaveDialog(false);
-    setTemplateName('');
+      await loadSavedTemplates();
+      notifications.success('Template saved successfully!', { title: 'Saved' });
+      setShowSaveDialog(false);
+      setShowEditor(false);
+      setTemplateName('');
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      notifications.error('Failed to save template. Please try again.', { title: 'Save Error' });
+    }
   };
 
-  const handleDeleteTemplate = (id: string) => {
+  const handleDeleteTemplate = async (id: string) => {
     if (!confirm('Are you sure you want to delete this template?')) return;
 
-    const updated = savedTemplates.filter(t => t.id !== id);
-    setSavedTemplates(updated);
-    localStorage.setItem('website_templates', JSON.stringify(updated));
-    notifications.success('Template deleted', { title: 'Deleted' });
+    try {
+      await historyService.delete(id);
+      await loadSavedTemplates();
+      notifications.success('Template deleted', { title: 'Deleted' });
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      notifications.error('Failed to delete template. Please try again.', { title: 'Delete Error' });
+    }
   };
 
   const handleExportHTML = (template: SavedTemplate) => {
@@ -547,65 +557,100 @@ export const WebsiteTemplates: React.FC = () => {
 
       <Tabs defaultValue="templates" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="templates">Available Templates</TabsTrigger>
+          <TabsTrigger value="templates">Template Library ({filteredTemplates.length})</TabsTrigger>
           <TabsTrigger value="saved">My Templates ({savedTemplates.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="templates" className="space-y-6">
-          <Card className="p-8 hover:shadow-xl transition-all">
-            <div className="flex items-start gap-6">
-              <div className="text-6xl">{defaultTemplate.thumbnail}</div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-slate-800 mb-2">
-                      {defaultTemplate.name}
-                    </h3>
-                    <p className="text-slate-600 mb-4">{defaultTemplate.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">Single Page</Badge>
-                      <Badge variant="secondary">Google Ads Ready</Badge>
-                      <Badge variant="secondary">Mobile Responsive</Badge>
-                      <Badge variant="secondary">Privacy Policy</Badge>
-                      <Badge variant="secondary">Terms of Service</Badge>
+          {/* Search and Filter Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="Search templates..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-slate-500" />
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Categories</SelectItem>
+                  {serviceCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Templates Grid */}
+          {filteredTemplates.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Layout className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-600 mb-2">No templates found</h3>
+              <p className="text-slate-500">Try adjusting your search or filter criteria</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTemplates.map((template) => (
+                <Card key={template.id} className="p-6 hover:shadow-xl transition-all group">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="text-5xl">{template.thumbnail}</div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
+                        {template.name}
+                      </h3>
+                      <Badge variant="secondary" className="mb-2">
+                        {template.category}
+                      </Badge>
+                      <p className="text-sm text-slate-600">{template.description}</p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
-                  {defaultTemplate.sections.slice(0, 8).map(section => (
-                    <div key={section.id} className="text-center p-3 bg-slate-50 rounded-lg">
-                      <div className="text-2xl mb-1">
-                        {section.type === 'hero' && '🎯'}
-                        {section.type === 'features' && '⭐'}
-                        {section.type === 'services' && '🛠️'}
-                        {section.type === 'testimonials' && '💬'}
-                        {section.type === 'cta' && '📞'}
-                        {section.type === 'privacy' && '🔒'}
-                        {section.type === 'terms' && '📋'}
-                        {section.type === 'footer' && '📍'}
-                      </div>
-                      <p className="text-xs font-medium text-slate-600">{section.title}</p>
-                    </div>
-                  ))}
-                </div>
+                  
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    <Badge variant="outline" className="text-xs">
+                      {template.sections.length} sections
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">Google Ads Ready</Badge>
+                    <Badge variant="outline" className="text-xs">Mobile Responsive</Badge>
+                  </div>
 
-                <div className="flex gap-3">
-                  <Button 
-                    onClick={() => handleEditTemplate()}
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600"
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Template
-                  </Button>
-                  <Button variant="outline">
-                    <Eye className="w-4 h-4 mr-2" />
-                    Preview
-                  </Button>
-                </div>
-              </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => handleEditTemplate(template, true)}
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Eye className="w-4 h-4 mr-2" />
+                      Preview
+                    </Button>
+                  </div>
+                </Card>
+              ))}
             </div>
-          </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="saved" className="space-y-6">
