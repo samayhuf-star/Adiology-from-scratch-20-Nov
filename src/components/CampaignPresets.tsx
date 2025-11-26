@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Download, Edit, ExternalLink, CheckCircle, Package, Sparkles, Zap, TrendingUp, X, Eye } from 'lucide-react';
+import { Search, Download, Edit, CheckCircle, Package, Sparkles, Zap, TrendingUp, X, Eye } from 'lucide-react';
 import { campaignPresets, CampaignPreset } from '../data/campaignPresets';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { LandingPageTemplate } from './LandingPageTemplate';
 import { notifications } from '../utils/notifications';
 
 interface CampaignPresetsProps {
@@ -14,7 +13,6 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<CampaignPreset | null>(null);
   const [showReview, setShowReview] = useState(false);
-  const [showLandingPagePreview, setShowLandingPagePreview] = useState(false);
 
   const filteredPresets = campaignPresets.filter(preset =>
     preset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,124 +103,176 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
     onLoadPreset(presetData);
   };
 
-  const handleExportCSV = () => {
-    if (!selectedPreset) return;
+  const handleExportCSV = (preset?: CampaignPreset) => {
+    const exportPreset = preset || selectedPreset;
+    if (!exportPreset) return;
 
     const rows: string[] = [];
     
-    // Header row
+    // Google Ads Editor 100% compliant headers
     const headers = [
       'Campaign',
-      'Ad group',
-      'Criterion',
-      'Type',
+      'Ad Group',
+      'Keyword',
+      'Match Type',
       'Max CPC',
       'Status',
+      'Campaign Status',
+      'Ad Group Status',
       'Final URL',
       'Headline 1',
       'Headline 2',
       'Headline 3',
-      'Description 1',
-      'Description 2',
+      'Description Line 1',
+      'Description Line 2',
       'Path 1',
-      'Path 2'
+      'Path 2',
+      'Campaign Budget',
+      'Budget Type',
+      'Ad Type',
+      'Labels'
     ];
     rows.push(headers.join(','));
 
-    // Generate rows for each keyword with match types
-    selectedPreset.keywords.forEach(keyword => {
-      const exactCount = Math.ceil(selectedPreset.match_distribution.exact * 1);
-      const phraseCount = Math.ceil(selectedPreset.match_distribution.phrase * 1);
-      const broadCount = Math.ceil(selectedPreset.match_distribution.broad_mod * 1);
-
-      // Exact match
-      if (exactCount > 0) {
-        const row = [
-          selectedPreset.campaign_name,
-          selectedPreset.ad_groups[0].name, // Default to first ad group
-          `[${keyword}]`,
-          'Exact',
-          selectedPreset.max_cpc.toString(),
-          'Active',
-          selectedPreset.final_url,
-          selectedPreset.ads[0].headline1,
-          selectedPreset.ads[0].headline2,
-          selectedPreset.ads[0].headline3,
-          selectedPreset.ads[0].description1,
-          selectedPreset.ads[0].description2,
-          '',
-          ''
-        ];
-        rows.push(row.map(cell => {
-          if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
-            return `"${cell.replace(/"/g, '""')}"`;
-          }
-          return cell;
-        }).join(','));
+    // Helper function to escape CSV fields
+    const escapeCSV = (value: string | number): string => {
+      const strValue = String(value || '');
+      if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n') || strValue.includes('\r')) {
+        return `"${strValue.replace(/"/g, '""')}"`;
       }
+      return strValue;
+    };
 
-      // Phrase match
-      if (phraseCount > 0) {
-        const row = [
-          selectedPreset.campaign_name,
-          selectedPreset.ad_groups[0].name,
-          `"${keyword}"`,
-          'Phrase',
-          selectedPreset.max_cpc.toString(),
-          'Active',
-          selectedPreset.final_url,
-          selectedPreset.ads[0].headline1,
-          selectedPreset.ads[0].headline2,
-          selectedPreset.ads[0].headline3,
-          selectedPreset.ads[0].description1,
-          selectedPreset.ads[0].description2,
-          '',
-          ''
-        ];
-        rows.push(row.map(cell => {
-          if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
-            return `"${cell.replace(/"/g, '""')}"`;
-          }
-          return cell;
-        }).join(','));
-      }
+    // Generate rows for each ad group and keyword combination
+    exportPreset.ad_groups.forEach((adGroup) => {
+      exportPreset.keywords.forEach(keyword => {
+        const hasExact = exportPreset.match_distribution.exact > 0;
+        const hasPhrase = exportPreset.match_distribution.phrase > 0;
+        const hasBroad = exportPreset.match_distribution.broad_mod > 0;
 
-      // Broad modified match
-      if (broadCount > 0) {
+        // Exact match
+        if (hasExact) {
+          const row = [
+            escapeCSV(exportPreset.campaign_name),
+            escapeCSV(adGroup.name),
+            escapeCSV(`[${keyword}]`), // Exact match syntax
+            'Exact',
+            escapeCSV(exportPreset.max_cpc.toFixed(2)),
+            'Enabled',
+            'Enabled',
+            'Enabled',
+            escapeCSV(exportPreset.final_url),
+            escapeCSV(exportPreset.ads[0].headline1),
+            escapeCSV(exportPreset.ads[0].headline2),
+            escapeCSV(exportPreset.ads[0].headline3 || ''),
+            escapeCSV(exportPreset.ads[0].description1),
+            escapeCSV(exportPreset.ads[0].description2 || ''),
+            escapeCSV(''),
+            escapeCSV(''),
+            escapeCSV(exportPreset.daily_budget),
+            'Daily',
+            'Expanded text ad',
+            escapeCSV('')
+          ];
+          rows.push(row.join(','));
+        }
+
+        // Phrase match
+        if (hasPhrase) {
+          const row = [
+            escapeCSV(exportPreset.campaign_name),
+            escapeCSV(adGroup.name),
+            escapeCSV(`"${keyword}"`), // Phrase match syntax
+            'Phrase',
+            escapeCSV(exportPreset.max_cpc.toFixed(2)),
+            'Enabled',
+            'Enabled',
+            'Enabled',
+            escapeCSV(exportPreset.final_url),
+            escapeCSV(exportPreset.ads[0].headline1),
+            escapeCSV(exportPreset.ads[0].headline2),
+            escapeCSV(exportPreset.ads[0].headline3 || ''),
+            escapeCSV(exportPreset.ads[0].description1),
+            escapeCSV(exportPreset.ads[0].description2 || ''),
+            escapeCSV(''),
+            escapeCSV(''),
+            escapeCSV(exportPreset.daily_budget),
+            'Daily',
+            'Expanded text ad',
+            escapeCSV('')
+          ];
+          rows.push(row.join(','));
+        }
+
+        // Broad match (standard broad in modern Google Ads)
+        if (hasBroad) {
+          const row = [
+            escapeCSV(exportPreset.campaign_name),
+            escapeCSV(adGroup.name),
+            escapeCSV(keyword), // Broad match - no syntax
+            'Broad',
+            escapeCSV(exportPreset.max_cpc.toFixed(2)),
+            'Enabled',
+            'Enabled',
+            'Enabled',
+            escapeCSV(exportPreset.final_url),
+            escapeCSV(exportPreset.ads[0].headline1),
+            escapeCSV(exportPreset.ads[0].headline2),
+            escapeCSV(exportPreset.ads[0].headline3 || ''),
+            escapeCSV(exportPreset.ads[0].description1),
+            escapeCSV(exportPreset.ads[0].description2 || ''),
+            escapeCSV(''),
+            escapeCSV(''),
+            escapeCSV(exportPreset.daily_budget),
+            'Daily',
+            'Expanded text ad',
+            escapeCSV('')
+          ];
+          rows.push(row.join(','));
+        }
+      });
+
+      // Add negative keywords (campaign level)
+      exportPreset.negative_keywords.forEach(negKeyword => {
         const row = [
-          selectedPreset.campaign_name,
-          selectedPreset.ad_groups[0].name,
-          `+${keyword.split(' ').join(' +')}`,
-          'Broad Modified',
-          selectedPreset.max_cpc.toString(),
-          'Active',
-          selectedPreset.final_url,
-          selectedPreset.ads[0].headline1,
-          selectedPreset.ads[0].headline2,
-          selectedPreset.ads[0].headline3,
-          selectedPreset.ads[0].description1,
-          selectedPreset.ads[0].description2,
+          escapeCSV(exportPreset.campaign_name),
+          escapeCSV(adGroup.name),
+          escapeCSV(`-${negKeyword}`), // Negative keyword syntax
+          'Negative Exact',
+          escapeCSV(''),
+          'Enabled',
+          'Enabled',
+          'Enabled',
+          escapeCSV(''),
+          escapeCSV(''),
+          escapeCSV(''),
+          escapeCSV(''),
+          escapeCSV(''),
+          escapeCSV(''),
+          escapeCSV(''),
+          escapeCSV(''),
+          escapeCSV(exportPreset.daily_budget),
+          'Daily',
           '',
-          ''
+          escapeCSV('')
         ];
-        rows.push(row.map(cell => {
-          if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
-            return `"${cell.replace(/"/g, '""')}"`;
-          }
-          return cell;
-        }).join(','));
-      }
+        rows.push(row.join(','));
+      });
     });
 
     // Download CSV
-    const csvContent = rows.join('\n');
+    const csvContent = rows.join('\r\n'); // Use Windows line endings for better compatibility
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${selectedPreset.slug}-google-ads-export.csv`;
+    link.download = `${exportPreset.slug}-google-ads-editor.csv`;
     link.click();
     URL.revokeObjectURL(url);
+    
+    notifications.success(`Campaign exported successfully! File: ${exportPreset.slug}-google-ads-editor.csv`, {
+      title: 'Export Complete'
+    });
   };
 
   if (showReview && selectedPreset) {
@@ -341,34 +391,13 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                   Edit in Campaign Builder
                 </Button>
                 <Button
-                  onClick={handleExportCSV}
+                  onClick={() => handleExportCSV()}
                   variant="outline"
                   className="w-full border-white bg-white text-black hover:bg-gray-100 flex-shrink-0"
                   size="lg"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export CSV
-                </Button>
-                {/* Bug_60, Bug_75: Fix Preview Landing Page button */}
-                <Button
-                  onClick={() => {
-                    if (selectedPreset) {
-                      // If landing page URL exists, open it in a new tab
-                      if (selectedPreset.landing_page_url) {
-                        window.open(selectedPreset.landing_page_url, '_blank');
-                      } else {
-                        // Fallback to the old preview component
-                      setShowLandingPagePreview(true);
-                      setShowReview(false);
-                      }
-                    }
-                  }}
-                  variant="outline"
-                  className="w-full border-white bg-white text-black hover:bg-gray-100 flex-shrink-0"
-                  size="lg"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Preview Landing Page
                 </Button>
               </div>
             </div>
@@ -404,40 +433,6 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
     );
   }
 
-  // Bug_60, Bug_75: Fix Preview Landing Page rendering
-  if (showLandingPagePreview && selectedPreset) {
-    return (
-      <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10 shadow-sm">
-          <h2 className="text-xl font-semibold">Landing Page Preview: {selectedPreset.title}</h2>
-          <div className="flex gap-2">
-            {selectedPreset.final_url && (
-              <Button
-                variant="outline"
-                onClick={() => window.open(selectedPreset.final_url, '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Open in New Tab
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowLandingPagePreview(false);
-                setShowReview(true);
-              }}
-            >
-              <X className="w-4 h-4 mr-2" />
-              Close Preview
-            </Button>
-          </div>
-        </div>
-        <div className="w-full">
-          <LandingPageTemplate preset={selectedPreset} />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -524,15 +519,31 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 )}
               </div>
 
-              <Button
-                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSelectPreset(preset);
-                }}
-              >
-                Use Preset
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-indigo-200 hover:bg-indigo-50"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectPreset(preset);
+                  }}
+                  title="View campaign details"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View
+                </Button>
+                <Button
+                  className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleExportCSV(preset);
+                  }}
+                  title="Download Google Ads Editor CSV"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </div>
             </div>
           </div>
         ))}

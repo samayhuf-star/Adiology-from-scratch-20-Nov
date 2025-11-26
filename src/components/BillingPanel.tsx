@@ -436,54 +436,58 @@ Generated on ${new Date().toLocaleDateString()}`;
         };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
             {error && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-600" />
+                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
                         <p className="text-sm text-yellow-800">{error}</p>
                     </div>
                 </div>
             )}
-             <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <div>
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     Billing & Subscription
                 </h1>
-                <p className="text-slate-500 mt-1">Manage your plan, payment methods, and invoices.</p>
+                <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage your plan, payment methods, and invoices.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                 {/* Current Plan */}
-                <Card className="md:col-span-2 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                <Card className="lg:col-span-2 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
                     <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <CardTitle>Current Plan</CardTitle>
-                                <CardDescription>You are currently on the <span className="font-semibold text-indigo-600">{billingInfo.plan} Plan</span></CardDescription>
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                                <CardTitle className="text-lg sm:text-xl">Current Plan</CardTitle>
+                                <CardDescription className="mt-1">
+                                    You are currently on the <span className="font-semibold text-indigo-600 break-words">{billingInfo.plan} Plan</span>
+                                </CardDescription>
                             </div>
-                            <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">Active</Badge>
+                            <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100 self-start">Active</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <div className="text-sm text-slate-500 mb-1">Next Billing Date</div>
-                                <div className="text-lg font-semibold flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-indigo-500"/> 
-                                    {billingInfo.nextBillingDate 
-                                        ? new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', { 
-                                            month: 'short', 
-                                            day: 'numeric', 
-                                            year: 'numeric' 
-                                          })
-                                        : billingInfo.plan.includes('Lifetime') 
-                                          ? 'Never (Lifetime)' 
-                                          : 'N/A'}
+                                <div className="text-xs sm:text-sm text-slate-500 mb-1">Next Billing Date</div>
+                                <div className="text-base sm:text-lg font-semibold flex items-center gap-2 flex-wrap">
+                                    <Calendar className="w-4 h-4 text-indigo-500 flex-shrink-0"/> 
+                                    <span className="break-words">
+                                        {billingInfo.nextBillingDate 
+                                            ? new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', { 
+                                                month: 'short', 
+                                                day: 'numeric', 
+                                                year: 'numeric' 
+                                              })
+                                            : billingInfo.plan.includes('Lifetime') 
+                                              ? 'Never (Lifetime)' 
+                                              : 'N/A'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <div className="text-sm text-slate-500 mb-1">Amount Due</div>
-                                <div className="text-lg font-semibold text-slate-800">$0.00</div>
+                                <div className="text-xs sm:text-sm text-slate-500 mb-1">Amount Due</div>
+                                <div className="text-base sm:text-lg font-semibold text-slate-800">$0.00</div>
                             </div>
                         </div>
 
@@ -501,38 +505,45 @@ Generated on ${new Date().toLocaleDateString()}`;
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-6 flex flex-col sm:flex-row gap-3">
-                        <Button 
-                            onClick={async () => {
-                                setProcessing(true);
-                                try {
-                                    await createCustomerPortalSession();
-                                    notifications.info('Redirecting to subscription management...', {
-                                        title: 'Manage Subscription',
-                                        description: 'You can view your plan, update payment methods, and manage your subscription.',
-                                    });
-                                } catch (error) {
-                                    console.error("Manage subscription error", error);
-                                    notifications.error('Failed to open subscription portal. Please contact support.', {
-                                        title: 'Error',
-                                        description: error instanceof Error ? error.message : 'Unknown error occurred',
-                                    });
-                                } finally {
-                                    setProcessing(false);
-                                }
-                            }}
-                            disabled={processing || billingInfo.plan === 'Free'}
-                            className="bg-indigo-600 text-white hover:bg-indigo-700 flex-1"
-                        >
-                            {processing ? "Processing..." : "Manage Subscription"}
-                        </Button>
-                        <Button onClick={handleSubscribe} disabled={processing} variant="outline" className="flex-1">
-                            {processing ? "Processing..." : "Upgrade Plan"}
-                        </Button>
+                    <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-4 sm:p-6 flex flex-col gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                            <Button 
+                                onClick={async () => {
+                                    setProcessing(true);
+                                    try {
+                                        await createCustomerPortalSession();
+                                        notifications.info('Redirecting to subscription management...', {
+                                            title: 'Manage Subscription',
+                                            description: 'You can view your plan, update payment methods, and manage your subscription.',
+                                        });
+                                    } catch (error) {
+                                        console.error("Manage subscription error", error);
+                                        notifications.error('Failed to open subscription portal. Please contact support.', {
+                                            title: 'Error',
+                                            description: error instanceof Error ? error.message : 'Unknown error occurred',
+                                        });
+                                    } finally {
+                                        setProcessing(false);
+                                    }
+                                }}
+                                disabled={processing || billingInfo.plan === 'Free'}
+                                className="bg-indigo-600 text-white hover:bg-indigo-700 flex-1 min-w-0"
+                            >
+                                {processing ? "Processing..." : "Manage Subscription"}
+                            </Button>
+                            <Button 
+                                onClick={handleSubscribe} 
+                                disabled={processing} 
+                                variant="outline" 
+                                className="flex-1 min-w-0"
+                            >
+                                {processing ? "Processing..." : "Upgrade Plan"}
+                            </Button>
+                        </div>
                         {billingInfo.plan !== 'Free' && !billingInfo.plan.includes('Lifetime') && (
                             <Button 
                                 variant="link" 
-                                className="text-red-600 hover:text-red-700"
+                                className="text-red-600 hover:text-red-700 w-full sm:w-auto"
                                 onClick={() => setShowCancelDialog(true)}
                                 disabled={processing}
                             >
@@ -548,13 +559,13 @@ Generated on ${new Date().toLocaleDateString()}`;
                         <CardHeader>
                             <CardTitle className="text-lg">Payment Method</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
                             {savedCards.length > 0 ? (
                                 <div className="space-y-3">
                                     {savedCards.map((card, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 border border-slate-200 rounded-xl bg-white">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-6 rounded flex items-center justify-center text-white text-[8px] font-mono ${
+                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-slate-200 rounded-xl bg-white">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className={`w-10 h-6 rounded flex items-center justify-center text-white text-[8px] font-mono flex-shrink-0 ${
                                                     card.brand === 'visa' ? 'bg-slate-800' :
                                                     card.brand === 'mastercard' ? 'bg-red-600' :
                                                     card.brand === 'amex' ? 'bg-blue-600' :
@@ -562,13 +573,13 @@ Generated on ${new Date().toLocaleDateString()}`;
                                                 }`}>
                                                     {card.brand?.toUpperCase() || 'CARD'}
                                                 </div>
-                                <div>
-                                                    <div className="text-sm font-medium">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-medium truncate">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
                                                     <div className="text-xs text-slate-500">Expires {card.expMonth}/{card.expYear}</div>
                                                 </div>
                                             </div>
                                             {card.isDefault && (
-                                                <Badge className="bg-green-100 text-green-700 border-green-200">Default</Badge>
+                                                <Badge className="bg-green-100 text-green-700 border-green-200 self-start sm:self-center">Default</Badge>
                                             )}
                                         </div>
                                     ))}
@@ -578,27 +589,27 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     <CreditCard className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                                     <p className="text-sm mb-4">No payment method added yet</p>
                                     <p className="text-xs text-slate-400">Add a card to enable upgrades</p>
-                            </div>
+                                </div>
                             )}
-                            <div className="flex gap-2 mt-4">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button 
                                     variant="outline" 
-                                    className="flex-1"
+                                    className="flex-1 min-w-0"
                                     onClick={() => setShowAddCardDialog(true)}
                                     disabled={processing}
                                 >
-                                    <CreditCard className="w-4 h-4 mr-2" />
-                                    {savedCards.length > 0 ? 'Add New Card' : 'Add Payment Card'}
+                                    <CreditCard className="w-4 h-4 mr-2 flex-shrink-0" />
+                                    <span className="truncate">{savedCards.length > 0 ? 'Add New Card' : 'Add Payment Card'}</span>
                                 </Button>
                                 {savedCards.length > 0 && (
-                            <Button 
-                                variant="outline" 
-                                        className="flex-1"
-                                onClick={() => setShowPaymentDialog(true)}
-                                disabled={processing}
-                            >
-                                Update Payment Method
-                            </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        className="flex-1 min-w-0"
+                                        onClick={() => setShowPaymentDialog(true)}
+                                        disabled={processing}
+                                    >
+                                        <span className="truncate">Update Payment</span>
+                                    </Button>
                                 )}
                             </div>
                         </CardContent>
@@ -606,13 +617,13 @@ Generated on ${new Date().toLocaleDateString()}`;
 
                     {/* Only show "Go Pro" banner for free users */}
                     {!isPaid && (
-                        <div className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
-                            <Zap className="w-8 h-8 mb-4 text-yellow-300" />
-                            <h3 className="font-bold text-lg mb-2">Go Pro Today</h3>
-                            <p className="text-indigo-100 text-sm mb-4">Get access to AI-powered keyword suggestions and advanced analytics.</p>
+                        <div className="p-5 sm:p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
+                            <Zap className="w-7 h-7 sm:w-8 sm:h-8 mb-3 sm:mb-4 text-yellow-300" />
+                            <h3 className="font-bold text-base sm:text-lg mb-2">Go Pro Today</h3>
+                            <p className="text-indigo-100 text-xs sm:text-sm mb-3 sm:mb-4">Get access to AI-powered keyword suggestions and advanced analytics.</p>
                             <Button 
                                 variant="secondary" 
-                                className="w-full bg-white text-indigo-600 hover:bg-indigo-50"
+                                className="w-full bg-white text-indigo-600 hover:bg-indigo-50 text-sm sm:text-base"
                                 onClick={handleViewPricing}
                             >
                                 View Pricing
@@ -625,37 +636,45 @@ Generated on ${new Date().toLocaleDateString()}`;
             {/* Invoices */}
             <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
                 <CardHeader>
-                    <CardTitle>Invoice History</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">Invoice History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-1">
-                        {billingInfo.invoices?.map((inv: any) => (
-                            <div key={inv.id} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg transition-colors group">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                                        <FileText className="w-4 h-4" />
+                    {billingInfo.invoices && billingInfo.invoices.length > 0 ? (
+                        <div className="space-y-1">
+                            {billingInfo.invoices.map((inv: any) => (
+                                <div key={inv.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-slate-50 rounded-lg transition-colors group">
+                                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                                        <div className="p-2 bg-slate-100 rounded-lg text-slate-500 flex-shrink-0">
+                                            <FileText className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-medium text-slate-800 text-sm sm:text-base">Invoice #{inv.id}</div>
+                                            <div className="text-xs text-slate-500">{inv.date}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="font-medium text-slate-800">Invoice #{inv.id}</div>
-                                        <div className="text-xs text-slate-500">{inv.date}</div>
+                                    <div className="flex items-center gap-3 sm:gap-4 justify-between sm:justify-end">
+                                        <span className="font-mono text-slate-600 text-sm sm:text-base">{inv.amount}</span>
+                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">{inv.status}</Badge>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                            onClick={() => handleDownloadInvoice(inv.id, inv.date, inv.amount)}
+                                            title="Download Invoice"
+                                        >
+                                            <Download className="w-4 h-4 text-slate-400" />
+                                        </Button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="font-mono text-slate-600">{inv.amount}</span>
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{inv.status}</Badge>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="opacity-0 group-hover:opacity-100"
-                                        onClick={() => handleDownloadInvoice(inv.id, inv.date, inv.amount)}
-                                        title="Download Invoice"
-                                    >
-                                        <Download className="w-4 h-4 text-slate-400" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 text-slate-500">
+                            <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                            <p className="text-sm mb-2">No invoices yet</p>
+                            <p className="text-xs text-slate-400">Your invoice history will appear here</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -687,55 +706,55 @@ Generated on ${new Date().toLocaleDateString()}`;
 
             {/* View Pricing Dialog */}
             <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Choose Your Plan</DialogTitle>
-                        <DialogDescription>
+                <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+                    <DialogHeader className="flex-shrink-0">
+                        <DialogTitle className="text-xl sm:text-2xl">Choose Your Plan</DialogTitle>
+                        <DialogDescription className="text-sm sm:text-base">
                             Select the plan that best fits your needs. All plans include access to our powerful campaign building tools.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 py-4 max-h-[80vh] overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 py-4 overflow-y-auto flex-1 pr-2">
                         {/* Lifetime Limited Plan */}
-                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
-                            <CardHeader>
-                                <div className="text-center mb-4">
+                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative flex flex-col">
+                            <CardHeader className="flex-shrink-0">
+                                <div className="text-center mb-2">
                                     <Badge className="mb-2 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
-                                    <CardTitle className="text-2xl mb-2">Lifetime Limited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$99.99</div>
-                                    <div className="text-sm text-slate-600">One-time payment</div>
+                                    <CardTitle className="text-xl sm:text-2xl mb-2">Lifetime Limited</CardTitle>
+                                    <div className="text-2xl sm:text-3xl font-bold text-slate-800 mb-1">$99.99</div>
+                                    <div className="text-xs sm:text-sm text-slate-600">One-time payment</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">15 campaigns/month</span>
+                            <CardContent className="flex-1">
+                                <ul className="space-y-2 sm:space-y-3">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">15 campaigns/month</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">All features included</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">All features included</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">24/7 support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">24/7 support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm sm:text-base"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Lifetime Limited", PLAN_PRICE_IDS.lifetime_limited);
@@ -748,49 +767,49 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </Card>
 
                         {/* Lifetime Unlimited Plan */}
-                        <Card className="border-2 border-indigo-400 hover:border-indigo-500 transition-all hover:shadow-2xl relative bg-gradient-to-br from-indigo-50 to-purple-50">
-                            <div className="absolute top-4 right-4">
-                                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0">Popular</Badge>
+                        <Card className="border-2 border-indigo-400 hover:border-indigo-500 transition-all hover:shadow-2xl relative bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col">
+                            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
+                                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0 text-xs">Popular</Badge>
                             </div>
-                            <CardHeader>
-                                <div className="text-center mb-4">
+                            <CardHeader className="flex-shrink-0">
+                                <div className="text-center mb-2">
                                     <Badge className="mb-2 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
-                                    <CardTitle className="text-2xl mb-2">Lifetime Unlimited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$199</div>
-                                    <div className="text-sm text-slate-600">One-time payment</div>
+                                    <CardTitle className="text-xl sm:text-2xl mb-2">Lifetime Unlimited</CardTitle>
+                                    <div className="text-2xl sm:text-3xl font-bold text-slate-800 mb-1">$199</div>
+                                    <div className="text-xs sm:text-sm text-slate-600">One-time payment</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+                            <CardContent className="flex-1">
+                                <ul className="space-y-2 sm:space-y-3">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Unlimited access to all tools</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700 font-semibold">Unlimited access to all tools</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Priority support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">Priority support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg text-sm sm:text-base"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Lifetime Unlimited", PLAN_PRICE_IDS.lifetime_unlimited);
@@ -803,46 +822,46 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </Card>
 
                         {/* Monthly Limited Plan */}
-                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
-                            <CardHeader>
-                                <div className="text-center mb-4">
+                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative flex flex-col">
+                            <CardHeader className="flex-shrink-0">
+                                <div className="text-center mb-2">
                                     <Badge className="mb-2 bg-green-100 text-green-700 border-green-200">Monthly</Badge>
-                                    <CardTitle className="text-2xl mb-2">Monthly Limited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$49.99</div>
-                                    <div className="text-sm text-slate-600">per month</div>
+                                    <CardTitle className="text-xl sm:text-2xl mb-2">Monthly Limited</CardTitle>
+                                    <div className="text-2xl sm:text-3xl font-bold text-slate-800 mb-1">$49.99</div>
+                                    <div className="text-xs sm:text-sm text-slate-600">per month</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">25 campaigns/month</span>
+                            <CardContent className="flex-1">
+                                <ul className="space-y-2 sm:space-y-3">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">25 campaigns/month</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Access to other tools</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">Access to other tools</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">24/7 support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">24/7 support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm sm:text-base"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Monthly Limited", PLAN_PRICE_IDS.monthly_25);
@@ -855,46 +874,46 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </Card>
 
                         {/* Monthly Unlimited Plan */}
-                        <Card className="border-2 border-purple-300 hover:border-purple-400 transition-all hover:shadow-xl relative">
-                            <CardHeader>
-                                <div className="text-center mb-4">
+                        <Card className="border-2 border-purple-300 hover:border-purple-400 transition-all hover:shadow-xl relative flex flex-col">
+                            <CardHeader className="flex-shrink-0">
+                                <div className="text-center mb-2">
                                     <Badge className="mb-2 bg-purple-100 text-purple-700 border-purple-200">Monthly</Badge>
-                                    <CardTitle className="text-2xl mb-2">Monthly Unlimited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$99.99</div>
-                                    <div className="text-sm text-slate-600">per month</div>
+                                    <CardTitle className="text-xl sm:text-2xl mb-2">Monthly Unlimited</CardTitle>
+                                    <div className="text-2xl sm:text-3xl font-bold text-slate-800 mb-1">$99.99</div>
+                                    <div className="text-xs sm:text-sm text-slate-600">per month</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+                            <CardContent className="flex-1">
+                                <ul className="space-y-2 sm:space-y-3">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Full access to all tools</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700 font-semibold">Full access to all tools</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Priority support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs sm:text-sm text-slate-700">Priority support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm sm:text-base"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Monthly Unlimited", PLAN_PRICE_IDS.monthly_unlimited);
@@ -906,8 +925,8 @@ Generated on ${new Date().toLocaleDateString()}`;
                             </CardFooter>
                         </Card>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowPricingDialog(false)}>
+                    <DialogFooter className="flex-shrink-0">
+                        <Button variant="outline" onClick={() => setShowPricingDialog(false)} className="w-full sm:w-auto">
                             Close
                         </Button>
                     </DialogFooter>

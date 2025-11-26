@@ -236,21 +236,26 @@ export const KeywordPlannerSelectable = ({
                     mockKeywords.push(seed);
                 }
                 
-                // Add modifiers
-                modifiers.forEach(modifier => {
-                    const combined = `${seed} ${modifier}`;
-                    if (!negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                        mockKeywords.push(combined);
-                    }
-                });
-                
-                // Add question variations
-                questions.forEach(question => {
-                    const combined = `${question} ${seed}`;
-                    if (!negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                        mockKeywords.push(combined);
-                    }
-                });
+                // Only add modifiers if the seed is reasonably short (< 30 chars)
+                if (seed.length < 30) {
+                    // Add modifiers
+                    modifiers.forEach(modifier => {
+                        const combined = `${seed} ${modifier}`;
+                        // Check combined length doesn't exceed 50 chars
+                        if (combined.length <= 50 && !negatives.some(neg => combined.toLowerCase().includes(neg))) {
+                            mockKeywords.push(combined);
+                        }
+                    });
+                    
+                    // Add question variations
+                    questions.forEach(question => {
+                        const combined = `${question} ${seed}`;
+                        // Check combined length doesn't exceed 50 chars
+                        if (combined.length <= 50 && !negatives.some(neg => combined.toLowerCase().includes(neg))) {
+                            mockKeywords.push(combined);
+                        }
+                    });
+                }
             });
             
             // Apply match type formatting

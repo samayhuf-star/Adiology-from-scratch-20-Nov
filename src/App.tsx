@@ -33,6 +33,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
+import { Dashboard } from './components/Dashboard';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 
@@ -891,8 +892,9 @@ const App = () => {
       case 'billing':
         return <SettingsPanel defaultTab="billing" />;
       case 'dashboard':
+        return <Dashboard user={user} onNavigate={setActiveTab} />;
       default:
-        return <DashboardView />;
+        return <Dashboard user={user} onNavigate={setActiveTab} />;
     }
   };
 
@@ -1165,24 +1167,5 @@ const App = () => {
     </div>
   );
 };
-
-// Dashboard View
-const DashboardView = () => (
-  <div className="p-8">
-    <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-8">
-      Dashboard Overview
-    </h1>
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-12 border border-slate-200/60 shadow-xl text-center">
-      <LayoutDashboard className="w-20 h-20 text-indigo-500 mx-auto mb-4" />
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">
-        Welcome to Adiology
-      </h2>
-      <p className="text-slate-600 max-w-lg mx-auto mb-4">
-        Your Google Ads campaign management platform is ready. Navigate to Campaign Builder, CSV Validator, or Keyword tools to get started.
-      </p>
-    </div>
-  </div>
-);
-
 
 export default App;
