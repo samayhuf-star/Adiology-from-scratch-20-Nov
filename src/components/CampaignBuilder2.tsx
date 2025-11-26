@@ -511,9 +511,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return `Search Campaign ${dateStr} ${timeStr}`;
   };
 
-  // Clean keyword for DKI syntax - removes quotes, brackets, and match type syntax
-  // DKI syntax must NOT have quotes: {KeyWord:keyword} not {KeyWord:"keyword"}
-  const cleanKeywordForDKI = (keyword: string): string => {
+  // Clean keyword - removes quotes, brackets, and match type syntax
+  // Google Ads doesn't allow quotes in ad text
+  const cleanKeyword = (keyword: string): string => {
     if (!keyword) return 'your service';
     
     let clean = keyword.trim();
@@ -536,6 +536,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     
     return clean.trim() || 'your service';
   };
+
+  // Clean keyword for DKI syntax - same as cleanKeyword but kept for clarity
+  const cleanKeywordForDKI = cleanKeyword;
   
   // Step 1: Setup
   const [campaignName, setCampaignName] = useState(DEFAULT_CAMPAIGN_NAME);
@@ -2447,7 +2450,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         const updatedAds = generatedAds.map(ad => {
           if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
             const currentGroup = dynamicAdGroups.find(g => g.name === ad.adGroup) || dynamicAdGroups[0];
-            const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+            const rawKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+            const mainKeyword = cleanKeyword(rawKeyword);
             const extension = createExtensionObject(type, currentGroup, formattedUrl, mainKeyword);
             return {
               ...ad,
@@ -2482,7 +2486,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const dynamicAdGroups = getDynamicAdGroups();
     const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
     const rawKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
-    const mainKeyword = type === 'dki' ? cleanKeywordForDKI(rawKeyword) : rawKeyword;
+    // Clean keyword for ALL ad types - Google Ads doesn't allow quotes in ad text
+    const mainKeyword = cleanKeyword(rawKeyword);
     
     let newAd: any = {
       id: Date.now(),
@@ -2603,7 +2608,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const updatedAds = generatedAds.map(ad => {
       if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
         const currentGroup = dynamicAdGroups.find(g => g.name === ad.adGroup) || dynamicAdGroups[0];
-        const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+        const rawKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+        const mainKeyword = cleanKeyword(rawKeyword);
         
         const newExtensions = selectedExtensions.map(extType => 
           createExtensionObject(extType, currentGroup, formattedUrl, mainKeyword)

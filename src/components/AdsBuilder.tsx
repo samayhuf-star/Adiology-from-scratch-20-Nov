@@ -332,7 +332,23 @@ export const AdsBuilder = () => {
     const generateFallbackRSA = (groupName: string, keywords: string[], index: number): GeneratedAd => {
         // Select a keyword from the array, cycling through them
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        const mainKeyword = toTitleCase(selectedKeyword);
+        
+        // Clean keyword: Remove quotes, brackets, and match type syntax
+        // Google Ads doesn't allow quotes in ad text
+        let cleanKeyword = selectedKeyword.trim();
+        if ((cleanKeyword.startsWith('"') && cleanKeyword.endsWith('"')) || 
+            (cleanKeyword.startsWith("'") && cleanKeyword.endsWith("'"))) {
+            cleanKeyword = cleanKeyword.slice(1, -1);
+        }
+        if (cleanKeyword.startsWith('[') && cleanKeyword.endsWith(']')) {
+            cleanKeyword = cleanKeyword.slice(1, -1);
+        }
+        if (cleanKeyword.startsWith('-')) {
+            cleanKeyword = cleanKeyword.slice(1);
+        }
+        cleanKeyword = cleanKeyword.trim();
+        
+        const mainKeyword = toTitleCase(cleanKeyword);
         
         // Google Ads Best Practices: Strong CTAs, Value Props, Urgency
         const variations = [
@@ -445,7 +461,23 @@ export const AdsBuilder = () => {
     const generateFallbackCallOnly = (groupName: string, keywords: string[], index: number): GeneratedAd => {
         // Select a keyword from the array, cycling through them
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        const mainKeyword = toTitleCase(selectedKeyword);
+        
+        // Clean keyword: Remove quotes, brackets, and match type syntax
+        // Google Ads doesn't allow quotes in ad text
+        let cleanKeyword = selectedKeyword.trim();
+        if ((cleanKeyword.startsWith('"') && cleanKeyword.endsWith('"')) || 
+            (cleanKeyword.startsWith("'") && cleanKeyword.endsWith("'"))) {
+            cleanKeyword = cleanKeyword.slice(1, -1);
+        }
+        if (cleanKeyword.startsWith('[') && cleanKeyword.endsWith(']')) {
+            cleanKeyword = cleanKeyword.slice(1, -1);
+        }
+        if (cleanKeyword.startsWith('-')) {
+            cleanKeyword = cleanKeyword.slice(1);
+        }
+        cleanKeyword = cleanKeyword.trim();
+        
+        const mainKeyword = toTitleCase(cleanKeyword);
         
         // Call-Only Best Practices: Strong CTAs with "Call" or "Contact"
         const variations = [
