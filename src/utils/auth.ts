@@ -8,12 +8,18 @@ export async function getCurrentAuthUser(): Promise<User | null> {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) {
-      console.error('Error getting current user:', error);
+      // Only log if it's not a session missing error (expected when not logged in)
+      if (error.name !== 'AuthSessionMissingError' && !error.message?.includes('session_missing')) {
+        console.error('Error getting current user:', error);
+      }
       return null;
     }
     return user;
-  } catch (error) {
-    console.error('Error getting current user:', error);
+  } catch (error: any) {
+    // Only log if it's not a session missing error (expected when not logged in)
+    if (error?.name !== 'AuthSessionMissingError' && !error?.message?.includes('session_missing')) {
+      console.error('Error getting current user:', error);
+    }
     return null;
   }
 }
@@ -385,17 +391,19 @@ export async function signInWithEmail(email: string, password: string) {
 
     // Update last_login_at in user profile (non-blocking)
     if (data.user) {
-      supabase
-        .from('users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.user.id)
-        .then(() => {
+      // Fire-and-forget update (don't await)
+      void (async () => {
+        try {
+          await supabase
+            .from('users')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', data.user!.id);
           console.log('Last login updated successfully');
-        })
-        .catch((profileError) => {
+        } catch (profileError) {
           console.warn('Error updating last login (non-critical):', profileError);
           // Don't throw - login was successful, profile update is optional
-        });
+        }
+      })();
     }
 
     return data;

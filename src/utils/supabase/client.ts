@@ -51,8 +51,11 @@ export async function getCurrentUser() {
     }
 
     return data;
-  } catch (error) {
-    console.error('Error getting current user:', error);
+  } catch (error: any) {
+    // Only log if it's not a session missing error (expected when not logged in)
+    if (error?.name !== 'AuthSessionMissingError' && !error?.message?.includes('session_missing')) {
+      console.error('Error getting current user:', error);
+    }
     return null;
   }
 }
