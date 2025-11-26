@@ -567,6 +567,32 @@ const App = () => {
     return undefined;
   }, [user, appView, loading]);
 
+  // Reset body/html padding and margin for home page to prevent global spacing interference
+  useEffect(() => {
+    if (appView === 'home') {
+      const originalBodyStyle = {
+        margin: document.body.style.margin,
+        padding: document.body.style.padding,
+      };
+      const originalHtmlStyle = {
+        margin: document.documentElement.style.margin,
+        padding: document.documentElement.style.padding,
+      };
+      
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+      document.documentElement.style.margin = '0';
+      document.documentElement.style.padding = '0';
+      
+      return () => {
+        document.body.style.margin = originalBodyStyle.margin;
+        document.body.style.padding = originalBodyStyle.padding;
+        document.documentElement.style.margin = originalHtmlStyle.margin;
+        document.documentElement.style.padding = originalHtmlStyle.padding;
+      };
+    }
+  }, [appView]);
+
   // Function to handle plan selection
   const handleSelectPlan = async (planName: string, priceId: string, amount: number, isSubscription: boolean) => {
     // Check if user is logged in

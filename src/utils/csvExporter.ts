@@ -68,9 +68,29 @@ export function structureToCSV(structure: CampaignStructure): CSVRow[] {
   const rows: CSVRow[] = [];
 
   structure.campaigns.forEach((campaign) => {
+    // Get default URL from first ad group's first ad, or use a fallback
+    let defaultUrl = 'https://www.example.com';
+    if (campaign.adgroups && campaign.adgroups.length > 0) {
+      const firstAdGroup = campaign.adgroups[0];
+      if (firstAdGroup.ads && firstAdGroup.ads.length > 0 && firstAdGroup.ads[0].final_url) {
+        defaultUrl = firstAdGroup.ads[0].final_url;
+      }
+    }
+    
     campaign.adgroups.forEach((adGroup) => {
-      // For each ad group, create rows for keywords and ads together
-      const ads = adGroup.ads && adGroup.ads.length > 0 ? adGroup.ads : [getDefaultAd(campaign)];
+      // Ensure ad group has at least one ad with valid final_url
+      let ads = adGroup.ads && adGroup.ads.length > 0 ? adGroup.ads : [];
+      
+      // If no ads, create a default ad
+      if (ads.length === 0) {
+        ads = [getDefaultAd(campaign, defaultUrl)];
+      } else {
+        // Ensure all ads have final_url
+        ads = ads.map(ad => ({
+          ...ad,
+          final_url: ad.final_url || defaultUrl
+        }));
+      }
       
       // Create keyword rows with the first ad's info
       adGroup.keywords.forEach((keyword) => {
@@ -126,10 +146,8 @@ function createKeywordRow(
   row['Criterion Type'] = matchType;
   row.Status = 'Active';
   
-  // Add final URL from ad
-  if (ad && ad.final_url) {
-    row['Final URL'] = ad.final_url;
-  }
+  // Add final URL from ad (required field)
+  row['Final URL'] = (ad && ad.final_url) ? ad.final_url : 'https://www.example.com';
   
   return row;
 }
@@ -141,8 +159,11 @@ function createAdRow(campaign: Campaign, adGroup: AdGroup, ad: Ad): CSVRow {
   const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
   row.Status = 'Active';
   
-  row['Final URL'] = ad.final_url || '';
-  row['Headline 1'] = ad.headline1 || '';
+  // Ensure final_url is always set (required field)
+  row['Final URL'] = ad.final_url || 'https://www.example.com';
+  
+  // Ensure at least headline1 and description1 are set (required fields)
+  row['Headline 1'] = ad.headline1 || 'Your Service Here';
   row['Headline 2'] = ad.headline2 || '';
   row['Headline 3'] = ad.headline3 || '';
   row['Headline 4'] = ad.headline4 || '';
@@ -157,7 +178,7 @@ function createAdRow(campaign: Campaign, adGroup: AdGroup, ad: Ad): CSVRow {
   row['Headline 13'] = ad.headline13 || '';
   row['Headline 14'] = ad.headline14 || '';
   row['Headline 15'] = ad.headline15 || '';
-  row['Description 1'] = ad.description1 || '';
+  row['Description 1'] = ad.description1 || 'Get the best service today.';
   row['Description 2'] = ad.description2 || '';
   row['Description 3'] = ad.description3 || '';
   row['Description 4'] = ad.description4 || '';
@@ -354,12 +375,12 @@ function cleanKeywordText(keyword: string): string {
 /**
  * Get default ad if none exist
  */
-function getDefaultAd(campaign: Campaign): Ad {
+function getDefaultAd(campaign: Campaign, defaultUrl: string = 'https://www.example.com'): Ad {
   return {
     type: 'rsa',
     headline1: 'Default Headline',
     description1: 'Default Description',
-    final_url: ''
+    final_url: defaultUrl
   };
 }
 

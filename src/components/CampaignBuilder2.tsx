@@ -4344,33 +4344,58 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           return;
         }
 
-        // Prepare ads with required fields
+        // Prepare ads with required fields - ensure all ads have final_url and meet Google Ads requirements
         const preparedAds = generatedAds
           .filter(ad => ad.type !== 'extension') // Filter out standalone extensions
           .map(ad => {
-            // Ensure all required fields are present
-            const finalUrl = ad.finalUrl || validUrl;
-            const headline1 = ad.headline1 || 'Your Service Here';
-            const description1 = ad.description1 || 'Get the best service today.';
+            // Ensure all required fields are present and valid
+            const finalUrl = ad.finalUrl || ad.final_url || validUrl;
+            
+            // Validate final_url is not empty
+            if (!finalUrl || finalUrl.trim() === '') {
+              throw new Error('All ads must have a valid Final URL. Please ensure your landing page URL is set in Step 1.');
+            }
+            
+            // Ensure headline1 exists and is within 30 chars
+            let headline1 = ad.headline1 || 'Your Service Here';
+            if (headline1.length > 30) {
+              headline1 = headline1.substring(0, 30);
+            }
+            
+            // Ensure description1 exists and is within 90 chars
+            let description1 = ad.description1 || 'Get the best service today.';
+            if (description1.length > 90) {
+              description1 = description1.substring(0, 90);
+            }
+            
+            // Truncate other headlines to 30 chars
+            const truncateHeadline = (text: string) => text ? text.substring(0, 30) : '';
+            const truncateDescription = (text: string) => text ? text.substring(0, 90) : '';
+            const truncatePath = (text: string) => text ? text.substring(0, 15) : '';
             
             return {
               type: ad.type || 'rsa',
               headline1: headline1,
-              headline2: ad.headline2 || '',
-              headline3: ad.headline3 || '',
-              headline4: ad.headline4 || '',
-              headline5: ad.headline5 || '',
+              headline2: truncateHeadline(ad.headline2 || ''),
+              headline3: truncateHeadline(ad.headline3 || ''),
+              headline4: truncateHeadline(ad.headline4 || ''),
+              headline5: truncateHeadline(ad.headline5 || ''),
               description1: description1,
-              description2: ad.description2 || '',
+              description2: truncateDescription(ad.description2 || ''),
               final_url: finalUrl,
-              path1: ad.path1 || '',
-              path2: ad.path2 || '',
+              path1: truncatePath(ad.path1 || ''),
+              path2: truncatePath(ad.path2 || ''),
               extensions: ad.extensions || [] // Include extensions attached to ads
             };
           });
 
-        // If no ads, create a default ad
-        const adsToUse = preparedAds.length > 0 ? preparedAds : undefined;
+        // If no ads, create a default ad with valid URL
+        const adsToUse = preparedAds.length > 0 ? preparedAds : [{
+          type: 'rsa' as const,
+          headline1: 'Your Service Here',
+          description1: 'Get the best service today.',
+          final_url: validUrl
+        }];
 
         // Prepare settings for structure generation
         const settings: StructureSettings = {
@@ -4573,24 +4598,31 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
-        {/* Export Actions */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
-          <Button 
-            onClick={handleExportCSV}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md py-2.5 px-4 w-full sm:w-auto text-sm"
-          >
-            <Download className="mr-2 w-4 h-4" />
-            Download CSV for Google Ads Editor
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => setShowSavedCampaigns(true)}
-            className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-md py-2.5 px-4 w-full sm:w-auto text-sm"
-          >
-            <FolderOpen className="mr-2 w-4 h-4" />
-            View Saved Campaigns
-          </Button>
+        {/* Export Actions - Fixed at bottom center */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 shadow-lg z-50">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+              <Button 
+                onClick={handleExportCSV}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold"
+              >
+                <Download className="mr-2 w-4 h-4" />
+                Download CSV for Google Ads Editor
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowSavedCampaigns(true)}
+                className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold"
+              >
+                <FolderOpen className="mr-2 w-4 h-4" />
+                View Saved Campaigns
+              </Button>
+            </div>
+          </div>
         </div>
+        
+        {/* Add padding to bottom to prevent content from being hidden behind fixed buttons */}
+        <div className="h-24"></div>
 
         {/* Next Actions */}
         <div className="flex justify-between items-center pt-4">
