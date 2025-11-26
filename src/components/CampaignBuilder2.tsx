@@ -2390,6 +2390,32 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         const baseUrl = url || 'www.example.com';
         const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
         
+        // Check if any ad already has this extension type
+        const hasExtension = generatedAds.some(ad => 
+          (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') &&
+          ad.extensions?.some((ext: any) => ext.extensionType === type)
+        );
+        
+        if (hasExtension) {
+          const extName = type === 'snippet' ? 'Snippet Extension' :
+                         type === 'callout' ? 'Callout Extension' :
+                         type === 'sitelink' ? 'Sitelink Extension' :
+                         type === 'call' ? 'Call Extension' :
+                         type === 'price' ? 'Price Extension' :
+                         type === 'app' ? 'App Extension' :
+                         type === 'location' ? 'Location Extension' :
+                         type === 'message' ? 'Message Extension' :
+                         type === 'leadform' ? 'Lead Form Extension' :
+                         type === 'promotion' ? 'Promotion Extension' :
+                         type === 'image' ? 'Image Extension' : 'Extension';
+          
+          notifications.warning(`${extName} already exists in ads`, {
+            title: 'Duplicate Extension',
+            description: `Each ad can only have one ${extName}. Please edit or remove the existing one first.`,
+          });
+          return;
+        }
+        
         const updatedAds = generatedAds.map(ad => {
           if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
             const currentGroup = dynamicAdGroups.find(g => g.name === ad.adGroup) || dynamicAdGroups[0];
