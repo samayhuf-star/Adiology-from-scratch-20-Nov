@@ -966,56 +966,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
-        {/* Ad Types - Compact Checkboxes */}
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Ad Types</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="ad-rsa"
-                  checked={adTypes.rsa}
-                  onCheckedChange={(checked) => setAdTypes({ ...adTypes, rsa: !!checked })}
-                />
-                <Label htmlFor="ad-rsa" className="cursor-pointer font-medium text-sm">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-xs font-semibold px-2 py-0.5 bg-blue-100 text-blue-700 rounded">RSA</span>
-                    Responsive Search Ads
-                  </span>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="ad-dki"
-                  checked={adTypes.dki}
-                  onCheckedChange={(checked) => setAdTypes({ ...adTypes, dki: !!checked })}
-                />
-                <Label htmlFor="ad-dki" className="cursor-pointer font-medium text-sm">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-xs font-semibold px-2 py-0.5 bg-purple-100 text-purple-700 rounded">DKI</span>
-                    Dynamic Keyword Insertion
-                  </span>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="ad-call"
-                  checked={adTypes.call}
-                  onCheckedChange={(checked) => setAdTypes({ ...adTypes, call: !!checked })}
-                />
-                <Label htmlFor="ad-call" className="cursor-pointer font-medium text-sm">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="text-xs font-semibold px-2 py-0.5 bg-green-100 text-green-700 rounded">Call</span>
-                    Call Only Ads
-                  </span>
-                </Label>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Navigation */}
         <div className="flex justify-end">
           <Button
