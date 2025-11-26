@@ -33,12 +33,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Notification settings
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [campaignAlerts, setCampaignAlerts] = useState(true);
-  const [exportAlerts, setExportAlerts] = useState(true);
-  const [weeklyReports, setWeeklyReports] = useState(false);
-  
   // Privacy settings
   const [dataSharing, setDataSharing] = useState(false);
   const [analytics, setAnalytics] = useState(true);
@@ -68,10 +62,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        setEmailNotifications(settings.emailNotifications ?? true);
-        setCampaignAlerts(settings.campaignAlerts ?? true);
-        setExportAlerts(settings.exportAlerts ?? true);
-        setWeeklyReports(settings.weeklyReports ?? false);
         setDataSharing(settings.dataSharing ?? false);
         setAnalytics(settings.analytics ?? true);
       } catch (e) {
@@ -208,10 +198,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
 
   const handleSaveSettings = () => {
     const settings = {
-      emailNotifications,
-      campaignAlerts,
-      exportAlerts,
-      weeklyReports,
       dataSharing,
       analytics
     };
@@ -415,114 +401,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
 
       {/* Theme Settings */}
       <ThemeSelector />
-
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-indigo-600" />
-            Notification Preferences
-          </CardTitle>
-          <CardDescription>Choose how you want to be notified about your campaigns</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Email Notifications</Label>
-              <p className="text-sm text-slate-500">Receive email updates about your account</p>
-            </div>
-            <Switch 
-              checked={emailNotifications} 
-              onCheckedChange={(checked) => {
-                setEmailNotifications(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications: checked,
-                  campaignAlerts,
-                  exportAlerts,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Campaign Alerts</Label>
-              <p className="text-sm text-slate-500">Get notified when campaigns are created or updated</p>
-            </div>
-            <Switch 
-              checked={campaignAlerts} 
-              onCheckedChange={(checked) => {
-                setCampaignAlerts(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts: checked,
-                  exportAlerts,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Export Alerts</Label>
-              <p className="text-sm text-slate-500">Notify when CSV exports are ready</p>
-            </div>
-            <Switch 
-              checked={exportAlerts} 
-              onCheckedChange={(checked) => {
-                setExportAlerts(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts,
-                  exportAlerts: checked,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Weekly Reports</Label>
-              <p className="text-sm text-slate-500">Receive weekly summary reports</p>
-            </div>
-            <Switch 
-              checked={weeklyReports} 
-              onCheckedChange={(checked) => {
-                setWeeklyReports(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts,
-                  exportAlerts,
-                  weeklyReports: checked,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Button onClick={handleSaveSettings} className="bg-indigo-600 hover:bg-indigo-700">
-            <Save className="w-4 h-4 mr-2" />
-            Save Notification Settings
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Privacy Settings */}
       <Card>
