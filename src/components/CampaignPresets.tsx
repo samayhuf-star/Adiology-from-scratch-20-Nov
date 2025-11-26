@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Download, Edit, CheckCircle, Package, Sparkles, Zap, TrendingUp, X, Eye } from 'lucide-react';
+import { Search, Download, Edit, CheckCircle, Package, Sparkles, Zap, TrendingUp, X, Eye, Grid3x3, List } from 'lucide-react';
 import { campaignPresets, CampaignPreset, structureDescriptions } from '../data/campaignPresets';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -13,6 +13,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<CampaignPreset | null>(null);
   const [showReview, setShowReview] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const filteredPresets = campaignPresets.filter(preset =>
     preset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -447,26 +448,54 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search presets..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-10 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-          {/* Bug_68: Cross icon to reset search box */}
-          {searchQuery && (
+        {/* Search and View Toggle */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search presets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            {/* Bug_68: Cross icon to reset search box */}
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
             <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-              aria-label="Clear search"
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-md transition-all ${
+                viewMode === 'grid' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="Grid View"
             >
-              <X className="w-5 h-5" />
+              <Grid3x3 className="w-5 h-5" />
             </button>
-          )}
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-md transition-all ${
+                viewMode === 'list' 
+                  ? 'bg-white text-indigo-600 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="List View"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -502,10 +531,102 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 <p className="text-base text-slate-600 ml-11">{structureInfo.description}</p>
               </div>
               
-              {/* Presets Grid for this Structure */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+              {/* Presets Grid/List for this Structure */}
+              <div className={viewMode === 'grid' 
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6' 
+                : 'space-y-4'
+              }>
                 {presetsForStructure.map((preset) => {
                   const colorScheme = getStructureColor(preset.structure || '');
+                  
+                  // List View Layout
+                  if (viewMode === 'list') {
+                    return (
+                      <div
+                        key={preset.slug}
+                        className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
+                        onClick={() => handleSelectPreset(preset)}
+                      >
+                        {/* Structure Tag */}
+                        <div className={`absolute top-4 right-4 px-3 py-1 rounded-lg text-xs font-bold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10`}>
+                          {preset.structure || 'SKAG'}
+                        </div>
+                        
+                        <div className="p-6">
+                          <div className="flex items-start gap-6">
+                            {/* Left: Title and Description */}
+                            <div className="flex-1 pr-20">
+                              <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                                {preset.title}
+                              </h3>
+                              <p className="text-sm text-slate-500 mb-4">{preset.campaign_name}</p>
+                              
+                              {/* Stats Row */}
+                              <div className="flex items-center gap-6 mb-4">
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                  <Sparkles className="w-4 h-4" />
+                                  <span>{preset.keywords.length} keywords</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                  <Zap className="w-4 h-4" />
+                                  <span>{preset.ad_groups.length} ad groups</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>${preset.max_cpc.toFixed(2)} max CPC</span>
+                                </div>
+                              </div>
+                              
+                              {/* Ad Groups */}
+                              <div className="flex flex-wrap gap-2">
+                                {preset.ad_groups.slice(0, 4).map((group, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">
+                                    {group.name}
+                                  </Badge>
+                                ))}
+                                {preset.ad_groups.length > 4 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{preset.ad_groups.length - 4} more
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Right: Actions */}
+                            <div className="flex items-center gap-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-slate-300 hover:bg-slate-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectPreset(preset);
+                                }}
+                                title="View campaign details"
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                View
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="theme-button-primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleExportCSV(preset);
+                                }}
+                                title="Download Google Ads Editor CSV"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Export
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Grid View Layout (existing)
                   return (
           <div
             key={preset.slug}
