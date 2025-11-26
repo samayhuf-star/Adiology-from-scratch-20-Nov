@@ -510,6 +510,32 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(/:/g, '-');
     return `Search Campaign ${dateStr} ${timeStr}`;
   };
+
+  // Clean keyword for DKI syntax - removes quotes, brackets, and match type syntax
+  // DKI syntax must NOT have quotes: {KeyWord:keyword} not {KeyWord:"keyword"}
+  const cleanKeywordForDKI = (keyword: string): string => {
+    if (!keyword) return 'your service';
+    
+    let clean = keyword.trim();
+    
+    // Remove leading/trailing quotes
+    if ((clean.startsWith('"') && clean.endsWith('"')) || 
+        (clean.startsWith("'") && clean.endsWith("'"))) {
+      clean = clean.slice(1, -1);
+    }
+    
+    // Remove brackets for exact match [keyword]
+    if (clean.startsWith('[') && clean.endsWith(']')) {
+      clean = clean.slice(1, -1);
+    }
+    
+    // Remove negative keyword prefix
+    if (clean.startsWith('-')) {
+      clean = clean.slice(1);
+    }
+    
+    return clean.trim() || 'your service';
+  };
   
   // Step 1: Setup
   const [campaignName, setCampaignName] = useState(DEFAULT_CAMPAIGN_NAME);
@@ -2340,7 +2366,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         const currentGroup = dynamicAdGroups.length > 0 ? dynamicAdGroups[0] : null;
         const baseUrl = url || 'www.example.com';
         const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
-        const mainKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+        const rawKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+        const mainKeyword = cleanKeywordForDKI(rawKeyword);
         
         const dkiAd: any = {
           id: Date.now(),
@@ -2453,7 +2480,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     const dynamicAdGroups = getDynamicAdGroups();
     const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
-    const mainKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
+    const rawKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
+    const mainKeyword = type === 'dki' ? cleanKeywordForDKI(rawKeyword) : rawKeyword;
     
     let newAd: any = {
       id: Date.now(),
@@ -3713,9 +3741,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           setGeneratedAds(prevAds => prevAds.map(ad => {
             if (ad.adGroup === groupName) {
               // Update ad content with new keywords if needed
-              const mainKeyword = newKeywords[0] || currentGroup.keywords[0] || '';
-              if (mainKeyword && ad.type === 'dki') {
-                // Update DKI ad with new keyword
+              const rawKeyword = newKeywords[0] || currentGroup.keywords[0] || '';
+              if (rawKeyword && ad.type === 'dki') {
+                // Update DKI ad with new keyword (clean it first)
+                const mainKeyword = cleanKeywordForDKI(rawKeyword);
                 return {
                   ...ad,
                   headline1: `{KeyWord:${mainKeyword}} - Official Site`,

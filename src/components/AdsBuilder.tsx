@@ -398,9 +398,30 @@ export const AdsBuilder = () => {
     const generateFallbackDKI = (groupName: string, keywords: string[], index: number): GeneratedAd => {
         // Select a keyword from the array, cycling through them
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        const mainKeyword = toTitleCase(selectedKeyword);
+        
+        // Clean keyword: Remove quotes, brackets, and match type syntax
+        // Remove leading/trailing quotes
+        let cleanKeyword = selectedKeyword.trim();
+        if ((cleanKeyword.startsWith('"') && cleanKeyword.endsWith('"')) || 
+            (cleanKeyword.startsWith("'") && cleanKeyword.endsWith("'"))) {
+            cleanKeyword = cleanKeyword.slice(1, -1);
+        }
+        // Remove brackets for exact match
+        if (cleanKeyword.startsWith('[') && cleanKeyword.endsWith(']')) {
+            cleanKeyword = cleanKeyword.slice(1, -1);
+        }
+        // Remove negative keyword prefix
+        if (cleanKeyword.startsWith('-')) {
+            cleanKeyword = cleanKeyword.slice(1);
+        }
+        cleanKeyword = cleanKeyword.trim();
+        
+        const mainKeyword = toTitleCase(cleanKeyword);
         
         // DKI Best Practices: Title case for default text, proper formatting
+        // IMPORTANT: DKI syntax must NOT have quotes around the keyword
+        // Correct: {KeyWord:call plumbing services}
+        // Wrong: {KeyWord:"call plumbing services"}
         return {
             id: crypto.randomUUID(),
             groupName,
