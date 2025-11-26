@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
     Book, HelpCircle, MessageSquare, Search, ChevronRight, ChevronDown,
-    Zap, BarChart3, CheckCircle2, AlertCircle
+    Zap, BarChart3, CheckCircle2, AlertCircle, Target, FileText, Upload, Download, Settings
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';

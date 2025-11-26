@@ -57,6 +57,12 @@ const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<{
+    name: string;
+    priceId: string;
+    amount: number;
+    isSubscription: boolean;
+  } | null>(null);
 
   const handleLoadHistory = (type: string, data: any) => {
     // Map history types to actual tab IDs
