@@ -3,6 +3,7 @@ import {
   LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
+import { COLOR_CLASSES } from './utils/colorScheme';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -915,31 +916,31 @@ const App = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-cyan-50 overflow-hidden">
       {/* Sidebar */}
       <aside 
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
-        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-slate-200/60 shadow-2xl relative z-10`}
+        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-indigo-100/60 shadow-2xl relative z-10`}
         style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(249,250,251,0.95) 100%)'
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(238, 242, 255, 0.95) 100%)'
         }}
       >
         {/* Logo Section */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200/60">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-indigo-100/60">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${theme.colors.primaryGradient} flex items-center justify-center shadow-md`}>
+              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${COLOR_CLASSES.primaryGradient} flex items-center justify-center shadow-md shadow-indigo-300/40`}>
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className={`font-bold bg-gradient-to-r ${theme.colors.primaryGradient} bg-clip-text text-transparent`}>Adiology</span>
+                <span className={`font-bold ${COLOR_CLASSES.pageHeaderGradient}`}>Adiology</span>
               </div>
             </div>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`p-2 rounded-lg hover:bg-${theme.colors.primaryLight} transition-all cursor-pointer`}
+            className="p-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer"
           >
             {sidebarOpen ? <X className="w-5 h-5 text-slate-600" /> : <Menu className="w-5 h-5 text-slate-600" />}
           </button>
@@ -958,11 +959,11 @@ const App = () => {
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
                   isActive
-                    ? `bg-gradient-to-r ${theme.colors.primaryGradient} text-white shadow-lg`
-                    : `text-slate-700 hover:bg-${theme.colors.primaryLight}`
+                    ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
+                    : `text-slate-700 hover:bg-indigo-50`
                 }`}
               >
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : `text-slate-500 group-hover:text-${theme.colors.primary}`}`} />
+                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
                 {sidebarOpen && (
                   <span className="font-medium">{item.label}</span>
                 )}
@@ -1009,7 +1010,7 @@ const App = () => {
                     }
                   }
                 }}
-                className={`w-full pl-10 pr-4 py-2.5 bg-slate-100/80 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-${theme.colors.primary}/50 focus:bg-white transition-all h-11`}
+                className="w-full pl-10 pr-4 py-2.5 bg-indigo-50/50 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:bg-white transition-all h-11"
               />
               {/* Bug_64: Search suggestions dropdown */}
               {showSearchSuggestions && searchSuggestions.length > 0 && (
@@ -1037,10 +1038,10 @@ const App = () => {
             {/* Notifications Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-            <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+            <button className="relative p-2 rounded-xl hover:bg-indigo-50 transition-colors cursor-pointer">
               <Bell className="w-5 h-5 text-slate-600" />
                   {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-purple-500 rounded-full"></span>
                   )}
                 </button>
               </DropdownMenuTrigger>
@@ -1050,7 +1051,7 @@ const App = () => {
                   {unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllAsRead}
-                      className={`text-xs text-${theme.colors.primary} hover:text-${theme.colors.primaryDark} cursor-pointer`}
+                      className="text-xs text-indigo-600 hover:text-indigo-700 cursor-pointer"
                     >
                       Mark all as read
             </button>
@@ -1066,8 +1067,8 @@ const App = () => {
                     notifications.map((notification) => (
                       <DropdownMenuItem
                         key={notification.id}
-                        className={`flex flex-col items-start p-3 cursor-pointer hover:bg-slate-50 ${
-                          !notification.read ? 'bg-indigo-50/50' : ''
+                        className={`flex flex-col items-start p-3 cursor-pointer hover:bg-indigo-50 ${
+                          !notification.read ? 'bg-purple-50/50' : ''
                         }`}
                         onClick={() => handleNotificationClick(notification)}
                       >
@@ -1075,7 +1076,7 @@ const App = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               {!notification.read && (
-                                <span className={`w-2 h-2 bg-${theme.colors.primary} rounded-full shrink-0`}></span>
+                                <span className="w-2 h-2 bg-indigo-600 rounded-full shrink-0"></span>
                               )}
                               <span className="font-medium text-sm text-slate-800">
                                 {notification.title}
@@ -1097,7 +1098,7 @@ const App = () => {
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      className={`text-center justify-center text-sm text-${theme.colors.primary} hover:text-${theme.colors.primaryDark} cursor-pointer`}
+                      className="text-center justify-center text-sm text-indigo-600 hover:text-indigo-700 cursor-pointer"
                       onClick={handleViewAllNotifications}
                     >
                       View all notifications
@@ -1110,7 +1111,7 @@ const App = () => {
             {/* Profile Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`w-10 h-10 rounded-xl bg-gradient-to-br ${theme.colors.primaryGradient} flex items-center justify-center text-white font-medium shadow-lg hover:shadow-xl transition-all cursor-pointer`}>
+                <button className={`w-10 h-10 rounded-xl bg-gradient-to-br ${COLOR_CLASSES.primaryGradient} flex items-center justify-center text-white font-medium shadow-lg shadow-indigo-300/30 hover:shadow-xl transition-all cursor-pointer`}>
                   {user 
                     ? (() => {
                         const name = user.full_name || user.email || 'U';
@@ -1133,7 +1134,7 @@ const App = () => {
                           {user.email || 'user@example.com'}
                           </div>
                         {user.subscription_plan && user.subscription_plan !== 'free' && (
-                          <Badge className="w-fit bg-indigo-100 text-indigo-700 border-indigo-200 mt-1">
+                          <Badge className={`w-fit ${COLOR_CLASSES.primaryBadge} mt-1`}>
                             {user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1)}
                               </Badge>
                         )}
