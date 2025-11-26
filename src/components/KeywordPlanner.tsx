@@ -48,7 +48,7 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
 ].join('\n');
 
 export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
-    const [seedKeywords, setSeedKeywords] = useState(DEFAULT_SEED_KEYWORDS);
+    const [seedKeywords, setSeedKeywords] = useState('');
     const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
     const [generatedKeywords, setGeneratedKeywords] = useState<string[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
