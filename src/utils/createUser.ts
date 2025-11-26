@@ -41,6 +41,9 @@ export function createUser(email: string, password: string, name: string = 'User
 }
 
 // Auto-create user on import (for convenience)
+// Commented out to prevent auto-execution and reduce console noise
+// Uncomment if you need to auto-create a test user on app load
+/*
 if (typeof window !== 'undefined') {
   // Create user s@s.com
   const result = createUser('s@s.com', 's@s.com', 'Test User');
@@ -50,4 +53,5 @@ if (typeof window !== 'undefined') {
     console.log('ℹ️', result.message);
   }
 }
+*/
 
