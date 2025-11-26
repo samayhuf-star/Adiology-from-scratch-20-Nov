@@ -4329,35 +4329,61 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       }
 
       try {
+        // Ensure URL is valid
+        let validUrl = url || DEFAULT_URL;
+        if (validUrl && !validUrl.match(/^https?:\/\//i)) {
+          validUrl = 'https://' + validUrl;
+        }
+        if (!validUrl || validUrl.trim() === '') {
+          notifications.error('Please provide a valid landing page URL in Step 1', { 
+            title: 'Missing URL',
+            description: 'A valid URL is required to export your campaign.'
+          });
+          return;
+        }
+
+        // Prepare ads with required fields
+        const preparedAds = generatedAds
+          .filter(ad => ad.type !== 'extension') // Filter out standalone extensions
+          .map(ad => {
+            // Ensure all required fields are present
+            const finalUrl = ad.finalUrl || validUrl;
+            const headline1 = ad.headline1 || 'Your Service Here';
+            const description1 = ad.description1 || 'Get the best service today.';
+            
+            return {
+              type: ad.type || 'rsa',
+              headline1: headline1,
+              headline2: ad.headline2 || '',
+              headline3: ad.headline3 || '',
+              headline4: ad.headline4 || '',
+              headline5: ad.headline5 || '',
+              description1: description1,
+              description2: ad.description2 || '',
+              final_url: finalUrl,
+              path1: ad.path1 || '',
+              path2: ad.path2 || '',
+              extensions: ad.extensions || [] // Include extensions attached to ads
+            };
+          });
+
+        // If no ads, create a default ad
+        const adsToUse = preparedAds.length > 0 ? preparedAds : undefined;
+
         // Prepare settings for structure generation
         const settings: StructureSettings = {
           structureType,
           campaignName,
           keywords: selectedKeywords,
           matchTypes,
-          url,
+          url: validUrl,
           negativeKeywords: negativeKeywords.split('\n').filter(k => k.trim()),
           geoType,
           selectedStates,
           selectedCities,
           selectedZips,
           targetCountry,
-          ads: generatedAds
-            .filter(ad => ad.type !== 'extension') // Filter out standalone extensions
-            .map(ad => ({
-              type: ad.type || 'rsa',
-              headline1: ad.headline1,
-              headline2: ad.headline2,
-              headline3: ad.headline3,
-              headline4: ad.headline4,
-              headline5: ad.headline5,
-              description1: ad.description1,
-              description2: ad.description2,
-              final_url: ad.finalUrl || url,
-              path1: ad.path1,
-              path2: ad.path2,
-              extensions: ad.extensions || [] // Include extensions attached to ads
-            })),
+          ads: adsToUse,
           intentGroups,
           selectedIntents,
           alphaKeywords,
@@ -4546,35 +4572,34 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         </Card>
 
         {/* Export Actions */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
           <Button 
-            size="lg" 
             onClick={handleExportCSV}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg py-6 px-8 w-full sm:w-auto"
+            className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md py-2.5 px-4 w-full sm:w-auto text-sm"
           >
-            <Download className="mr-2 w-5 h-5" />
+            <Download className="mr-2 w-4 h-4" />
             Download CSV for Google Ads Editor
           </Button>
           <Button 
-            size="lg" 
             variant="outline"
             onClick={() => setShowSavedCampaigns(true)}
-            className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-lg py-6 px-8 w-full sm:w-auto"
+            className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-md py-2.5 px-4 w-full sm:w-auto text-sm"
           >
-            <FolderOpen className="mr-2 w-5 h-5" />
+            <FolderOpen className="mr-2 w-4 h-4" />
             View Saved Campaigns
           </Button>
         </div>
 
         {/* Next Actions */}
         <div className="flex justify-between items-center pt-4">
-          <Button variant="ghost" onClick={() => setStep(5)}>
+          <Button variant="ghost" size="sm" onClick={() => setStep(5)} className="text-sm">
             <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
             Back to Review
           </Button>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <Button 
               variant="outline"
+              size="sm"
               onClick={() => {
                 setStep(1);
                 setCampaignName(generateDefaultCampaignName());
@@ -4583,13 +4608,16 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 setCurrentCampaignId(null); // Reset campaign ID for new campaign
                 setStructureType(null);
               }}
+              className="text-sm"
             >
-              <Plus className="mr-2 w-4 h-4" />
+              <Plus className="mr-2 w-3.5 h-3.5" />
               Create Another Campaign
             </Button>
             <Button 
               variant="outline"
+              size="sm"
               onClick={() => window.location.href = '/'}
+              className="text-sm"
             >
               Go to Dashboard
             </Button>

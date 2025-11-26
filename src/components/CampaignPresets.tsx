@@ -614,14 +614,14 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             onClick={() => handleSelectPreset(preset)}
           >
                 {/* Structure Tag */}
-                <div className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-20 shadow-sm`}>
+                <div className={`absolute top-3 right-3 px-2.5 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} z-10 shadow-sm`}>
                   {preset.structure || 'SKAG'}
                 </div>
                 
-                <div className="p-6">
+                <div className="p-6 pr-32">
                   <div className="flex items-start gap-6">
                     {/* Left: Title and Description */}
-                    <div className="flex-1 pr-24">
+                    <div className="flex-1 pr-4">
                       <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors leading-tight">
                         {preset.title}
                       </h3>
@@ -659,30 +659,30 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                     </div>
                     
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 shrink-0 mt-6">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-slate-300 hover:bg-slate-50"
+                        className="border-slate-300 hover:bg-slate-50 whitespace-nowrap"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSelectPreset(preset);
                         }}
                         title="View campaign details"
                       >
-                        <Eye className="w-4 h-4 mr-2" />
+                        <Eye className="w-4 h-4 mr-1.5" />
                         View
                       </Button>
                       <Button
                         size="sm"
-                        className="theme-button-primary"
+                        className="theme-button-primary whitespace-nowrap"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleExportCSV(preset);
                         }}
                         title="Download Google Ads Editor CSV"
                       >
-                        <Download className="w-4 h-4 mr-2" />
+                        <Download className="w-4 h-4 mr-1.5" />
                         Export
                       </Button>
                     </div>
