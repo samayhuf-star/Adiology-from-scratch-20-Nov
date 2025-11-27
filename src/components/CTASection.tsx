@@ -1,7 +1,12 @@
 import { motion } from 'motion/react';
 import { ArrowRight } from './Icons';
 
-export function CTASection() {
+interface CTASectionProps {
+  onGetStarted?: () => void;
+  onScheduleDemo?: () => void;
+}
+
+export function CTASection({ onGetStarted, onScheduleDemo }: CTASectionProps) {
   return (
     <section className="py-20 px-6 bg-white">
       <div className="max-w-4xl mx-auto">
@@ -39,11 +44,17 @@ export function CTASection() {
               transition={{ delay: 0.4 }}
               className="flex flex-wrap gap-4 justify-center"
             >
-              <button className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:shadow-2xl transition-all flex items-center gap-2 group">
+              <button 
+                onClick={onGetStarted}
+                className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:shadow-2xl transition-all flex items-center gap-2 group"
+              >
                 <span>Start Free Trial</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
-              <button className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all">
+              <button 
+                onClick={onScheduleDemo}
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all"
+              >
                 Schedule Demo
               </button>
             </motion.div>

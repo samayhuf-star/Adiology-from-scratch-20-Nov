@@ -54,6 +54,12 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Apply saved font size
+    const savedFontSize = localStorage.getItem('fontSize');
+    if (savedFontSize) {
+      document.documentElement.style.fontSize = savedFontSize + 'px';
+    }
   }, [user]);
 
   const fetchDashboardData = async () => {
@@ -292,20 +298,67 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-2xl font-bold theme-gradient-text mb-1">
+          <h1 className="text-4xl font-bold theme-gradient-text mb-3">
             Welcome back, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}!
           </h1>
-          <p className="text-sm text-slate-600">Here's what's happening with your campaigns today.</p>
+          <p className="text-base text-slate-600">Here's what's happening with your campaigns today.</p>
         </div>
-        <Button
-          onClick={() => onNavigate('builder-2')}
-          className="theme-button-primary shadow-lg hover:shadow-xl transition-all"
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          New Campaign
-        </Button>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Font Size Controls */}
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-1.5 shadow-sm">
+            <button
+              onClick={() => {
+                const root = document.documentElement;
+                const currentSize = parseFloat(getComputedStyle(root).fontSize);
+                if (currentSize > 12) {
+                  root.style.fontSize = (currentSize - 1) + 'px';
+                  localStorage.setItem('fontSize', (currentSize - 1).toString());
+                }
+              }}
+              className="px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded transition-colors"
+              title="Decrease font size"
+            >
+              A-
+            </button>
+            <div className="w-px h-6 bg-slate-200"></div>
+            <button
+              onClick={() => {
+                const root = document.documentElement;
+                root.style.fontSize = '16px';
+                localStorage.setItem('fontSize', '16');
+              }}
+              className="px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded transition-colors"
+              title="Reset to default"
+            >
+              A
+            </button>
+            <div className="w-px h-6 bg-slate-200"></div>
+            <button
+              onClick={() => {
+                const root = document.documentElement;
+                const currentSize = parseFloat(getComputedStyle(root).fontSize);
+                if (currentSize < 24) {
+                  root.style.fontSize = (currentSize + 1) + 'px';
+                  localStorage.setItem('fontSize', (currentSize + 1).toString());
+                }
+              }}
+              className="px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded transition-colors"
+              title="Increase font size"
+            >
+              A+
+            </button>
+          </div>
+          
+          <Button
+            onClick={() => onNavigate('builder-2')}
+            className="theme-button-primary shadow-lg hover:shadow-xl transition-all px-6 py-3"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            New Campaign
+          </Button>
+        </div>
       </div>
 
       {/* My Resources */}

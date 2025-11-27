@@ -5,7 +5,10 @@ const pricingPlans = [
   {
     name: 'Starter',
     price: '$99.99',
+    priceId: 'price_starter_lifetime',
+    amount: 99.99,
     period: 'lifetime',
+    isSubscription: false,
     icon: '🚀',
     color: 'from-blue-400 to-blue-600',
     bgColor: 'bg-blue-50',
@@ -23,7 +26,10 @@ const pricingPlans = [
   {
     name: 'Pro',
     price: '$199',
+    priceId: 'price_pro_lifetime',
+    amount: 199,
     period: 'lifetime',
+    isSubscription: false,
     icon: '⚡',
     color: 'from-purple-500 to-purple-700',
     bgColor: 'bg-purple-50',
@@ -41,7 +47,10 @@ const pricingPlans = [
   {
     name: 'Growth',
     price: '$49.99',
+    priceId: 'price_growth_monthly',
+    amount: 49.99,
     period: 'per month',
+    isSubscription: true,
     icon: '📈',
     color: 'from-green-400 to-green-600',
     bgColor: 'bg-green-50',
@@ -59,7 +68,10 @@ const pricingPlans = [
   {
     name: 'Enterprise',
     price: '$99.99',
+    priceId: 'price_enterprise_monthly',
+    amount: 99.99,
     period: 'per month',
+    isSubscription: true,
     icon: '👑',
     color: 'from-pink-500 to-purple-600',
     bgColor: 'bg-pink-50',
@@ -155,7 +167,10 @@ export function Pricing({ onSelectPlan }: PricingProps) {
                 </div>
 
                 {/* CTA Button */}
-                <button className={`w-full py-3 rounded-xl transition-all ${plan.buttonStyle}`}>
+                <button 
+                  onClick={() => onSelectPlan?.(plan.name, plan.priceId, plan.amount, plan.isSubscription)}
+                  className={`w-full py-3 rounded-xl transition-all ${plan.buttonStyle}`}
+                >
                   Get Started
                 </button>
               </div>

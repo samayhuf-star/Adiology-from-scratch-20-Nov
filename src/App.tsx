@@ -503,7 +503,12 @@ const App = () => {
         return;
       }
 
-      setView(user ? 'user' : 'auth');
+      // Show home page if path is root and no user, otherwise show auth or user view
+      if (path === '/' && !user) {
+        setView('home');
+      } else {
+        setView(user ? 'user' : 'auth');
+      }
     };
 
     handleRoute();
@@ -845,22 +850,40 @@ const App = () => {
     }
   };
 
-  // Skip homepage - redirect directly to auth
-  // if (appView === 'home') {
-  //   return (
-  //     <HomePageNew
-  //       onGetStarted={() => {
-  //         setAuthMode('signup');
-  //         setAppView('auth');
-  //       }}
-  //       onLogin={() => {
-  //         setAuthMode('login');
-  //         setAppView('auth');
-  //       }}
-  //       onSelectPlan={handleSelectPlan}
-  //     />
-  //   );
-  // }
+  // Home page view
+  if (appView === 'home') {
+    return (
+      <HomePageNew
+        onGetStarted={() => {
+          setAuthMode('signup');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onSelectPlan={handleSelectPlan}
+        onContactSales={() => {
+          // Scroll to contact section
+          setTimeout(() => {
+            const element = document.querySelector('#contact');
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        }}
+        onScheduleDemo={() => {
+          // Scroll to contact section for demo scheduling
+          setTimeout(() => {
+            const element = document.querySelector('#contact');
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        }}
+      />
+    );
+  }
 
   if (appView === 'payment' && selectedPlan) {
     return (
