@@ -369,96 +369,95 @@ export const KeywordPlannerSelectable = ({
 
     return (
         <div className="p-8">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                    AI Keyword Planner and Negative List Builder
+            <div className="mb-10">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                    AI Keyword Planner
                 </h1>
-                <p className="text-slate-500">
+                <p className="text-base text-slate-600 leading-relaxed">
                     Generate comprehensive keyword lists using AI based on your seed keywords and negative filters
                 </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Panel: Define Your Strategy */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-                    <h2 className="text-xl font-bold text-indigo-600 mb-6">
-                        1. Define Your Strategy
+                <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-slate-200/60 shadow-xl">
+                    <h2 className="text-xl font-bold text-indigo-600 mb-3">
+                        Analysis Configuration
                     </h2>
+                    <p className="text-sm text-slate-600 mb-8">Provide details to guide the AI model</p>
 
                     {/* Seed Keywords */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">
-                            Seed Keywords (3-5 Core Ideas, comma-separated)
+                    <div className="mb-8">
+                        <label className="block text-sm font-semibold text-slate-700 mb-3">
+                            <span className="text-red-500">*</span> Seed Keywords
                         </label>
+                        <p className="text-xs text-slate-500 mb-3">
+                            Enter the main keywords you are targeting (3-5 core ideas, comma-separated).
+                        </p>
                         <Input
                             placeholder="airline number, contact airline, delta phone number"
                             value={seedKeywords}
                             onChange={(e) => setSeedKeywords(e.target.value)}
-                            className="bg-white border-slate-300"
+                            className="bg-white border-slate-300 h-11"
                         />
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-slate-500 mt-3">
                             These are the primary topics the AI will build upon.
                         </p>
                     </div>
 
                     {/* Target Match Types */}
-                    <div className="mb-6">
+                    <div className="mb-8">
                         <label className="block text-sm font-semibold text-slate-700 mb-3">
-                            Target Match Types
+                            <span className="text-red-500">*</span> Target Match Types
                         </label>
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2">
+                        <div className="space-y-4">
+                            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-lg hover:bg-slate-50 transition-colors border border-slate-200">
                                 <Checkbox 
                                     id="broad-planner" 
                                     checked={matchTypes.broad}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
                                     className="border-amber-400"
                                 />
-                                <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer">
-                                    Broad Match
-                                </label>
-                            </div>
-                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-slate-700">Broad Match</span>
+                            </label>
+                            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-lg hover:bg-slate-50 transition-colors border border-slate-200">
                                 <Checkbox 
                                     id="phrase-planner" 
                                     checked={matchTypes.phrase}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
                                     className="border-blue-400"
                                 />
-                                <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer">
-                                    Phrase Match "keyword"
-                                </label>
-                            </div>
-                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-slate-700">Phrase Match "keyword"</span>
+                            </label>
+                            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-lg hover:bg-slate-50 transition-colors border border-slate-200">
                                 <Checkbox 
                                     id="exact-planner" 
                                     checked={matchTypes.exact}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
                                     className="border-emerald-400"
                                 />
-                                <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer">
-                                    Exact Match [keyword]
-                                </label>
-                            </div>
+                                <span className="text-sm font-medium text-slate-700">Exact Match [keyword]</span>
+                            </label>
                         </div>
-                        <p className="text-xs text-slate-500 mt-2">
+                        <p className="text-xs text-slate-500 mt-4">
                             Keywords will be generated to fit the characteristics of the selected match types.
                         </p>
                     </div>
 
                     {/* Negative Keywords */}
                     <div className="mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                            <label className="block text-sm font-semibold text-slate-700">
-                                Negative Keywords (One term/phrase per line)
-                            </label>
-                        </div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-3">
+                            Negative Keywords
+                        </label>
+                        <p className="text-xs text-slate-500 mb-4">
+                            Enter negative keywords (one per line or comma-separated). AI will avoid generating keywords containing these terms.
+                        </p>
 
                         {/* Slider for keyword count */}
-                        <div className="mb-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-slate-600">Keywords to Generate:</span>
-                                <span className="text-xs font-semibold text-indigo-600">{negativeKeywordsCount}</span>
+                        <div className="mb-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm font-medium text-slate-700">Keywords to Generate:</span>
+                                <span className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{negativeKeywordsCount}</span>
                             </div>
                             <Slider
                                 value={[negativeKeywordsCount]}
