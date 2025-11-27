@@ -250,79 +250,80 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     };
 
     return (
-        <div className="p-4 max-w-5xl mx-auto">
-            <div className="mb-4 flex items-start justify-between">
+        <div className="p-8 max-w-6xl mx-auto">
+            <div className="mb-10 flex items-start justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
                         Keyword Mixer
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-base text-slate-600 leading-relaxed">
                         Mix and match multiple keyword lists to generate all possible combinations
                     </p>
                 </div>
                 <button
                     onClick={fillSampleInfo}
-                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
+                    className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
                 >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Sparkles className="w-4 h-4" />
                     Fill Sample Info
                 </button>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
                 <TabsList>
                     <TabsTrigger value="mixer">Keyword Mixer</TabsTrigger>
                     <TabsTrigger value="history">History</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="mixer">
-                    <div className="space-y-4">
+                    <div className="space-y-8">
                 {/* Input Section - Horizontal Lists */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg">
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-8 border border-slate-200/60 shadow-lg">
                     <h2 className="text-lg font-bold text-slate-800 mb-3">Keyword Lists</h2>
+                    <p className="text-sm text-slate-600 mb-6">Enter keywords for each list (one per line or comma-separated)</p>
                     
                     {/* Lists arranged horizontally */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                        <div className="space-y-1.5">
-                            <h3 className="text-sm font-semibold text-slate-700 mb-1">Keywords A</h3>
+                    <div className="grid grid-cols-3 gap-6 mb-8">
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-slate-700">Keywords A</h3>
                             <Textarea
                                 value={listA}
                                 onChange={(e) => setListA(e.target.value)}
-                                placeholder="Enter keywords for A&#10;One per line or comma-separated"
-                                className="min-h-[120px] text-sm px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                placeholder="plumber&#10;plumbing&#10;plumbing services"
+                                className="min-h-[140px] text-sm px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <h3 className="text-sm font-semibold text-slate-700 mb-1">Keywords B</h3>
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-slate-700">Keywords B</h3>
                             <Textarea
                                 value={listB}
                                 onChange={(e) => setListB(e.target.value)}
-                                placeholder="Enter keywords for B&#10;One per line or comma-separated"
-                                className="min-h-[120px] text-sm px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                placeholder="near me&#10;local&#10;emergency"
+                                className="min-h-[140px] text-sm px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <h3 className="text-sm font-semibold text-slate-700 mb-1">Keywords C</h3>
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-slate-700">Keywords C</h3>
                             <Textarea
                                 value={listC}
                                 onChange={(e) => setListC(e.target.value)}
                                 placeholder="Enter keywords for C&#10;One per line or comma-separated"
-                                className="min-h-[120px] text-sm px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                className="min-h-[140px] text-sm px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                             />
                         </div>
                     </div>
                     
                     {/* Helpful hint */}
-                    <div className="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-lg">
-                        <p className="text-xs text-indigo-700">
+                    <div className="mb-8 px-5 py-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                        <p className="text-sm text-indigo-700 leading-relaxed">
                             💡 <span className="font-semibold">Tip:</span> You can enter comma-separated values in any field (e.g., "delta, united, southwest") to create multiple variations at once.
                         </p>
                     </div>
 
                     {/* Match Type Selection */}
-                    <div className="border-t border-slate-200 pt-4">
-                        <h3 className="text-sm font-semibold text-slate-700 mb-3">Keyword Match Types</h3>
-                        <div className="flex items-center gap-4 flex-wrap">
+                    <div className="border-t border-slate-200 pt-8">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-5">Keyword Match Types</h3>
+                        <div className="flex items-center gap-5 flex-wrap">
                             <label htmlFor="broad" className="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 border-amber-200 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-300 cursor-pointer transition-all duration-200 group">
                                 <Checkbox 
                                     id="broad" 
@@ -362,19 +363,24 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
                     {/* Generate Button */}
                     <button
                         onClick={mixKeywords}
-                        className="w-full mt-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        className="w-full mt-8 py-3.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-base font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                     >
-                        <Shuffle className="w-4 h-4" />
+                        <Shuffle className="w-5 h-5" />
                         Generate Keywords
                     </button>
                 </div>
 
                 {/* Results Section */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg">
-                    <div className="flex justify-between items-center mb-3">
-                        <h2 className="text-lg font-bold text-slate-800">
-                            Generated Keywords {mixedKeywords.length > 0 && `(${mixedKeywords.length})`}
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-8 border border-slate-200/60 shadow-lg">
+                    <div className="mb-6">
+                        <h2 className="text-lg font-bold text-slate-800 mb-2">
+                            Generated Keywords
                         </h2>
+                        <p className="text-sm text-slate-600">
+                            {mixedKeywords.length > 0 ? `${mixedKeywords.length} keywords generated` : 'Results will appear here after generation'}
+                        </p>
+                    </div>
+                    <div className="flex justify-between items-center mb-6">
                         {mixedKeywords.length > 0 && (
                             <div className="flex gap-2">
                                 <button
