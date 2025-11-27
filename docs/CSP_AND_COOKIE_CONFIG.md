@@ -60,9 +60,7 @@ If the cookie isn't needed, disable the service that's setting it (e.g., Datadog
 ### script-src
 - `'self'` - Same origin scripts
 - `'unsafe-eval'` - Required for some libraries
-- `*.jam.dev` - Jam.dev recording
 - `https://js.stripe.com` - Stripe payments
-- `https://cdn.openwidget.com` - ChatBot widget
 - `https://vercel.live` - Vercel Live preview
 
 ### script-src-elem
@@ -70,18 +68,14 @@ If the cookie isn't needed, disable the service that's setting it (e.g., Datadog
 
 ### connect-src
 - `'self'` - Same origin connections
-- `*.jam.dev` - Jam.dev API
 - `*.stripe.com` - Stripe API
 - `https://*.supabase.co` - Supabase API
 - `https://googleads.googleapis.com` - Google Ads API
 - `https://generativelanguage.googleapis.com` - Google AI API
-- `https://www.chatbot.com` - ChatBot API
-- `https://cdn.openwidget.com` - ChatBot CDN
 - `https://vercel.live` - Vercel Live WebSocket
 
 ### frame-src
 - `'self'` - Same origin frames
-- `*.jam.dev` - Jam.dev iframes
 - `*.stripe.com` - Stripe checkout iframes
 
 ### style-src

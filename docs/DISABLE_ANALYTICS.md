@@ -65,13 +65,13 @@ After disabling:
 
 ## Current CSP Configuration
 
-After removing JAM, the CSP now allows:
+After removing JAM and ChatBot, the CSP now allows:
 - ✅ Stripe (payments)
-- ✅ ChatBot (widget)
 - ✅ Vercel Live (preview)
 - ✅ Supabase (backend)
 - ✅ Google APIs (Ads, AI)
 - ❌ JAM.dev (removed)
+- ❌ ChatBot (removed)
 - ❌ Datadog (should be disabled in dashboard)
 
 ## Notes
