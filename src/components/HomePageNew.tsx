@@ -66,7 +66,7 @@ export const HomePageNew: React.FC<HomePageNewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white w-full overflow-x-hidden" style={{ margin: 0, padding: 0 }}>
       <Navigation onGetStarted={onGetStarted} onLogin={onLogin} />
       <Hero onGetStarted={onGetStarted} />
       <Features />

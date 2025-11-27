@@ -573,22 +573,44 @@ const App = () => {
       const originalBodyStyle = {
         margin: document.body.style.margin,
         padding: document.body.style.padding,
+        overflowX: document.body.style.overflowX,
       };
       const originalHtmlStyle = {
         margin: document.documentElement.style.margin,
         padding: document.documentElement.style.padding,
+        overflowX: document.documentElement.style.overflowX,
       };
+      const rootElement = document.getElementById('root');
+      const originalRootStyle = rootElement ? {
+        margin: rootElement.style.margin,
+        padding: rootElement.style.padding,
+      } : null;
       
+      // Reset body and html
       document.body.style.margin = '0';
       document.body.style.padding = '0';
+      document.body.style.overflowX = 'hidden';
       document.documentElement.style.margin = '0';
       document.documentElement.style.padding = '0';
+      document.documentElement.style.overflowX = 'hidden';
+      
+      // Reset root element
+      if (rootElement) {
+        rootElement.style.margin = '0';
+        rootElement.style.padding = '0';
+      }
       
       return () => {
         document.body.style.margin = originalBodyStyle.margin;
         document.body.style.padding = originalBodyStyle.padding;
+        document.body.style.overflowX = originalBodyStyle.overflowX;
         document.documentElement.style.margin = originalHtmlStyle.margin;
         document.documentElement.style.padding = originalHtmlStyle.padding;
+        document.documentElement.style.overflowX = originalHtmlStyle.overflowX;
+        if (rootElement && originalRootStyle) {
+          rootElement.style.margin = originalRootStyle.margin;
+          rootElement.style.padding = originalRootStyle.padding;
+        }
       };
     }
   }, [appView]);
