@@ -43,10 +43,7 @@ export function CTASection({ onGetStarted }: CTASectionProps) {
               transition={{ delay: 0.4 }}
               className="flex flex-wrap gap-4 justify-center"
             >
-              <button 
-                onClick={onGetStarted}
-                className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:shadow-2xl transition-all flex items-center gap-2 group"
-              >
+              <button onClick={onGetStarted} className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:shadow-2xl transition-all flex items-center gap-2 group">
                 <span>Start Free Trial</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>

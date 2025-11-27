@@ -16,7 +16,7 @@ export function Hero({ onGetStarted }: HeroProps) {
             transition={{ duration: 0.6 }}
             className="text-gray-900 mb-6"
           >
-            Leading <span className="text-blue-600">Campaign Management</span> Platform
+            Why guess campaigns when you can <span className="text-blue-600">copy what actually works?</span>
           </motion.h1>
 
           <motion.p
@@ -34,10 +34,7 @@ export function Hero({ onGetStarted }: HeroProps) {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex flex-wrap gap-4 justify-center"
           >
-            <button 
-              onClick={onGetStarted}
-              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-xl transition-all flex items-center gap-2 group"
-            >
+            <button onClick={onGetStarted} className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-xl transition-all flex items-center gap-2 group">
               Get Started
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>

@@ -6,6 +6,28 @@ export function Footer() {
     Company: ['About', 'Careers', 'Contact', 'Partners', 'Press']
   };
 
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, link: string) => {
+    if (link === 'Contact') {
+      e.preventDefault();
+      const element = document.querySelector('#contact');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (link === 'Features') {
+      e.preventDefault();
+      const element = document.querySelector('#features');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (link === 'Pricing') {
+      e.preventDefault();
+      const element = document.querySelector('#pricing');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
   return (
     <footer className="py-16 px-6 bg-gray-50 border-t border-gray-200">
       <div className="max-w-7xl mx-auto">
@@ -30,7 +52,11 @@ export function Footer() {
               <ul className="space-y-2">
                 {links.map((link) => (
                   <li key={link}>
-                    <a href="#" className="text-gray-600 hover:text-gray-900 text-sm transition-colors">
+                    <a 
+                      href="#" 
+                      onClick={(e) => handleLinkClick(e, link)}
+                      className="text-gray-600 hover:text-gray-900 text-sm transition-colors"
+                    >
                       {link}
                     </a>
                   </li>

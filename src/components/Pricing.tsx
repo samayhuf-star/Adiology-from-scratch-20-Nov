@@ -1,16 +1,11 @@
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { PLAN_PRICE_IDS } from '../../utils/stripe';
 
 const pricingPlans = [
   {
     name: 'Starter',
-    displayName: 'Lifetime Limited',
     price: '$99.99',
     period: 'lifetime',
-    priceId: PLAN_PRICE_IDS.lifetime_limited,
-    amount: 99.99,
-    isSubscription: false,
     icon: '🚀',
     color: 'from-blue-400 to-blue-600',
     bgColor: 'bg-blue-50',
@@ -27,12 +22,8 @@ const pricingPlans = [
   },
   {
     name: 'Pro',
-    displayName: 'Lifetime Unlimited',
     price: '$199',
     period: 'lifetime',
-    priceId: PLAN_PRICE_IDS.lifetime_unlimited,
-    amount: 199,
-    isSubscription: false,
     icon: '⚡',
     color: 'from-purple-500 to-purple-700',
     bgColor: 'bg-purple-50',
@@ -49,12 +40,8 @@ const pricingPlans = [
   },
   {
     name: 'Growth',
-    displayName: 'Monthly Limited',
     price: '$49.99',
     period: 'per month',
-    priceId: PLAN_PRICE_IDS.monthly_25,
-    amount: 49.99,
-    isSubscription: true,
     icon: '📈',
     color: 'from-green-400 to-green-600',
     bgColor: 'bg-green-50',
@@ -71,12 +58,8 @@ const pricingPlans = [
   },
   {
     name: 'Enterprise',
-    displayName: 'Monthly Unlimited',
     price: '$99.99',
     period: 'per month',
-    priceId: PLAN_PRICE_IDS.monthly_unlimited,
-    amount: 99.99,
-    isSubscription: true,
     icon: '👑',
     color: 'from-pink-500 to-purple-600',
     bgColor: 'bg-pink-50',
@@ -94,7 +77,7 @@ const pricingPlans = [
 ];
 
 interface PricingProps {
-  onSelectPlan: (planName: string, priceId: string, amount: number, isSubscription: boolean) => void;
+  onSelectPlan?: (planName: string, priceId: string, amount: number, isSubscription: boolean) => void;
 }
 
 export function Pricing({ onSelectPlan }: PricingProps) {
@@ -173,7 +156,19 @@ export function Pricing({ onSelectPlan }: PricingProps) {
 
                 {/* CTA Button */}
                 <button 
-                  onClick={() => onSelectPlan(plan.displayName, plan.priceId, plan.amount, plan.isSubscription)}
+                  onClick={() => {
+                    if (onSelectPlan) {
+                      // Map plan names to price IDs - these should match your Stripe price IDs
+                      const priceIdMap: Record<string, { priceId: string; amount: number; isSubscription: boolean }> = {
+                        'Starter': { priceId: 'price_starter_lifetime', amount: 9999, isSubscription: false },
+                        'Pro': { priceId: 'price_pro_lifetime', amount: 19900, isSubscription: false },
+                        'Growth': { priceId: 'price_growth_monthly', amount: 4999, isSubscription: true },
+                        'Enterprise': { priceId: 'price_enterprise_monthly', amount: 9999, isSubscription: true }
+                      };
+                      const planData = priceIdMap[plan.name] || { priceId: '', amount: 0, isSubscription: false };
+                      onSelectPlan(plan.name, planData.priceId, planData.amount, planData.isSubscription);
+                    }
+                  }}
                   className={`w-full py-3 rounded-xl transition-all ${plan.buttonStyle}`}
                 >
                   Get Started

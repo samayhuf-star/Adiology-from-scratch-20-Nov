@@ -567,71 +567,104 @@ const App = () => {
     return undefined;
   }, [user, appView, loading]);
 
-  // Reset body/html padding and margin for home page to prevent global spacing interference
-  useEffect(() => {
-    if (appView === 'home') {
-      const originalBodyStyle = {
-        margin: document.body.style.margin,
-        padding: document.body.style.padding,
-        overflowX: document.body.style.overflowX,
-        backgroundColor: document.body.style.backgroundColor,
-      };
-      const originalHtmlStyle = {
-        margin: document.documentElement.style.margin,
-        padding: document.documentElement.style.padding,
-        overflowX: document.documentElement.style.overflowX,
-        backgroundColor: document.documentElement.style.backgroundColor,
-      };
-      const rootElement = document.getElementById('root');
-      const originalRootStyle = rootElement ? {
-        margin: rootElement.style.margin,
-        padding: rootElement.style.padding,
-        width: rootElement.style.width,
-        maxWidth: rootElement.style.maxWidth,
-      } : null;
-      
-      // Set data attribute for CSS targeting
-      document.body.setAttribute('data-homepage', 'true');
-      document.documentElement.setAttribute('data-homepage', 'true');
-      
-      // Reset body and html
-      document.body.style.margin = '0';
-      document.body.style.padding = '0';
-      document.body.style.overflowX = 'hidden';
-      document.body.style.backgroundColor = 'transparent';
-      document.documentElement.style.margin = '0';
-      document.documentElement.style.padding = '0';
-      document.documentElement.style.overflowX = 'hidden';
-      document.documentElement.style.backgroundColor = 'transparent';
-      
-      // Reset root element
-      if (rootElement) {
-        rootElement.style.margin = '0';
-        rootElement.style.padding = '0';
-        rootElement.style.width = '100%';
-        rootElement.style.maxWidth = '100%';
-      }
-      
-      return () => {
-        document.body.removeAttribute('data-homepage');
-        document.documentElement.removeAttribute('data-homepage');
-        document.body.style.margin = originalBodyStyle.margin;
-        document.body.style.padding = originalBodyStyle.padding;
-        document.body.style.overflowX = originalBodyStyle.overflowX;
-        document.body.style.backgroundColor = originalBodyStyle.backgroundColor;
-        document.documentElement.style.margin = originalHtmlStyle.margin;
-        document.documentElement.style.padding = originalHtmlStyle.padding;
-        document.documentElement.style.overflowX = originalHtmlStyle.overflowX;
-        document.documentElement.style.backgroundColor = originalHtmlStyle.backgroundColor;
-        if (rootElement && originalRootStyle) {
-          rootElement.style.margin = originalRootStyle.margin;
-          rootElement.style.padding = originalRootStyle.padding;
-          rootElement.style.width = originalRootStyle.width;
-          rootElement.style.maxWidth = originalRootStyle.maxWidth;
-        }
-      };
-    }
-  }, [appView]);
+  // Homepage styling removed - no longer needed
+  // useEffect(() => {
+  //   if (appView === 'home') {
+  //     const originalBodyStyle = {
+  //       margin: document.body.style.margin,
+  //       padding: document.body.style.padding,
+  //       overflowX: document.body.style.overflowX,
+  //       backgroundColor: document.body.style.backgroundColor,
+  //     };
+  //     const originalHtmlStyle = {
+  //       margin: document.documentElement.style.margin,
+  //       padding: document.documentElement.style.padding,
+  //       overflowX: document.documentElement.style.overflowX,
+  //       backgroundColor: document.documentElement.style.backgroundColor,
+  //     };
+  //     const rootElement = document.getElementById('root');
+  //     const themeProvider = rootElement?.firstElementChild as HTMLElement;
+  //     
+  //     const originalRootStyle = rootElement ? {
+  //       margin: rootElement.style.margin,
+  //       padding: rootElement.style.padding,
+  //       width: rootElement.style.width,
+  //       maxWidth: rootElement.style.maxWidth,
+  //       position: rootElement.style.position,
+  //       left: rootElement.style.left,
+  //       right: rootElement.style.right,
+  //     } : null;
+  //     
+  //     const originalThemeProviderStyle = themeProvider ? {
+  //       margin: themeProvider.style.margin,
+  //       padding: themeProvider.style.padding,
+  //       width: themeProvider.style.width,
+  //       maxWidth: themeProvider.style.maxWidth,
+  //     } : null;
+  //     
+  //     // Set data attribute for CSS targeting
+  //     document.body.setAttribute('data-homepage', 'true');
+  //     document.documentElement.setAttribute('data-homepage', 'true');
+  //     
+  //     // Reset body and html
+  //     document.body.style.margin = '0';
+  //     document.body.style.padding = '0';
+  //     document.body.style.overflowX = 'hidden';
+  //     document.body.style.backgroundColor = 'transparent';
+  //     document.documentElement.style.margin = '0';
+  //     document.documentElement.style.padding = '0';
+  //     document.documentElement.style.overflowX = 'hidden';
+  //     document.documentElement.style.backgroundColor = 'transparent';
+  //     
+  //     // Reset root element
+  //     if (rootElement) {
+  //       rootElement.style.margin = '0';
+  //       rootElement.style.padding = '0';
+  //       rootElement.style.width = '100%';
+  //       rootElement.style.maxWidth = '100%';
+  //       rootElement.style.position = 'relative';
+  //       rootElement.style.left = '0';
+  //       rootElement.style.right = '0';
+  //     }
+  //
+  //     // Reset ThemeProvider wrapper (first child of root)
+  //     if (themeProvider) {
+  //       themeProvider.style.margin = '0';
+  //       themeProvider.style.padding = '0';
+  //       themeProvider.style.width = '100%';
+  //       themeProvider.style.maxWidth = '100%';
+  //     }
+  //     
+  //     return () => {
+  //       document.body.removeAttribute('data-homepage');
+  //       document.documentElement.removeAttribute('data-homepage');
+  //       document.body.style.margin = originalBodyStyle.margin;
+  //       document.body.style.padding = originalBodyStyle.padding;
+  //       document.body.style.overflowX = originalBodyStyle.overflowX;
+  //       document.body.style.backgroundColor = originalBodyStyle.backgroundColor;
+  //       document.documentElement.style.margin = originalHtmlStyle.margin;
+  //       document.documentElement.style.padding = originalHtmlStyle.padding;
+  //       document.documentElement.style.overflowX = originalHtmlStyle.overflowX;
+  //       document.documentElement.style.backgroundColor = originalHtmlStyle.backgroundColor;
+  //       if (rootElement && originalRootStyle) {
+  //         rootElement.style.margin = originalRootStyle.margin;
+  //         rootElement.style.padding = originalRootStyle.padding;
+  //         rootElement.style.width = originalRootStyle.width;
+  //         rootElement.style.maxWidth = originalRootStyle.maxWidth;
+  //         rootElement.style.position = originalRootStyle.position;
+  //         rootElement.style.left = originalRootStyle.left;
+  //         rootElement.style.right = originalRootStyle.right;
+  //       }
+  //       
+  //       if (themeProvider && originalThemeProviderStyle) {
+  //         themeProvider.style.margin = originalThemeProviderStyle.margin;
+  //         themeProvider.style.padding = originalThemeProviderStyle.padding;
+  //         themeProvider.style.width = originalThemeProviderStyle.width;
+  //         themeProvider.style.maxWidth = originalThemeProviderStyle.maxWidth;
+  //       }
+  //     };
+  //   }
+  // }, [appView]);
 
   // Function to handle plan selection
   const handleSelectPlan = async (planName: string, priceId: string, amount: number, isSubscription: boolean) => {
@@ -750,7 +783,7 @@ const App = () => {
     }
   };
 
-  // Render based on app view
+  // Render homepage
   if (appView === 'home') {
     return (
       <HomePageNew

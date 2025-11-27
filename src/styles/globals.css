@@ -148,6 +148,14 @@ body {
   /* Homepage override - prevent background color from interfering */
   body[data-homepage="true"] {
     background-color: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure ThemeProvider wrapper doesn't add spacing */
+  body[data-homepage="true"] #root > * {
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 
