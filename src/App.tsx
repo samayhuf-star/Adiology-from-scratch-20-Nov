@@ -574,42 +574,60 @@ const App = () => {
         margin: document.body.style.margin,
         padding: document.body.style.padding,
         overflowX: document.body.style.overflowX,
+        backgroundColor: document.body.style.backgroundColor,
       };
       const originalHtmlStyle = {
         margin: document.documentElement.style.margin,
         padding: document.documentElement.style.padding,
         overflowX: document.documentElement.style.overflowX,
+        backgroundColor: document.documentElement.style.backgroundColor,
       };
       const rootElement = document.getElementById('root');
       const originalRootStyle = rootElement ? {
         margin: rootElement.style.margin,
         padding: rootElement.style.padding,
+        width: rootElement.style.width,
+        maxWidth: rootElement.style.maxWidth,
       } : null;
+      
+      // Set data attribute for CSS targeting
+      document.body.setAttribute('data-homepage', 'true');
+      document.documentElement.setAttribute('data-homepage', 'true');
       
       // Reset body and html
       document.body.style.margin = '0';
       document.body.style.padding = '0';
       document.body.style.overflowX = 'hidden';
+      document.body.style.backgroundColor = 'transparent';
       document.documentElement.style.margin = '0';
       document.documentElement.style.padding = '0';
       document.documentElement.style.overflowX = 'hidden';
+      document.documentElement.style.backgroundColor = 'transparent';
       
       // Reset root element
       if (rootElement) {
         rootElement.style.margin = '0';
         rootElement.style.padding = '0';
+        rootElement.style.width = '100%';
+        rootElement.style.maxWidth = '100%';
       }
       
       return () => {
+        document.body.removeAttribute('data-homepage');
+        document.documentElement.removeAttribute('data-homepage');
         document.body.style.margin = originalBodyStyle.margin;
         document.body.style.padding = originalBodyStyle.padding;
         document.body.style.overflowX = originalBodyStyle.overflowX;
+        document.body.style.backgroundColor = originalBodyStyle.backgroundColor;
         document.documentElement.style.margin = originalHtmlStyle.margin;
         document.documentElement.style.padding = originalHtmlStyle.padding;
         document.documentElement.style.overflowX = originalHtmlStyle.overflowX;
+        document.documentElement.style.backgroundColor = originalHtmlStyle.backgroundColor;
         if (rootElement && originalRootStyle) {
           rootElement.style.margin = originalRootStyle.margin;
           rootElement.style.padding = originalRootStyle.padding;
+          rootElement.style.width = originalRootStyle.width;
+          rootElement.style.maxWidth = originalRootStyle.maxWidth;
         }
       };
     }

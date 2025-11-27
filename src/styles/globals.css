@@ -144,6 +144,11 @@ button:disabled {
 body {
     @apply bg-background text-foreground;
   }
+
+  /* Homepage override - prevent background color from interfering */
+  body[data-homepage="true"] {
+    background-color: transparent !important;
+  }
 }
 
 /**
