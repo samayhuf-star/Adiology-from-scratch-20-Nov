@@ -14,6 +14,7 @@ import { api } from '../utils/api';
 import { createCheckoutSession, createCustomerPortalSession, PLAN_PRICE_IDS } from '../utils/stripe';
 import { notifications } from '../utils/notifications';
 import { isPaidUser } from '../utils/userPlan';
+
 import { getCurrentUserProfile } from '../utils/auth';
 
 export const BillingPanel = () => {
@@ -44,65 +45,106 @@ export const BillingPanel = () => {
         const fetchInfo = async () => {
             try {
                 setError(null);
+                setLoading(true);
                 try {
                     const data = await api.get('/billing/info');
                     setInfo(data);
+                    setLoading(false);
                 } catch (apiError) {
                     // Fallback: Read from Supabase user profile
                     console.log('ℹ️ Using Supabase user profile data (API unavailable)');
                     
                     try {
                         const userProfile = await getCurrentUserProfile();
-                        
+                        const { supabase } = await import('../utils/supabase/client');
+                    
                         let userPlan = "Free";
-                        let nextBillingDate = null;
+                        let nextBillingDate: string | null = null;
                         let subscriptionStatus = "inactive";
-                        
+                        let invoices: any[] = [];
+                    
                         if (userProfile) {
-                            // Map subscription_plan from database to display format
-                            const planMap: Record<string, string> = {
-                                'free': 'Free',
-                                'starter': 'Monthly Limited',
-                                'professional': 'Monthly Unlimited',
-                                'enterprise': 'Lifetime Unlimited'
-                            };
+                            // Fetch subscription from subscriptions table
+                            const { data: subscription, error: subError } = await supabase
+                                .from('subscriptions')
+                                .select('*')
+                                .eq('user_id', userProfile.id)
+                                .order('created_at', { ascending: false })
+                                .limit(1)
+                                .single();
                             
-                            userPlan = planMap[userProfile.subscription_plan] || userProfile.subscription_plan || "Free";
-                            subscriptionStatus = userProfile.subscription_status || "inactive";
+                            if (!subError && subscription) {
+                                userPlan = subscription.plan_name || "Free";
+                                subscriptionStatus = subscription.status || "inactive";
+                                
+                                if (subscription.current_period_end) {
+                                    nextBillingDate = new Date(subscription.current_period_end).toISOString().split('T')[0];
+                                } else if (userPlan.includes('Monthly')) {
+                                    // Calculate next billing date if not set
+                                    const nextDate = new Date();
+                                    nextDate.setMonth(nextDate.getMonth() + 1);
+                                    nextBillingDate = nextDate.toISOString().split('T')[0];
+                                }
+                            } else {
+                                // Fallback to user profile data
+                                const planMap: Record<string, string> = {
+                                    'free': 'Free',
+                                    'starter': 'Monthly Limited',
+                                    'professional': 'Monthly Unlimited',
+                                    'enterprise': 'Lifetime Unlimited'
+                                };
+                                
+                                userPlan = planMap[userProfile.subscription_plan] || userProfile.subscription_plan || "Free";
+                                subscriptionStatus = userProfile.subscription_status || "inactive";
+                            }
                             
-                            // Get next billing date from subscriptions table if available
-                            // For now, calculate if it's a subscription plan
-                            if (userPlan.includes('Monthly') || userPlan.includes('month')) {
-                                const nextDate = new Date();
-                                nextDate.setMonth(nextDate.getMonth() + 1);
-                                nextBillingDate = nextDate.toISOString().split('T')[0];
+                            // Fetch invoices
+                            const { data: invoiceData, error: invError } = await supabase
+                                .from('invoices')
+                                .select('*')
+                                .eq('user_id', userProfile.id)
+                                .order('created_at', { ascending: false })
+                                .limit(10);
+                            
+                            if (!invError && invoiceData) {
+                                invoices = invoiceData.map(inv => ({
+                                    id: inv.stripe_invoice_id || inv.id,
+                                    date: new Date(inv.created_at).toISOString().split('T')[0],
+                                    amount: `$${inv.amount.toFixed(2)}`,
+                                    status: inv.status === 'paid' ? 'Paid' : 'Pending'
+                                }));
                             }
                         }
-                        
+                    
                         setInfo({
                             plan: userPlan,
-                            nextBillingDate: nextBillingDate || (userPlan.includes('Lifetime') ? null : "2025-12-01"),
+                            nextBillingDate: nextBillingDate,
                             subscriptionStatus: subscriptionStatus,
-                            invoices: [
-                                { id: "inv_1", date: new Date().toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" },
-                                { id: "inv_2", date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], amount: userPlan === "Free" ? "$0.00" : "$99.99", status: "Paid" }
-                            ]
+                            invoices: invoices
                         });
+                        setLoading(false);
                     } catch (profileError) {
                         console.error('Error loading user profile:', profileError);
-                        // Set default info
+                        // Bug_65: Set default info even on error to ensure component renders
                         setInfo({
                             plan: "Free",
                             nextBillingDate: null,
                             subscriptionStatus: "inactive",
                             invoices: []
                         });
+                        setLoading(false);
                     }
                 }
             } catch (error) {
                 console.error("Billing error", error);
                 setError(error instanceof Error ? error.message : "Failed to load billing info");
-            } finally {
+                // Bug_65: Set default info on error to ensure component renders
+                setInfo({
+                    plan: "Free",
+                    nextBillingDate: null,
+                    subscriptionStatus: "inactive",
+                    invoices: []
+                });
                 setLoading(false);
             }
         };
@@ -110,10 +152,41 @@ export const BillingPanel = () => {
         
         // Check if user is paid
         const checkPaidStatus = async () => {
-            const paid = await isPaidUser();
-            setIsPaid(paid);
+            try {
+                const paid = await isPaidUser();
+                setIsPaid(paid);
+            } catch (error) {
+                console.error('Error checking paid status:', error);
+                setIsPaid(false);
+            }
         };
         checkPaidStatus();
+        
+        // Handle Stripe checkout return
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session_id');
+        const canceled = urlParams.get('canceled');
+        
+        if (sessionId) {
+            // Payment successful - refresh subscription data
+            notifications.success('Payment successful! Your subscription is now active.', {
+                title: 'Welcome!',
+                description: 'You now have access to all premium features.',
+            });
+            // Remove session_id from URL
+            window.history.replaceState({}, '', window.location.pathname);
+            // Refresh subscription data
+            setTimeout(() => {
+                fetchInfo();
+                checkPaidStatus();
+            }, 1000);
+        } else if (canceled) {
+            notifications.info('Payment was canceled. You can try again anytime.', {
+                title: 'Payment Canceled',
+            });
+            // Remove canceled param from URL
+            window.history.replaceState({}, '', window.location.pathname);
+        }
     }, []);
 
     const handleSubscribe = async (planName?: string, priceId?: string) => {
@@ -123,18 +196,19 @@ export const BillingPanel = () => {
             const selectedPlan = planName || 'Lifetime Unlimited';
             const selectedPriceId = priceId || PLAN_PRICE_IDS.lifetime_unlimited;
             
-            // Get plan amount
-            const planAmounts: Record<string, number> = {
-                'Lifetime Limited': 99.99,
-                'Lifetime Unlimited': 199,
-                'Monthly Limited': 49.99,
-                'Monthly Unlimited': 99.99,
-            };
-            const amount = planAmounts[selectedPlan] || 199;
-            const isSubscription = selectedPlan.includes('Monthly');
+            // Get current user for checkout
+            const { getCurrentAuthUser } = await import('../utils/auth');
+            const user = await getCurrentAuthUser();
             
-            // Redirect to payment page
-            window.location.href = `/payment?plan=${encodeURIComponent(selectedPlan)}&priceId=${encodeURIComponent(selectedPriceId)}&amount=${amount}&subscription=${isSubscription}`;
+            if (!user) {
+                throw new Error('You must be logged in to subscribe');
+            }
+            
+            // Create Stripe checkout session
+            await createCheckoutSession(selectedPriceId, selectedPlan, user.id, user.email);
+            
+            // Note: User will be redirected to Stripe, so we don't need to setProcessing(false)
+            // The redirect happens in createCheckoutSession
         } catch (error) {
             console.error("Subscription error", error);
             notifications.error('Failed to initiate checkout. Please try again.', {
@@ -186,6 +260,124 @@ export const BillingPanel = () => {
 
     const handleViewPricing = () => {
         setShowPricingDialog(true);
+    };
+
+    // Card validation functions
+    const validateCardNumber = (value: string) => {
+        const cleanValue = value.replace(/\s/g, '');
+        if (!cleanValue) {
+            setCardErrors(prev => ({ ...prev, number: undefined }));
+            return;
+        }
+        if (cleanValue.length < 13 || cleanValue.length > 19) {
+            setCardErrors(prev => ({ ...prev, number: 'Card number must be between 13 and 19 digits' }));
+        } else if (!/^\d+$/.test(cleanValue)) {
+            setCardErrors(prev => ({ ...prev, number: 'Card number must contain only digits' }));
+        } else {
+            setCardErrors(prev => ({ ...prev, number: undefined }));
+        }
+    };
+
+    const validateCardName = (value: string) => {
+        if (!value.trim()) {
+            setCardErrors(prev => ({ ...prev, name: 'Cardholder name is required' }));
+        } else if (value.trim().length < 2) {
+            setCardErrors(prev => ({ ...prev, name: 'Cardholder name must be at least 2 characters' }));
+        } else {
+            setCardErrors(prev => ({ ...prev, name: undefined }));
+        }
+    };
+
+    const validateCardExpiry = (value: string) => {
+        if (!value) {
+            setCardErrors(prev => ({ ...prev, expiry: undefined }));
+            return;
+        }
+        const expiryMatch = value.match(/^(\d{2})\/(\d{2})$/);
+        if (!expiryMatch) {
+            setCardErrors(prev => ({ ...prev, expiry: 'Please enter a valid expiry date (MM/YY)' }));
+        } else {
+            const month = parseInt(expiryMatch[1], 10);
+            const year = parseInt(expiryMatch[2], 10);
+            const currentYear = new Date().getFullYear() % 100;
+            const currentMonth = new Date().getMonth() + 1;
+            
+            if (month < 1 || month > 12) {
+                setCardErrors(prev => ({ ...prev, expiry: 'Month must be between 01 and 12' }));
+            } else if (year < currentYear || (year === currentYear && month < currentMonth)) {
+                setCardErrors(prev => ({ ...prev, expiry: 'Card has expired' }));
+            } else {
+                setCardErrors(prev => ({ ...prev, expiry: undefined }));
+            }
+        }
+    };
+
+    const validateCardCVV = (value: string) => {
+        if (!value) {
+            setCardErrors(prev => ({ ...prev, cvv: undefined }));
+            return;
+        }
+        if (value.length < 3 || value.length > 4) {
+            setCardErrors(prev => ({ ...prev, cvv: 'CVV must be 3 or 4 digits' }));
+        } else if (!/^\d+$/.test(value)) {
+            setCardErrors(prev => ({ ...prev, cvv: 'CVV must contain only digits' }));
+        } else {
+            setCardErrors(prev => ({ ...prev, cvv: undefined }));
+        }
+    };
+
+    const resetCardForm = () => {
+        setCardNumber('');
+        setCardName('');
+        setCardExpiry('');
+        setCardCVV('');
+        setCardErrors({});
+    };
+
+    const handleAddCard = async () => {
+        if (!isCardFormValid()) {
+            notifications.error('Please fix all errors before adding the card', {
+                title: 'Validation Error',
+                description: 'All card fields must be valid.',
+            });
+            return;
+        }
+
+        setProcessing(true);
+        try {
+            // In a real implementation, you would call Stripe API here to add the payment method
+            // For now, we'll just simulate adding the card
+            const cardNumberClean = cardNumber.replace(/\s/g, '');
+            const last4 = cardNumberClean.slice(-4);
+            const expiryParts = cardExpiry.split('/');
+            
+            // Simulate adding card to saved cards
+            const newCard = {
+                id: Date.now().toString(),
+                brand: cardNumberClean.startsWith('4') ? 'visa' : cardNumberClean.startsWith('5') ? 'mastercard' : 'amex',
+                last4: last4,
+                expMonth: expiryParts[0] || '',
+                expYear: expiryParts[1] || '',
+                isDefault: savedCards.length === 0
+            };
+            
+            setSavedCards(prev => [...prev, newCard]);
+            setShowAddCardDialog(false);
+            resetCardForm();
+            
+            notifications.success('Card added successfully', {
+                title: 'Payment Method Added',
+                description: `Your card ending in ${last4} has been added.`,
+            });
+        } catch (error) {
+            console.error("Add card error", error);
+            notifications.error('Failed to add card. Please try again.', {
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Unknown error occurred',
+            });
+        } finally {
+            setProcessing(false);
+        }
     };
 
     // Validate card form
@@ -299,57 +491,61 @@ Generated on ${new Date().toLocaleDateString()}`;
         nextBillingDate: null,
         subscriptionStatus: "inactive",
         invoices: []
-    };
+        };
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
             {error && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-600" />
+                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
                         <p className="text-sm text-yellow-800">{error}</p>
                     </div>
                 </div>
             )}
-             <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <div>
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                     Billing & Subscription
                 </h1>
-                <p className="text-slate-500 mt-1">Manage your plan, payment methods, and invoices.</p>
+                <p className="text-slate-500 mt-1 text-sm sm:text-base">Manage your plan, payment methods, and invoices.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                 {/* Current Plan */}
-                <Card className="md:col-span-2 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                <Card className="lg:col-span-2 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
                     <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <CardTitle>Current Plan</CardTitle>
-                                <CardDescription>You are currently on the <span className="font-semibold text-indigo-600">{billingInfo.plan} Plan</span></CardDescription>
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                                <CardTitle className="text-lg sm:text-xl">Current Plan</CardTitle>
+                                <CardDescription className="mt-1">
+                                    You are currently on the <span className="font-semibold text-indigo-600 break-words">{billingInfo.plan} Plan</span>
+                                </CardDescription>
                             </div>
-                            <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">Active</Badge>
+                            <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100 self-start">Active</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <div className="text-sm text-slate-500 mb-1">Next Billing Date</div>
-                                <div className="text-lg font-semibold flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-indigo-500"/> 
-                                    {billingInfo.nextBillingDate 
-                                        ? new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', { 
-                                            month: 'short', 
-                                            day: 'numeric', 
-                                            year: 'numeric' 
-                                          })
-                                        : billingInfo.plan.includes('Lifetime') 
-                                          ? 'Never (Lifetime)' 
-                                          : 'N/A'}
+                                <div className="text-xs sm:text-sm text-slate-500 mb-1">Next Billing Date</div>
+                                <div className="text-base sm:text-lg font-semibold flex items-center gap-2 flex-wrap">
+                                    <Calendar className="w-4 h-4 text-indigo-500 flex-shrink-0"/> 
+                                    <span className="break-words">
+                                        {billingInfo.nextBillingDate 
+                                            ? new Date(billingInfo.nextBillingDate).toLocaleDateString('en-US', { 
+                                                month: 'short', 
+                                                day: 'numeric', 
+                                                year: 'numeric' 
+                                              })
+                                            : billingInfo.plan.includes('Lifetime') 
+                                              ? 'Never (Lifetime)' 
+                                              : 'N/A'}
+                                    </span>
                                 </div>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                <div className="text-sm text-slate-500 mb-1">Amount Due</div>
-                                <div className="text-lg font-semibold text-slate-800">$0.00</div>
+                                <div className="text-xs sm:text-sm text-slate-500 mb-1">Amount Due</div>
+                                <div className="text-base sm:text-lg font-semibold text-slate-800">$0.00</div>
                             </div>
                         </div>
 
@@ -367,38 +563,45 @@ Generated on ${new Date().toLocaleDateString()}`;
                             </div>
                         </div>
                     </CardContent>
-                    <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-6 flex flex-col sm:flex-row gap-3">
-                        <Button 
-                            onClick={async () => {
-                                setProcessing(true);
-                                try {
-                                    await createCustomerPortalSession();
-                                    notifications.info('Redirecting to subscription management...', {
-                                        title: 'Manage Subscription',
-                                        description: 'You can view your plan, update payment methods, and manage your subscription.',
-                                    });
-                                } catch (error) {
-                                    console.error("Manage subscription error", error);
-                                    notifications.error('Failed to open subscription portal. Please contact support.', {
-                                        title: 'Error',
-                                        description: error instanceof Error ? error.message : 'Unknown error occurred',
-                                    });
-                                } finally {
-                                    setProcessing(false);
-                                }
-                            }}
-                            disabled={processing || billingInfo.plan === 'Free'}
-                            className="bg-indigo-600 text-white hover:bg-indigo-700 flex-1"
-                        >
-                            {processing ? "Processing..." : "Manage Subscription"}
-                        </Button>
-                        <Button onClick={handleSubscribe} disabled={processing} variant="outline" className="flex-1">
-                            {processing ? "Processing..." : "Upgrade Plan"}
-                        </Button>
+                    <CardFooter className="bg-slate-50/50 border-t border-slate-100 p-4 sm:p-6 flex flex-col gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                            <Button 
+                                onClick={async () => {
+                                    setProcessing(true);
+                                    try {
+                                        await createCustomerPortalSession();
+                                        notifications.info('Redirecting to subscription management...', {
+                                            title: 'Manage Subscription',
+                                            description: 'You can view your plan, update payment methods, and manage your subscription.',
+                                        });
+                                    } catch (error) {
+                                        console.error("Manage subscription error", error);
+                                        notifications.error('Failed to open subscription portal. Please contact support.', {
+                                            title: 'Error',
+                                            description: error instanceof Error ? error.message : 'Unknown error occurred',
+                                        });
+                                    } finally {
+                                        setProcessing(false);
+                                    }
+                                }}
+                                disabled={processing || billingInfo.plan === 'Free'}
+                                className="bg-indigo-600 text-white hover:bg-indigo-700 flex-1 min-w-0"
+                            >
+                                {processing ? "Processing..." : "Manage Subscription"}
+                            </Button>
+                            <Button 
+                                onClick={handleSubscribe} 
+                                disabled={processing} 
+                                variant="outline" 
+                                className="flex-1 min-w-0"
+                            >
+                                {processing ? "Processing..." : "Upgrade Plan"}
+                            </Button>
+                        </div>
                         {billingInfo.plan !== 'Free' && !billingInfo.plan.includes('Lifetime') && (
                             <Button 
                                 variant="link" 
-                                className="text-red-600 hover:text-red-700"
+                                className="text-red-600 hover:text-red-700 w-full sm:w-auto"
                                 onClick={() => setShowCancelDialog(true)}
                                 disabled={processing}
                             >
@@ -414,13 +617,13 @@ Generated on ${new Date().toLocaleDateString()}`;
                         <CardHeader>
                             <CardTitle className="text-lg">Payment Method</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
                             {savedCards.length > 0 ? (
                                 <div className="space-y-3">
                                     {savedCards.map((card, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 border border-slate-200 rounded-xl bg-white">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-6 rounded flex items-center justify-center text-white text-[8px] font-mono ${
+                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border border-slate-200 rounded-xl bg-white">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className={`w-10 h-6 rounded flex items-center justify-center text-white text-[8px] font-mono flex-shrink-0 ${
                                                     card.brand === 'visa' ? 'bg-slate-800' :
                                                     card.brand === 'mastercard' ? 'bg-red-600' :
                                                     card.brand === 'amex' ? 'bg-blue-600' :
@@ -428,13 +631,13 @@ Generated on ${new Date().toLocaleDateString()}`;
                                                 }`}>
                                                     {card.brand?.toUpperCase() || 'CARD'}
                                                 </div>
-                                <div>
-                                                    <div className="text-sm font-medium">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-medium truncate">{card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : 'Card'} ending in {card.last4}</div>
                                                     <div className="text-xs text-slate-500">Expires {card.expMonth}/{card.expYear}</div>
                                                 </div>
                                             </div>
                                             {card.isDefault && (
-                                                <Badge className="bg-green-100 text-green-700 border-green-200">Default</Badge>
+                                                <Badge className="bg-green-100 text-green-700 border-green-200 self-start sm:self-center">Default</Badge>
                                             )}
                                         </div>
                                     ))}
@@ -444,27 +647,27 @@ Generated on ${new Date().toLocaleDateString()}`;
                                     <CreditCard className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                                     <p className="text-sm mb-4">No payment method added yet</p>
                                     <p className="text-xs text-slate-400">Add a card to enable upgrades</p>
-                            </div>
+                                </div>
                             )}
-                            <div className="flex gap-2 mt-4">
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button 
                                     variant="outline" 
-                                    className="flex-1"
+                                    className="flex-1 min-w-0"
                                     onClick={() => setShowAddCardDialog(true)}
                                     disabled={processing}
                                 >
-                                    <CreditCard className="w-4 h-4 mr-2" />
-                                    {savedCards.length > 0 ? 'Add New Card' : 'Add Payment Card'}
+                                    <CreditCard className="w-4 h-4 mr-2 flex-shrink-0" />
+                                    <span className="truncate">{savedCards.length > 0 ? 'Add New Card' : 'Add Payment Card'}</span>
                                 </Button>
                                 {savedCards.length > 0 && (
-                            <Button 
-                                variant="outline" 
-                                        className="flex-1"
-                                onClick={() => setShowPaymentDialog(true)}
-                                disabled={processing}
-                            >
-                                Update Payment Method
-                            </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        className="flex-1 min-w-0"
+                                        onClick={() => setShowPaymentDialog(true)}
+                                        disabled={processing}
+                                    >
+                                        <span className="truncate">Update Payment</span>
+                                    </Button>
                                 )}
                             </div>
                         </CardContent>
@@ -472,13 +675,13 @@ Generated on ${new Date().toLocaleDateString()}`;
 
                     {/* Only show "Go Pro" banner for free users */}
                     {!isPaid && (
-                        <div className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
-                            <Zap className="w-8 h-8 mb-4 text-yellow-300" />
-                            <h3 className="font-bold text-lg mb-2">Go Pro Today</h3>
-                            <p className="text-indigo-100 text-sm mb-4">Get access to AI-powered keyword suggestions and advanced analytics.</p>
+                        <div className="p-5 sm:p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
+                            <Zap className="w-7 h-7 sm:w-8 sm:h-8 mb-3 sm:mb-4 text-yellow-300" />
+                            <h3 className="font-bold text-base sm:text-lg mb-2">Go Pro Today</h3>
+                            <p className="text-indigo-100 text-xs sm:text-sm mb-3 sm:mb-4">Get access to AI-powered keyword suggestions and advanced analytics.</p>
                             <Button 
                                 variant="secondary" 
-                                className="w-full bg-white text-indigo-600 hover:bg-indigo-50"
+                                className="w-full bg-white text-indigo-600 hover:bg-indigo-50 text-sm sm:text-base"
                                 onClick={handleViewPricing}
                             >
                                 View Pricing
@@ -491,37 +694,45 @@ Generated on ${new Date().toLocaleDateString()}`;
             {/* Invoices */}
             <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
                 <CardHeader>
-                    <CardTitle>Invoice History</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">Invoice History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-1">
-                        {billingInfo.invoices?.map((inv: any) => (
-                            <div key={inv.id} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg transition-colors group">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                                        <FileText className="w-4 h-4" />
+                    {billingInfo.invoices && billingInfo.invoices.length > 0 ? (
+                        <div className="space-y-1">
+                            {billingInfo.invoices.map((inv: any) => (
+                                <div key={inv.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 hover:bg-slate-50 rounded-lg transition-colors group">
+                                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                                        <div className="p-2 bg-slate-100 rounded-lg text-slate-500 flex-shrink-0">
+                                            <FileText className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-medium text-slate-800 text-sm sm:text-base">Invoice #{inv.id}</div>
+                                            <div className="text-xs text-slate-500">{inv.date}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="font-medium text-slate-800">Invoice #{inv.id}</div>
-                                        <div className="text-xs text-slate-500">{inv.date}</div>
+                                    <div className="flex items-center gap-3 sm:gap-4 justify-between sm:justify-end">
+                                        <span className="font-mono text-slate-600 text-sm sm:text-base">{inv.amount}</span>
+                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">{inv.status}</Badge>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                            onClick={() => handleDownloadInvoice(inv.id, inv.date, inv.amount)}
+                                            title="Download Invoice"
+                                        >
+                                            <Download className="w-4 h-4 text-slate-400" />
+                                        </Button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="font-mono text-slate-600">{inv.amount}</span>
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{inv.status}</Badge>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="opacity-0 group-hover:opacity-100"
-                                        onClick={() => handleDownloadInvoice(inv.id, inv.date, inv.amount)}
-                                        title="Download Invoice"
-                                    >
-                                        <Download className="w-4 h-4 text-slate-400" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 text-slate-500">
+                            <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                            <p className="text-sm mb-2">No invoices yet</p>
+                            <p className="text-xs text-slate-400">Your invoice history will appear here</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -553,55 +764,59 @@ Generated on ${new Date().toLocaleDateString()}`;
 
             {/* View Pricing Dialog */}
             <Dialog open={showPricingDialog} onOpenChange={setShowPricingDialog}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Choose Your Plan</DialogTitle>
-                        <DialogDescription>
-                            Select the plan that best fits your needs. All plans include access to our powerful campaign building tools.
-                        </DialogDescription>
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
+                    <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4">
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <DialogTitle className="text-xl sm:text-2xl mb-2">Choose Your Plan</DialogTitle>
+                                <DialogDescription className="text-sm">
+                                    Select the plan that best fits your needs. All plans include access to our powerful campaign building tools.
+                                </DialogDescription>
+                            </div>
+                        </div>
                     </DialogHeader>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 py-4 max-h-[80vh] overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 pb-4 overflow-y-auto flex-1 min-h-0">
                         {/* Lifetime Limited Plan */}
-                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
-                            <CardHeader>
-                                <div className="text-center mb-4">
-                                    <Badge className="mb-2 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
-                                    <CardTitle className="text-2xl mb-2">Lifetime Limited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$99.99</div>
-                                    <div className="text-sm text-slate-600">One-time payment</div>
+                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-lg relative flex flex-col h-full">
+                            <CardHeader className="flex-shrink-0 pb-3">
+                                <div className="text-center">
+                                    <Badge className="mb-2 bg-indigo-100 text-indigo-700 border-indigo-200 text-xs">Lifetime</Badge>
+                                    <CardTitle className="text-lg mb-2">Lifetime Limited</CardTitle>
+                                    <div className="text-2xl font-bold text-slate-800 mb-1">$99.99</div>
+                                    <div className="text-xs text-slate-600">One-time payment</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">15 campaigns/month</span>
+                            <CardContent className="flex-1 pb-3">
+                                <ul className="space-y-2">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">15 campaigns/month</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">All features included</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">All features included</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">24/7 support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">24/7 support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0 pt-3 pb-4">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Lifetime Limited", PLAN_PRICE_IDS.lifetime_limited);
@@ -614,49 +829,49 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </Card>
 
                         {/* Lifetime Unlimited Plan */}
-                        <Card className="border-2 border-indigo-400 hover:border-indigo-500 transition-all hover:shadow-2xl relative bg-gradient-to-br from-indigo-50 to-purple-50">
-                            <div className="absolute top-4 right-4">
-                                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0">Popular</Badge>
+                        <Card className="border-2 border-indigo-400 hover:border-indigo-500 transition-all hover:shadow-xl relative bg-gradient-to-br from-indigo-50 to-purple-50 flex flex-col h-full">
+                            <div className="absolute top-2 right-2 z-10">
+                                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-0 text-xs">Popular</Badge>
                             </div>
-                            <CardHeader>
-                                <div className="text-center mb-4">
-                                    <Badge className="mb-2 bg-indigo-100 text-indigo-700 border-indigo-200">Lifetime</Badge>
-                                    <CardTitle className="text-2xl mb-2">Lifetime Unlimited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$199</div>
-                                    <div className="text-sm text-slate-600">One-time payment</div>
+                            <CardHeader className="flex-shrink-0 pb-3">
+                                <div className="text-center">
+                                    <Badge className="mb-2 bg-indigo-100 text-indigo-700 border-indigo-200 text-xs">Lifetime</Badge>
+                                    <CardTitle className="text-lg mb-2">Lifetime Unlimited</CardTitle>
+                                    <div className="text-2xl font-bold text-slate-800 mb-1">$199</div>
+                                    <div className="text-xs text-slate-600">One-time payment</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+                            <CardContent className="flex-1 pb-3">
+                                <ul className="space-y-2">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700 font-semibold">Unlimited campaigns</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Unlimited access to all tools</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700 font-semibold">Unlimited access to all tools</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Priority support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">Priority support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0 pt-3 pb-4">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg text-sm"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Lifetime Unlimited", PLAN_PRICE_IDS.lifetime_unlimited);
@@ -669,46 +884,46 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </Card>
 
                         {/* Monthly Limited Plan */}
-                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-xl relative">
-                            <CardHeader>
-                                <div className="text-center mb-4">
-                                    <Badge className="mb-2 bg-green-100 text-green-700 border-green-200">Monthly</Badge>
-                                    <CardTitle className="text-2xl mb-2">Monthly Limited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$49.99</div>
-                                    <div className="text-sm text-slate-600">per month</div>
+                        <Card className="border-2 border-slate-200 hover:border-indigo-300 transition-all hover:shadow-lg relative flex flex-col h-full">
+                            <CardHeader className="flex-shrink-0 pb-3">
+                                <div className="text-center">
+                                    <Badge className="mb-2 bg-green-100 text-green-700 border-green-200 text-xs">Monthly</Badge>
+                                    <CardTitle className="text-lg mb-2">Monthly Limited</CardTitle>
+                                    <div className="text-2xl font-bold text-slate-800 mb-1">$49.99</div>
+                                    <div className="text-xs text-slate-600">per month</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">25 campaigns/month</span>
+                            <CardContent className="flex-1 pb-3">
+                                <ul className="space-y-2">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">25 campaigns/month</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Access to other tools</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">Access to other tools</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">24/7 support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">24/7 support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0 pt-3 pb-4">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Monthly Limited", PLAN_PRICE_IDS.monthly_25);
@@ -721,46 +936,46 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </Card>
 
                         {/* Monthly Unlimited Plan */}
-                        <Card className="border-2 border-purple-300 hover:border-purple-400 transition-all hover:shadow-xl relative">
-                            <CardHeader>
-                                <div className="text-center mb-4">
-                                    <Badge className="mb-2 bg-purple-100 text-purple-700 border-purple-200">Monthly</Badge>
-                                    <CardTitle className="text-2xl mb-2">Monthly Unlimited</CardTitle>
-                                    <div className="text-3xl font-bold text-slate-800 mb-1">$99.99</div>
-                                    <div className="text-sm text-slate-600">per month</div>
+                        <Card className="border-2 border-purple-300 hover:border-purple-400 transition-all hover:shadow-lg relative flex flex-col h-full">
+                            <CardHeader className="flex-shrink-0 pb-3">
+                                <div className="text-center">
+                                    <Badge className="mb-2 bg-purple-100 text-purple-700 border-purple-200 text-xs">Monthly</Badge>
+                                    <CardTitle className="text-lg mb-2">Monthly Unlimited</CardTitle>
+                                    <div className="text-2xl font-bold text-slate-800 mb-1">$99.99</div>
+                                    <div className="text-xs text-slate-600">per month</div>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Unlimited campaigns</span>
+                            <CardContent className="flex-1 pb-3">
+                                <ul className="space-y-2">
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700 font-semibold">Unlimited campaigns</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700 font-semibold">Full access to all tools</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700 font-semibold">Full access to all tools</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">AI keyword generation</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">AI keyword generation</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Campaign builder</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">Campaign builder</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">CSV validation & export</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">CSV validation & export</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                        <span className="text-sm text-slate-700">Priority support</span>
+                                    <li className="flex items-start gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                        <span className="text-xs text-slate-700">Priority support</span>
                                     </li>
                                 </ul>
                             </CardContent>
-                            <CardFooter>
+                            <CardFooter className="flex-shrink-0 pt-3 pb-4">
                                 <Button 
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm"
                                     onClick={() => {
                                         setShowPricingDialog(false);
                                         handleSubscribe("Monthly Unlimited", PLAN_PRICE_IDS.monthly_unlimited);
@@ -772,8 +987,8 @@ Generated on ${new Date().toLocaleDateString()}`;
                             </CardFooter>
                         </Card>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowPricingDialog(false)}>
+                    <DialogFooter className="flex-shrink-0 px-6 pb-6 pt-4 border-t border-slate-200">
+                        <Button variant="outline" onClick={() => setShowPricingDialog(false)} className="w-full sm:w-auto">
                             Close
                         </Button>
                     </DialogFooter>

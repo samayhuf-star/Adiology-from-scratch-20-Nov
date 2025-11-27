@@ -489,7 +489,41 @@ const getTopStatesByPopulation = (country: string, count: number): string[] => {
 // --- Helper Functions ---
 
 const generateMockKeywords = (seeds: string, negatives: string) => {
-    const seedList = seeds.split('\n').filter(s => s.trim());
+    // Split seeds by newlines first
+    let seedList = seeds.split('\n').filter(s => s.trim());
+    
+    // Auto-split long seeds (>40 chars) into individual keywords
+    // This handles cases where user pastes long phrases
+    const processedSeeds: string[] = [];
+    seedList.forEach(seed => {
+        const trimmed = seed.trim();
+        if (trimmed.length > 40) {
+            // Split by common delimiters and extract meaningful keywords
+            const words = trimmed.split(/[\s,;]+/).filter(w => w.length > 2);
+            
+            // Remove consecutive duplicates
+            const uniqueWords: string[] = [];
+            words.forEach(word => {
+                if (uniqueWords.length === 0 || uniqueWords[uniqueWords.length - 1].toLowerCase() !== word.toLowerCase()) {
+                    uniqueWords.push(word);
+                }
+            });
+            
+            // Create 2-3 word phrases from the words
+            for (let i = 0; i < uniqueWords.length; i++) {
+                if (i + 1 < uniqueWords.length) {
+                    processedSeeds.push(`${uniqueWords[i]} ${uniqueWords[i + 1]}`);
+                }
+                if (i + 2 < uniqueWords.length) {
+                    processedSeeds.push(`${uniqueWords[i]} ${uniqueWords[i + 1]} ${uniqueWords[i + 2]}`);
+                }
+            }
+        } else {
+            processedSeeds.push(trimmed);
+        }
+    });
+    
+    seedList = [...new Set(processedSeeds)]; // Remove duplicates
     const negativeList = negatives.split('\n').filter(n => n.trim());
     
     // --- Mock Expansion Data ---
@@ -528,38 +562,56 @@ const generateMockKeywords = (seeds: string, negatives: string) => {
         // 1. Seed Only
         results.push({ id: `k-${idCounter++}`, text: cleanSeed, volume: 'High', cpc: '$2.50', type: 'Seed' });
 
-        // 2. Prefix + Seed (20 variants)
+        // 2. Prefix + Seed (20 variants) - Only if result is reasonable length
         prefixes.forEach(prefix => {
-            results.push({ id: `k-${idCounter++}`, text: `${prefix} ${cleanSeed}`, volume: 'Medium', cpc: '$3.10', type: 'Phrase' });
+            const keyword = `${prefix} ${cleanSeed}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Medium', cpc: '$3.10', type: 'Phrase' });
+            }
         });
 
-        // 3. Seed + Suffix (18 variants)
+        // 3. Seed + Suffix (18 variants) - Only if result is reasonable length
         suffixes.forEach(suffix => {
-            results.push({ id: `k-${idCounter++}`, text: `${cleanSeed} ${suffix}`, volume: 'High', cpc: '$2.80', type: 'Phrase' });
+            const keyword = `${cleanSeed} ${suffix}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'High', cpc: '$2.80', type: 'Phrase' });
+            }
         });
 
         // 4. Prefix + Seed + Suffix (360 potential variants -> Limit to ~50 random)
         for (let i = 0; i < 50; i++) {
             const p = prefixes[Math.floor(Math.random() * prefixes.length)];
             const s = suffixes[Math.floor(Math.random() * suffixes.length)];
-            results.push({ id: `k-${idCounter++}`, text: `${p} ${cleanSeed} ${s}`, volume: 'Low', cpc: '$1.50', type: 'Broad' });
+            const keyword = `${p} ${cleanSeed} ${s}`;
+            if (keyword.length <= 60) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Low', cpc: '$1.50', type: 'Broad' });
+            }
         }
 
-        // 5. Intent + Seed (8 variants)
+        // 5. Intent + Seed (8 variants) - Only if result is reasonable length
         intents.forEach(intent => {
-            results.push({ id: `k-${idCounter++}`, text: `${intent} ${cleanSeed}`, volume: 'High', cpc: '$3.50', type: 'Exact' });
+            const keyword = `${intent} ${cleanSeed}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'High', cpc: '$3.50', type: 'Exact' });
+            }
         });
 
-        // 6. Seed + Location (35 variants)
+        // 6. Seed + Location (35 variants) - Only if result is reasonable length
         locations.forEach(loc => {
-            results.push({ id: `k-${idCounter++}`, text: `${cleanSeed} ${loc}`, volume: 'Medium', cpc: '$4.20', type: 'Local' });
+            const keyword = `${cleanSeed} ${loc}`;
+            if (keyword.length <= 50) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Medium', cpc: '$4.20', type: 'Local' });
+            }
         });
 
         // 7. Prefix + Seed + Location (Limit to ~50 random)
         for (let i = 0; i < 50; i++) {
             const p = prefixes[Math.floor(Math.random() * prefixes.length)];
             const l = locations[Math.floor(Math.random() * locations.length)];
-            results.push({ id: `k-${idCounter++}`, text: `${p} ${cleanSeed} ${l}`, volume: 'Medium', cpc: '$3.90', type: 'Local' });
+            const keyword = `${p} ${cleanSeed} ${l}`;
+            if (keyword.length <= 60) {
+                results.push({ id: `k-${idCounter++}`, text: keyword, volume: 'Medium', cpc: '$3.90', type: 'Local' });
+            }
         }
     });
 
@@ -707,6 +759,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             if (!selectedKeywords || selectedKeywords.length === 0) return [];
             if (!structure) return [];
             
+            type AdGroup = { name: string; keywords: string[] };
+            
             if (structure === 'SKAG') {
                 // Each keyword is its own ad group
                 return selectedKeywords.slice(0, 20).map(kw => ({
@@ -716,7 +770,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             } else if (structure === 'STAG') {
                 // Group keywords thematically (simplified grouping)
                 const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
-                const groups = [];
+                const groups: AdGroup[] = [];
                 for (let i = 0; i < selectedKeywords.length; i += groupSize) {
                     const groupKeywords = selectedKeywords.slice(i, i + groupSize);
                     groups.push({
@@ -727,7 +781,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 return groups.slice(0, 10);
             } else {
                 // Mix: Some SKAG, some STAG
-                const groups = [];
+                const groups: AdGroup[] = [];
                 // First 5 as SKAG
                 selectedKeywords.slice(0, 5).forEach(kw => {
                     groups.push({
@@ -883,6 +937,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // --- Load Initial Data ---
     useEffect(() => {
         if (initialData) {
+            // Bug_58, Bug_59, Bug_70: Load all required data from initialData
             setStructure(initialData.structure || 'SKAG');
             setGeo(initialData.geo || 'ZIP');
             setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
@@ -897,7 +952,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             setTargetType(initialData.targetType || 'ZIP');
             setManualGeoInput(initialData.manualGeoInput || '');
             setCampaignName(initialData.name || 'Restored Campaign');
-            // Jump to review step if loaded
+            // Load generatedAds if provided
+            if (initialData.generatedAds && Array.isArray(initialData.generatedAds)) {
+                setGeneratedAds(initialData.generatedAds);
+            }
+            // Jump to review step if loaded, otherwise start at step 1
             if (initialData.step) setStep(initialData.step);
         }
     }, [initialData]);
@@ -1076,7 +1135,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
 
         // Show warning if approaching limits
-        const warning = usageTracker.checkWarnings('keyword-generation');
+        const warning = await usageTracker.checkWarnings('keyword-generation');
         if (warning) {
             notifications.warning(warning, {
                 title: 'Usage Warning',
@@ -1120,7 +1179,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             });
 
             if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {
-                console.log("Google Ads API generation successful:", data.keywords.length, "keywords");
+                console.log("Google Ads API generation successful:", data.keywords.length, "keywords");                                                                     
                 // Bug_17: Remove duplicates by text (case-insensitive) before setting state
                 const deduplicatedKeywords = removeDuplicateKeywords(data.keywords);
                 setGeneratedKeywords(deduplicatedKeywords);
@@ -1717,44 +1776,46 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
             {/* Structure & Geo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                <Card className="border-2 border-purple-200/60 bg-gradient-to-br from-purple-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5 text-indigo-600"/> Base Structure</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5 text-purple-600"/> Base Structure</CardTitle>
+                        <CardDescription>Choose your campaign structure</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-3 gap-4">
                         {GEO_SEGMENTATION.map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => setStructure(item.id)}
-                                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
+                                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
                                     structure === item.id 
-                                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
-                                    : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                                    ? 'border-purple-500 bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-200' 
+                                    : 'border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50'
                                 }`}
                             >
-                                <item.icon className="w-6 h-6" />
+                                <item.icon className={`w-6 h-6 ${structure === item.id ? 'text-white' : 'text-purple-600'}`} />
                                 <span className="font-semibold text-sm">{item.name}</span>
                             </button>
                         ))}
                     </CardContent>
                 </Card>
 
-                <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                <Card className="border-2 border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5 text-indigo-600"/> Geo Strategy</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-600"/> Geo Strategy</CardTitle>
+                        <CardDescription>Select geographic targeting</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-4 gap-3">
                         {GEO_OPTIONS.map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => setGeo(item.id)}
-                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
+                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
                                     geo === item.id 
-                                    ? 'border-green-600 bg-green-50 text-green-700' 
-                                    : 'border-slate-200 hover:border-green-200 hover:bg-slate-50'
+                                    ? 'border-emerald-500 bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-200' 
+                                    : 'border-emerald-200 hover:border-emerald-300 bg-white hover:bg-emerald-50'
                                 }`}
                             >
-                                <item.icon className="w-5 h-5" />
+                                <item.icon className={`w-5 h-5 ${geo === item.id ? 'text-white' : 'text-emerald-600'}`} />
                                 <span className="font-semibold text-xs">{item.name}</span>
                             </button>
                         ))}
@@ -1763,24 +1824,31 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             </div>
 
             {/* Match Type & URL */}
-            <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+            <Card className="border-2 border-blue-200/60 bg-gradient-to-br from-blue-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
                 <CardHeader>
-                    <CardTitle>Campaign Settings</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-blue-600" />
+                        Campaign Settings
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8">
                     {/* Horizontal Match Types */}
                     <div className="space-y-3">
-                        <Label className="text-base">Match Types</Label>
-                        <div className="flex flex-wrap items-center gap-6 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                        <Label className="text-base font-semibold flex items-center gap-2">
+                            <Hash className="w-4 h-4 text-blue-600" />
+                            Match Types
+                        </Label>
+                        <div className="flex flex-wrap items-center gap-6 p-5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border-2 border-blue-200/50">
                             {MATCH_TYPES.map(type => (
-                                <div key={type.id} className="flex items-center space-x-2">
+                                <div key={type.id} className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all">
                                     <Checkbox 
                                         id={type.id} 
                                         checked={matchTypes[type.id as keyof typeof matchTypes]}
                                         onCheckedChange={(c) => setMatchTypes(prev => ({ ...prev, [type.id]: !!c }))}
+                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                                     />
-                                    <Label htmlFor={type.id} className="cursor-pointer font-medium">
-                                        {type.label} <span className="text-slate-400 font-normal text-xs ml-1">{type.example}</span>
+                                    <Label htmlFor={type.id} className="cursor-pointer font-medium text-slate-700">
+                                        {type.label} <span className="text-blue-500 font-mono text-xs ml-1">{type.example}</span>
                                     </Label>
                                 </div>
                             ))}
@@ -1810,7 +1878,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         setUrlError('');
                                     }
                                 }}
-                                className={`pl-10 py-6 text-lg bg-white ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                                className={`pl-10 pr-4 py-6 text-lg bg-white ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
                             />
                         </div>
                         {urlError && (
@@ -2093,8 +2161,70 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
     
     const handleSaveAd = (adId: number) => {
-        // Save state when finishing edit if we started editing this ad
+        // Bug_77c: Validate required fields before saving
         const ad = generatedAds.find(a => a.id === adId);
+        if (!ad) {
+            notifications.error('Ad not found', {
+                title: 'Error',
+                description: 'The ad you are trying to save could not be found.',
+            });
+            return;
+        }
+
+        // Validate required fields based on ad type
+        const errors: string[] = [];
+        
+        if (ad.type === 'rsa' || ad.type === 'dki') {
+            // RSA/DKI requires at least 3 headlines and 2 descriptions
+            if (!ad.headline1 || ad.headline1.trim() === '') {
+                errors.push('Headline 1 is required');
+            }
+            if (!ad.headline2 || ad.headline2.trim() === '') {
+                errors.push('Headline 2 is required');
+            }
+            if (!ad.headline3 || ad.headline3.trim() === '') {
+                errors.push('Headline 3 is required');
+            }
+            if (!ad.description1 || ad.description1.trim() === '') {
+                errors.push('Description 1 is required');
+            }
+            if (!ad.description2 || ad.description2.trim() === '') {
+                errors.push('Description 2 is required');
+            }
+            if (!ad.finalUrl || ad.finalUrl.trim() === '') {
+                errors.push('Final URL is required');
+            }
+        } else if (ad.type === 'callonly') {
+            if (!ad.headline1 || ad.headline1.trim() === '') {
+                errors.push('Headline 1 is required');
+            }
+            if (!ad.headline2 || ad.headline2.trim() === '') {
+                errors.push('Headline 2 is required');
+            }
+            if (!ad.description1 || ad.description1.trim() === '') {
+                errors.push('Description 1 is required');
+            }
+            if (!ad.description2 || ad.description2.trim() === '') {
+                errors.push('Description 2 is required');
+            }
+            if (!ad.phone || ad.phone.trim() === '') {
+                errors.push('Phone number is required');
+            }
+            if (!ad.businessName || ad.businessName.trim() === '') {
+                errors.push('Business name is required');
+            }
+        }
+
+        if (errors.length > 0) {
+            notifications.error(`Please fill in all required fields:\n\n${errors.join('\n')}`, {
+                title: 'Validation Error',
+                description: 'All required fields must be filled before saving.',
+                priority: 'high',
+            });
+            return;
+        }
+
+        // Save state when finishing edit if we started editing this ad
         if (ad && editingStarted.has(adId)) {
             saveStateBeforeAction('edit', adId, `Saved changes to ${ad.type || 'ad'} #${adId}`);
             setEditingStarted(new Set([...editingStarted].filter(id => id !== adId)));
@@ -2300,6 +2430,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     
     
     const createNewAd = async (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
+        // Bug_77a: Optimize performance - show loading state immediately
+        const loadingNotification = notifications.info('Creating ad...', {
+            title: 'Processing',
+            description: 'Please wait while we create your ad.',
+        });
+        
         // Check if this is an extension type
         const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
         
@@ -2330,15 +2466,16 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             const mainKeyword = allGroups[0]?.keywords?.[0] || 'your service';
             
             // Create DKI ad
+            // Bug_77b: Fix DKI format - should be {Keyword:Default Text} not {KeyWord:}
             const dkiAd: any = {
                 id: Date.now(),
                 type: 'dki',
                 adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
-                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-                headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-                headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-                description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-                description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                headline1: `{Keyword:${mainKeyword}} - Official Site`,
+                headline2: `Best {Keyword:${mainKeyword}} Deals`,
+                headline3: `Order {Keyword:${mainKeyword}} Online`,
+                description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
+                description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
                 finalUrl: formattedUrl,
                 path1: 'keyword',
                 path2: 'deals'
@@ -2367,8 +2504,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             // both will be visible to the user
         }
         
-        // Check rate limit
-        const rateLimit = await rateLimiter.checkLimit('ad-creation');
+        // Bug_77a: Optimize performance - check rate limit and usage in parallel
+        const [rateLimit, usage] = await Promise.all([
+            rateLimiter.checkLimit('ad-creation'),
+            usageTracker.trackUsage('ad-creation', 1)
+        ]);
+        
         if (!rateLimit.allowed) {
             notifications.error(rateLimit.message || 'Rate limit exceeded', {
                 title: 'Too Many Requests',
@@ -2378,8 +2519,6 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             return;
         }
 
-        // Check usage quota
-        const usage = await usageTracker.trackUsage('ad-creation', 1);
         if (!usage.allowed) {
             notifications.error(usage.message || 'Usage limit exceeded', {
                 title: 'Daily Limit Reached',
@@ -2480,11 +2619,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 } else if (type === 'dki') {
                     baseAd = {
                         ...baseAd,
-                        headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-                        headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-                        headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-                        description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-                        description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                        // Bug_77b: Fix DKI format
+                        headline1: `{Keyword:${mainKeyword}} - Official Site`,
+                        headline2: `Best {Keyword:${mainKeyword}} Deals`,
+                        headline3: `Order {Keyword:${mainKeyword}} Online`,
+                        description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
+                        description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
                         finalUrl: formattedUrl,
                         path1: 'keyword',
                         path2: 'deals'
@@ -2653,13 +2793,14 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 path2: 'now'
             };
         } else if (type === 'dki') {
+            // Bug_77b: Fix DKI format - should be {Keyword:Default Text} not {KeyWord:}
             newAd = {
                 ...newAd,
-                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-                headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-                headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-                description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-                description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
+                headline1: `{Keyword:${mainKeyword}} - Official Site`,
+                headline2: `Best {Keyword:${mainKeyword}} Deals`,
+                headline3: `Order {Keyword:${mainKeyword}} Online`,
+                description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
+                description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
                 finalUrl: formattedUrl,
                 path1: 'keyword',
                 path2: 'deals'
@@ -3293,7 +3434,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             
             {/* Navigation */}
             <div className="flex justify-between mt-8">
-                <Button variant="ghost" onClick={() => setStep(2)}>
+                {/* Bug_67: Fix back button to go to previous step */}
+                <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
                     <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
                     Back
                 </Button>
@@ -3577,7 +3719,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             </Card>
 
             <div className="flex justify-between mt-8">
-                <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
+                {/* Bug_67: Fix back button to go to previous step */}
+                <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>Back</Button>
                 <Button 
                     size="lg" 
                     onClick={handleNextStep}
@@ -3649,11 +3792,12 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             } else if (adType === 'dki') {
                                 defaultAd = {
                                     ...defaultAd,
-                                    headline1: `{KeyWord:${keywordText}} - Official Site`,
-                                    headline2: `Best {KeyWord:${keywordText}} Deals`,
-                                    headline3: i === 0 ? `Order {KeyWord:${keywordText}} Online` : `Shop {KeyWord:${keywordText}} Now`,
-                                    description1: `Find quality {KeyWord:${keywordText}} at great prices. Shop our selection today.`,
-                                    description2: `Get your {KeyWord:${keywordText}} with fast shipping and expert support.`,
+                                    // Bug_77b: Fix DKI format
+                                    headline1: `{Keyword:${keywordText}} - Official Site`,
+                                    headline2: `Best {Keyword:${keywordText}} Deals`,
+                                    headline3: i === 0 ? `Order {Keyword:${keywordText}} Online` : `Shop {Keyword:${keywordText}} Now`,
+                                    description1: `Find quality {Keyword:${keywordText}} at great prices. Shop our selection today.`,
+                                    description2: `Get your {Keyword:${keywordText}} with fast shipping and expert support.`,
                                     finalUrl: formattedUrl
                                 };
                             } else if (adType === 'callonly') {
@@ -3693,10 +3837,28 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const totalAds = generatedAds.length;
         const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
 
-        // Helper to format keyword display (keywords already have match type formatting)
+        // Helper to clean and format keyword display
         const formatKeywordDisplay = (keyword: string) => {
-            // Keywords are already formatted: broad=keyword, phrase="keyword", exact=[keyword]
-            return keyword;
+            // Remove match type brackets/quotes for base text
+            let cleanKeyword = keyword;
+            if (keyword.startsWith('[') && keyword.endsWith(']')) {
+                cleanKeyword = keyword.slice(1, -1);
+            } else if (keyword.startsWith('"') && keyword.endsWith('"')) {
+                cleanKeyword = keyword.slice(1, -1);
+            }
+            
+            // If keyword is too long (> 60 chars), truncate it
+            if (cleanKeyword.length > 60) {
+                cleanKeyword = cleanKeyword.substring(0, 57) + '...';
+            }
+            
+            // Re-add match type formatting
+            if (keyword.startsWith('[') && keyword.endsWith(']')) {
+                return `[${cleanKeyword}]`;
+            } else if (keyword.startsWith('"') && keyword.endsWith('"')) {
+                return `"${cleanKeyword}"`;
+            }
+            return cleanKeyword;
         };
 
         // Helper to get match type from keyword format
@@ -3965,20 +4127,40 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                     </div>
                                                 ) : (
                                                 <div className="space-y-2">
-                                                        {group.keywords.map((kw, kidx) => (
-                                                        <div key={kidx} className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100">
-                                                                <span className="text-purple-900 font-mono font-medium">
-                                                                    {formatKeywordDisplay(kw)}
-                                                                </span>
-                                                                <Badge variant="outline" className={`ml-2 text-xs ${
-                                                                    getMatchTypeDisplay(kw) === 'Exact' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
-                                                                    getMatchTypeDisplay(kw) === 'Phrase' ? 'bg-blue-100 text-blue-700 border-blue-300' :
-                                                                    'bg-amber-100 text-amber-700 border-amber-300'
-                                                                }`}>
-                                                                    {getMatchTypeDisplay(kw)}
-                                                                </Badge>
-                                                        </div>
-                                                    ))}
+                                                        {group.keywords.slice(0, 10).map((kw, kidx) => {
+                                                            // Remove match type brackets for raw keyword
+                                                            let rawKeyword = kw;
+                                                            if (kw.startsWith('[') && kw.endsWith(']')) {
+                                                                rawKeyword = kw.slice(1, -1);
+                                                            } else if (kw.startsWith('"') && kw.endsWith('"')) {
+                                                                rawKeyword = kw.slice(1, -1);
+                                                            }
+                                                            const isTruncated = rawKeyword.length > 60;
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={kidx} 
+                                                                    className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100 hover:bg-purple-100/70 transition-colors"
+                                                                    title={isTruncated ? rawKeyword : undefined}
+                                                                >
+                                                                    <span className="text-purple-900 font-mono font-medium truncate max-w-[180px]">
+                                                                        {formatKeywordDisplay(kw)}
+                                                                    </span>
+                                                                    <Badge variant="outline" className={`ml-2 text-xs flex-shrink-0 ${
+                                                                        getMatchTypeDisplay(kw) === 'Exact' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
+                                                                        getMatchTypeDisplay(kw) === 'Phrase' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                                                        'bg-amber-100 text-amber-700 border-amber-300'
+                                                                    }`}>
+                                                                        {getMatchTypeDisplay(kw)}
+                                                                    </Badge>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        {group.keywords.length > 10 && (
+                                                            <div className="text-xs text-slate-500 italic px-2">
+                                                                +{group.keywords.length - 10} more keywords...
+                                                            </div>
+                                                        )}
                                                         <button 
                                                             onClick={() => handleEditKeywords(group.name, group.keywords)}
                                                             className="text-xs text-purple-600 hover:text-purple-700 font-semibold hover:underline mt-2 flex items-center gap-1"
@@ -4051,7 +4233,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center">
                     <div className="flex gap-3">
-                        <Button variant="ghost" onClick={() => setStep(4)}>
+                        {/* Bug_67: Fix back button to go to previous step */}
+                        <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
                             <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
                             Back
                         </Button>
@@ -4238,7 +4421,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
                 {/* Next Actions */}
                 <div className="flex justify-between items-center pt-4">
-                    <Button variant="ghost" onClick={() => setStep(5)}>
+                    {/* Bug_67: Fix back button to go to previous step */}
+                    <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
                         <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
                         Back to Review
                     </Button>

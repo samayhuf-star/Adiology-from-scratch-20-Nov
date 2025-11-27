@@ -52,21 +52,19 @@ export const api = {
 
       return response.json();
     } catch (e) {
-      // Enhanced error logging
+      // Silently fail for expected server unavailability (Make.com endpoints)
+      // The calling code will handle fallback to localStorage
       if (e instanceof TypeError && e.message.includes('fetch')) {
-        console.log('ℹ️ API server unavailable - fallback mode will be used');
-        captureError(new Error('Network error: Unable to reach server'), {
+        throw new Error('Network error: Unable to reach server');
+      }
+      // Only capture non-404 errors to reduce noise
+      if (e instanceof Error && !e.message.includes('404')) {
+        captureError(e, {
           module: 'api',
           action: 'post',
           metadata: { endpoint },
         });
-        throw new Error('Network error: Unable to reach server');
       }
-      captureError(e instanceof Error ? e : new Error('API POST error'), {
-        module: 'api',
-        action: 'post',
-        metadata: { endpoint },
-      });
       throw e;
     }
   },
@@ -97,21 +95,19 @@ export const api = {
 
       return response.json();
     } catch (e) {
-      // Enhanced error logging
+      // Silently fail for expected server unavailability (Make.com endpoints)
+      // The calling code will handle fallback to localStorage
       if (e instanceof TypeError && e.message.includes('fetch')) {
-        console.log('ℹ️ API server unavailable - fallback mode will be used');
-        captureError(new Error('Network error: Unable to reach server'), {
+        throw new Error('Network error: Unable to reach server');
+      }
+      // Only capture non-404 errors to reduce noise
+      if (e instanceof Error && !e.message.includes('404')) {
+        captureError(e, {
           module: 'api',
           action: 'get',
           metadata: { endpoint },
         });
-        throw new Error('Network error: Unable to reach server');
       }
-      captureError(e instanceof Error ? e : new Error('API GET error'), {
-        module: 'api',
-        action: 'get',
-        metadata: { endpoint },
-      });
       throw e;
     }
   }

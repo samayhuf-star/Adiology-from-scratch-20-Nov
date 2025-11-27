@@ -293,33 +293,37 @@ export const CrazyKeywordsBuilder = () => {
       console.warn('Backend export unavailable, using client-side export');
     }
 
-    // Fallback to client-side export
-    const header = ['Campaign', 'Ad group', 'Criterion', 'Type', 'Max CPC', 'Status'].join(',') + '\n';
-    const body = rows.map(r => {
-      const campaign = 'Search Campaign 1';
-      const adgroup = `${intent}_group`;
-      const criterion = `"${r.keyword.replace(/"/g, '""')}"`;
-      const type = 'Phrase';
-      const maxcpc = r.cpc_est || '';
-      const status = 'Enabled';
-      return [campaign, adgroup, criterion, type, maxcpc, status].join(',');
-    }).join('\n');
-    const csv = header + body;
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `google_ads_export_${seedInput.replace(/\s+/g, '_')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-
-    notifications.success(`Exported ${rows.length} keywords to CSV`, {
-      title: 'Export Complete',
-      description: 'Your Google Ads CSV file has been downloaded.',
-    });
+    // Fallback to client-side export using V3 format
+    try {
+      const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+      const keywords = rows.map(r => r.keyword);
+      const filename = `google_ads_export_${seedInput.replace(/\s+/g, '_')}.csv`;
+      
+      await exportCSVWithValidation(
+        keywords,
+        filename,
+        'keywords',
+        {
+          campaignName: 'Search Campaign 1',
+          adGroupName: `${intent}_group`,
+          finalUrl: 'https://www.example.com'
+        }
+      );
+      
+      notifications.success(`Exported ${rows.length} keywords to CSV`, {
+        title: 'Export Complete',
+        description: 'Your Google Ads CSV file has been downloaded.',
+      });
+    } catch (error: any) {
+      console.error('Export error:', error);
+      notifications.error(
+        error?.message || 'An unexpected error occurred during export',
+        { 
+          title: '❌ Export Failed',
+          description: 'Please try again or contact support if the issue persists.'
+        }
+      );
+    }
   }
 
   function copyKeyword(keyword: string, id: string) {

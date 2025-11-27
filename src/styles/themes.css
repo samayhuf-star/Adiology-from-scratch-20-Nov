@@ -1,0 +1,101 @@
+/**
+ * Theme CSS - Applies themes to homepage and admin panel
+ * Themes are applied via data-theme attribute on html element
+ */
+
+/* Theme: Purple Elegance (Default) */
+[data-theme="purple"] {
+  --theme-primary: #4f46e5;
+  --theme-primary-light: #eef2ff;
+  --theme-primary-dark: #4338ca;
+  --theme-secondary: #9333ea;
+  --theme-secondary-light: #faf5ff;
+  --theme-secondary-dark: #7e22ce;
+  --theme-accent: #db2777;
+  --theme-bg-primary: #f8fafc;
+  --theme-bg-secondary: #ffffff;
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #475569;
+}
+
+/* Theme: Ocean Blue */
+[data-theme="ocean"] {
+  --theme-primary: #2563eb;
+  --theme-primary-light: #eff6ff;
+  --theme-primary-dark: #1d4ed8;
+  --theme-secondary: #0891b2;
+  --theme-secondary-light: #ecfeff;
+  --theme-secondary-dark: #0e7490;
+  --theme-accent: #0d9488;
+  --theme-bg-primary: #eff6ff;
+  --theme-bg-secondary: #ffffff;
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #475569;
+}
+
+/* Theme: Forest Green */
+[data-theme="forest"] {
+  --theme-primary: #059669;
+  --theme-primary-light: #ecfdf5;
+  --theme-primary-dark: #047857;
+  --theme-secondary: #16a34a;
+  --theme-secondary-light: #f0fdf4;
+  --theme-secondary-dark: #15803d;
+  --theme-accent: #65a30d;
+  --theme-bg-primary: #ecfdf5;
+  --theme-bg-secondary: #ffffff;
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #475569;
+}
+
+/* Apply themes to homepage */
+[data-theme="purple"] .homepage-gradient {
+  background: linear-gradient(to bottom right, #eef2ff, #faf5ff, #fdf2f8);
+}
+
+[data-theme="ocean"] .homepage-gradient {
+  background: linear-gradient(to bottom right, #eff6ff, #ecfeff, #f0f9ff);
+}
+
+[data-theme="forest"] .homepage-gradient {
+  background: linear-gradient(to bottom right, #ecfdf5, #f0fdf4, #f7fee7);
+}
+
+/* Apply themes to admin panel */
+[data-theme="purple"] .admin-panel-bg {
+  background: linear-gradient(to bottom right, #f8fafc, #faf5ff, #fdf2f8);
+}
+
+[data-theme="ocean"] .admin-panel-bg {
+  background: linear-gradient(to bottom right, #eff6ff, #ecfeff, #f0f9ff);
+}
+
+[data-theme="forest"] .admin-panel-bg {
+  background: linear-gradient(to bottom right, #ecfdf5, #f0fdf4, #f7fee7);
+}
+
+/* Theme-aware button gradients */
+[data-theme="purple"] .theme-button-primary {
+  background: linear-gradient(to right, #4f46e5, #9333ea);
+}
+
+[data-theme="ocean"] .theme-button-primary {
+  background: linear-gradient(to right, #2563eb, #0891b2);
+}
+
+[data-theme="forest"] .theme-button-primary {
+  background: linear-gradient(to right, #059669, #16a34a);
+}
+
+/* Theme-aware text colors */
+[data-theme="purple"] .theme-text-primary {
+  color: #4f46e5;
+}
+
+[data-theme="ocean"] .theme-text-primary {
+  color: #2563eb;
+}
+
+[data-theme="forest"] .theme-text-primary {
+  color: #059669;
+}

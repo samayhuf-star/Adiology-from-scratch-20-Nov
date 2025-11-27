@@ -1,0 +1,1336 @@
+[
+  {
+    "structureType": "SKAG",
+    "structureId": "skag",
+    "filename": "test_skag_1764242062261.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_skag_1764242062261.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 27: Headline 1 exceeds 30 characters (40/30)",
+        "Row 27: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 26,
+        "campaigns": 1,
+        "adGroups": 8,
+        "keywords": 24,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - SKAG",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - plumbing services",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - call plumbing services",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - contact plumbing services",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - emergency plumber",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - plumber near me",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - drain cleaning",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - water heater repair",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - pipe repair",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - plumbing services"
+        },
+        {
+          "keyword": "\"plumbing services\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - plumbing services"
+        },
+        {
+          "keyword": "plumbing services",
+          "matchType": "Broad",
+          "adGroup": "AG - plumbing services"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - call plumbing services"
+        },
+        {
+          "keyword": "\"call plumbing services\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - call plumbing services"
+        },
+        {
+          "keyword": "call plumbing services",
+          "matchType": "Broad",
+          "adGroup": "AG - call plumbing services"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - contact plumbing services"
+        },
+        {
+          "keyword": "\"contact plumbing services\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - contact plumbing services"
+        },
+        {
+          "keyword": "contact plumbing services",
+          "matchType": "Broad",
+          "adGroup": "AG - contact plumbing services"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - emergency plumber"
+        },
+        {
+          "keyword": "\"emergency plumber\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - emergency plumber"
+        },
+        {
+          "keyword": "emergency plumber",
+          "matchType": "Broad",
+          "adGroup": "AG - emergency plumber"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - plumber near me"
+        },
+        {
+          "keyword": "\"plumber near me\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - plumber near me"
+        },
+        {
+          "keyword": "plumber near me",
+          "matchType": "Broad",
+          "adGroup": "AG - plumber near me"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - drain cleaning"
+        },
+        {
+          "keyword": "\"drain cleaning\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - drain cleaning"
+        },
+        {
+          "keyword": "drain cleaning",
+          "matchType": "Broad",
+          "adGroup": "AG - drain cleaning"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - water heater repair"
+        },
+        {
+          "keyword": "\"water heater repair\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - water heater repair"
+        },
+        {
+          "keyword": "water heater repair",
+          "matchType": "Broad",
+          "adGroup": "AG - water heater repair"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - pipe repair"
+        },
+        {
+          "keyword": "\"pipe repair\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - pipe repair"
+        },
+        {
+          "keyword": "pipe repair",
+          "matchType": "Broad",
+          "adGroup": "AG - pipe repair"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - plumbing services"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - plumbing services"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "STAG",
+    "structureId": "stag",
+    "filename": "test_stag_1764242062266.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_stag_1764242062266.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 9: Headline 1 exceeds 30 characters (40/30)",
+        "Row 9: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 8,
+        "campaigns": 1,
+        "adGroups": 3,
+        "keywords": 6,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - STAG",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Emergency Services",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - General Services",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - Repair Services",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Emergency Services"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Emergency Services"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - General Services"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - General Services"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Repair Services"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Repair Services"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Emergency Services"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Emergency Services"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "MIX",
+    "structureId": "mix",
+    "filename": "test_mix_1764242062267.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_mix_1764242062267.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 2,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - MIX",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - High Priority",
+          "status": "Enabled"
+        },
+        {
+          "name": "AG - General",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - High Priority"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - High Priority"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - High Priority"
+        },
+        {
+          "keyword": "\"emergency plumber\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - General"
+        },
+        {
+          "keyword": "\"plumber near me\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - General"
+        },
+        {
+          "keyword": "\"drain cleaning\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - General"
+        },
+        {
+          "keyword": "\"water heater repair\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - General"
+        },
+        {
+          "keyword": "\"pipe repair\"",
+          "matchType": "Phrase",
+          "adGroup": "AG - General"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - High Priority"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - High Priority"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "STAG+",
+    "structureId": "stag_plus",
+    "filename": "test_stag_plus_1764242062268.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_stag_plus_1764242062268.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - STAG+",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "IBAG",
+    "structureId": "intent",
+    "filename": "test_intent_1764242062269.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_intent_1764242062269.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - IBAG",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "Alpha–Beta",
+    "structureId": "alpha_beta",
+    "filename": "test_alpha_beta_1764242062270.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_alpha_beta_1764242062270.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - Alpha–Beta",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "Match-Type Split",
+    "structureId": "match_type",
+    "filename": "test_match_type_1764242062272.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_match_type_1764242062272.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - Match-Type Split",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "GEO-Segmented",
+    "structureId": "geo",
+    "filename": "test_geo_1764242062273.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_geo_1764242062273.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - GEO-Segmented",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "Funnel-Based",
+    "structureId": "funnel",
+    "filename": "test_funnel_1764242062275.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_funnel_1764242062275.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - Funnel-Based",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "Brand vs Non-Brand",
+    "structureId": "brand_split",
+    "filename": "test_brand_split_1764242062279.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_brand_split_1764242062279.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - Brand vs Non-Brand",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "Competitor Campaigns",
+    "structureId": "competitor",
+    "filename": "test_competitor_1764242062281.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_competitor_1764242062281.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - Competitor Campaigns",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  },
+  {
+    "structureType": "Smart Cluster",
+    "structureId": "ngram",
+    "filename": "test_ngram_1764242062282.csv",
+    "filepath": "/Users/samay/Downloads/New Adiology Campaign Dashboard (1)/test-outputs/test_ngram_1764242062282.csv",
+    "validation": {
+      "isValid": false,
+      "errors": [
+        "Row 11: Headline 1 exceeds 30 characters (40/30)",
+        "Row 11: Headline 2 exceeds 30 characters (40/30)"
+      ],
+      "warnings": [],
+      "stats": {
+        "totalRows": 10,
+        "campaigns": 1,
+        "adGroups": 1,
+        "keywords": 8,
+        "ads": 2,
+        "extensions": 0
+      }
+    },
+    "structure": {
+      "campaign": {
+        "name": "Test Campaign - Smart Cluster",
+        "status": "Enabled",
+        "type": "Search",
+        "dailyBudget": 50,
+        "url": "https://example.com"
+      },
+      "adGroups": [
+        {
+          "name": "AG - Default",
+          "status": "Enabled"
+        }
+      ],
+      "keywords": [
+        {
+          "keyword": "[plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[call plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[contact plumbing services]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[emergency plumber]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[plumber near me]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[drain cleaning]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[water heater repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        },
+        {
+          "keyword": "[pipe repair]",
+          "matchType": "Exact",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "ads": [
+        {
+          "type": "rsa",
+          "headline1": "Professional Plumbing Services",
+          "headline2": "24/7 Emergency Service",
+          "headline3": "Licensed & Insured",
+          "description1": "Get fast, reliable plumbing services. Expert technicians available now.",
+          "description2": "Call today for a free estimate!",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        },
+        {
+          "type": "dki",
+          "headline1": "{KeyWord:plumbing services} - Best Deals",
+          "headline2": "Order {KeyWord:plumbing services} Online",
+          "headline3": "Find Quality {KeyWord:plumbing services}",
+          "description1": "Looking for {KeyWord:plumbing services}? We offer competitive prices.",
+          "description2": "Get your {KeyWord:plumbing services} with fast shipping.",
+          "final_url": "https://example.com",
+          "adGroup": "AG - Default"
+        }
+      ],
+      "negativeKeywords": []
+    }
+  }
+]

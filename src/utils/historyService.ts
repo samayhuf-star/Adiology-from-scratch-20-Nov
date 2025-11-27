@@ -10,15 +10,43 @@ export const historyService = {
    * Save a history item
    * Tries server first, falls back to localStorage
    */
-  async save(type: string, name: string, data: any): Promise<void> {
+  async save(type: string, name: string, data: any, status: 'draft' | 'completed' = 'completed'): Promise<string> {
     try {
       // Try server first
-      await api.post('/history/save', { type, name, data });
-      console.log('✅ Saved to server');
+      const response = await api.post('/history/save', { type, name, data, status });
+      return response.id || crypto.randomUUID();
     } catch (error) {
-      console.log('⚠️ Server unavailable, using localStorage fallback');
-      // Fallback to localStorage
-      await localStorageHistory.save(type, name, data);
+      // Silently fallback to localStorage (expected when server is not deployed)
+      await localStorageHistory.save(type, name, data, status);
+      // Get the last item's ID (the one we just saved)
+      const items = localStorageHistory.getAll();
+      return items[items.length - 1]?.id || crypto.randomUUID();
+    }
+  },
+
+  /**
+   * Update an existing item (for drafts)
+   */
+  async update(id: string, data: any, name?: string): Promise<void> {
+    try {
+      // Try server first
+      await api.post('/history/update', { id, data, name });
+    } catch (error) {
+      // Silently fallback to localStorage (expected when server is not deployed)
+      await localStorageHistory.update(id, data, name);
+    }
+  },
+
+  /**
+   * Mark a draft as completed
+   */
+  async markAsCompleted(id: string): Promise<void> {
+    try {
+      // Try server first
+      await api.post('/history/mark-completed', { id });
+    } catch (error) {
+      // Silently fallback to localStorage (expected when server is not deployed)
+      await localStorageHistory.markAsCompleted(id);
     }
   },
 
@@ -30,11 +58,9 @@ export const historyService = {
     try {
       // Try server first
       const response = await api.get('/history/list');
-      console.log('✅ Loaded from server');
       return response.items || [];
     } catch (error) {
-      console.log('⚠️ Server unavailable, using localStorage fallback');
-      // Fallback to localStorage
+      // Silently fallback to localStorage (expected when server is not deployed)
       return localStorageHistory.getAll();
     }
   },
@@ -55,10 +81,8 @@ export const historyService = {
     try {
       // Try server first
       await api.post('/history/delete', { id });
-      console.log('✅ Deleted from server');
     } catch (error) {
-      console.log('⚠️ Server unavailable, using localStorage fallback');
-      // Fallback to localStorage
+      // Silently fallback to localStorage (expected when server is not deployed)
       await localStorageHistory.delete(id);
     }
   },

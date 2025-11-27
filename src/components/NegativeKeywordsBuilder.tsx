@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sparkles, Download, Globe, Type, ShieldAlert, Save, Filter, BarChart3, FileText, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Sparkles, Download, Globe, Type, ShieldAlert, Save, Filter, BarChart3, FileText, CheckCircle2, RefreshCw, FolderOpen, Trash2, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -52,11 +52,13 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedKeywords, setGeneratedKeywords] = useState<GeneratedKeyword[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState('builder');
+    const [savedItems, setSavedItems] = useState<any[]>([]);
     
     // Filter & Export State
     const [selectedCategories, setSelectedCategories] = useState<Set<NegativeKeywordCategory>>(new Set());
     const [exportFormat, setExportFormat] = useState<'exact' | 'phrase' | 'broad' | 'all'>('all');
-    const [showStats, setShowStats] = useState(false);
+    const [showStats, setShowStats] = useState(true);
 
     // Load form data from localStorage on mount (Bug_34: Persist form fields)
     useEffect(() => {
@@ -133,6 +135,8 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 title: 'Saved',
                 description: 'Your negative keywords have been saved.'
             });
+            // Refresh saved items list
+            await loadSavedItems();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
@@ -142,6 +146,59 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             setIsSaving(false);
         }
     };
+
+    const loadSavedItems = async () => {
+        try {
+            const items = await historyService.getByType('negative-keywords');
+            items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setSavedItems(items);
+        } catch (error) {
+            console.error("Load saved items failed", error);
+        }
+    };
+
+    const handleLoadSavedItem = async (itemId: string) => {
+        try {
+            const allItems = await historyService.getAll();
+            const item = allItems.find(i => i.id === itemId);
+            if (item && item.data) {
+                setUrl(item.data.url || '');
+                setCoreKeywords(item.data.coreKeywords || '');
+                setUserGoal(item.data.userGoal || '');
+                setGeneratedKeywords(item.data.generatedKeywords || []);
+                setActiveTab('builder');
+                notifications.success('Saved item loaded successfully!', {
+                    title: 'Loaded'
+                });
+            }
+        } catch (error) {
+            console.error("Load failed", error);
+            notifications.error('Failed to load item. Please try again.', {
+                title: 'Load Failed'
+            });
+        }
+    };
+
+    const handleDeleteSavedItem = async (itemId: string) => {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+        
+        try {
+            await historyService.deleteHistory(itemId);
+            await loadSavedItems();
+            notifications.success('Item deleted successfully!', {
+                title: 'Deleted'
+            });
+        } catch (error) {
+            console.error("Delete failed", error);
+            notifications.error('Failed to delete item. Please try again.', {
+                title: 'Delete Failed'
+            });
+        }
+    };
+
+    useEffect(() => {
+        loadSavedItems();
+    }, []);
 
     // AI Generation Logic using Gemini
     const handleGenerate = async () => {
@@ -446,7 +503,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             const educationalBase = ['tutorial', 'how to', 'guide', 'diy', 'learn', 'course', 'training', 'class', 'classes', 'school', 'university', 'college', 'study', 'lesson', 'lessons', 'certification', 'certificate', 'online course', 'video tutorial', 'ebook', 'how to make', 'how to use', 'how to get', 'how to do', 'how to build', 'how to create', 'how to install', 'how to fix', 'how to repair', 'how to replace', 'how to remove', 'how to clean', 'how to maintain', 'how to operate', 'how to setup', 'how to configure', 'how to program', 'how to code', 'how to design', 'how to paint', 'how to cook', 'how to bake', 'how to prepare', 'how to make money', 'how to earn', 'how to save', 'how to invest', 'how to trade', 'how to start', 'how to begin', 'how to learn', 'how to study', 'how to practice', 'how to improve', 'how to master', 'how to become', 'how to get started', 'how to get better', 'how to get good', 'how to get fast', 'how to get cheap', 'how to get free', 'how to get rid of', 'how to get out of', 'how to get away from', 'how to get back', 'how to get home', 'how to get there', 'how to get here', 'how to get started', 'how to get going', 'how to get moving', 'how to get working', 'how to get running', 'how to get functioning', 'how to get operating', 'how to get performing', 'how to get producing', 'how to get creating', 'how to get making', 'how to get building', 'how to get constructing', 'how to get developing', 'how to get growing', 'how to get expanding', 'how to get increasing', 'how to get improving', 'how to get enhancing', 'how to get upgrading', 'how to get updating', 'how to get revising', 'how to get modifying', 'how to get adjusting', 'how to get adapting', 'how to get customizing', 'how to get personalizing', 'how to get tailoring', 'how to get fitting', 'how to get sizing', 'how to get measuring', 'how to get calculating', 'how to get computing', 'how to get determining', 'how to get establishing', 'how to get setting', 'how to get fixing', 'how to get locking', 'how to get sealing', 'how to get closing', 'how to get finalizing', 'how to get concluding', 'how to get ending', 'how to get finishing', 'how to get completing', 'how to get wrapping up', 'how to get rounding off', 'how to get tying up', 'how to get closing out', 'how to get winding down', 'how to get wrapping', 'how to get packaging', 'how to get bundling', 'how to get grouping', 'how to get combining', 'how to get merging', 'how to get unifying', 'how to get consolidating', 'how to get integrating', 'how to get incorporating', 'how to get including', 'how to get encompassing', 'how to get covering', 'how to get embracing', 'how to get containing', 'how to get holding', 'how to get carrying', 'how to get bearing', 'how to get supporting', 'how to get sustaining', 'how to get maintaining', 'how to get preserving', 'how to get keeping', 'how to get retaining', 'how to get holding onto', 'how to get clinging to', 'how to get sticking with', 'how to get staying with', 'how to get remaining with', 'how to get continuing with', 'how to get persisting with', 'how to get enduring', 'how to get lasting', 'how to get surviving', 'how to get outlasting', 'how to get outliving', 'how to get outstaying', 'how to get outstretching', 'how to get outreaching', 'how to get extending', 'how to get expanding', 'how to get growing', 'how to get developing', 'how to get evolving', 'how to get progressing', 'how to get advancing', 'how to get moving forward', 'how to get going forward', 'how to get proceeding', 'how to get continuing', 'how to get persisting', 'how to get enduring', 'how to get lasting', 'how to get surviving', 'how to get thriving', 'how to get flourishing', 'how to get prospering', 'how to get succeeding', 'how to get achieving', 'how to get attaining', 'how to get reaching', 'how to get obtaining', 'how to get acquiring', 'how to get gaining', 'how to get earning', 'how to get winning', 'how to get securing', 'how to get capturing', 'how to get seizing', 'how to get grabbing', 'how to get snatching', 'how to get taking', 'how to get getting', 'how to get receiving', 'how to get accepting', 'how to get welcoming', 'how to get embracing', 'how to get adopting', 'how to get taking on', 'how to get taking up', 'how to get taking over', 'how to get assuming', 'how to get undertaking', 'how to get embarking on', 'how to get starting', 'how to get beginning', 'how to get commencing', 'how to get initiating', 'how to get launching', 'how to get opening', 'how to get introducing', 'how to get presenting', 'how to get offering', 'how to get providing', 'how to get supplying', 'how to get delivering', 'how to get furnishing', 'how to get equipping', 'how to get outfitting', 'how to get preparing', 'how to get readying', 'how to get setting up', 'how to get arranging', 'how to get organizing', 'how to get coordinating', 'how to get orchestrating', 'how to get managing', 'how to get handling', 'how to get dealing with', 'how to get coping with', 'how to get managing', 'how to get controlling', 'how to get regulating', 'how to get governing', 'how to get overseeing', 'how to get supervising', 'how to get monitoring', 'how to get watching', 'how to get observing', 'how to get noticing', 'how to get detecting', 'how to get discovering', 'how to get finding', 'how to get locating', 'how to get identifying', 'how to get recognizing', 'how to get acknowledging', 'how to get admitting', 'how to get confessing', 'how to get revealing', 'how to get disclosing', 'how to get exposing', 'how to get uncovering', 'how to get unveiling', 'how to get unmasking', 'how to get uncloaking', 'how to get unwrapping', 'how to get unpacking', 'how to get unfolding', 'how to get unrolling', 'how to get unfurling', 'how to get spreading', 'how to get stretching', 'how to get extending', 'how to get expanding', 'how to get widening', 'how to get broadening', 'how to get enlarging', 'how to get increasing', 'how to get growing', 'how to get developing', 'how to get evolving', 'how to get progressing', 'how to get advancing', 'how to get improving', 'how to get enhancing', 'how to get upgrading', 'how to get refining', 'how to get perfecting', 'how to get polishing', 'how to get smoothing', 'how to get softening', 'how to get easing', 'how to get relaxing', 'how to get loosening', 'how to get releasing', 'how to get freeing', 'how to get liberating', 'how to get emancipating', 'how to get unshackling', 'how to get unchaining', 'how to get untying', 'how to get unbinding', 'how to get unfastening', 'how to get unbuttoning', 'how to get unzipping', 'how to get unlacing', 'how to get untying', 'how to get unwrapping', 'how to get unpacking', 'how to get unboxing', 'how to get uncrating', 'how to get uncasing', 'how to get unsheathing', 'step by step', 'instructions', 'instruction manual', 'instruction guide', 'instruction video', 'instruction tutorial', 'instruction course', 'instruction class', 'instruction lesson', 'instruction book', 'instruction ebook', 'instruction pdf', 'instruction document', 'instruction file', 'instruction material', 'instruction content', 'instruction resource', 'instruction reference', 'instruction source', 'instruction website', 'instruction site', 'instruction page', 'instruction article', 'instruction blog', 'instruction post', 'instruction entry', 'instruction piece', 'instruction writeup', 'instruction write up', 'instruction write-up', 'instruction writing', 'instruction text', 'instruction copy', 'instruction content', 'instruction material', 'instruction resource', 'instruction reference', 'instruction source', 'instruction website', 'instruction site', 'instruction page', 'instruction article', 'instruction blog', 'instruction post', 'instruction entry', 'instruction piece', 'instruction writeup', 'instruction write up', 'instruction write-up', 'instruction writing', 'instruction text', 'instruction copy'];
             
             educationalBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters educational content and DIY instruction searches', 'Educational');
+                addUniqueKeyword(kw, 'Filters educational content and DIY instruction searches', NEGATIVE_KEYWORD_CATEGORIES['Educational'].label);
             });
             
             // Expand with competitor terms and related category mismatches (100+ variations)
@@ -494,7 +551,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         return stats;
     }, [generatedKeywords]);
 
-    const handleDownload = (format: 'standard' | 'google-ads-editor' = 'standard') => {
+    const handleDownload = async (format: 'standard' | 'google-ads-editor' = 'standard') => {
         if (filteredKeywords.length === 0) {
             notifications.warning('No keywords to export', {
                 title: 'No Keywords'
@@ -518,30 +575,77 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             };
         });
 
-        let csvContent: string;
         let filename: string;
 
-        if (format === 'google-ads-editor') {
-            csvContent = exportToGoogleAdsEditorCSV(negativeKeywords, 'Negative Keywords Campaign', 'All Ad Groups');
-            filename = `negative_keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
-        } else {
-            csvContent = exportToCSV(negativeKeywords, exportFormat);
-            filename = `negative_keywords_${exportFormat}_${new Date().toISOString().split('T')[0]}.csv`;
-        }
-
-        // Add BOM for UTF-8 encoding
-        const BOM = '\ufeff';
-        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+        try {
+            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+            
+            if (format === 'google-ads-editor') {
+                // Use V3 format for Google Ads Editor
+                filename = `negative_keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+                const result = await exportCSVWithValidation(
+                    negativeKeywords,
+                    filename,
+                    'negativeKeywords',
+                    {
+                        campaignName: 'Negative Keywords Campaign',
+                        adGroupName: 'All Ad Groups',
+                        finalUrl: 'https://www.example.com'
+                    }
+                );
+                
+                if (result.warnings && result.warnings.length > 0) {
+                    notifications.warning(
+                        <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+                            {result.warnings.join('\n')}
+                        </div>,
+                        { 
+                            title: '⚠️  CSV Validation Warnings',
+                            description: 'Your campaign will export, but consider fixing these warnings.',
+                            duration: 10000
+                        }
+                    );
+                } else {
+                    notifications.success('Negative keywords exported successfully!', {
+                        title: 'Export Complete'
+                    });
+                }
+            } else {
+                // For other formats, use legacy export functions from negativeKeywordsGenerator
+                let csvContent: string;
+                if (exportFormat === 'google-ads-editor') {
+                    csvContent = exportToGoogleAdsEditorCSV(negativeKeywords, 'Negative Keywords Campaign', 'All Ad Groups');
+                } else {
+                    csvContent = exportToCSV(negativeKeywords, exportFormat);
+                }
+                filename = `negative_keywords_${exportFormat}_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", filename);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }
+                
+                notifications.success('Negative keywords exported successfully!', {
+                    title: 'Export Complete'
+                });
+            }
+        } catch (error: any) {
+            console.error('Export error:', error);
+            notifications.error(
+                error?.message || 'An unexpected error occurred during export',
+                { 
+                    title: '❌ Export Failed',
+                    description: 'Please try again or contact support if the issue persists.'
+                }
+            );
         }
     };
 
@@ -557,7 +661,14 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+                <TabsList>
+                    <TabsTrigger value="builder">Negative Keywords Builder</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="builder">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Panel: Inputs */}
                 <Card className="lg:col-span-1 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl h-fit">
                     <CardHeader>
@@ -615,9 +726,9 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                 </p>
                             )}
                             {!urlError && (
-                                <p className="text-xs text-slate-500">
-                                    AI will analyze this website to understand your business, CTA, and generate relevant negative keywords.
-                                </p>
+                            <p className="text-xs text-slate-500">
+                                AI will analyze this website to understand your business, CTA, and generate relevant negative keywords.
+                            </p>
                             )}
                         </div>
 
@@ -749,7 +860,9 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                     <Filter className="h-4 w-4 text-slate-400" />
                                     <span className="text-xs font-medium text-slate-600">Filter by Category:</span>
                                 </div>
-                                {Object.entries(NEGATIVE_KEYWORD_CATEGORIES).map(([key, cat]) => {
+                                {Object.entries(NEGATIVE_KEYWORD_CATEGORIES)
+                                    .filter(([key]) => ['Intent-Mismatch', 'Low-Value', 'Irrelevant-Product', 'Competitor', 'Job/DIY'].includes(key))
+                                    .map(([key, cat]) => {
                                     const isSelected = selectedCategories.has(key as NegativeKeywordCategory);
                                     return (
                                         <div key={key} className="flex items-center space-x-1">
@@ -849,7 +962,88 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                         )}
                     </CardContent>
                 </Card>
-            </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="history">
+                    <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Filter className="h-5 w-5 text-indigo-600" />
+                                Saved Negative Keyword Lists
+                            </CardTitle>
+                            <CardDescription>
+                                View, load, or delete your saved negative keyword lists
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {savedItems.length > 0 ? (
+                                <div className="space-y-4">
+                                    {savedItems.map(item => (
+                                        <div
+                                            key={item.id}
+                                            className="px-4 py-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <div className="space-y-1 flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-slate-800">{item.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
+                                                            {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        {item.data?.coreKeywords && (
+                                                            <span className="text-slate-600">
+                                                                {item.data.coreKeywords.substring(0, 30)}...
+                                                            </span>
+                                                        )}
+                                                        {item.data?.generatedKeywords && (
+                                                            <span className="text-slate-600">
+                                                                {item.data.generatedKeywords.length} keywords
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        onClick={() => handleLoadSavedItem(item.id)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="gap-2"
+                                                    >
+                                                        <FolderOpen className="w-4 h-4" />
+                                                        Load
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDeleteSavedItem(item.id)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="gap-2 bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        Delete
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center h-full py-20">
+                                    <div className="text-center">
+                                        <Filter className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                        <p className="text-slate-500">
+                                            No saved negative keyword lists found. Save your generated keywords to see them here.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };

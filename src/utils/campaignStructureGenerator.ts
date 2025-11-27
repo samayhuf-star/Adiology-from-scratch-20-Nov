@@ -3,6 +3,8 @@
  * Generates campaign structures based on selected structure type
  */
 
+import { generateSmartAdCopy } from './adCopyGenerator';
+
 export interface CampaignStructure {
   campaigns: Campaign[];
 }
@@ -27,8 +29,20 @@ export interface Ad {
   headline3?: string;
   headline4?: string;
   headline5?: string;
+  headline6?: string;
+  headline7?: string;
+  headline8?: string;
+  headline9?: string;
+  headline10?: string;
+  headline11?: string;
+  headline12?: string;
+  headline13?: string;
+  headline14?: string;
+  headline15?: string;
   description1?: string;
   description2?: string;
+  description3?: string;
+  description4?: string;
   final_url: string;
   path1?: string;
   path2?: string;
@@ -125,7 +139,12 @@ function buildLocationTarget(settings: StructureSettings): string | undefined {
  */
 function generateSKAG(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   const locationTarget = buildLocationTarget(settings);
 
@@ -152,7 +171,12 @@ function generateSKAG(keywords: string[], settings: StructureSettings): Campaign
  */
 function generateSTAG(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   const locationTarget = buildLocationTarget(settings);
   
@@ -189,7 +213,12 @@ function generateSTAG(keywords: string[], settings: StructureSettings): Campaign
  */
 function generateMIX(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   
   const adgroups: AdGroup[] = [];
@@ -241,7 +270,12 @@ function generateMIX(keywords: string[], settings: StructureSettings): CampaignS
  */
 function generateSTAGPlus(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   
   // Use smart clusters if available, otherwise use n-gram clustering
@@ -269,7 +303,12 @@ function generateSTAGPlus(keywords: string[], settings: StructureSettings): Camp
  */
 function generateIntentStructure(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   const intentGroups = settings.intentGroups || {};
   const selectedIntents = settings.selectedIntents || ['high_intent', 'research', 'brand'];
@@ -346,7 +385,12 @@ function generateAlphaBeta(keywords: string[], settings: StructureSettings): Cam
  */
 function generateMatchTypeSplit(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   
   const adgroups: AdGroup[] = [];
@@ -375,7 +419,12 @@ function generateMatchTypeSplit(keywords: string[], settings: StructureSettings)
  */
 function generateGeoSegmented(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   
   const campaigns: Campaign[] = [];
@@ -478,7 +527,12 @@ function generateFunnelStructure(keywords: string[], settings: StructureSettings
  */
 function generateBrandSplit(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   const brandKeywords = settings.brandKeywords || [];
   const nonBrandKeywords = settings.nonBrandKeywords || keywords.filter(kw => !brandKeywords.includes(kw));
@@ -553,7 +607,12 @@ function generateCompetitor(keywords: string[], settings: StructureSettings): Ca
  */
 function generateNgramClusters(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
-  const ads = settings.ads || getDefaultAds(settings);
+  let ads = settings.ads || getDefaultAds(settings);
+  // Ensure all ads have final_url
+  ads = ads.map(ad => ({
+    ...ad,
+    final_url: ad.final_url || settings.url || 'https://www.example.com'
+  }));
   const negativeKeywords = settings.negativeKeywords || [];
   const clusters = settings.smartClusters || clusterByNGram(keywords);
   
@@ -608,13 +667,17 @@ function clusterByNGram(keywords: string[]): { [key: string]: string[] } {
 
 function getDefaultAds(settings: StructureSettings): Ad[] {
   const mainKeyword = settings.keywords[0] || 'your service';
+  
+  // Use smart ad copy generator for Google-compliant ads
+  const smartAd = generateSmartAdCopy(mainKeyword);
+  
   return [{
     type: 'rsa',
-    headline1: `${mainKeyword} - Best Deals`,
-    headline2: 'Shop Now & Save',
-    headline3: 'Fast Delivery',
-    description1: `Looking for ${mainKeyword}? We offer competitive prices.`,
-    description2: 'Get started today!',
+    headline1: smartAd.headline1,
+    headline2: smartAd.headline2,
+    headline3: smartAd.headline3,
+    description1: smartAd.description1,
+    description2: smartAd.description2,
     final_url: settings.url
   }];
 }

@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, Download, Sparkles, AlertCircle, CheckCircle, FileText, Loader2, Edit2, Save, X, RefreshCw } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Upload, Download, Sparkles, AlertCircle, CheckCircle, FileText, Loader2, Edit2, Save, X, RefreshCw, FolderOpen, Layers, Hash, Link2, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Input } from './ui/input';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { api } from '../utils/api';
 import { notifications } from '../utils/notifications';
 
@@ -31,6 +32,7 @@ export const CSVValidator2 = () => {
     const [editorBehavior, setEditorBehavior] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [fixing, setFixing] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
     const [editValue, setEditValue] = useState('');
 
@@ -152,27 +154,110 @@ export const CSVValidator2 = () => {
     }, [detectMatchTypeFormat, isValidKeywordForMatch]);
 
     // Handle file upload
-    const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                const normalizedHeaders = normalizeHeaders(results.meta.fields || []);
-                setHeaders(normalizedHeaders);
-                setRows(results.data || []);
-                setProblems([]);
-                setEditorBehavior([]);
-            },
-            error: (error) => {
-                console.error('CSV parsing error:', error);
-                notifications.error('Error parsing CSV: ' + error.message, {
-                    title: 'Parse Error'
+        setUploading(true);
+        setHeaders([]);
+        setRows([]);
+        setProblems([]);
+        setEditorBehavior([]);
+
+        try {
+            const fileExtension = file.name.split('.').pop()?.toLowerCase();
+            
+            // Handle Excel files (.xlsx, .xls)
+            if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // Get first sheet
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convert to JSON
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        if (jsonData.length === 0) {
+                            throw new Error('Excel file is empty');
+                        }
+                        
+                        // First row is headers
+                        const excelHeaders = (jsonData[0] as any[]).map((h: any) => String(h || '').trim()).filter(h => h);
+                        const normalizedHeaders = normalizeHeaders(excelHeaders);
+                        
+                        // Rest are rows
+                        const excelRows = jsonData.slice(1)
+                            .filter((row: any[]) => row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== ''))
+                            .map((row: any[]) => {
+                                const rowObj: any = {};
+                                excelHeaders.forEach((header, idx) => {
+                                    rowObj[header] = row[idx] !== null && row[idx] !== undefined ? String(row[idx]) : '';
+                                });
+                                return rowObj;
+                            });
+                        
+                        setHeaders(normalizedHeaders);
+                        setRows(excelRows);
+                        setProblems([]);
+                        setEditorBehavior([]);
+                        setUploading(false);
+                        
+                        notifications.success(`Successfully loaded ${excelRows.length} rows from Excel file`, {
+                            title: 'File Loaded'
+                        });
+                    } catch (error: any) {
+                        console.error('Excel parsing error:', error);
+                        notifications.error('Error parsing Excel file: ' + (error.message || 'Unknown error'), {
+                            title: 'Parse Error'
+                        });
+                        setUploading(false);
+                    }
+                };
+                reader.onerror = () => {
+                    notifications.error('Error reading Excel file', {
+                        title: 'Read Error'
+                    });
+                    setUploading(false);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                // Handle CSV files
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        const normalizedHeaders = normalizeHeaders(results.meta.fields || []);
+                        setHeaders(normalizedHeaders);
+                        setRows(results.data || []);
+                        setProblems([]);
+                        setEditorBehavior([]);
+                        setUploading(false);
+                        
+                        notifications.success(`Successfully loaded ${results.data?.length || 0} rows from CSV file`, {
+                            title: 'File Loaded'
+                        });
+                    },
+                    error: (error) => {
+                        console.error('CSV parsing error:', error);
+                        notifications.error('Error parsing CSV: ' + error.message, {
+                            title: 'Parse Error'
+                        });
+                        setUploading(false);
+                    }
                 });
             }
-        });
+        } catch (error: any) {
+            console.error('File upload error:', error);
+            notifications.error('Error uploading file: ' + (error.message || 'Unknown error'), {
+                title: 'Upload Error'
+            });
+            setUploading(false);
+        }
     }, [normalizeHeaders]);
 
     // Validate
@@ -189,8 +274,20 @@ export const CSVValidator2 = () => {
             // Try API first, fallback to client-side validation
             try {
                 const resp = await api.post('/validate-csv', { headers, rows });
-                setProblems(resp.problems || []);
+                const problems = resp.problems || [];
+                setProblems(problems);
                 setEditorBehavior(resp.editorBehavior || []);
+                
+                // Show confirmation message
+                if (problems.length === 0) {
+                    notifications.success('CSV validation completed successfully! No errors found.', {
+                        title: 'Validation Complete'
+                    });
+                } else {
+                    notifications.warning(`Validation completed with ${problems.length} problem(s) found.`, {
+                        title: 'Validation Complete'
+                    });
+                }
             } catch (apiError) {
                 // Fallback to client-side validation
                 console.log('API unavailable, using client-side validation');
@@ -200,10 +297,16 @@ export const CSVValidator2 = () => {
                 const behavior: string[] = [];
                 if (problems.length === 0) {
                     behavior.push('Google Ads Editor should accept this CSV without errors.');
+                    notifications.success('CSV validation completed successfully! No errors found.', {
+                        title: 'Validation Complete'
+                    });
                 } else {
                     behavior.push('Google Ads Editor may reject rows with format errors (e.g., match type mismatches) or show them in the "Rejected changes" pane.');
                     behavior.push('Duplicates may be imported but will appear as separate rows unless Editor de-duplicates; consider removing duplicates.');
                     behavior.push('Fields longer than 255 characters may be truncated on import.');
+                    notifications.warning(`Validation completed with ${problems.length} problem(s) found.`, {
+                        title: 'Validation Complete'
+                    });
                 }
                 setEditorBehavior(behavior);
             }
@@ -384,6 +487,75 @@ export const CSVValidator2 = () => {
         return problems.find(p => p.row === rowIdx + 2 && p.col === col);
     }, [problems]);
 
+    // Calculate statistics
+    const statistics = useMemo(() => {
+        if (rows.length === 0) {
+            return {
+                campaigns: 0,
+                adGroups: 0,
+                keywords: 0,
+                extensionsAssets: 0,
+                locations: 0,
+            };
+        }
+
+        // Find column names (case-insensitive matching)
+        const campaignCol = headers.find(h => h.toLowerCase() === 'campaign') || '';
+        const adGroupCol = headers.find(h => h.toLowerCase() === 'ad group' || h.toLowerCase() === 'adgroup') || '';
+        const keywordCol = headers.find(h => h.toLowerCase() === 'keyword') || '';
+        const rowTypeCol = headers.find(h => h.toLowerCase() === 'row type' || h.toLowerCase() === 'rowtype') || '';
+        const assetTypeCol = headers.find(h => h.toLowerCase() === 'asset type' || h.toLowerCase() === 'assettype') || '';
+        const locationCol = headers.find(h => h.toLowerCase() === 'location') || '';
+
+        // Count unique campaigns
+        const uniqueCampaigns = new Set<string>();
+        rows.forEach(row => {
+            const campaign = row[campaignCol] || '';
+            if (campaign.trim()) {
+                uniqueCampaigns.add(campaign.trim());
+            }
+        });
+
+        // Count unique ad groups
+        const uniqueAdGroups = new Set<string>();
+        rows.forEach(row => {
+            const adGroup = row[adGroupCol] || '';
+            if (adGroup.trim()) {
+                uniqueAdGroups.add(adGroup.trim());
+            }
+        });
+
+        // Count keywords (non-empty)
+        const keywordCount = rows.filter(row => {
+            const keyword = row[keywordCol] || '';
+            return keyword.trim() !== '';
+        }).length;
+
+        // Count extensions/assets (sitelink, call, or rows with Asset Type)
+        const extensionsAssetsCount = rows.filter(row => {
+            const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
+            const assetType = (row[assetTypeCol] || '').trim();
+            return rowType === 'sitelink' || 
+                   rowType === 'call' || 
+                   assetType !== '';
+        }).length;
+
+        // Count locations (Row Type = location or Location column has value)
+        const locationsCount = rows.filter(row => {
+            const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
+            const location = row[locationCol] || '';
+            return rowType === 'location' || location.trim() !== '';
+        }).length;
+
+        return {
+            campaigns: uniqueCampaigns.size,
+            adGroups: uniqueAdGroups.size,
+            keywords: keywordCount,
+            extensionsAssets: extensionsAssetsCount,
+            locations: locationsCount,
+        };
+    }, [rows, headers]);
+
     return (
         <div className="p-8 min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30">
             <div className="max-w-7xl mx-auto">
@@ -400,29 +572,52 @@ export const CSVValidator2 = () => {
                 {/* Upload Section */}
                 <Card className="mb-6 border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl">
                     <CardContent className="p-6">
-                        <div className="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center hover:border-indigo-500 transition-all duration-300 hover:bg-indigo-50/30">
+                        <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
+                            uploading 
+                                ? 'border-indigo-500 bg-indigo-50/50 cursor-wait' 
+                                : 'border-indigo-300 hover:border-indigo-500 hover:bg-indigo-50/30'
+                        }`}>
                             <input
                                 type="file"
                                 id="csvFile2"
-                                accept=".csv"
+                                accept=".csv,.xlsx,.xls"
                                 onChange={handleFileUpload}
+                                disabled={uploading}
                                 className="hidden"
                             />
                             <label
                                 htmlFor="csvFile2"
-                                className="cursor-pointer flex flex-col items-center gap-4"
+                                className={`flex flex-col items-center gap-4 ${uploading ? 'cursor-wait' : 'cursor-pointer'}`}
                             >
-                                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                                    <Upload className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <p className="text-lg font-semibold text-slate-700 mb-1">
-                                        Click to Upload CSV File
-                                    </p>
-                                    <p className="text-sm text-slate-500">
-                                        or drag and drop your file here
-                                    </p>
-                                </div>
+                                {uploading ? (
+                                    <>
+                                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                            <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-semibold text-slate-700 mb-1">
+                                                Uploading and Processing...
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                Please wait while we process your file
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                            <Upload className="w-8 h-8 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-semibold text-slate-700 mb-1">
+                                                Click to Upload CSV or Excel File
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                or drag and drop your file here (.csv, .xlsx, .xls)
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
                             </label>
                         </div>
                     </CardContent>
@@ -531,6 +726,86 @@ export const CSVValidator2 = () => {
                             </div>
                         </CardContent>
                     </Card>
+                )}
+
+                {/* Statistics Cards */}
+                {rows.length > 0 && (
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {/* Campaigns Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-indigo-50 to-indigo-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Campaigns</p>
+                                        <p className="text-3xl font-bold text-indigo-700">{statistics.campaigns}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <FolderOpen className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Ad Groups Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-purple-50 to-purple-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Ad Groups</p>
+                                        <p className="text-3xl font-bold text-purple-700">{statistics.adGroups}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <Layers className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Keywords Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-blue-50 to-blue-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Keywords</p>
+                                        <p className="text-3xl font-bold text-blue-700">{statistics.keywords}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <Hash className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Extensions/Assets Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Extensions/Assets</p>
+                                        <p className="text-3xl font-bold text-green-700">{statistics.extensionsAssets}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <Link2 className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Locations Card */}
+                        <Card className="border-slate-200/60 bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-600 mb-1">Locations</p>
+                                        <p className="text-3xl font-bold text-orange-700">{statistics.locations}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-md">
+                                        <MapPin className="w-6 h-6 text-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 )}
 
                 {/* Data Table */}

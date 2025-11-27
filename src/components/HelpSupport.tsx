@@ -1,31 +1,15 @@
 import React, { useState } from 'react';
 import { 
     Book, HelpCircle, MessageSquare, Search, ChevronRight, ChevronDown,
-    FileText, Zap, Target, BarChart3, Settings, Download, Upload,
-    CheckCircle2, AlertCircle, Send, X
+    Zap, BarChart3, CheckCircle2, AlertCircle, Target, FileText, Upload, Download, Settings
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ScrollArea } from './ui/scroll-area';
-import { Separator } from './ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
-import { notifications } from '../utils/notifications';
 
-interface SupportTicket {
-    id: string;
-    subject: string;
-    description: string;
-    category: string;
-    priority: string;
-    status: 'open' | 'in-progress' | 'resolved' | 'closed';
-    createdAt: string;
-}
 
 const documentationSections = [
     {
@@ -39,7 +23,7 @@ const documentationSections = [
             },
             {
                 title: 'Quick Start Guide',
-                content: `1. Navigate to "Campaign Builder" from the main menu
+                content: `1. Navigate to "Builder 2.0" from the main menu
 2. Choose your campaign structure (SKAG, STAG, or Mix)
 3. Use the Keyword Planner to generate 100-1000 keywords
 4. Select keywords for your campaign
@@ -58,12 +42,12 @@ const documentationSections = [
     },
     {
         id: 'campaign-builder',
-        title: 'Campaign Builder',
+        title: 'Builder 2.0',
         icon: Target,
         articles: [
             {
                 title: '5-Step Campaign Builder Overview',
-                content: `The Campaign Builder guides you through creating professional Google Ads campaigns in 5 simple steps:
+                content: `Builder 2.0 guides you through creating professional Google Ads campaigns in 5 simple steps:
 
 **Step 1: Setup**
 Configure your campaign structure (SKAG/STAG/Mix), geo segmentation, match types, and landing page URL.
@@ -508,16 +492,7 @@ export const HelpSupport = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedArticle, setSelectedArticle] = useState<any>(null);
     const [showArticleDialog, setShowArticleDialog] = useState(false);
-    
-    // Support Ticket State
-    const [tickets, setTickets] = useState<SupportTicket[]>([]);
-    const [showTicketForm, setShowTicketForm] = useState(false);
-    const [ticketForm, setTicketForm] = useState({
-        subject: '',
-        description: '',
-        category: 'general',
-        priority: 'medium'
-    });
+    const [viewMode, setViewMode] = useState<'list' | 'article'>('list');
 
     const handleSearchFilter = (item: any) => {
         if (!searchQuery) return true;
@@ -537,40 +512,174 @@ export const HelpSupport = () => {
 
     const filteredFAQs = faqItems.filter(handleSearchFilter);
 
-    const handleSubmitTicket = () => {
-        const newTicket: SupportTicket = {
-            id: `TICKET-${Date.now()}`,
-            subject: ticketForm.subject,
-            description: ticketForm.description,
-            category: ticketForm.category,
-            priority: ticketForm.priority,
-            status: 'open',
-            createdAt: new Date().toISOString()
-        };
+    // If viewing an article, show full detailed view
+    if (viewMode === 'article' && selectedArticle) {
+        const SectionIcon = selectedArticle.sectionIcon || Book;
         
-        setTickets([newTicket, ...tickets]);
-        setTicketForm({ subject: '', description: '', category: 'general', priority: 'medium' });
-        setShowTicketForm(false);
-        notifications.success('Support ticket submitted successfully! Our team will respond within 24 hours.', {
-            title: 'Ticket Submitted'
-        });
-    };
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+                <div className="max-w-5xl mx-auto">
+                    {/* Back Button */}
+                    <Button
+                        variant="ghost"
+                        onClick={() => setViewMode('list')}
+                        className="mb-6 gap-2 hover:bg-indigo-50"
+                    >
+                        <ChevronDown className="w-4 h-4 rotate-90" />
+                        Back to Documentation
+                    </Button>
 
-    const getStatusBadge = (status: string) => {
-        const variants: any = {
-            'open': 'default',
-            'in-progress': 'secondary',
-            'resolved': 'outline',
-            'closed': 'outline'
-        };
-        const colors: any = {
-            'open': 'bg-blue-100 text-blue-800',
-            'in-progress': 'bg-amber-100 text-amber-800',
-            'resolved': 'bg-green-100 text-green-800',
-            'closed': 'bg-slate-100 text-slate-600'
-        };
-        return <Badge className={colors[status]}>{status.replace('-', ' ').toUpperCase()}</Badge>;
-    };
+                    {/* Article Header */}
+                    <Card className="mb-6 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
+                        <CardHeader>
+                            <div className="flex items-center gap-3 text-indigo-600 mb-2">
+                                <SectionIcon className="w-5 h-5" />
+                                <span className="text-sm font-semibold uppercase tracking-wide">
+                                    {selectedArticle.sectionTitle}
+                                </span>
+                            </div>
+                            <CardTitle className="text-3xl mb-2">{selectedArticle.title}</CardTitle>
+                            <CardDescription className="text-base">
+                                Complete guide with step-by-step instructions
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+
+                    {/* Article Content */}
+                    <Card className="border-slate-200 shadow-xl">
+                        <CardContent className="p-8">
+                            <div className="prose prose-slate prose-lg max-w-none">
+                                <div className="whitespace-pre-wrap text-slate-700 leading-relaxed space-y-4">
+                                    {selectedArticle.content.split('\n\n').map((paragraph: string, idx: number) => (
+                                        <div key={idx} className="mb-4">
+                                            {paragraph.startsWith('**') ? (
+                                                <h3 className="text-lg font-normal text-slate-700 mb-3 flex items-center gap-2">
+                                                    <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
+                                                    {paragraph.replace(/\*\*/g, '')}
+                                                </h3>
+                                            ) : paragraph.includes('**') ? (
+                                                <p className="text-slate-700 leading-relaxed">
+                                                    {paragraph.split('**').map((part, i) => 
+                                                        i % 2 === 0 ? part : <span key={i} className="text-slate-700 font-normal">{part}</span>
+                                                    )}
+                                                </p>
+                                            ) : paragraph.startsWith('-') || paragraph.match(/^\d\./) ? (
+                                                <ul className="space-y-2 ml-4">
+                                                    {paragraph.split('\n').filter(line => line.trim()).map((line, i) => (
+                                                        <li key={i} className="flex items-start gap-3 text-slate-700">
+                                                            <CheckCircle2 className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                                                            <span>{line.replace(/^[-\d.]\s*/, '')}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                                    {paragraph}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Visual Example Placeholder */}
+                                <div className="mt-8 p-8 bg-gradient-to-br from-slate-100 to-blue-100 rounded-xl border-2 border-indigo-200">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="bg-indigo-600 rounded-lg p-2">
+                                            <AlertCircle className="w-5 h-5 text-white" />
+                                        </div>
+                                        <h4 className="font-normal text-slate-700 text-base">Visual Example</h4>
+                                    </div>
+                                    <div className="bg-white rounded-lg border-2 border-slate-300 p-6 mb-4">
+                                        <div className="aspect-video bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg flex items-center justify-center border border-slate-200">
+                                            <div className="text-center">
+                                                <BarChart3 className="w-16 h-16 text-indigo-400 mx-auto mb-3" />
+                                                <p className="text-slate-500 font-medium">Screenshot Placeholder</p>
+                                                <p className="text-xs text-slate-400 mt-1">Visual guide for {selectedArticle.title}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        📸 <span className="font-normal">Pro Tip:</span> Follow the steps above while looking at your dashboard. 
+                                        The interface is intuitive and guides you through each action.
+                                    </p>
+                                </div>
+
+                                {/* Quick Tips Box */}
+                                <div className="mt-8 p-6 bg-emerald-50 rounded-xl border-2 border-emerald-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Zap className="w-5 h-5 text-emerald-600" />
+                                        <h4 className="font-normal text-emerald-800">Quick Tips</h4>
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-emerald-800">
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                            Take your time to explore each feature as you go
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                            Use the search bar if you need to find specific tools quickly
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                            Check the FAQ section if you have additional questions
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* Related Articles */}
+                                <div className="mt-8 p-6 bg-blue-50 rounded-xl border-2 border-blue-200">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Book className="w-5 h-5 text-blue-600" />
+                                        <h4 className="font-normal text-blue-800">Related Documentation</h4>
+                                    </div>
+                                    <p className="text-sm text-blue-700 mb-3">
+                                        Continue learning with these related topics:
+                                    </p>
+                                    <div className="grid gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="justify-start text-left hover:bg-blue-100 border-blue-300"
+                                            onClick={() => setViewMode('list')}
+                                        >
+                                            <ChevronRight className="w-4 h-4 mr-2" />
+                                            View All Documentation
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="justify-start text-left hover:bg-blue-100 border-blue-300"
+                                            onClick={() => { setViewMode('list'); setActiveTab('faq'); }}
+                                        >
+                                            <HelpCircle className="w-4 h-4 mr-2" />
+                                            Browse FAQ
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Bottom Actions */}
+                    <div className="mt-6 flex justify-between items-center">
+                        <Button
+                            variant="outline"
+                            onClick={() => setViewMode('list')}
+                            className="gap-2"
+                        >
+                            <ChevronDown className="w-4 h-4 rotate-90" />
+                            Back to Documentation
+                        </Button>
+                        <Button
+                            onClick={() => { setViewMode('list'); setActiveTab('support'); }}
+                            className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            Still Need Help?
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
@@ -600,7 +709,7 @@ export const HelpSupport = () => {
 
                 {/* Main Content */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                    <TabsList className="grid w-full max-w-xl grid-cols-3 h-12">
+                    <TabsList className="grid w-full max-w-md grid-cols-2 h-12">
                         <TabsTrigger value="documentation" className="flex items-center gap-2">
                             <Book className="w-4 h-4" />
                             Documentation
@@ -608,10 +717,6 @@ export const HelpSupport = () => {
                         <TabsTrigger value="faq" className="flex items-center gap-2">
                             <HelpCircle className="w-4 h-4" />
                             FAQ
-                        </TabsTrigger>
-                        <TabsTrigger value="support" className="flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" />
-                            Support Tickets
                         </TabsTrigger>
                     </TabsList>
 
@@ -640,13 +745,13 @@ export const HelpSupport = () => {
                                             <div
                                                 key={idx}
                                                 onClick={() => {
-                                                    setSelectedArticle({ ...article, sectionTitle: section.title });
-                                                    setShowArticleDialog(true);
+                                                    setSelectedArticle({ ...article, sectionTitle: section.title, sectionIcon: section.icon });
+                                                    setViewMode('article');
                                                 }}
                                                 className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition-all group"
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <h3 className="font-semibold text-slate-800 group-hover:text-indigo-700">
+                                                    <h3 className="font-normal text-slate-700 group-hover:text-indigo-600">
                                                         {article.title}
                                                     </h3>
                                                     <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
@@ -695,187 +800,7 @@ export const HelpSupport = () => {
                         </Card>
                     </TabsContent>
 
-                    {/* Support Tickets Tab */}
-                    <TabsContent value="support" className="space-y-6">
-                        <Card className="border-slate-200 shadow-lg">
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle className="text-2xl">Support Tickets</CardTitle>
-                                        <CardDescription>
-                                            Submit a ticket and track your support requests
-                                        </CardDescription>
-                                    </div>
-                                    <Button
-                                        onClick={() => setShowTicketForm(true)}
-                                        className="bg-indigo-600 hover:bg-indigo-700"
-                                    >
-                                        <Send className="w-4 h-4 mr-2" />
-                                        New Ticket
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                {tickets.length === 0 ? (
-                                    <div className="py-12 text-center">
-                                        <MessageSquare className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-slate-700 mb-2">No Support Tickets</h3>
-                                        <p className="text-slate-600 mb-4">
-                                            You haven't submitted any support tickets yet.
-                                        </p>
-                                        <Button
-                                            onClick={() => setShowTicketForm(true)}
-                                            variant="outline"
-                                            className="gap-2"
-                                        >
-                                            <Send className="w-4 h-4" />
-                                            Submit Your First Ticket
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {tickets.map((ticket) => (
-                                            <div
-                                                key={ticket.id}
-                                                className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 hover:shadow-md transition-all"
-                                            >
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <div>
-                                                        <h3 className="font-semibold text-slate-800">{ticket.subject}</h3>
-                                                        <p className="text-sm text-slate-500">{ticket.id}</p>
-                                                    </div>
-                                                    {getStatusBadge(ticket.status)}
-                                                </div>
-                                                <p className="text-sm text-slate-600 mb-3 line-clamp-2">
-                                                    {ticket.description}
-                                                </p>
-                                                <div className="flex items-center gap-4 text-xs text-slate-500">
-                                                    <span className="flex items-center gap-1">
-                                                        <Badge variant="outline">{ticket.category}</Badge>
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        Priority: <Badge variant="outline">{ticket.priority}</Badge>
-                                                    </span>
-                                                    <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
                 </Tabs>
-
-                {/* Article Dialog */}
-                <Dialog open={showArticleDialog} onOpenChange={setShowArticleDialog}>
-                    <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                            <div className="flex items-center gap-2 text-sm text-indigo-600 mb-2">
-                                <Book className="w-4 h-4" />
-                                {selectedArticle?.sectionTitle}
-                            </div>
-                            <DialogTitle className="text-2xl">{selectedArticle?.title}</DialogTitle>
-                        </DialogHeader>
-                        <div className="prose prose-slate max-w-none">
-                            <div className="whitespace-pre-wrap text-slate-700 leading-relaxed">
-                                {selectedArticle?.content}
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
-
-                {/* New Ticket Dialog */}
-                <Dialog open={showTicketForm} onOpenChange={setShowTicketForm}>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl">Submit Support Ticket</DialogTitle>
-                            <DialogDescription>
-                                Describe your issue and our team will respond within 24 hours
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Subject
-                                </label>
-                                <Input
-                                    placeholder="Brief description of your issue"
-                                    value={ticketForm.subject}
-                                    onChange={(e) => setTicketForm({ ...ticketForm, subject: e.target.value })}
-                                />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Category
-                                    </label>
-                                    <Select
-                                        value={ticketForm.category}
-                                        onValueChange={(value) => setTicketForm({ ...ticketForm, category: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="general">General Question</SelectItem>
-                                            <SelectItem value="technical">Technical Issue</SelectItem>
-                                            <SelectItem value="bug">Bug Report</SelectItem>
-                                            <SelectItem value="feature">Feature Request</SelectItem>
-                                            <SelectItem value="account">Account Issue</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Priority
-                                    </label>
-                                    <Select
-                                        value={ticketForm.priority}
-                                        onValueChange={(value) => setTicketForm({ ...ticketForm, priority: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="low">Low</SelectItem>
-                                            <SelectItem value="medium">Medium</SelectItem>
-                                            <SelectItem value="high">High</SelectItem>
-                                            <SelectItem value="urgent">Urgent</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Description
-                                </label>
-                                <Textarea
-                                    placeholder="Please provide detailed information about your issue..."
-                                    value={ticketForm.description}
-                                    onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
-                                    className="min-h-[150px]"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setShowTicketForm(false)}>
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleSubmitTicket}
-                                disabled={!ticketForm.subject || !ticketForm.description}
-                                className="bg-indigo-600 hover:bg-indigo-700"
-                            >
-                                <Send className="w-4 h-4 mr-2" />
-                                Submit Ticket
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
             </div>
         </div>
     );

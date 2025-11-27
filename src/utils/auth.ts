@@ -8,15 +8,25 @@ export async function getCurrentAuthUser(): Promise<User | null> {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) {
-      console.error('Error getting current user:', error);
+      // Only log if it's not a session missing error (expected when not logged in)
+      if (error.name !== 'AuthSessionMissingError' && !error.message?.includes('session_missing')) {
+        console.error('Error getting current user:', error);
+      }
       return null;
     }
     return user;
-  } catch (error) {
-    console.error('Error getting current user:', error);
+  } catch (error: any) {
+    // Only log if it's not a session missing error (expected when not logged in)
+    if (error?.name !== 'AuthSessionMissingError' && !error?.message?.includes('session_missing')) {
+      console.error('Error getting current user:', error);
+    }
     return null;
   }
 }
+
+// Cache to prevent duplicate profile fetches
+let profileFetchCache: { [userId: string]: { data: any; timestamp: number } } = {};
+const PROFILE_CACHE_DURATION = 5000; // 5 seconds
 
 /**
  * Get current user profile from users table
@@ -27,13 +37,35 @@ export async function getCurrentUserProfile() {
     const user = await getCurrentAuthUser();
     if (!user) return null;
 
+    // Check cache first to prevent duplicate fetches
+    const cached = profileFetchCache[user.id];
+    if (cached && Date.now() - cached.timestamp < PROFILE_CACHE_DURATION) {
+      return cached.data;
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
       .single();
 
-    // If profile doesn't exist (404 or PGRST116), create it
+    // Handle PGRST205 - table not found in schema cache (table might not exist or schema issue)
+    if (error && error.code === 'PGRST205') {
+      console.warn('⚠️ Table "users" not found in schema cache. This may indicate the migration hasn\'t been run or there\'s a schema issue.');
+      // Return minimal user object so app doesn't break
+      const minimalUser = {
+        id: user.id,
+        email: user.email || '',
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        role: 'user',
+        subscription_plan: 'free',
+        subscription_status: 'active',
+      };
+      profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+      return minimalUser;
+    }
+
+    // If profile doesn't exist (404, PGRST116), create it
     const isNotFoundError = error && (
       error.code === 'PGRST116' || 
       error.message?.includes('No rows') ||
@@ -43,7 +75,7 @@ export async function getCurrentUserProfile() {
     );
 
     if (isNotFoundError) {
-      console.log('User profile not found (404/PGRST116), creating one...', { userId: user.id, error });
+      console.log('User profile not found, creating one...', { userId: user.id, errorCode: error.code });
       try {
         const fullName = user.user_metadata?.full_name || 
                         user.user_metadata?.full_name || 
@@ -58,11 +90,13 @@ export async function getCurrentUserProfile() {
         
         if (newProfile) {
           console.log('✅ User profile created successfully:', newProfile.id);
+          // Cache the result
+          profileFetchCache[user.id] = { data: newProfile, timestamp: Date.now() };
           return newProfile;
         } else {
           console.warn('⚠️ Profile creation returned null, but user exists');
           // Return a minimal user object so the app doesn't break
-          return {
+          const minimalUser = {
             id: user.id,
             email: user.email || '',
             full_name: fullName,
@@ -70,12 +104,14 @@ export async function getCurrentUserProfile() {
             subscription_plan: 'free',
             subscription_status: 'active',
           };
+          profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+          return minimalUser;
         }
       } catch (createError: any) {
-        console.error('❌ Error creating user profile:', createError);
+        console.warn('⚠️ Error creating user profile (non-critical):', createError?.message || createError);
         
         // If creation fails, return minimal user object so app doesn't break
-        return {
+        const minimalUser = {
           id: user.id,
           email: user.email || '',
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
@@ -83,13 +119,33 @@ export async function getCurrentUserProfile() {
           subscription_plan: 'free',
           subscription_status: 'active',
         };
+        profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+        return minimalUser;
       }
     }
 
     if (error) {
-      console.error('Error fetching user profile:', error);
+      // Don't log PGRST205 (permission denied) as it's expected for new users
+      // PGRST205 typically means RLS policy is blocking, which we handle by creating profile
+      if (error.code === 'PGRST205') {
+        // Silently handle - this is expected for new users without profiles
+        // Return cached minimal user if available, otherwise create new one
+        const minimalUser = {
+          id: user.id,
+          email: user.email || '',
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          role: 'user',
+          subscription_plan: 'free',
+          subscription_status: 'active',
+        };
+        // Don't cache PGRST205 errors to allow retry on next fetch
+        // Return minimal user immediately without logging
+        return minimalUser;
+      }
+      // Don't log as error if it's a common/expected error - use warn instead
+      console.warn('Profile fetch error (non-critical):', error?.code || error?.message || error);
       // Return minimal user object even on error so app doesn't break
-      return {
+      const minimalUser = {
         id: user.id,
         email: user.email || '',
         full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
@@ -97,16 +153,22 @@ export async function getCurrentUserProfile() {
         subscription_plan: 'free',
         subscription_status: 'active',
       };
+      profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+      return minimalUser;
     }
 
+    // Cache successful result
+    if (data) {
+      profileFetchCache[user.id] = { data, timestamp: Date.now() };
+    }
     return data;
   } catch (error) {
-    console.error('Error getting user profile:', error);
+    console.warn('Error getting user profile (non-critical):', error instanceof Error ? error.message : error);
     // Try to get auth user at least
     try {
       const user = await getCurrentAuthUser();
       if (user) {
-        return {
+        const minimalUser = {
           id: user.id,
           email: user.email || '',
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
@@ -114,107 +176,124 @@ export async function getCurrentUserProfile() {
           subscription_plan: 'free',
           subscription_status: 'active',
         };
+        profileFetchCache[user.id] = { data: minimalUser, timestamp: Date.now() };
+        return minimalUser;
       }
     } catch (e) {
-      console.error('Error getting auth user as fallback:', e);
+      // Silently fail - don't spam console
     }
     return null;
   }
 }
 
 /**
+ * Clear profile cache (useful after profile updates)
+ */
+export function clearProfileCache(userId?: string) {
+  if (userId) {
+    delete profileFetchCache[userId];
+  } else {
+    profileFetchCache = {};
+  }
+}
+
+/**
  * Create or update user profile in users table
+ * Uses SECURITY DEFINER function to bypass RLS policies
  */
 export async function createUserProfile(userId: string, email: string, fullName: string) {
   try {
     console.log('Creating/updating user profile:', { userId, email, fullName });
     
-    // Check if user profile already exists
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
+    // Use SECURITY DEFINER function to create/update profile (bypasses RLS)
+    const { data, error } = await supabase.rpc('create_or_update_user_profile', {
+      p_user_id: userId,
+      p_email: email,
+      p_full_name: fullName || ''
+    });
 
-    // If error is not "not found", log it but continue
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.warn('Warning checking for existing user (continuing anyway):', checkError);
-    }
-
-    if (existingUser) {
-      console.log('User profile exists, updating...');
-      // Update existing profile
-      const { data, error } = await supabase
-        .from('users')
-        .update({
-          email,
-          full_name: fullName,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating user profile:', error);
-        throw error;
+    if (error) {
+      console.error('Error creating/updating user profile:', error);
+      
+      // Handle PGRST205 - table not found in schema cache
+      if (error.code === 'PGRST205') {
+        console.warn('⚠️ Table "users" not found in schema cache. Profile creation skipped.');
+        return null;
       }
-      console.log('✅ User profile updated successfully');
-      return data;
-    } else {
-      console.log('Creating new user profile...');
-      // Create new profile
-      const { data, error } = await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          email,
-          full_name: fullName,
-          role: 'user',
-          subscription_plan: 'free',
-          subscription_status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error inserting user profile:', error);
+      
+      // If function doesn't exist yet, return null gracefully (migration not applied)
+      if (error.message?.includes('function') || error.message?.includes('does not exist') || error.code === '42883') {
+        console.warn('⚠️ Function not found - migration may not be applied yet. Profile creation skipped.');
+        return null;
+      }
+      
+      // If it's a permission error (RLS), try to fetch existing profile
+      if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
+        console.warn('⚠️ RLS policy error, checking if profile already exists:', error);
         
-        // If it's a duplicate key error, try to fetch the existing profile
-        if (error.code === '23505' || error.message?.includes('duplicate')) {
-          console.log('Profile already exists (duplicate key), fetching it...');
-          const { data: existingData, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-          
-          if (fetchError) {
-            console.error('Error fetching existing profile:', fetchError);
-            throw fetchError;
-          }
+        // Try to fetch existing profile as fallback
+        const { data: existingData, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (!fetchError && existingData) {
+          console.log('✅ Found existing user profile');
+          return existingData;
+        }
+      }
+      
+      // If it's a duplicate key error, try to fetch the existing profile
+      if (error.code === '23505' || error.message?.includes('duplicate')) {
+        console.log('Profile already exists (duplicate key), fetching it...');
+        const { data: existingData, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (!fetchError && existingData) {
           console.log('✅ Fetched existing user profile');
           return existingData;
         }
         
-        // If it's a permission error (RLS), log it but don't throw - we'll handle it gracefully
-        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
-          console.warn('⚠️ RLS policy may be blocking profile creation:', error);
-          throw error;
+        if (fetchError) {
+          console.error('Error fetching existing profile:', fetchError);
+          // If fetch also fails with PGRST205, return null
+          if (fetchError.code === 'PGRST205') {
+            console.warn('⚠️ Table "users" not found when fetching existing profile.');
+            return null;
+          }
+          throw fetchError;
         }
-        
-        throw error;
       }
       
-      if (!data) {
-        throw new Error('Profile creation returned no data');
-      }
-      
-      console.log('✅ User profile created successfully:', data.id);
-      return data;
+      throw error;
     }
+    
+    // Function returns TABLE, so data is an array
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      // Try fetching the profile directly as fallback
+      const { data: fetchedData, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (!fetchError && fetchedData) {
+        console.log('✅ Fetched user profile after function call');
+        return fetchedData;
+      }
+      
+      console.warn('⚠️ Profile creation returned no data, but continuing...');
+      return null;
+    }
+    
+    // Function returns TABLE (array), extract first row
+    const profileData = Array.isArray(data) ? data[0] : data;
+    console.log('✅ User profile created/updated successfully:', profileData?.id);
+    return profileData;
   } catch (error: any) {
     console.error('❌ Error creating/updating user profile:', {
       error,
@@ -223,6 +302,13 @@ export async function createUserProfile(userId: string, email: string, fullName:
       details: error?.details,
       hint: error?.hint,
     });
+    
+    // Don't throw for RLS errors - app can work with minimal user object
+    if (error?.code === '42501') {
+      console.warn('⚠️ RLS policy error - continuing without profile');
+      return null;
+    }
+    
     throw error;
   }
 }
@@ -232,6 +318,11 @@ export async function createUserProfile(userId: string, email: string, fullName:
  */
 export async function signUpWithEmail(email: string, password: string, fullName: string) {
   try {
+    // Bug_73: Email sender name "Adiology Login" must be configured in Supabase Dashboard
+    // Go to: Authentication > Email Templates > Configure email sender
+    // Set the "From" name to "Adiology Login"
+    // This cannot be changed programmatically - it's a Supabase project setting
+    
     // Sign up with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -277,6 +368,13 @@ export async function signUpWithEmail(email: string, password: string, fullName:
  */
 export async function signInWithEmail(email: string, password: string) {
   try {
+    // Bug_61, Bug_71: Clear any stale sessions before signing in to prevent conflicts
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      // Ignore errors when clearing - might not have a session
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -293,17 +391,19 @@ export async function signInWithEmail(email: string, password: string) {
 
     // Update last_login_at in user profile (non-blocking)
     if (data.user) {
-      supabase
-        .from('users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.user.id)
-        .then(() => {
+      // Fire-and-forget update (don't await)
+      void (async () => {
+        try {
+          await supabase
+            .from('users')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', data.user!.id);
           console.log('Last login updated successfully');
-        })
-        .catch((profileError) => {
+        } catch (profileError) {
           console.warn('Error updating last login (non-critical):', profileError);
           // Don't throw - login was successful, profile update is optional
-        });
+        }
+      })();
     }
 
     return data;

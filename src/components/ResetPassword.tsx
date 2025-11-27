@@ -190,8 +190,8 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onBackT
               Enter your new password below
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="relative">
+            <form onSubmit={handleSubmit} className="space-y-4 relative">
               {error && (
                 <Alert variant="destructive" className="border-red-500 bg-red-50">
                   <AlertCircle className="w-4 h-4 text-red-600" />

@@ -3,9 +3,10 @@ import { getCurrentUserProfile } from '../utils/auth';
 import { supabase } from '../utils/supabase/client';
 import { 
   User, Mail, Lock, Bell, Globe, Shield, 
-  Save, Eye, EyeOff, Trash2, Download, Upload,
-  CheckCircle2, AlertCircle, CreditCard
+  Save, Eye, EyeOff, Download, Upload,
+  CheckCircle2, AlertCircle, CreditCard, Palette
 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -31,12 +32,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
-  // Notification settings
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [campaignAlerts, setCampaignAlerts] = useState(true);
-  const [exportAlerts, setExportAlerts] = useState(true);
-  const [weeklyReports, setWeeklyReports] = useState(false);
   
   // Privacy settings
   const [dataSharing, setDataSharing] = useState(false);
@@ -67,10 +62,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        setEmailNotifications(settings.emailNotifications ?? true);
-        setCampaignAlerts(settings.campaignAlerts ?? true);
-        setExportAlerts(settings.exportAlerts ?? true);
-        setWeeklyReports(settings.weeklyReports ?? false);
         setDataSharing(settings.dataSharing ?? false);
         setAnalytics(settings.analytics ?? true);
       } catch (e) {
@@ -207,10 +198,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
 
   const handleSaveSettings = () => {
     const settings = {
-      emailNotifications,
-      campaignAlerts,
-      exportAlerts,
-      weeklyReports,
       dataSharing,
       analytics
     };
@@ -243,31 +230,14 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     URL.revokeObjectURL(url);
   };
 
-  const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      if (confirm('This will permanently delete all your data. Type DELETE to confirm.')) {
-        // Remove user from localStorage
-        const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-        const filteredUsers = savedUsers.filter((u: any) => u.email !== user?.email);
-        localStorage.setItem('adiology_users', JSON.stringify(filteredUsers));
-        
-        // Remove auth
-        localStorage.removeItem('auth_user');
-        localStorage.removeItem('user_settings');
-        
-        // Redirect to home
-        window.location.reload();
-      }
-    }
-  };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
           Settings
         </h1>
-        <p className="text-slate-500 mt-1">Manage your account settings, billing, and preferences</p>
+        <p className="text-slate-500 mt-1 text-sm">Manage your account settings, billing, and preferences</p>
       </div>
 
       <Tabs key={defaultTab} defaultValue={defaultTab} className="w-full">
@@ -276,7 +246,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="settings" className="space-y-8 mt-0">
+        <TabsContent value="settings" className="space-y-6 mt-0">
 
       {saveMessage && (
         <Alert 
@@ -308,7 +278,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="name"
                   value={name}
@@ -321,7 +291,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="email"
                   type="email"
@@ -333,10 +303,12 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               </div>
             </div>
           </div>
-          <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
-            <Save className="w-4 h-4 mr-2" />
-            Save Profile Changes
-          </Button>
+          <div className="flex justify-start">
+            <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
+              <Save className="w-4 h-4 mr-2" />
+              Save Profile Changes
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -351,21 +323,22 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current Password</Label>
+            <Label htmlFor="currentPassword" className="text-sm font-semibold">Current Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
               <Input
                 id="currentPassword"
                 type={showPassword ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 h-12"
                 placeholder="Enter current password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -375,19 +348,20 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="newPassword"
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 h-12"
                   placeholder="Enter new password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                 >
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -396,139 +370,37 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 h-12"
                   placeholder="Confirm new password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
           </div>
-          <Button onClick={handleChangePassword} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
-            <Lock className="w-4 h-4 mr-2" />
-            Change Password
-          </Button>
+          <div className="flex justify-start">
+            <Button onClick={handleChangePassword} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
+              <Lock className="w-4 h-4 mr-2" />
+              Change Password
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-indigo-600" />
-            Notification Preferences
-          </CardTitle>
-          <CardDescription>Choose how you want to be notified about your campaigns</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Email Notifications</Label>
-              <p className="text-sm text-slate-500">Receive email updates about your account</p>
-            </div>
-            <Switch 
-              checked={emailNotifications} 
-              onCheckedChange={(checked) => {
-                setEmailNotifications(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications: checked,
-                  campaignAlerts,
-                  exportAlerts,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Campaign Alerts</Label>
-              <p className="text-sm text-slate-500">Get notified when campaigns are created or updated</p>
-            </div>
-            <Switch 
-              checked={campaignAlerts} 
-              onCheckedChange={(checked) => {
-                setCampaignAlerts(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts: checked,
-                  exportAlerts,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Export Alerts</Label>
-              <p className="text-sm text-slate-500">Notify when CSV exports are ready</p>
-            </div>
-            <Switch 
-              checked={exportAlerts} 
-              onCheckedChange={(checked) => {
-                setExportAlerts(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts,
-                  exportAlerts: checked,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Weekly Reports</Label>
-              <p className="text-sm text-slate-500">Receive weekly summary reports</p>
-            </div>
-            <Switch 
-              checked={weeklyReports} 
-              onCheckedChange={(checked) => {
-                setWeeklyReports(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts,
-                  exportAlerts,
-                  weeklyReports: checked,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Button onClick={handleSaveSettings} className="bg-indigo-600 hover:bg-indigo-700">
-            <Save className="w-4 h-4 mr-2" />
-            Save Notification Settings
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Theme Settings */}
+      <ThemeSelector />
 
       {/* Privacy Settings */}
       <Card>
@@ -571,28 +443,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         </CardContent>
       </Card>
 
-      {/* Danger Zone */}
-      <Card className="border-red-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="w-5 h-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription>Irreversible and destructive actions</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-            <div>
-              <h3 className="font-semibold text-red-900">Delete Account</h3>
-              <p className="text-sm text-red-700">Permanently delete your account and all associated data</p>
-            </div>
-            <Button onClick={handleDeleteAccount} variant="destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Account
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
         </TabsContent>
         
         <TabsContent value="billing" className="mt-0">
@@ -600,6 +450,104 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         </TabsContent>
       </Tabs>
     </div>
+  );
+};
+
+// Theme Selector Component
+const ThemeSelector = () => {
+  const { theme, setTheme, availableThemes } = useTheme();
+
+  // Color mapping for theme previews
+  const getColorClass = (colorName: string) => {
+    const colorMap: Record<string, string> = {
+      'indigo-600': 'bg-indigo-600',
+      'indigo-50': 'bg-indigo-50',
+      'purple-600': 'bg-purple-600',
+      'pink-600': 'bg-pink-600',
+      'blue-600': 'bg-blue-600',
+      'blue-50': 'bg-blue-50',
+      'cyan-600': 'bg-cyan-600',
+      'cyan-50': 'bg-cyan-50',
+      'teal-600': 'bg-teal-600',
+      'teal-50': 'bg-teal-50',
+      'emerald-600': 'bg-emerald-600',
+      'emerald-50': 'bg-emerald-50',
+      'green-600': 'bg-green-600',
+      'green-50': 'bg-green-50',
+      'lime-600': 'bg-lime-600',
+      'lime-50': 'bg-lime-50',
+      'orange-600': 'bg-orange-600',
+      'orange-50': 'bg-orange-50',
+      'amber-600': 'bg-amber-600',
+      'amber-50': 'bg-amber-50',
+      'red-600': 'bg-red-600',
+      'red-50': 'bg-red-50',
+    };
+    return colorMap[colorName] || 'bg-slate-400';
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Palette className="w-5 h-5 text-indigo-600" />
+          Color Theme
+        </CardTitle>
+        <CardDescription>Choose your preferred color scheme for the dashboard</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {availableThemes.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              className={`relative p-4 rounded-xl border-2 transition-all hover:scale-105 ${
+                theme.id === t.id
+                  ? 'border-indigo-500 bg-indigo-50 shadow-lg'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              }`}
+            >
+              {/* Theme Preview */}
+              <div className="mb-3">
+                <div className="flex gap-1 mb-2">
+                  <div className={`w-full h-8 rounded bg-gradient-to-r ${t.colors.primaryGradient}`}></div>
+                </div>
+                <div className="flex gap-1">
+                  <div className={`flex-1 h-4 rounded ${getColorClass(t.colors.primary)}`}></div>
+                  <div className={`flex-1 h-4 rounded ${getColorClass(t.colors.secondary)}`}></div>
+                  <div className={`flex-1 h-4 rounded ${getColorClass(t.colors.accent)}`}></div>
+                </div>
+              </div>
+
+              {/* Theme Info */}
+              <div className="text-left">
+                <h3 className="font-semibold text-sm text-slate-900 mb-1">{t.name}</h3>
+                <p className="text-xs text-slate-500">{t.description}</p>
+              </div>
+
+              {/* Selected Badge */}
+              {theme.id === t.id && (
+                <div className="absolute top-2 right-2">
+                  <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex gap-2 items-start">
+            <Globe className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-blue-900 mb-1">Theme Applied Globally</p>
+              <p className="text-xs text-blue-700">
+                Your selected theme will be applied across all pages including Dashboard, Builder 2.0, and all tools.
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

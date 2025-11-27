@@ -5,7 +5,7 @@ import {
   UserPlus, UserMinus, Ban, Key, Eye, TrendingUp, AlertCircle,
   CheckCircle, Clock, CreditCard, Zap, Database, Globe, Mail,
   Code, Webhook, Lock, Download, Upload, RefreshCw, Play, Pause,
-  Inbox, Filter, X, TestTube, CheckCircle2
+  Inbox, Filter, X, TestTube, CheckCircle2, Palette
 } from 'lucide-react';
 import { CrazyKeywordsBuilder } from './CrazyKeywordsBuilder';
 import { adminApi } from '../utils/api/admin';
@@ -16,6 +16,9 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { useTheme } from '../contexts/ThemeContext';
+import { getCurrentAuthUser } from '../utils/auth';
+import { themes } from '../utils/themes';
 
 interface SuperAdminPanelProps {
   onBackToLanding: () => void;
@@ -34,7 +37,8 @@ type Module =
   | 'support'
   | 'config'
   | 'testing'
-  | 'crazy-keywords';
+  | 'crazy-keywords'
+  | 'themes';
 
 export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLanding }) => {
   const [activeModule, setActiveModule] = useState<Module>('overview');
@@ -53,6 +57,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
     { id: 'support' as Module, label: 'Support Tools', icon: Shield, color: 'from-emerald-500 to-green-600' },
     { id: 'testing' as Module, label: 'LambdaTest Results', icon: TestTube, color: 'from-orange-500 to-red-500' },
     { id: 'crazy-keywords' as Module, label: 'Crazy Keywords Builder', icon: Zap, color: 'from-yellow-500 to-orange-500' },
+    { id: 'themes' as Module, label: 'Theme Settings', icon: Palette, color: 'from-indigo-500 to-purple-600' },
     { id: 'config' as Module, label: 'Configuration', icon: Settings, color: 'from-violet-500 to-purple-600' },
   ];
 
@@ -82,6 +87,8 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
         return <TestingModule />;
       case 'crazy-keywords':
         return <CrazyKeywordsBuilder />;
+      case 'themes':
+        return <ThemeSettingsModule />;
       case 'config':
         return <ConfigModule />;
       default:
@@ -90,7 +97,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 overflow-hidden">
+    <div className="flex h-screen admin-panel-bg overflow-hidden">
       {/* Sidebar */}
       <aside className="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/60 shadow-2xl overflow-y-auto">
         {/* Header */}
@@ -1255,6 +1262,202 @@ const TestingModule = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const ThemeSettingsModule = () => {
+  const { theme, setTheme, availableThemes } = useTheme();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuthorization = async () => {
+      try {
+        const user = await getCurrentAuthUser();
+        if (user && user.email) {
+          setUserEmail(user.email);
+          // Only sam@sam.com can access theme settings
+          if (user.email.toLowerCase() === 'sam@sam.com') {
+            setIsAuthorized(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking authorization:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkAuthorization();
+  }, []);
+
+  const handleThemeChange = (themeId: string) => {
+    setTheme(themeId);
+    notifications.success(`Theme changed to ${themes[themeId]?.name || themeId}`, {
+      title: 'Theme Updated',
+      description: 'The new theme has been applied to both homepage and admin panel.',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-8">
+          Theme Settings
+        </h1>
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 border border-slate-200/60 shadow-xl">
+          <div className="text-center py-12">
+            <Shield className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Access Restricted</h2>
+            <p className="text-slate-600 mb-4">
+              Theme settings are only available to the super admin (sam@sam.com).
+            </p>
+            {userEmail && (
+              <p className="text-sm text-slate-500">
+                Current user: {userEmail}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-8">
+        Theme Settings
+      </h1>
+
+      <div className="space-y-6">
+        {/* Current Theme Info */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
+          <h2 className="text-xl font-bold text-slate-800 mb-4">Current Theme</h2>
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-16 h-16 rounded-xl shadow-lg flex items-center justify-center"
+              style={{
+                background: `linear-gradient(to bottom right, ${theme.id === 'purple' ? '#4f46e5' : theme.id === 'ocean' ? '#2563eb' : '#059669'}, ${theme.id === 'purple' ? '#9333ea' : theme.id === 'ocean' ? '#0891b2' : '#16a34a'})`
+              }}
+            >
+              <Palette className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800">{theme.name}</h3>
+              <p className="text-sm text-slate-600">{theme.description}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Theme Selection */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
+          <h2 className="text-xl font-bold text-slate-800 mb-6">Available Themes</h2>
+          <p className="text-sm text-slate-600 mb-6">
+            Select a theme to apply it to both the homepage and admin panel. Changes take effect immediately.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {availableThemes.map((availableTheme) => {
+              const isActive = theme.id === availableTheme.id;
+              const getPrimaryColor = (themeId: string) => {
+                if (themeId === 'purple') return '#4f46e5';
+                if (themeId === 'ocean') return '#2563eb';
+                if (themeId === 'forest') return '#059669';
+                return '#4f46e5';
+              };
+              const getPrimaryLight = (themeId: string) => {
+                if (themeId === 'purple') return '#eef2ff';
+                if (themeId === 'ocean') return '#eff6ff';
+                if (themeId === 'forest') return '#ecfdf5';
+                return '#eef2ff';
+              };
+              const getSecondaryColor = (themeId: string) => {
+                if (themeId === 'purple') return '#9333ea';
+                if (themeId === 'ocean') return '#0891b2';
+                if (themeId === 'forest') return '#16a34a';
+                return '#9333ea';
+              };
+              const getAccentColor = (themeId: string) => {
+                if (themeId === 'purple') return '#db2777';
+                if (themeId === 'ocean') return '#0d9488';
+                if (themeId === 'forest') return '#65a30d';
+                return '#db2777';
+              };
+              return (
+                <button
+                  key={availableTheme.id}
+                  onClick={() => handleThemeChange(availableTheme.id)}
+                  className={`relative p-6 rounded-xl border-2 transition-all duration-300 ${
+                    isActive
+                      ? 'shadow-lg'
+                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                  }`}
+                  style={isActive ? {
+                    borderColor: getPrimaryColor(availableTheme.id),
+                    backgroundColor: getPrimaryLight(availableTheme.id),
+                  } : {}}
+                >
+                  {isActive && (
+                    <div className="absolute top-3 right-3">
+                      <CheckCircle className="w-6 h-6" style={{ color: getPrimaryColor(availableTheme.id) }} />
+                    </div>
+                  )}
+                  <div 
+                    className="w-full h-24 rounded-lg mb-4 shadow-md"
+                    style={{
+                      background: `linear-gradient(to bottom right, ${getPrimaryColor(availableTheme.id)}, ${getSecondaryColor(availableTheme.id)})`
+                    }}
+                  ></div>
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">{availableTheme.name}</h3>
+                  <p className="text-sm text-slate-600 text-left">{availableTheme.description}</p>
+                  <div className="mt-4 flex gap-2">
+                    <div 
+                      className="w-8 h-8 rounded-lg" 
+                      style={{ backgroundColor: getPrimaryColor(availableTheme.id) }}
+                    ></div>
+                    <div 
+                      className="w-8 h-8 rounded-lg" 
+                      style={{ backgroundColor: getSecondaryColor(availableTheme.id) }}
+                    ></div>
+                    <div 
+                      className="w-8 h-8 rounded-lg" 
+                      style={{ backgroundColor: getAccentColor(availableTheme.id) }}
+                    ></div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Theme Preview */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
+          <h2 className="text-xl font-bold text-slate-800 mb-4">Theme Preview</h2>
+          <div 
+            className="p-6 rounded-xl text-white"
+            style={{
+              background: `linear-gradient(to bottom right, ${theme.id === 'purple' ? '#4f46e5' : theme.id === 'ocean' ? '#2563eb' : '#059669'}, ${theme.id === 'purple' ? '#9333ea' : theme.id === 'ocean' ? '#0891b2' : '#16a34a'})`
+            }}
+          >
+            <h3 className="text-2xl font-bold mb-2">{theme.name} Theme</h3>
+            <p className="text-white/90 mb-4">This theme is currently active across the application.</p>
+            <div className="flex gap-2">
+              <div className="px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">Primary</div>
+              <div className="px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">Secondary</div>
+              <div className="px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">Accent</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

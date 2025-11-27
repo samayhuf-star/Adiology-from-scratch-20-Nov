@@ -1,17 +1,177 @@
-import React, { useState } from 'react';
-import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift, AlertCircle, Search, Filter, X, ChevronDown, SlidersHorizontal, BarChart3, BarChart, TrendingUp, FileText as FileTextIcon, MoreVertical, Save, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { LiveAdPreview } from './LiveAdPreview';
 import { api } from '../utils/api';
 import { notifications } from '../utils/notifications';
+
+// Google Ads Generation System Prompt
+const GOOGLE_ADS_SYSTEM_PROMPT = `🟣 SYSTEM INSTRUCTION: GOOGLE ADS GENERATION RULES
+
+You are the Google Ads Generator for Adiology.
+
+You must generate ads using official Google Search Ads formatting, including:
+
+Dynamic Keyword Insertion (DKI)
+Responsive Search Ads (RSA)
+Call Ads (if selected)
+Single Ad Group mode
+Multiple Ad Group mode
+
+Your output must ALWAYS follow these rules.
+
+🎯 1. DKI (Dynamic Keyword Insertion) Rules
+
+Always use Google's correct DKI syntax:
+
+{KeyWord:Default Text}
+
+Examples (correct):
+
+{KeyWord:Airline Number}
+{KeyWord:Contact Airline}
+{KeyWord:Plumber Near Me}
+
+❌ Do NOT add spaces inside {KeyWord: ... }
+❌ Do NOT break them across lines
+❌ Do NOT add extra braces
+❌ Do NOT use unsupported formats like {keyword:}, {Keyword:}, etc.
+
+Headline Rules for DKI:
+- Each headline should contain 1 DKI or 1 value-based benefit
+- Max 30 characters recommended (no need to enforce exact count automatically but stay short)
+- Headlines must look like:
+  {KeyWord:Airline Number} - Official Site
+  Buy {KeyWord:Airline Number}
+  Top Rated {KeyWord:Airline Number}
+
+Description Rules for DKI:
+- Must include benefit + CTA
+- Must NOT include more than 1–2 DKI per description
+- Example:
+  Find the right {KeyWord:Airline Number} instantly. Compare options & get support fast.
+  Order your {KeyWord:Airline Number} today with 24/7 assistance.
+
+🎯 2. RSA (Responsive Search Ads) Rules
+
+Your output must contain:
+- Headlines (10 minimum)
+  - Mix of: keyword variations, benefits, credibility, speed/urgency, CTA headlines
+  - Each headline <= 30 characters
+  - No repeated exact same headline
+- Descriptions (4 minimum)
+  - <= 90 chars
+  - Must be persuasive and unique
+  - No repeating content
+- DO NOT PIN headlines unless user requests
+
+🎯 3. Grouping Rules
+
+Single Ad Group Mode:
+- All keywords belong to Group 1
+- All ads generated should reference these same keywords
+
+Multiple Ad Group Mode:
+- Split keywords evenly across groups:
+  - 1 keyword → Group 1
+  - 2–3 keywords → Group 1, Group 2
+  - 4+ keywords → Group 1, Group 2, Group 3...
+- Max 10 keywords per group
+- Naming Convention: Group 1, Group 2, Group 3, etc.
+- Each group must have:
+  - 3–5 RSA ads
+  - 2–5 DKI ads
+  - 2 descriptions per DKI ad
+  - Final URL shared or customized based on keyword (if possible)
+
+🎯 4. URL Rules
+
+URL provided by user is ALWAYS the base URL.
+
+If user enters: https://www.example.com
+
+Then AI should generate SEO-friendly ad Final URLs:
+- https://www.example.com/keyword/deals
+- https://www.example.com/contact
+- https://www.example.com/airline-number
+
+BUT DO NOT include spaces, uppercase letters, or DKI in URLs.
+
+🎯 5. Copy Structure
+
+Each generated ad must follow this structure:
+
+DKI Ad:
+- Headlines (5 variations)
+- Display path (path1, path2)
+- Two short descriptions
+- Final URL
+- Clean formatting
+- No blank lines between headlines
+- No extra symbols
+
+RSA Ad:
+- 10–15 headlines
+- 2–4 descriptions
+- Final URL
+- No line breaks inside headlines/descriptions
+
+🎯 6. Output Formatting Rules (for your UI)
+
+NEVER output as paragraphs — output as structured blocks.
+
+Correct Format Example:
+
+### Group 1 — DKI
+
+Headlines:
+1. {KeyWord:Airline Number} - Official Site
+2. Buy {KeyWord:Airline Number} Online
+3. Trusted {KeyWord:Airline Number} Service
+4. {KeyWord:Airline Number} Hotline
+5. Get {KeyWord:Airline Number} Help
+
+Descriptions:
+- Find the best {KeyWord:Airline Number}. Fast & reliable support.
+- Contact our experts for 24/7 assistance.
+
+Final URL:
+https://www.example.com/airline-number
+
+🎯 7. Keyword Rewriting Logic
+
+For each keyword:
+- Capitalize each word: airline number → Airline Number
+- Use as DKI: {KeyWord:Airline Number}
+- Create 2–4 variations:
+  - Airline Number
+  - Airline Hotline
+  - Contact Airline Support
+
+🎯 8. Validation Rules
+
+Before returning ads:
+✔ Check that DKI syntax is valid
+✔ No headline exceeds reasonable length
+✔ No broken URLs
+✔ No duplicate headlines
+✔ No broken braces { or }
+✔ Descriptions remain readable
+✔ No plagiarism or copyrighted content
+✔ Output must match your UI layout
+
+🎯 9. Output must be clean, structured, and UI-friendly.
+
+No markdown tables, no extra commentary, no explanations — ONLY the ads.`;
 
 interface AdGroup {
     id: string;
@@ -56,11 +216,22 @@ export const AdsBuilder = () => {
     const [baseUrl, setBaseUrl] = useState('https://www.example.com');
     const [urlError, setUrlError] = useState('');
     
-    const [adConfig, setAdConfig] = useState({
-        rsaCount: 1,
-        dkiCount: 1,
-        callOnlyCount: 1
-    });
+    // Ad type selection with dropdown (single selection)
+    const [selectedAdType, setSelectedAdType] = useState<string>('rsa'); // 'rsa' | 'dki' | 'callOnly' | 'all'
+    
+    // Ad config - generates proper number of ads per group per specifications
+    // RSA: 3-5 per group, DKI: 2-5 per group, Call-Only: 1 per group
+    const getAdConfig = () => {
+        if (selectedAdType === 'all') {
+            return { rsaCount: 3, dkiCount: 3, callOnlyCount: 1 };
+        } else if (selectedAdType === 'rsa') {
+            return { rsaCount: 3, dkiCount: 0, callOnlyCount: 0 };
+        } else if (selectedAdType === 'dki') {
+            return { rsaCount: 0, dkiCount: 3, callOnlyCount: 0 };
+        } else {
+            return { rsaCount: 0, dkiCount: 0, callOnlyCount: 1 };
+        }
+    };
     
     const [generatedAds, setGeneratedAds] = useState<GeneratedAd[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -68,6 +239,13 @@ export const AdsBuilder = () => {
     const [showExtensionDialog, setShowExtensionDialog] = useState(false);
     const [selectedAdForExtension, setSelectedAdForExtension] = useState<string | null>(null);
     const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+    
+    // Filter & Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterAdType, setFilterAdType] = useState<string>('all');
+    const [filterGroup, setFilterGroup] = useState<string>('all');
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [showConfigSidebar, setShowConfigSidebar] = useState(true);
     
     const extensionTypes = [
         { id: 'callout', label: 'Callout Extension', icon: Tag, description: 'Highlight key benefits', color: 'purple' },
@@ -108,6 +286,61 @@ export const AdsBuilder = () => {
         setAdGroups(adGroups.map(group => 
             group.id === id ? { ...group, [field]: value } : group
         ));
+    };
+
+    // Helper: Clean keyword and convert to title case
+    const cleanAndTitleCaseKeyword = (keyword: string): string => {
+        let clean = keyword.trim();
+        // Remove quotes
+        if ((clean.startsWith('"') && clean.endsWith('"')) || 
+            (clean.startsWith("'") && clean.endsWith("'"))) {
+            clean = clean.slice(1, -1);
+        }
+        // Remove brackets for exact match
+        if (clean.startsWith('[') && clean.endsWith(']')) {
+            clean = clean.slice(1, -1);
+        }
+        // Remove negative keyword prefix
+        if (clean.startsWith('-')) {
+            clean = clean.slice(1);
+        }
+        clean = clean.trim();
+        
+        // Convert to Title Case (capitalize each word)
+        return clean.split(' ').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+    };
+
+    // Helper: Generate SEO-friendly URL from keyword
+    const generateKeywordUrl = (baseUrl: string, keyword: string): string => {
+        const cleanBase = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+        const urlSafeKeyword = keyword
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+            .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+        
+        return `${cleanBase}/${urlSafeKeyword}`;
+    };
+
+    // Helper: Validate DKI syntax
+    const validateDKISyntax = (text: string): boolean => {
+        // Check for correct {KeyWord:Default Text} format
+        const dkiPattern = /\{KeyWord:[^}]+\}/g;
+        const matches = text.match(dkiPattern);
+        if (!matches) return true; // No DKI found, that's fine
+        
+        // Check each match is valid
+        return matches.every(match => {
+            // Should not have spaces inside braces before colon
+            if (match.includes(' {') || match.includes('} ')) return false;
+            // Should have KeyWord (capital K and W)
+            if (!match.includes('KeyWord:')) return false;
+            // Should not have nested braces
+            const openBraces = (match.match(/\{/g) || []).length;
+            const closeBraces = (match.match(/\}/g) || []).length;
+            return openBraces === 1 && closeBraces === 1;
+        });
     };
 
     const generateAds = async () => {
@@ -159,8 +392,15 @@ export const AdsBuilder = () => {
                 return;
             }
 
+            // Get ad config based on selected ad type
+            const currentAdConfig = getAdConfig();
+            
             // Calculate total ads that will be generated
-            const totalAdsPerGroup = adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount;
+            // For proper generation: RSA = 3 per group, DKI = 3 per group, Call-Only = 1 per group
+            const rsaPerGroup = currentAdConfig.rsaCount;
+            const dkiPerGroup = currentAdConfig.dkiCount;
+            const callOnlyPerGroup = currentAdConfig.callOnlyCount;
+            const totalAdsPerGroup = rsaPerGroup + dkiPerGroup + callOnlyPerGroup;
             const totalAdsToGenerate = totalAdsPerGroup * groupsToProcess.length;
 
             // Limit total ads to 25
@@ -175,16 +415,32 @@ export const AdsBuilder = () => {
             const allGeneratedAds: GeneratedAd[] = [];
 
             for (const group of groupsToProcess) {
-                const keywords = group.keywords.split(',').map(k => k.trim()).filter(Boolean);
+                // Split by comma, newline, or semicolon to handle different input formats
+                const keywords = group.keywords
+                    .split(/[,\n;]+/)
+                    .map(k => k.trim())
+                    .filter(Boolean);
                 
-                // Generate RSA Ads
-                if (adConfig.rsaCount > 0) {
+                // Debug: Log keywords array
+                console.log('Processing keywords for group:', group.name);
+                console.log('Keywords array:', keywords);
+                console.log('Number of keywords:', keywords.length);
+                
+                if (keywords.length === 0) {
+                    console.warn('No keywords found after splitting for group:', group.name);
+                    continue;
+                }
+                
+                // Generate RSA Ads (3 per group)
+                if (rsaPerGroup > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'RSA',
-                            count: adConfig.rsaCount,
-                            groupName: group.name
+                            count: rsaPerGroup,
+                            groupName: group.name,
+                            baseUrl: baseUrl,
+                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
                         if (response.ads) {
@@ -202,21 +458,23 @@ export const AdsBuilder = () => {
                         }
                     } catch (error) {
                         console.log('API unavailable, using fallback for RSA');
-                        // Fallback RSA generation
-                        for (let i = 0; i < adConfig.rsaCount; i++) {
-                            allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i));
+                        // Fallback RSA generation (3 ads per group)
+                        for (let i = 0; i < rsaPerGroup; i++) {
+                            allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i, baseUrl));
                         }
                     }
                 }
 
-                // Generate DKI Ads
-                if (adConfig.dkiCount > 0) {
+                // Generate DKI Ads (3 per group)
+                if (dkiPerGroup > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'DKI',
-                            count: adConfig.dkiCount,
-                            groupName: group.name
+                            count: dkiPerGroup,
+                            groupName: group.name,
+                            baseUrl: baseUrl,
+                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
                         if (response.ads) {
@@ -234,21 +492,23 @@ export const AdsBuilder = () => {
                         }
                     } catch (error) {
                         console.log('API unavailable, using fallback for DKI');
-                        // Fallback DKI generation
-                        for (let i = 0; i < adConfig.dkiCount; i++) {
-                            allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i));
+                        // Fallback DKI generation (3 ads per group)
+                        for (let i = 0; i < dkiPerGroup; i++) {
+                            allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i, baseUrl));
                         }
                     }
                 }
 
                 // Generate Call Only Ads
-                if (adConfig.callOnlyCount > 0) {
+                if (callOnlyPerGroup > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'CallOnly',
-                            count: adConfig.callOnlyCount,
-                            groupName: group.name
+                            count: callOnlyPerGroup,
+                            groupName: group.name,
+                            baseUrl: baseUrl,
+                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
                         if (response.ads) {
@@ -269,8 +529,8 @@ export const AdsBuilder = () => {
                     } catch (error) {
                         console.log('API unavailable, using fallback for Call Only');
                         // Fallback Call Only generation
-                        for (let i = 0; i < adConfig.callOnlyCount; i++) {
-                            allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i));
+                        for (let i = 0; i < callOnlyPerGroup; i++) {
+                            allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i, baseUrl));
                         }
                     }
                 }
@@ -288,83 +548,246 @@ export const AdsBuilder = () => {
         }
     };
 
-    const generateFallbackRSA = (groupName: string, keywords: string[], index: number): GeneratedAd => {
-        const mainKeyword = keywords[index % keywords.length];
-        const variations = [
-            { h1: `${mainKeyword} - Best Deals Available`, h2: 'Shop Now & Save', h3: 'Limited Time Offer' },
-            { h1: `Professional ${mainKeyword} Service`, h2: 'Available 24/7', h3: 'Expert Support' },
-            { h1: `${mainKeyword} Solutions`, h2: 'Get Started Today', h3: 'Free Consultation' },
-            { h1: `Premium ${mainKeyword}`, h2: 'Trusted by Thousands', h3: 'Best Price Guarantee' },
-            { h1: `${mainKeyword} Experts`, h2: 'Fast & Reliable', h3: 'Contact Us Now' }
+    const generateFallbackRSA = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
+        // Select a keyword from the array, cycling through them
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
+        
+        // RSA requires 10-15 headlines ideally, but interface supports 5
+        // Generate 5 unique headlines (mix of keyword variations, benefits, credibility, speed/urgency, CTA)
+        const headlineTemplates = [
+            // Keyword variations
+            `${mainKeyword} - Official Site`,
+            `Best ${mainKeyword} Online`,
+            `Top Rated ${mainKeyword}`,
+            `${mainKeyword} Services`,
+            `Professional ${mainKeyword}`,
+            // Benefits
+            `Fast & Reliable ${mainKeyword}`,
+            `24/7 ${mainKeyword} Support`,
+            `Expert ${mainKeyword} Help`,
+            `Trusted ${mainKeyword} Service`,
+            // Credibility
+            `5-Star Rated ${mainKeyword}`,
+            `Trusted by Thousands`,
+            `Award-Winning ${mainKeyword}`,
+            // Speed/Urgency
+            `Get ${mainKeyword} Today`,
+            `Same-Day ${mainKeyword} Service`,
+            `Instant ${mainKeyword} Access`,
+            // CTA headlines
+            `Shop ${mainKeyword} Now`,
+            `Buy ${mainKeyword} Online`,
+            `Order ${mainKeyword} Today`,
+            `Contact ${mainKeyword} Experts`,
+            `Get Free ${mainKeyword} Quote`
         ];
         
-        const variation = variations[index % variations.length];
+        // Select 5 unique headlines (avoid duplicates) - interface supports 5 headlines
+        const selectedHeadlines: string[] = [];
+        const usedIndices = new Set<number>();
+        const headlineCount = 5;
+        
+        while (selectedHeadlines.length < headlineCount && selectedHeadlines.length < headlineTemplates.length) {
+            const randomIdx = Math.floor(Math.random() * headlineTemplates.length);
+            if (!usedIndices.has(randomIdx)) {
+                usedIndices.add(randomIdx);
+                const headline = headlineTemplates[randomIdx].substring(0, 30);
+                if (!selectedHeadlines.includes(headline)) {
+                    selectedHeadlines.push(headline);
+                }
+            }
+        }
+        
+        // Fill remaining slots if needed
+        while (selectedHeadlines.length < headlineCount) {
+            const template = headlineTemplates[selectedHeadlines.length % headlineTemplates.length];
+            const headline = `${template} ${index + 1}`.substring(0, 30);
+            if (!selectedHeadlines.includes(headline)) {
+                selectedHeadlines.push(headline);
+            }
+        }
+        
+        // Generate 2-4 descriptions (90 chars max each)
+        const descriptionTemplates = [
+            `Find the perfect ${mainKeyword} for your needs. Compare options and get the best price available today with expert support.`,
+            `Get your ${mainKeyword} today with fast delivery, expert support, and 100% satisfaction guaranteed. Contact us now!`,
+            `Looking for ${mainKeyword}? We offer the best solutions with competitive pricing and excellent customer service. Shop with confidence.`,
+            `Order your ${mainKeyword} online with fast shipping and expert customer support. Satisfaction guaranteed! Get started today.`
+        ];
+        
+        const descriptionCount = 2 + (index % 3); // 2-4 descriptions
+        const selectedDescriptions = descriptionTemplates
+            .slice(0, descriptionCount)
+            .map(desc => desc.substring(0, 90));
+        
+        // Generate SEO-friendly URL
+        const keywordUrl = generateKeywordUrl(baseUrl, selectedKeyword);
         
         return {
             id: crypto.randomUUID(),
             groupName,
             adType: 'RSA',
             type: 'rsa',
-            headline1: variation.h1,
-            headline2: variation.h2,
-            headline3: variation.h3,
-            headline4: `Quality ${mainKeyword}`,
-            headline5: 'Call Today',
-            description1: `Looking for ${mainKeyword}? We offer the best solutions with competitive pricing and excellent customer service.`,
-            description2: `Get your ${mainKeyword} today. Fast delivery, expert support, and satisfaction guaranteed. Contact us now!`,
+            headline1: selectedHeadlines[0] || '',
+            headline2: selectedHeadlines[1] || '',
+            headline3: selectedHeadlines[2] || '',
+            headline4: selectedHeadlines[3] || '',
+            headline5: selectedHeadlines[4] || '',
+            // Add more headlines if needed (up to 15)
+            description1: selectedDescriptions[0] || '',
+            description2: selectedDescriptions[1] || '',
             path1: mainKeyword.toLowerCase().replace(/\s+/g, '-').substring(0, 15),
-            path2: 'shop',
-            finalUrl: baseUrl,
+            path2: 'deals',
+            finalUrl: keywordUrl,
             selected: false,
             extensions: []
         };
     };
 
-    const generateFallbackDKI = (groupName: string, keywords: string[], index: number): GeneratedAd => {
-        const mainKeyword = keywords[index % keywords.length];
+    const generateFallbackDKI = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
+        // Select a keyword from the array, cycling through them
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
+        
+        // DKI Rules: Use {KeyWord:Default Text} syntax (capital K and W)
+        // Each headline should contain 1 DKI or 1 value-based benefit
+        // Max 30 characters recommended
+        // Generate 5 headline variations
+        const headlineVariations = [
+            `{KeyWord:${mainKeyword}} - Official Site`,
+            `Buy {KeyWord:${mainKeyword}} Online`,
+            `Top Rated {KeyWord:${mainKeyword}}`,
+            `{KeyWord:${mainKeyword}} Hotline`,
+            `Get {KeyWord:${mainKeyword}} Help`
+        ];
+        
+        // Ensure headlines are within 30 chars (trim if needed)
+        const headlines = headlineVariations.map(h => {
+            if (h.length > 30) {
+                // Try to preserve DKI syntax while trimming
+                const dkiMatch = h.match(/\{KeyWord:[^}]+\}/);
+                if (dkiMatch) {
+                    const dkiPart = dkiMatch[0];
+                    const rest = h.replace(dkiPart, '').trim();
+                    const maxRest = 30 - dkiPart.length;
+                    if (maxRest > 0) {
+                        return `${dkiPart}${rest.substring(0, maxRest)}`;
+                    }
+                    return dkiPart.substring(0, 30);
+                }
+                return h.substring(0, 30);
+            }
+            return h;
+        });
+        
+        // Description Rules: Must include benefit + CTA
+        // Must NOT include more than 1–2 DKI per description
+        // Max 90 characters
+        const descriptionVariations = [
+            `Find the right {KeyWord:${mainKeyword}} instantly. Compare options & get support fast.`,
+            `Order your {KeyWord:${mainKeyword}} today with 24/7 assistance. Satisfaction guaranteed!`
+        ];
+        
+        // Ensure descriptions are within 90 chars
+        const descriptions = descriptionVariations.map(d => {
+            if (d.length > 90) {
+                // Try to preserve DKI syntax while trimming
+                const dkiMatch = d.match(/\{KeyWord:[^}]+\}/);
+                if (dkiMatch) {
+                    const dkiPart = dkiMatch[0];
+                    const rest = d.replace(dkiPart, '').trim();
+                    const maxRest = 90 - dkiPart.length;
+                    if (maxRest > 0) {
+                        return `${dkiPart}${rest.substring(0, maxRest)}`;
+                    }
+                    return dkiPart.substring(0, 90);
+                }
+                return d.substring(0, 90);
+            }
+            return d;
+        });
+        
+        // Generate SEO-friendly URL
+        const keywordUrl = generateKeywordUrl(baseUrl, selectedKeyword);
+        
+        // Generate display paths (max 15 chars each)
+        const urlSafeKeyword = mainKeyword.toLowerCase().replace(/\s+/g, '-');
+        const path1 = urlSafeKeyword.substring(0, 15);
+        const path2 = 'deals';
         
         return {
             id: crypto.randomUUID(),
             groupName,
             adType: 'DKI',
             type: 'dki',
-            headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-            headline2: 'Shop {KeyWord:' + mainKeyword + '}',
-            headline3: 'Best {KeyWord:' + mainKeyword + '} Deals',
-            description1: `Find the perfect {KeyWord:${mainKeyword}} for your needs. Compare options and get the best price available today.`,
-            description2: `Order your {KeyWord:${mainKeyword}} online with fast shipping and expert customer support. Satisfaction guaranteed!`,
-            path1: 'keyword',
-            path2: 'deals',
-            finalUrl: baseUrl,
+            headline1: headlines[0] || '',
+            headline2: headlines[1] || '',
+            headline3: headlines[2] || '',
+            headline4: headlines[3] || '',
+            headline5: headlines[4] || '',
+            description1: descriptions[0] || '',
+            description2: descriptions[1] || '',
+            path1: path1,
+            path2: path2,
+            finalUrl: keywordUrl,
             selected: false,
             extensions: []
         };
     };
 
-    const generateFallbackCallOnly = (groupName: string, keywords: string[], index: number): GeneratedAd => {
-        const mainKeyword = keywords[index % keywords.length];
+    const generateFallbackCallOnly = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
+        // Select a keyword from the array, cycling through them
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
+        
+        // Call-Only Best Practices: Strong CTAs with "Call" or "Contact"
+        // Required: 2 headlines (30 chars each), 2 descriptions (90 chars each), phone, business name
         const variations = [
-            { h1: `${mainKeyword} - Call Now`, h2: 'Available 24/7' },
-            { h1: `Professional ${mainKeyword}`, h2: 'Speak to an Expert' },
-            { h1: `${mainKeyword} Support`, h2: 'Call for Free Quote' },
-            { h1: `${mainKeyword} Hotline`, h2: 'Immediate Assistance' },
-            { h1: `${mainKeyword} Service`, h2: 'Call for Best Price' }
+            { 
+                h1: `${mainKeyword} - Call Now`, 
+                h2: 'Available 24/7 - Free Quote'
+            },
+            { 
+                h1: `Professional ${mainKeyword}`, 
+                h2: 'Speak to an Expert Today'
+            },
+            { 
+                h1: `${mainKeyword} Support Near You`, 
+                h2: 'Call for Free Consultation'
+            },
+            { 
+                h1: `${mainKeyword} Hotline`, 
+                h2: 'Immediate Assistance Available'
+            },
+            { 
+                h1: `${mainKeyword} Service - Call Us`, 
+                h2: 'Get Your Best Price Now'
+            }
         ];
         
         const variation = variations[index % variations.length];
+        
+        // Ensure headlines are within 30 chars
+        const headline1 = variation.h1.substring(0, 30);
+        const headline2 = variation.h2.substring(0, 30);
+        
+        // Descriptions must be within 90 chars
+        const description1 = `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help you today!`.substring(0, 90);
+        const description2 = `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today for your free quote!`.substring(0, 90);
         
         return {
             id: crypto.randomUUID(),
             groupName,
             adType: 'CallOnly',
             type: 'callonly',
-            headline1: variation.h1,
-            headline2: variation.h2,
-            description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help!`,
-            description2: `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today!`,
+            headline1: headline1,
+            headline2: headline2,
+            description1: description1,
+            description2: description2,
             phoneNumber: '+1-800-123-4567',
-            phone: '+1-800-123-4567',
             businessName: 'Your Business',
+            finalUrl: baseUrl, // Call-only ads still need a final URL
             selected: false,
             extensions: []
         };
@@ -384,7 +807,7 @@ export const AdsBuilder = () => {
         }
     };
 
-    const exportToCSV = () => {
+    const exportToCSV = async () => {
         if (selectedAds.length === 0) {
             notifications.warning('Please select at least one ad to export', {
                 title: 'No Ads Selected'
@@ -394,50 +817,49 @@ export const AdsBuilder = () => {
 
         const adsToExport = generatedAds.filter(ad => selectedAds.includes(ad.id));
         
-        const headers = [
-            'Ad Group',
-            'Ad Type',
-            'Headline 1',
-            'Headline 2',
-            'Headline 3',
-            'Headline 4',
-            'Headline 5',
-            'Description 1',
-            'Description 2',
-            'Path 1',
-            'Path 2',
-            'Final URL',
-            'Phone Number',
-            'Business Name'
-        ];
-
-        const rows = adsToExport.map(ad => [
-            ad.groupName,
-            ad.adType,
-            ad.headline1 || '',
-            ad.headline2 || '',
-            ad.headline3 || '',
-            ad.headline4 || '',
-            ad.headline5 || '',
-            ad.description1 || '',
-            ad.description2 || '',
-            ad.path1 || '',
-            ad.path2 || '',
-            ad.finalUrl || '',
-            ad.phoneNumber || '',
-            ad.businessName || ''
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `google-ads-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
+        try {
+            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+            const filename = `google-ads-${new Date().toISOString().split('T')[0]}.csv`;
+            
+            // Get default final URL from first ad
+            const defaultUrl = adsToExport[0]?.finalUrl || 'https://www.example.com';
+            
+            const result = await exportCSVWithValidation(
+                adsToExport,
+                filename,
+                'ads',
+                {
+                    campaignName: 'Ads Campaign',
+                    finalUrl: defaultUrl
+                }
+            );
+            
+            if (result.warnings && result.warnings.length > 0) {
+                notifications.warning(
+                    <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+                        {result.warnings.join('\n')}
+                    </div>,
+                    { 
+                        title: '⚠️  CSV Validation Warnings',
+                        description: 'Your ads will export, but consider fixing these warnings.',
+                        duration: 10000
+                    }
+                );
+            } else {
+                notifications.success(`Exported ${adsToExport.length} ad(s) to CSV`, {
+                    title: 'Export Complete'
+                });
+            }
+        } catch (error: any) {
+            console.error('Export error:', error);
+            notifications.error(
+                error?.message || 'An unexpected error occurred during export',
+                { 
+                    title: '❌ Export Failed',
+                    description: 'Please try again or contact support if the issue persists.'
+                }
+            );
+        }
     };
 
     const copyToClipboard = () => {
@@ -477,10 +899,26 @@ export const AdsBuilder = () => {
     const handleConfirmExtensions = () => {
         if (!selectedAdForExtension) return;
 
-        const newExtensions: Extension[] = selectedExtensions.map(extType => {
-            const extId = crypto.randomUUID();
             const ad = generatedAds.find(a => a.id === selectedAdForExtension);
+        if (!ad) return;
+
+        // Get existing extension types to prevent duplicates
+        const existingExtensionTypes = (ad.extensions || []).map((ext: Extension) => ext.extensionType);
+        
+        // Filter out extension types that already exist
+        const newExtensionTypes = selectedExtensions.filter(extType => !existingExtensionTypes.includes(extType));
+        
+        if (newExtensionTypes.length === 0) {
+            notifications.warning('All selected extensions are already added to this ad', {
+                title: 'Extensions Already Added'
+            });
+            return;
+        }
+
             const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
+
+        const newExtensions: Extension[] = newExtensionTypes.map(extType => {
+            const extId = crypto.randomUUID();
 
             let extension: Extension = {
                 id: extId,
@@ -559,10 +997,11 @@ export const AdsBuilder = () => {
             return extension;
         });
 
-        setGeneratedAds(generatedAds.map(ad => 
-            ad.id === selectedAdForExtension 
-                ? { ...ad, extensions: newExtensions }
-                : ad
+        // Merge new extensions with existing ones
+        setGeneratedAds(generatedAds.map(a => 
+            a.id === selectedAdForExtension 
+                ? { ...a, extensions: [...(a.extensions || []), ...newExtensions] }
+                : a
         ));
 
         setShowExtensionDialog(false);
@@ -570,94 +1009,212 @@ export const AdsBuilder = () => {
         setSelectedExtensions([]);
     };
 
+    const handleRemoveExtension = (adId: string, extensionId: string) => {
+        setGeneratedAds(generatedAds.map(ad => 
+            ad.id === adId 
+                ? { ...ad, extensions: (ad.extensions || []).filter((ext: Extension) => ext.id !== extensionId) }
+                : ad
+        ));
+    };
+
+    // Filter and search logic
+    const filteredAds = useMemo(() => {
+        return generatedAds.filter(ad => {
+            // Search filter
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                const matchesSearch = 
+                    ad.headline1?.toLowerCase().includes(query) ||
+                    ad.headline2?.toLowerCase().includes(query) ||
+                    ad.headline3?.toLowerCase().includes(query) ||
+                    ad.description1?.toLowerCase().includes(query) ||
+                    ad.description2?.toLowerCase().includes(query) ||
+                    ad.groupName.toLowerCase().includes(query);
+                if (!matchesSearch) return false;
+            }
+            
+            // Ad type filter
+            if (filterAdType !== 'all' && ad.adType !== filterAdType) return false;
+            
+            // Group filter
+            if (filterGroup !== 'all' && ad.groupName !== filterGroup) return false;
+            
+            return true;
+        });
+    }, [generatedAds, searchQuery, filterAdType, filterGroup]);
+
+    // Statistics
+    const stats = useMemo(() => {
+        const adTypes = generatedAds.reduce((acc, ad) => {
+            acc[ad.adType] = (acc[ad.adType] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        const groups = [...new Set(generatedAds.map(ad => ad.groupName))];
+        
+        return {
+            total: generatedAds.length,
+            rsa: adTypes['RSA'] || 0,
+            dki: adTypes['DKI'] || 0,
+            callOnly: adTypes['CallOnly'] || 0,
+            groups: groups.length,
+            selected: selectedAds.length
+        };
+    }, [generatedAds, selectedAds]);
+
+    // Unique groups for filter dropdown
+    const uniqueGroups = useMemo(() => {
+        return [...new Set(generatedAds.map(ad => ad.groupName))];
+    }, [generatedAds]);
+
     return (
         <>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-6 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-5">
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-5">
                 <div className="flex items-center justify-between">
-                <div>
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                    <div>
+                        <h1 className="text-2xl font-bold theme-gradient-text mb-1">
                             Ads Builder
-                    </h1>
-                        <p className="text-slate-600 text-sm">
-                        Generate high-converting Google Ads with AI optimization for maximum ad rank
-                    </p>
+                        </h1>
+                        <p className="text-slate-600 text-xs">
+                            Generate high-converting Google Ads with AI optimization
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                {/* Left Panel: Configuration */}
-                <div className="space-y-6">
-                    {/* Mode Selection */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 p-6 border-b border-slate-200/50">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Settings className="h-5 w-5 text-indigo-600" />
-                            1. Choose Your Mode
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Select single or multiple keyword groups
-                                </CardDescription>
-                            </CardHeader>
-                        </div>
-                        <CardContent className="p-6">
-                        <Tabs value={mode} onValueChange={(v) => setMode(v as 'single' | 'multiple')}>
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="single">Single Group</TabsTrigger>
-                                <TabsTrigger value="multiple">Multiple Groups</TabsTrigger>
-                            </TabsList>
-                            
-                            <TabsContent value="single" className="mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column: Single Form */}
+                <div className="space-y-5">
+                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold text-slate-900">
+                                Create Your Ads
+                            </CardTitle>
+                            <CardDescription className="text-sm text-slate-600">
+                                Fill in the details below to generate your Google Ads
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            {/* URL Input */}
+                            <div>
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2.5">
+                                    URL
+                                </Label>
+                                <Input
+                                    type="url"
+                                    placeholder="https://www.example.com"
+                                    value={baseUrl}
+                                    onChange={(e) => {
+                                        setBaseUrl(e.target.value);
+                                        if (urlError) setUrlError('');
+                                    }}
+                                    onBlur={(e) => {
+                                        const urlValue = e.target.value.trim();
+                                        if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                                            setUrlError('Please enter a valid URL starting with http:// or https://');
+                                        } else {
+                                            setUrlError('');
+                                        }
+                                    }}
+                                    className={`bg-white border-slate-300 focus:border-indigo-500 h-10 text-sm ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                                />
+                                {urlError && (
+                                    <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {urlError}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Ad Type Dropdown */}
+                            <div>
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2.5">
+                                    Type of Ads
+                                </Label>
+                                <Select value={selectedAdType} onValueChange={setSelectedAdType}>
+                                    <SelectTrigger className="w-full h-10 text-sm">
+                                        <SelectValue placeholder="Select ad type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="rsa">Responsive Search Ads</SelectItem>
+                                        <SelectItem value="dki">Dynamic Keyword Insertion (DKI)</SelectItem>
+                                        <SelectItem value="callOnly">Call-Only Ads</SelectItem>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Mode Selection */}
+                            <div>
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2.5">
+                                    Choose Your Mode
+                                </Label>
+                                <div className="flex items-center gap-4">
+                                    <Button
+                                        variant={mode === 'single' ? 'default' : 'outline'}
+                                        onClick={() => setMode('single')}
+                                        size="sm"
+                                        className={`flex-1 ${mode === 'single' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+                                    >
+                                        Single Ad Group
+                                    </Button>
+                                    <Button
+                                        variant={mode === 'multiple' ? 'default' : 'outline'}
+                                        onClick={() => setMode('multiple')}
+                                        size="sm"
+                                        className={`flex-1 ${mode === 'multiple' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+                                    >
+                                        Multiple Ad Groups
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Keywords Input */}
+                            {mode === 'single' ? (
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Enter 3-4 Keywords (comma-separated)
-                                    </label>
+                                    <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Enter Keywords (comma-separated)
+                                    </Label>
                                     <Textarea
-                                        placeholder="airline number, contact airline, delta phone number, customer service"
+                                        placeholder="e.g., airline number, contact airline, delta phone number, customer service"
                                         value={singleKeywords}
                                         onChange={(e) => setSingleKeywords(e.target.value)}
-                                        className="min-h-[100px]"
+                                        className="min-h-[120px] border-slate-300 text-sm"
                                     />
-                                    <p className="text-xs text-slate-500 mt-2">
-                                        AI will generate optimized ads for these keywords
-                                    </p>
                                 </div>
-                            </TabsContent>
-                            
-                            <TabsContent value="multiple" className="mt-4">
-                                <div className="space-y-4">
-                                    <p className="text-sm text-slate-600 mb-3">
-                                        Create ads for multiple keyword groups at once
-                                    </p>
-                                    
-                                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                                        {adGroups.map((group, index) => (
-                                            <div key={group.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                                                <div className="flex items-center justify-between mb-3">
+                            ) : (
+                                <div className="space-y-3">
+                                    <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Ad Groups & Keywords
+                                    </Label>
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                        {adGroups.map((group) => (
+                                            <div key={group.id} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                                                <div className="flex items-center justify-between mb-2">
                                                     <Input
                                                         value={group.name}
                                                         onChange={(e) => updateAdGroup(group.id, 'name', e.target.value)}
-                                                        className="font-semibold max-w-[200px]"
+                                                        placeholder="Ad Group Name"
+                                                        className="font-semibold max-w-[200px] h-8 text-xs"
                                                     />
                                                     {adGroups.length > 1 && (
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => removeAdGroup(group.id)}
-                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 w-7 p-0"
                                                         >
-                                                            <Trash2 className="w-4 h-4" />
+                                                            <Trash2 className="w-3 h-3" />
                                                         </Button>
                                                     )}
                                                 </div>
                                                 <Textarea
-                                                    placeholder="Enter keywords for this group (comma-separated)"
+                                                    placeholder="Enter keywords (comma-separated)"
                                                     value={group.keywords}
                                                     onChange={(e) => updateAdGroup(group.id, 'keywords', e.target.value)}
-                                                    className="min-h-[80px]"
+                                                    className="min-h-[80px] text-xs"
                                                 />
                                             </div>
                                         ))}
@@ -666,279 +1223,170 @@ export const AdsBuilder = () => {
                                     <Button
                                         onClick={addAdGroup}
                                         variant="outline"
-                                        className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                                        size="sm"
+                                        className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50 text-xs"
                                     >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Add Another Group
+                                        <Plus className="w-3 h-3 mr-1" />
+                                        Add Ad Group
                                     </Button>
                                 </div>
-                            </TabsContent>
-                        </Tabs>
+                            )}
+
+                            {/* Generate Button */}
+                            <Button
+                                onClick={generateAds}
+                                disabled={isGenerating}
+                                className="w-full theme-button-primary py-3 text-base font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                                        Generating Ads...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Zap className="w-4 h-4 mr-2" />
+                                        Generate Ads
+                                    </>
+                                )}
+                            </Button>
                         </CardContent>
                     </Card>
+                </div>
 
-                    {/* Base URL Configuration */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 p-6 border-b border-slate-200/50">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Globe className="h-5 w-5 text-emerald-600" />
-                            Base URL Configuration
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Set the landing page URL for all ads
-                                </CardDescription>
-                            </CardHeader>
-                        </div>
-                        <CardContent className="p-6">
-                        <div>
-                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
-                                Landing Page URL
-                                </Label>
-                            <Input
-                                type="url"
-                                placeholder="https://www.example.com"
-                                value={baseUrl}
-                                onChange={(e) => {
-                                    setBaseUrl(e.target.value);
-                                    // Clear validation error when user starts typing
-                                    if (urlError) setUrlError('');
-                                }}
-                                onBlur={(e) => {
-                                    // Bug_27: Validate URL on blur
-                                    const urlValue = e.target.value.trim();
-                                    if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
-                                        setUrlError('Please enter a valid URL starting with http:// or https://');
-                                    } else {
-                                        setUrlError('');
-                                    }
-                                }}
-                                className={`bg-white border-slate-300 focus:border-indigo-500 ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
-                            />
-                            {urlError && (
-                                <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {urlError}
-                                </p>
-                            )}
-                            {!urlError && (
-                                <p className="text-xs text-slate-500 mt-2">
-                                    This URL will be used for all generated ads. You can edit individual ad URLs after generation.
-                                </p>
-                            )}
-                        </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Ad Type Configuration */}
-                    <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Zap className="h-5 w-5 text-blue-600" />
-                            2. Configure Ad Types & Quantity
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Select ad types and quantities (max 25 total)
-                                </CardDescription>
-                            </CardHeader>
-                        </div>
-                        <CardContent className="p-6">
-                            <div className="space-y-6">
-                                <div className="p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-lg border border-blue-200/50">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300 font-semibold">RSA</Badge>
-                                            <Label className="text-sm font-semibold text-slate-800">Responsive Search Ads</Label>
-                                        </div>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    max="25"
-                                    value={adConfig.rsaCount}
-                                    onChange={(e) => {
-                                        const value = parseInt(e.target.value) || 0;
-                                        const total = value + adConfig.dkiCount + adConfig.callOnlyCount;
-                                        if (total <= 25) {
-                                            setAdConfig({...adConfig, rsaCount: value});
-                                        } else {
-                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                title: 'Too Many Ads'
-                                            });
-                                        }
-                                    }}
-                                            className="w-20 text-center font-semibold border-blue-300 focus:border-blue-500"
-                                />
-                                    </div>
-                                    <p className="text-xs text-slate-600">
-                                    Multiple headlines and descriptions for testing
-                                </p>
-                            </div>
-
-                                <div className="p-4 bg-gradient-to-r from-purple-50/50 to-pink-50/50 rounded-lg border border-purple-200/50">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 font-semibold">DKI</Badge>
-                                            <Label className="text-sm font-semibold text-slate-800">Dynamic Keyword Insertion</Label>
-                                        </div>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    max="25"
-                                    value={adConfig.dkiCount}
-                                    onChange={(e) => {
-                                        const value = parseInt(e.target.value) || 0;
-                                        const total = adConfig.rsaCount + value + adConfig.callOnlyCount;
-                                        if (total <= 25) {
-                                            setAdConfig({...adConfig, dkiCount: value});
-                                        } else {
-                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                title: 'Too Many Ads'
-                                            });
-                                        }
-                                    }}
-                                            className="w-20 text-center font-semibold border-purple-300 focus:border-purple-500"
-                                />
-                                    </div>
-                                    <p className="text-xs text-slate-600">
-                                    Automatically inserts search keywords into ad text
-                                </p>
-                            </div>
-
-                                <div className="p-4 bg-gradient-to-r from-green-50/50 to-emerald-50/50 rounded-lg border border-green-200/50">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 font-semibold">Call</Badge>
-                                            <Label className="text-sm font-semibold text-slate-800">Call Only Ads</Label>
-                                        </div>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    max="25"
-                                    value={adConfig.callOnlyCount}
-                                    onChange={(e) => {
-                                        const value = parseInt(e.target.value) || 0;
-                                        const total = adConfig.rsaCount + adConfig.dkiCount + value;
-                                        if (total <= 25) {
-                                            setAdConfig({...adConfig, callOnlyCount: value});
-                                        } else {
-                                            notifications.warning(`Total ads cannot exceed 25. Current total would be ${total}. Please reduce other ad types first.`, {
-                                                title: 'Too Many Ads'
-                                            });
-                                        }
-                                    }}
-                                            className="w-20 text-center font-semibold border-green-300 focus:border-green-500"
-                                />
-                                    </div>
-                                    <p className="text-xs text-slate-600">
-                                    Mobile-only ads with click-to-call functionality
-                                </p>
-                            </div>
-                            
-                            {/* Total Ads Counter */}
-                                <div className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg border-2 border-indigo-200">
-                                <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-slate-700">Total Ads:</span>
-                                        <span className={`text-2xl font-bold ${(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 ? 'text-red-600' : 'text-indigo-600'}`}>
-                                        {adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount} / 25
-                                    </span>
+                {/* Right Column: Generated Ads Results */}
+                <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg overflow-hidden lg:sticky lg:top-6 h-[calc(100vh-8rem)] flex flex-col">
+                    <div className="bg-white p-3 border-b border-slate-300 flex-shrink-0">
+                        <div className="flex justify-between items-center mb-2">
+                            <CardTitle className="text-sm font-bold text-slate-900">
+                                Generated Ads
+                            </CardTitle>
+                            {generatedAds.length > 0 && (
+                                <div className="flex gap-1">
+                                    <Button
+                                        onClick={selectAll}
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-slate-300 h-7 text-xs px-2"
+                                    >
+                                        {selectedAds.length === generatedAds.length ? (
+                                            <><Square className="w-3 h-3 mr-1" /> All</>
+                                        ) : (
+                                            <><CheckSquare className="w-3 h-3 mr-1" /> All</>
+                                        )}
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="border-slate-300 h-7 text-xs px-2">
+                                                <Download className="w-3 h-3 mr-1" />
+                                                Export
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={exportToCSV} disabled={selectedAds.length === 0}>
+                                                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                                CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={copyToClipboard} disabled={selectedAds.length === 0}>
+                                                <Copy className="w-4 h-4 mr-2" />
+                                                Copy to Clipboard
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
-                                {(adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25 && (
-                                        <p className="text-xs text-red-600 mt-2 font-semibold">⚠️ Maximum limit exceeded. Please reduce quantities.</p>
-                                )}
-                            </div>
+                            )}
                         </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Generate Button */}
-                    <Button
-                        onClick={generateAds}
-                        disabled={isGenerating || (adConfig.rsaCount + adConfig.dkiCount + adConfig.callOnlyCount) > 25}
-                        className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-700 text-white py-7 text-lg font-semibold shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02]"
-                    >
-                        {isGenerating ? (
-                            <>
-                                <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                                Generating AI-Optimized Ads...
-                            </>
-                        ) : (
-                            <>
-                                <Zap className="w-5 h-5 mr-2" />
-                                Generate High-Performing Ads
-                            </>
-                        )}
-                    </Button>
-                </div>
-                </div>
-
-                {/* Right Panel: Generated Ads */}
-                <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl overflow-hidden h-fit lg:sticky lg:top-6">
-                    <div className="bg-gradient-to-r from-slate-500/10 via-indigo-500/10 to-purple-500/10 p-6 border-b border-slate-200/50">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                                    <Eye className="h-5 w-5 text-indigo-600" />
-                            3. Review & Export Ads
-                                </CardTitle>
-                                <CardDescription className="text-slate-600 mt-1">
-                                    Preview and manage your generated ads
-                                </CardDescription>
-                            </div>
+                        
+                        {/* Compact Statistics */}
                         {generatedAds.length > 0 && (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={selectAll}
-                                    variant="outline"
-                                    size="sm"
-                                        className="border-slate-300"
-                                >
-                                    {selectedAds.length === generatedAds.length ? (
-                                        <><Square className="w-4 h-4 mr-1" /> Deselect All</>
-                                    ) : (
-                                        <><CheckSquare className="w-4 h-4 mr-1" /> Select All</>
+                            <div className="grid grid-cols-5 gap-1 mb-2">
+                                <div className="bg-blue-50 border border-blue-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-blue-600 font-medium">Total</div>
+                                    <div className="text-sm font-bold text-blue-700">{stats.total}</div>
+                                </div>
+                                <div className="bg-indigo-50 border border-indigo-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-indigo-600 font-medium">RSA</div>
+                                    <div className="text-sm font-bold text-indigo-700">{stats.rsa}</div>
+                                </div>
+                                <div className="bg-purple-50 border border-purple-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-purple-600 font-medium">DKI</div>
+                                    <div className="text-sm font-bold text-purple-700">{stats.dki}</div>
+                                </div>
+                                <div className="bg-green-50 border border-green-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-green-600 font-medium">Call</div>
+                                    <div className="text-sm font-bold text-green-700">{stats.callOnly}</div>
+                                </div>
+                                <div className="bg-orange-50 border border-orange-200 rounded p-1.5 text-center">
+                                    <div className="text-[10px] text-orange-600 font-medium">Sel</div>
+                                    <div className="text-sm font-bold text-orange-700">{stats.selected}</div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Compact Search & Filters */}
+                        {generatedAds.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                                <div className="flex-1 min-w-[120px] relative">
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                                    <Input
+                                        placeholder="Search..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-7 h-7 text-xs"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
                                     )}
-                                </Button>
-                                <Button
-                                    onClick={exportToCSV}
-                                    disabled={selectedAds.length === 0}
-                                    variant="default"
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700"
-                                >
-                                    <Download className="w-4 h-4 mr-1" />
-                                    CSV
-                                </Button>
-                                <Button
-                                    onClick={copyToClipboard}
-                                    disabled={selectedAds.length === 0}
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    <Copy className="w-4 h-4 mr-1" />
-                                    Copy
-                                </Button>
+                                </div>
+                                <Select value={filterAdType} onValueChange={setFilterAdType}>
+                                    <SelectTrigger className="w-[100px] h-7 text-xs">
+                                        <SelectValue placeholder="Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Types</SelectItem>
+                                        <SelectItem value="RSA">RSA</SelectItem>
+                                        <SelectItem value="DKI">DKI</SelectItem>
+                                        <SelectItem value="CallOnly">Call Only</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {uniqueGroups.length > 0 && (
+                                    <Select value={filterGroup} onValueChange={setFilterGroup}>
+                                        <SelectTrigger className="w-[100px] h-7 text-xs">
+                                            <SelectValue placeholder="Group" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Groups</SelectItem>
+                                            {uniqueGroups.map(group => (
+                                                <SelectItem key={group} value={group}>{group}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
                         )}
                     </div>
-                    </div>
-                    <CardContent className="p-6">
-                    {generatedAds.length > 0 && (
-                            <div className="mb-6 px-4 py-3 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-indigo-50/50 rounded-lg border border-indigo-200/50">
-                                <p className="text-sm font-bold text-slate-800">
-                                {generatedAds.length} Ads Generated
-                                {selectedAds.length > 0 && (
-                                        <span className="ml-2 text-indigo-600 font-semibold">
-                                        ({selectedAds.length} selected)
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-                    )}
+                    <CardContent className="p-3 flex-1 overflow-hidden flex flex-col">
+                        {generatedAds.length > 0 && (
+                            <div className="mb-2 px-2 py-1 bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-indigo-50/50 rounded border border-indigo-200/50 text-center flex-shrink-0">
+                                <p className="text-xs font-semibold text-slate-800">
+                                    Showing {filteredAds.length} of {generatedAds.length} ads
+                                    {selectedAds.length > 0 && (
+                                        <span className="ml-2 text-indigo-600">
+                                            • {selectedAds.length} selected
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        )}
 
-                        <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
-                        {generatedAds.length > 0 ? (
-                                generatedAds.map((ad) => {
+                        <div className="space-y-2 flex-1 overflow-y-auto pr-1">
+                        {filteredAds.length > 0 ? (
+                                filteredAds.map((ad) => {
                                     // Convert GeneratedAd to LiveAdPreview format
                                     const previewAd = {
                                         id: parseInt(ad.id) || Date.now(),
@@ -961,55 +1409,58 @@ export const AdsBuilder = () => {
                                     return (
                                 <div
                                     key={ad.id}
-                                            className={`border-2 rounded-xl p-4 transition-all ${
+                                    className={`border rounded-lg p-2.5 transition-all ${
                                         selectedAds.includes(ad.id)
-                                                    ? 'border-indigo-400 bg-indigo-50/50 shadow-md'
-                                                    : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
+                                            ? 'border-indigo-400 bg-indigo-50/50 shadow-sm'
+                                            : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm'
                                     }`}
                                 >
-                                            <div className="flex items-start gap-3 mb-3">
+                                    <div className="flex items-start gap-2 mb-2">
                                         <Checkbox
                                             checked={selectedAds.includes(ad.id)}
                                             onCheckedChange={() => toggleAdSelection(ad.id)}
-                                            className="mt-1"
+                                            className="mt-0.5"
                                         />
-                                        <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-3">
-                                                        <Badge variant="outline" className="text-xs font-semibold bg-slate-100">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                                                <Badge variant="outline" className="text-[10px] font-semibold bg-slate-100 px-1.5 py-0.5">
                                                     {ad.groupName}
                                                 </Badge>
                                                 <Badge 
                                                     variant="outline"
-                                                    className={
-                                                                ad.adType === 'RSA' ? 'bg-blue-100 text-blue-700 border-blue-300 font-semibold' :
-                                                                ad.adType === 'DKI' ? 'bg-purple-100 text-purple-700 border-purple-300 font-semibold' :
-                                                                'bg-green-100 text-green-700 border-green-300 font-semibold'
-                                                    }
+                                                    className={`text-[10px] font-semibold px-1.5 py-0.5 ${
+                                                        ad.adType === 'RSA' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                                        ad.adType === 'DKI' ? 'bg-purple-100 text-purple-700 border-purple-300' :
+                                                        'bg-green-100 text-green-700 border-green-300'
+                                                    }`}
                                                 >
                                                     {ad.adType}
                                                 </Badge>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleAddExtensions(ad.id);
-                                                            }}
-                                                            className="ml-auto text-xs h-7 border-purple-300 text-purple-700 hover:bg-purple-50"
-                                                        >
-                                                            <Plus className="w-3 h-3 mr-1" />
-                                                            Extensions
-                                                        </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAddExtensions(ad.id);
+                                                    }}
+                                                    className="ml-auto text-[10px] h-6 border-purple-300 text-purple-700 hover:bg-purple-50 px-2"
+                                                >
+                                                    <Plus className="w-2.5 h-2.5 mr-0.5" />
+                                                    Ext
+                                                </Button>
                                             </div>
 
                                                     {/* Live Ad Preview */}
-                                                    <LiveAdPreview ad={previewAd} />
+                                                    <LiveAdPreview 
+                                                        ad={previewAd} 
+                                                        onRemoveExtension={(extensionId) => handleRemoveExtension(ad.id, extensionId)}
+                                                    />
 
-                                                    {/* Editable URL for RSA/DKI */}
-                                                    {(ad.adType === 'RSA' || ad.adType === 'DKI') && (
-                                                        <div className="mt-3 pt-3 border-t border-slate-200">
-                                                            <Label className="text-xs font-semibold text-slate-700 mb-1 block">Final URL</Label>
-                                                            <div className="flex items-center gap-2">
+                                            {/* Editable URL for RSA/DKI */}
+                                            {(ad.adType === 'RSA' || ad.adType === 'DKI') && (
+                                                <div className="mt-2 pt-2 border-t border-slate-200">
+                                                    <Label className="text-[10px] font-semibold text-slate-700 mb-1 block">Final URL</Label>
+                                                    <div className="flex items-center gap-1">
                                                         <Input
                                                             type="url"
                                                             value={ad.finalUrl || baseUrl}
@@ -1018,11 +1469,11 @@ export const AdsBuilder = () => {
                                                                     a.id === ad.id ? { ...a, finalUrl: e.target.value } : a
                                                                 ));
                                                             }}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="text-xs h-8 text-green-700 border-green-200 focus:border-green-400 flex-1"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="text-[10px] h-6 text-green-700 border-green-200 focus:border-green-400 flex-1"
                                                             placeholder="Enter URL"
                                                         />
-                                                        <span className="text-xs text-slate-500 whitespace-nowrap">/{ad.path1}/{ad.path2}</span>
+                                                        <span className="text-[10px] text-slate-500 whitespace-nowrap">/{ad.path1}/{ad.path2}</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -1031,15 +1482,34 @@ export const AdsBuilder = () => {
                                 </div>
                                     );
                                 })
-                        ) : (
-                            <div className="flex items-center justify-center h-[400px]">
+                        ) : generatedAds.length > 0 ? (
+                            <div className="flex items-center justify-center h-full">
                                 <div className="text-center">
-                                        <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
-                                            <Sparkles className="w-10 h-10 text-indigo-400" />
-                                        </div>
-                                        <p className="text-slate-600 font-medium mb-1">No ads generated yet</p>
-                                        <p className="text-sm text-slate-500">
-                                        Configure your settings and click "Generate" to create optimized ads
+                                    <Filter className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                                    <p className="text-xs text-slate-600 font-medium mb-1">No ads match your filters</p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setFilterAdType('all');
+                                            setFilterGroup('all');
+                                        }}
+                                        className="mt-2 h-7 text-xs"
+                                    >
+                                        Clear Filters
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center h-full">
+                                <div className="text-center">
+                                    <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+                                        <Sparkles className="w-6 h-6 text-indigo-400" />
+                                    </div>
+                                    <p className="text-xs text-slate-600 font-medium mb-1">No ads generated yet</p>
+                                    <p className="text-[10px] text-slate-500">
+                                        Configure settings and click "Generate"
                                     </p>
                                 </div>
                             </div>
@@ -1048,9 +1518,10 @@ export const AdsBuilder = () => {
                     </CardContent>
                 </Card>
             </div>
+        </div>
 
-            {/* Extension Selection Dialog */}
-            <Dialog open={showExtensionDialog} onOpenChange={setShowExtensionDialog}>
+        {/* Extension Selection Dialog */}
+        <Dialog open={showExtensionDialog} onOpenChange={setShowExtensionDialog}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
@@ -1065,39 +1536,48 @@ export const AdsBuilder = () => {
                         {extensionTypes.map((ext) => {
                             const IconComponent = ext.icon;
                             const isSelected = selectedExtensions.includes(ext.id);
+                            const ad = generatedAds.find(a => a.id === selectedAdForExtension);
+                            const alreadyAdded = (ad?.extensions || []).some((e: Extension) => e.extensionType === ext.id);
                             return (
                                 <div
                                     key={ext.id}
                                     onClick={() => {
+                                        if (!alreadyAdded) {
                                         setSelectedExtensions(prev =>
                                             prev.includes(ext.id)
                                                 ? prev.filter(e => e !== ext.id)
                                                 : [...prev, ext.id]
                                         );
+                                        }
                                     }}
-                                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                        isSelected
-                                            ? (ext.color === 'purple' ? 'border-purple-500 bg-purple-50' :
-                                               ext.color === 'blue' ? 'border-blue-500 bg-blue-50' :
-                                               ext.color === 'green' ? 'border-green-500 bg-green-50' :
-                                               ext.color === 'indigo' ? 'border-indigo-500 bg-indigo-50' :
-                                               ext.color === 'emerald' ? 'border-emerald-500 bg-emerald-50' :
-                                               ext.color === 'red' ? 'border-red-500 bg-red-50' :
-                                               ext.color === 'orange' ? 'border-orange-500 bg-orange-50' :
-                                               ext.color === 'pink' ? 'border-pink-500 bg-pink-50' :
-                                               ext.color === 'cyan' ? 'border-cyan-500 bg-cyan-50' :
-                                               'border-purple-500 bg-purple-50')
-                                            : 'border-slate-200 hover:border-indigo-300 bg-white'
+                                    className={`p-4 border-2 rounded-lg transition-all ${
+                                        alreadyAdded
+                                            ? 'border-slate-300 bg-slate-100 cursor-not-allowed opacity-60'
+                                            : isSelected
+                                                ? (ext.color === 'purple' ? 'border-purple-500 bg-purple-50 cursor-pointer' :
+                                                   ext.color === 'blue' ? 'border-blue-500 bg-blue-50 cursor-pointer' :
+                                                   ext.color === 'green' ? 'border-green-500 bg-green-50 cursor-pointer' :
+                                                   ext.color === 'indigo' ? 'border-indigo-500 bg-indigo-50 cursor-pointer' :
+                                                   ext.color === 'emerald' ? 'border-emerald-500 bg-emerald-50 cursor-pointer' :
+                                                   ext.color === 'red' ? 'border-red-500 bg-red-50 cursor-pointer' :
+                                                   ext.color === 'orange' ? 'border-orange-500 bg-orange-50 cursor-pointer' :
+                                                   ext.color === 'pink' ? 'border-pink-500 bg-pink-50 cursor-pointer' :
+                                                   ext.color === 'cyan' ? 'border-cyan-500 bg-cyan-50 cursor-pointer' :
+                                                   'border-purple-500 bg-purple-50 cursor-pointer')
+                                                : 'border-slate-200 hover:border-indigo-300 bg-white cursor-pointer'
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
                                         <Checkbox
                                             checked={isSelected}
+                                            disabled={alreadyAdded}
                                             onCheckedChange={(checked) => {
+                                                if (!alreadyAdded) {
                                                 if (checked) {
                                                     setSelectedExtensions([...selectedExtensions, ext.id]);
                                                 } else {
                                                     setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
+                                                    }
                                                 }
                                             }}
                                         />
@@ -1116,6 +1596,11 @@ export const AdsBuilder = () => {
                                                     'text-purple-600'
                                                 }`} />
                                                 <div className="font-semibold text-slate-800">{ext.label}</div>
+                                                {alreadyAdded && (
+                                                    <Badge variant="outline" className="text-xs ml-auto bg-green-100 text-green-700 border-green-300">
+                                                        Already Added
+                                                    </Badge>
+                                                )}
             </div>
                                             <div className="text-sm text-slate-600">{ext.description}</div>
                                         </div>
@@ -1132,7 +1617,7 @@ export const AdsBuilder = () => {
                         }}>
                             Cancel
                         </Button>
-                        <Button onClick={handleConfirmExtensions} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <Button onClick={handleConfirmExtensions} className="theme-button-primary">
                             Add {selectedExtensions.length > 0 ? `${selectedExtensions.length} ` : ''}Extension{selectedExtensions.length !== 1 ? 's' : ''}
                         </Button>
                     </DialogFooter>

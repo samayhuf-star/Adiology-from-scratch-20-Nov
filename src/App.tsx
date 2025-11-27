@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight
 } from 'lucide-react';
+import { useTheme } from './contexts/ThemeContext';
+import { COLOR_CLASSES } from './utils/colorScheme';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,20 +17,17 @@ import { ErrorBoundary, FormErrorFallback, DataErrorFallback } from './component
 import { ErrorProvider, useErrorReporting } from './contexts/ErrorContext';
 import { CampaignBuilder } from './components/CampaignBuilder';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
-import { CSVValidator } from './components/CSVValidator';
-import { CSVValidator2 } from './components/CSVValidator2';
+import { CSVValidator3 } from './components/CSVValidator3';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
 import { AdsBuilder } from './components/AdsBuilder';
-import { HistoryPanel } from './components/HistoryPanel';
 import { BillingPanel } from './components/BillingPanel';
 import { SupportPanel } from './components/SupportPanel';
 import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
-import { HomePage } from './components/HomePage';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
 import { PaymentPage } from './components/PaymentPage';
@@ -37,28 +36,87 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
+import { Dashboard } from './components/Dashboard';
+import { WebsiteTemplates } from './components/WebsiteTemplates';
+import { HistoryPanel } from './components/HistoryPanel';
+import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
-import './utils/createUser'; // Auto-create test user
 
-type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
+type AppView = 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
 const App = () => {
-  const [appView, setAppView] = useState<AppView>('home');
+  const { theme } = useTheme();
+  const [appView, setAppView] = useState<AppView>('auth');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [historyData, setHistoryData] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+
+  // Valid tab IDs - used for route validation
+  const validTabIds = new Set([
+    'dashboard',
+    'campaign-presets',
+    'builder-2',
+    'campaign-history',
+    'website-templates',
+    'keyword-planner',
+    'keyword-mixer',
+    'ads-builder',
+    'negative-keywords',
+    'csv-validator-3',
+    'settings',
+    'billing',
+    'support',
+    'support-help'
+  ]);
+
+  // Safe setActiveTab wrapper that validates and redirects to dashboard if invalid
+  const setActiveTabSafe = (tabId: string) => {
+    if (validTabIds.has(tabId)) {
+      setActiveTab(tabId);
+    } else {
+      console.warn(`Invalid tab ID "${tabId}" - redirecting to dashboard`);
+      setActiveTab('dashboard');
+    }
+  };
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Campaign Created', message: 'Your campaign "Summer Sale" has been created successfully', time: '2 hours ago', read: false },
     { id: 2, title: 'Export Ready', message: 'Your CSV export is ready for download', time: '5 hours ago', read: false },
     { id: 3, title: 'Billing Update', message: 'Your subscription will renew on Dec 1, 2025', time: '1 day ago', read: true },
   ]);
+  // Bug_64: Search suggestions state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<{
+    name: string;
+    priceId: string;
+    amount: number;
+    isSubscription: boolean;
+  } | null>(null);
 
   const handleLoadHistory = (type: string, data: any) => {
+    // Map history types to actual tab IDs
+    const typeToTabMap: Record<string, string> = {
+      'campaign': 'builder-2',
+      'keyword-planner': 'keyword-planner',
+      'keyword-mixer': 'keyword-mixer',
+      'negative-keywords': 'negative-keywords'
+    };
+    
+    const targetTab = typeToTabMap[type] || type;
     setHistoryData(data);
-    setActiveTab(type);
+    setActiveTabSafe(targetTab);
+    
+    // Show success notification
+    notifications.success('History item restored successfully', {
+      title: 'Restored',
+      description: 'Your saved item has been loaded and is ready to use.'
+    });
   };
 
   const handleMarkNotificationAsRead = (id: number) => {
@@ -72,18 +130,18 @@ const App = () => {
     // Redirect based on notification type
     const title = notification.title.toLowerCase();
     if (title.includes('campaign')) {
-      setActiveTab('campaign-builder');
+      setActiveTabSafe('builder-2');
     } else if (title.includes('export') || title.includes('csv')) {
-      setActiveTab('csv-validator');
+      setActiveTabSafe('csv-validator-3');
     } else if (title.includes('billing') || title.includes('subscription')) {
-      setActiveTab('settings');
+      setActiveTabSafe('settings');
       // Optionally open billing tab in settings
       const settingsPanel = document.querySelector('[data-settings-tab="billing"]');
       if (settingsPanel) {
         (settingsPanel as HTMLElement).click();
       }
     } else if (title.includes('keyword')) {
-      setActiveTab('keyword-planner');
+      setActiveTabSafe('keyword-planner');
     }
   };
 
@@ -91,7 +149,7 @@ const App = () => {
     // Navigate to a notifications view or show all notifications
     // For now, we'll just scroll to show all notifications in the dropdown
     // In a full implementation, this could open a dedicated notifications panel
-    setActiveTab('settings');
+    setActiveTabSafe('settings');
     // You could also create a dedicated notifications tab/page
   };
 
@@ -101,11 +159,30 @@ const App = () => {
 
   const handleLogout = async () => {
     if (confirm('Are you sure you want to logout?')) {
-      await signOut();
-      setUser(null);
-      window.history.pushState({}, '', '/');
-      setAppView('home');
+      try {
+        // Bug_62, Bug_76: Ensure proper logout
+        await signOut();
+        // Clear user state
+        setUser(null);
+        // Clear any cached data
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+        // Redirect to auth
+        window.history.pushState({}, '', '/');
+      setAppView('auth');
+      setAuthMode('login');
       setActiveTab('dashboard');
+        // Force page reload to clear all state
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Even if signOut fails, clear local state and redirect
+        setUser(null);
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+        setAppView('auth');
+        setAuthMode('login');
+      }
     }
   };
 
@@ -147,165 +224,297 @@ const App = () => {
     setFavicon();
   }, []);
 
-
   // Initialize auth state and listen for changes
   useEffect(() => {
+    let isMounted = true;
+    let profileFetchInProgress = false;
+    let lastProcessedUserId: string | null = null;
+    let authChangeTimeout: NodeJS.Timeout | null = null;
+    
     // Check initial session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session?.user) {
-          const userProfile = await getCurrentUserProfile();
-          setUser(userProfile);
-        } else {
+        if (session?.user && isMounted) {
+          lastProcessedUserId = session.user.id;
+          try {
+            const userProfile = await getCurrentUserProfile();
+            if (isMounted && lastProcessedUserId === session.user.id) {
+              setUser(userProfile);
+            }
+          } catch (error) {
+            console.error('Error fetching user profile during init:', error);
+            if (isMounted && lastProcessedUserId === session.user.id) {
+              // Set minimal user on error
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+                role: 'user',
+                subscription_plan: 'free',
+                subscription_status: 'active',
+              });
+            }
+          }
+        } else if (isMounted) {
           setUser(null);
+          lastProcessedUserId = null;
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+          lastProcessedUserId = null;
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeAuth();
 
-    // Listen for auth state changes
+    // Listen for auth state changes with debouncing and duplicate prevention
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const userProfile = await getCurrentUserProfile();
-        setUser(userProfile);
-        
-        // If user just signed in and we're on auth view, navigate to user view
-        if (event === 'SIGNED_IN' && appView === 'auth') {
-          setAppView('user');
-        }
-      } else {
-        setUser(null);
-        // If user signed out and we're on user view, go to home
-        if (event === 'SIGNED_OUT' && appView === 'user') {
-          setAppView('home');
-        }
+      // Clear any pending auth change processing
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
       }
 
-      // Handle password recovery
-      if (event === 'PASSWORD_RECOVERY') {
-        setAppView('reset-password');
-      }
+      // Debounce auth state changes to prevent rapid-fire updates
+      authChangeTimeout = setTimeout(async () => {
+        if (!isMounted) return;
 
-      // Handle email verification
-      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
-        // User just verified email, redirect to pricing/home
-        if (window.location.pathname.includes('/verify-email')) {
-          window.history.pushState({}, '', '/');
-          setAppView('home');
+        // Prevent multiple simultaneous profile fetches
+        if (profileFetchInProgress) {
+          return;
         }
-      }
+
+        const currentUserId = session?.user?.id || null;
+
+        // Skip if we're already processing this same user
+        if (currentUserId === lastProcessedUserId && currentUserId !== null) {
+          return;
+        }
+
+        if (session?.user && isMounted) {
+          // Update last processed user ID immediately to prevent duplicate processing
+          lastProcessedUserId = session.user.id;
+          profileFetchInProgress = true;
+          
+          // Set minimal user immediately to avoid UI flicker
+          const minimalUser = {
+            id: session.user.id,
+            email: session.user.email || '',
+            full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+            role: 'user',
+            subscription_plan: 'free',
+            subscription_status: 'active',
+          };
+          
+          // Only update if user actually changed
+          setUser(prevUser => {
+            if (prevUser?.id === minimalUser.id) {
+              // Same user, don't update unless we have more complete data
+              return prevUser;
+            }
+            return minimalUser;
+          });
+          
+          // Fetch full profile in background (non-blocking)
+          getCurrentUserProfile()
+            .then((userProfile) => {
+              profileFetchInProgress = false;
+              if (userProfile && isMounted && lastProcessedUserId === session.user.id) {
+                setUser(prevUser => {
+                  // Only update if still the same user and we got new data
+                  if (prevUser?.id === userProfile.id) {
+                    // Only update if the new profile has more complete data
+                    return userProfile;
+                  }
+                  return prevUser;
+                });
+              }
+            })
+            .catch((error) => {
+              profileFetchInProgress = false;
+              // Silently handle - minimal user already set
+              // Only log if it's not a permission error
+              if (error?.code !== 'PGRST205') {
+                console.warn('Profile fetch failed in auth listener (non-critical):', error?.code || error?.message);
+              }
+              // Keep using minimal user - already set above
+            });
+        } else if (isMounted) {
+          lastProcessedUserId = null;
+          setUser(prevUser => {
+            // Only update if we actually had a user before
+            if (prevUser) {
+              return null;
+            }
+            return prevUser;
+          });
+          // If user signed out and we're on user view, go to auth
+          if (event === 'SIGNED_OUT') {
+            // Use setTimeout to avoid state update during render
+            setTimeout(() => {
+              if (isMounted) {
+                setAppView('auth');
+                setAuthMode('login');
+              }
+            }, 0);
+          }
+        }
+
+        // Handle password recovery
+        if (event === 'PASSWORD_RECOVERY' && isMounted) {
+          setTimeout(() => {
+            if (isMounted) {
+              setAppView('reset-password');
+            }
+          }, 0);
+        }
+
+        // Handle email verification
+        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && isMounted) {
+          // User just verified email, redirect to auth
+          if (window.location.pathname.includes('/verify-email')) {
+            setTimeout(() => {
+              if (isMounted) {
+                window.history.pushState({}, '', '/');
+                setAppView('auth');
+                setAuthMode('login');
+              }
+            }, 0);
+          }
+        }
+      }, 100); // Debounce by 100ms to prevent rapid-fire updates
     });
 
     return () => {
+      isMounted = false;
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
+      }
       subscription.unsubscribe();
     };
   }, []);
 
-  // Check URL path and authentication on mount
+  // Validate activeTab and redirect to dashboard if invalid
   useEffect(() => {
-    if (loading) return; // Wait for auth to initialize
+    if (!validTabIds.has(activeTab)) {
+      console.warn(`Invalid activeTab "${activeTab}" - redirecting to dashboard`);
+      setActiveTab('dashboard');
+    }
+  }, [activeTab]);
 
+
+  // Handle route/view state when auth or URL changes
+  useEffect(() => {
+    if (loading) return;
+
+    let isActive = true;
     const path = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
-    
-    // Check if user is accessing /reset-password route
-    if (path === '/reset-password' || path.startsWith('/reset-password')) {
-      setAppView('reset-password');
-      return;
-    }
-    
-    // Check if user is accessing /payment-success route
-    if (path === '/payment-success' || path.startsWith('/payment-success')) {
-      const planName = urlParams.get('plan') || 'Selected Plan';
-      const amountParam = urlParams.get('amount') || '0.00';
-      const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
-      const isSubscription = urlParams.get('subscription') === 'true';
-      
-      setSelectedPlan({
-        name: planName,
-        priceId: urlParams.get('priceId') || '',
-        amount,
-        isSubscription
-      });
-      setAppView('payment-success');
-      return;
-    }
-    
-    // Check if user is accessing /payment route
-    if (path === '/payment' || path.startsWith('/payment')) {
+    const bypassKey = urlParams.get('bypass');
+
+    const setView = (next: AppView) => {
+      setAppView(prev => (prev === next ? prev : next));
+    };
+
+    const applyPlanFromParams = () => {
       const planName = urlParams.get('plan') || 'Lifetime Unlimited';
       const priceId = urlParams.get('priceId') || '';
-      const amount = parseFloat(urlParams.get('amount') || '199');
+      const amountParam = urlParams.get('amount') || '199';
+      const amount = parseFloat(amountParam.replace('$', '').replace('/month', ''));
       const isSubscription = urlParams.get('subscription') === 'true';
-      
-      // Check if user is logged in
-      if (!user) {
-        // Redirect to signup
-        window.history.pushState({}, '', '/');
-        setAppView('auth');
-        return;
-      }
-      
       setSelectedPlan({
         name: planName,
         priceId,
         amount,
         isSubscription
       });
-      setAppView('payment');
-      return;
-    }
-    
-    // Check if user is accessing /verify-email route
-    if (path === '/verify-email' || path.startsWith('/verify-email')) {
-      setAppView('verify-email');
-      return;
-    }
-    
-    // Check if user is accessing /superadmin route
-    if (path === '/superadmin' || path.startsWith('/superadmin/')) {
-      if (user) {
-        const checkSuperAdmin = async () => {
-          const isAdmin = await isSuperAdmin();
-          if (isAdmin) {
-            setAppView('admin-landing');
-          } else {
-            setAppView('admin-login');
-          }
-        };
-        checkSuperAdmin();
-      } else {
-        setAppView('admin-login');
+    };
+
+    const handleSuperAdminRoute = () => {
+      if (!user) {
+        setView('admin-login');
+        return;
       }
+      (async () => {
+        try {
+          const isAdmin = await isSuperAdmin();
+          if (!isActive) return;
+          setView(isAdmin ? 'admin-landing' : 'admin-login');
+        } catch (error) {
+          if (!isActive) return;
+          setView('admin-login');
+        }
+      })();
+    };
+
+    const handleRoute = () => {
+      if (bypassKey === 'adiology2025dev' || bypassKey === 'samay2025') {
+        if (!user || user.id !== 'bypass-user-id') {
+          setUser({
+            id: 'bypass-user-id',
+            email: 'dev@adiology.com',
+            full_name: 'Developer Access',
+            role: 'user',
+            subscription_plan: 'free',
+            subscription_status: 'active',
+          });
+        }
+        setActiveTabSafe('dashboard');
+        setView('user');
+        window.history.replaceState({}, '', '/');
+      return;
+    }
+    
+      if (path.startsWith('/reset-password')) {
+        setView('reset-password');
+      return;
+    }
+    
+      if (path.startsWith('/verify-email')) {
+        setView('verify-email');
+            return;
+          }
+
+      if (path.startsWith('/payment-success')) {
+        applyPlanFromParams();
+        setView('payment-success');
       return;
     }
 
-    // Regular routes
-    if (user) {
-      // Check if superadmin
-      const checkSuperAdmin = async () => {
-        const isAdmin = await isSuperAdmin();
-        if (isAdmin) {
-          // Super admin accessing regular routes, redirect to superadmin
-          window.history.pushState({}, '', '/superadmin');
-          setAppView('admin-landing');
+      if (path.startsWith('/payment')) {
+        applyPlanFromParams();
+        if (user) {
+          setView('payment');
         } else {
-          setAppView('user');
+          setAuthMode('signup');
+          setView('auth');
         }
-      };
-      checkSuperAdmin();
-    } else {
-      setAppView('home');
-    }
-  }, [loading, user]);
+        return;
+      }
+
+      if (path.startsWith('/superadmin')) {
+        handleSuperAdminRoute();
+        return;
+      }
+
+      // Show auth/login page if no user, otherwise show user view
+      setView(user ? 'user' : 'auth');
+    };
+
+    handleRoute();
+
+    return () => {
+      isActive = false;
+    };
+  }, [loading, user?.id]);
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -326,24 +535,24 @@ const App = () => {
         if (user) {
           const isAdmin = await isSuperAdmin();
           if (isAdmin) {
-            setAppView('admin-landing');
+              setAppView('admin-landing');
           } else {
             setAppView('admin-login');
-          }
+            }
         } else {
-          setAppView('admin-login');
+        setAppView('admin-login');
         }
       } else {
         if (user) {
           const isAdmin = await isSuperAdmin();
           if (isAdmin) {
-            window.history.pushState({}, '', '/superadmin');
-            setAppView('admin-landing');
-          } else {
-            setAppView('user');
+              window.history.pushState({}, '', '/superadmin');
+              setAppView('admin-landing');
+            } else {
+              setAppView('user');
           }
         } else {
-          setAppView('home');
+          setAppView('auth');
         }
       }
     };
@@ -352,32 +561,293 @@ const App = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [user]);
 
+  // Ensure session exists when user view is requested
+  useEffect(() => {
+    if (!user && appView === 'user' && !loading) {
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+        setTimeout(() => {
+            setAppView('auth');
+            setAuthMode('login');
+          }, 1000);
+        }
+      };
+      const timeout = setTimeout(checkSession, 500);
+      return () => clearTimeout(timeout);
+          }
+    return undefined;
+  }, [user, appView, loading]);
+
+  // Homepage styling removed - no longer needed
+  // useEffect(() => {
+  //   if (appView === 'home') {
+  //     const originalBodyStyle = {
+  //       margin: document.body.style.margin,
+  //       padding: document.body.style.padding,
+  //       overflowX: document.body.style.overflowX,
+  //       backgroundColor: document.body.style.backgroundColor,
+  //     };
+  //     const originalHtmlStyle = {
+  //       margin: document.documentElement.style.margin,
+  //       padding: document.documentElement.style.padding,
+  //       overflowX: document.documentElement.style.overflowX,
+  //       backgroundColor: document.documentElement.style.backgroundColor,
+  //     };
+  //     const rootElement = document.getElementById('root');
+  //     const themeProvider = rootElement?.firstElementChild as HTMLElement;
+  //     
+  //     const originalRootStyle = rootElement ? {
+  //       margin: rootElement.style.margin,
+  //       padding: rootElement.style.padding,
+  //       width: rootElement.style.width,
+  //       maxWidth: rootElement.style.maxWidth,
+  //       position: rootElement.style.position,
+  //       left: rootElement.style.left,
+  //       right: rootElement.style.right,
+  //     } : null;
+  //     
+  //     const originalThemeProviderStyle = themeProvider ? {
+  //       margin: themeProvider.style.margin,
+  //       padding: themeProvider.style.padding,
+  //       width: themeProvider.style.width,
+  //       maxWidth: themeProvider.style.maxWidth,
+  //     } : null;
+  //     
+  //     // Set data attribute for CSS targeting
+  //     document.body.setAttribute('data-homepage', 'true');
+  //     document.documentElement.setAttribute('data-homepage', 'true');
+  //     
+  //     // Reset body and html
+  //     document.body.style.margin = '0';
+  //     document.body.style.padding = '0';
+  //     document.body.style.overflowX = 'hidden';
+  //     document.body.style.backgroundColor = 'transparent';
+  //     document.documentElement.style.margin = '0';
+  //     document.documentElement.style.padding = '0';
+  //     document.documentElement.style.overflowX = 'hidden';
+  //     document.documentElement.style.backgroundColor = 'transparent';
+  //     
+  //     // Reset root element
+  //     if (rootElement) {
+  //       rootElement.style.margin = '0';
+  //       rootElement.style.padding = '0';
+  //       rootElement.style.width = '100%';
+  //       rootElement.style.maxWidth = '100%';
+  //       rootElement.style.position = 'relative';
+  //       rootElement.style.left = '0';
+  //       rootElement.style.right = '0';
+  //     }
+  //
+  //     // Reset ThemeProvider wrapper (first child of root)
+  //     if (themeProvider) {
+  //       themeProvider.style.margin = '0';
+  //       themeProvider.style.padding = '0';
+  //       themeProvider.style.width = '100%';
+  //       themeProvider.style.maxWidth = '100%';
+  //     }
+  //     
+  //     return () => {
+  //       document.body.removeAttribute('data-homepage');
+  //       document.documentElement.removeAttribute('data-homepage');
+  //       document.body.style.margin = originalBodyStyle.margin;
+  //       document.body.style.padding = originalBodyStyle.padding;
+  //       document.body.style.overflowX = originalBodyStyle.overflowX;
+  //       document.body.style.backgroundColor = originalBodyStyle.backgroundColor;
+  //       document.documentElement.style.margin = originalHtmlStyle.margin;
+  //       document.documentElement.style.padding = originalHtmlStyle.padding;
+  //       document.documentElement.style.overflowX = originalHtmlStyle.overflowX;
+  //       document.documentElement.style.backgroundColor = originalHtmlStyle.backgroundColor;
+  //       if (rootElement && originalRootStyle) {
+  //         rootElement.style.margin = originalRootStyle.margin;
+  //         rootElement.style.padding = originalRootStyle.padding;
+  //         rootElement.style.width = originalRootStyle.width;
+  //         rootElement.style.maxWidth = originalRootStyle.maxWidth;
+  //         rootElement.style.position = originalRootStyle.position;
+  //         rootElement.style.left = originalRootStyle.left;
+  //         rootElement.style.right = originalRootStyle.right;
+  //       }
+  //       
+  //       if (themeProvider && originalThemeProviderStyle) {
+  //         themeProvider.style.margin = originalThemeProviderStyle.margin;
+  //         themeProvider.style.padding = originalThemeProviderStyle.padding;
+  //         themeProvider.style.width = originalThemeProviderStyle.width;
+  //         themeProvider.style.maxWidth = originalThemeProviderStyle.maxWidth;
+  //       }
+  //     };
+  //   }
+  // }, [appView]);
+
   // Function to handle plan selection
   const handleSelectPlan = async (planName: string, priceId: string, amount: number, isSubscription: boolean) => {
     // Check if user is logged in
     const authenticated = await isAuthenticated();
     if (!authenticated || !user) {
-      // User not logged in, redirect to signup
+      // User not logged in, redirect to signup and store plan selection
+      setSelectedPlan({ name: planName, priceId, amount, isSubscription });
+      setAuthMode('signup');
       setAppView('auth');
       return;
     }
 
-    // User is logged in, redirect to payment page
-    setSelectedPlan({ name: planName, priceId, amount, isSubscription });
-    window.history.pushState({}, '', `/payment?plan=${encodeURIComponent(planName)}&priceId=${encodeURIComponent(priceId)}&amount=${amount}&subscription=${isSubscription}`);
-    setAppView('payment');
+    // User is logged in, create Stripe checkout session
+    try {
+      const { createCheckoutSession } = await import('./utils/stripe');
+      await createCheckoutSession(priceId, planName, user.id, user.email);
+      // User will be redirected to Stripe, so we don't need to change appView
+    } catch (error) {
+      console.error('Checkout error:', error);
+      // Fallback to payment page if Stripe fails
+      setSelectedPlan({ name: planName, priceId, amount, isSubscription });
+      window.history.pushState({}, '', `/payment?plan=${encodeURIComponent(planName)}&priceId=${encodeURIComponent(priceId)}&amount=${amount}&subscription=${isSubscription}`);
+      setAppView('payment');
+    }
   };
 
-  // Render based on app view
-  if (appView === 'home') {
-    return (
-      <HomePage
-        onGetStarted={() => setAppView('auth')}
-        onLogin={() => setAppView('auth')}
-        onSelectPlan={handleSelectPlan}
-      />
+  // Default: User view (protected) navigation structure
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { 
+      id: 'campaign-builder', 
+      label: 'Campaign Builder', 
+      icon: Sparkles,
+      submenu: [
+        { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
+        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+        { id: 'campaign-history', label: 'Campaign History', icon: Clock },
+      ]
+    },
+    { id: 'website-templates', label: 'Website Templates', icon: Layout },
+    { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
+    { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
+    { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
+    { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
+    { id: 'csv-validator-3', label: 'CSV Validator V3', icon: FileCheck },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
+  ];
+
+  // Auto-expand parent menu if activeTab is a submenu item
+  useEffect(() => {
+    for (const item of menuItems) {
+      if (item.submenu && item.submenu.some(sub => sub.id === activeTab)) {
+        setExpandedMenus(prev => {
+          if (!prev.has(item.id)) {
+            const newSet = new Set(prev);
+            newSet.add(item.id);
+            return newSet;
+          }
+          return prev;
+        });
+        break;
+      }
+    }
+  }, [activeTab]);
+
+  // Bug_64: Generate search suggestions based on query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    const suggestions: string[] = [];
+
+    menuItems.forEach(item => {
+      if (item.label.toLowerCase().includes(query)) {
+        suggestions.push(item.label);
+      }
+      // Also check submenu items
+      if (item.submenu) {
+        item.submenu.forEach(subItem => {
+          if (subItem.label.toLowerCase().includes(query) && !suggestions.includes(subItem.label)) {
+            suggestions.push(subItem.label);
+          }
+        });
+      }
+    });
+
+    const commonTerms = [
+      'marketing', 'market analysis', 'market research',
+      'campaign', 'campaigns', 'ad campaign',
+      'keywords', 'keyword research', 'keyword planning',
+      'ads', 'advertising', 'ad builder',
+      'negative keywords', 'exclude keywords',
+      'csv', 'export', 'import', 'validator',
+      'settings', 'billing', 'account',
+      'help', 'support', 'documentation'
+    ];
+
+    commonTerms.forEach(term => {
+      if (term.toLowerCase().includes(query) && !suggestions.includes(term)) {
+        suggestions.push(term);
+      }
+    });
+
+    setSearchSuggestions(suggestions.slice(0, 8));
+    setShowSearchSuggestions(suggestions.length > 0);
+  }, [searchQuery]);
+
+  // Bug_64: Handle search suggestion click
+  const handleSearchSuggestionClick = (suggestion: string) => {
+    // Check main menu items
+    const matchingItem = menuItems.find(item => 
+      item.label.toLowerCase() === suggestion.toLowerCase()
     );
-  }
+    
+    if (matchingItem) {
+      setActiveTabSafe(matchingItem.id);
+      setSearchQuery('');
+      setShowSearchSuggestions(false);
+      return;
+    }
+    
+    // Check submenu items
+    for (const item of menuItems) {
+      if (item.submenu) {
+        const matchingSubItem = item.submenu.find(sub => 
+          sub.label.toLowerCase() === suggestion.toLowerCase()
+        );
+        if (matchingSubItem) {
+          setActiveTabSafe(matchingSubItem.id);
+          setSearchQuery('');
+          setShowSearchSuggestions(false);
+          return;
+        }
+      }
+    }
+    
+    // Fallback to term mapping
+    {
+      const termMap: Record<string, string> = {
+        'marketing': 'builder-2',
+        'campaign': 'builder-2',
+        'campaigns': 'builder-2',
+        'keywords': 'keyword-planner',
+        'keyword research': 'keyword-planner',
+        'keyword planning': 'keyword-planner',
+        'ads': 'ads-builder',
+        'advertising': 'ads-builder',
+        'negative keywords': 'negative-keywords',
+        'csv': 'csv-validator-3',
+        'export': 'csv-validator-3',
+        'settings': 'settings',
+        'billing': 'settings',
+        'help': 'support-help',
+        'support': 'support-help'
+      };
+
+      const matchedTab = termMap[suggestion.toLowerCase()];
+      if (matchedTab) {
+        setActiveTabSafe(matchedTab);
+      }
+      setSearchQuery('');
+      setShowSearchSuggestions(false);
+    }
+  };
+
 
   if (appView === 'payment' && selectedPlan) {
     return (
@@ -390,9 +860,10 @@ const App = () => {
           // Clear any pending payment attempts
           sessionStorage.removeItem('pending_payment');
           
-          // Go back to pricing page (homepage with pricing section)
+          // Go back to auth page
           window.history.pushState({}, '', '/');
-          setAppView('home');
+          setAppView('auth');
+          setAuthMode('login');
           
           // Scroll to pricing section after a brief delay
           setTimeout(() => {
@@ -424,10 +895,11 @@ const App = () => {
           if (authenticated && user) {
             window.history.pushState({}, '', '/');
             setAppView('user');
-            setActiveTab('dashboard');
+            setActiveTabSafe('dashboard');
           } else {
             window.history.pushState({}, '', '/');
-            setAppView('home');
+            setAppView('auth');
+            setAuthMode('login');
           }
         }}
       />
@@ -438,19 +910,15 @@ const App = () => {
     return (
       <EmailVerification
         onVerificationSuccess={() => {
-          // Redirect to homepage and scroll to pricing
+          // Bug_74: Redirect to login screen after email verification
           window.history.pushState({}, '', '/');
-          setAppView('home');
-          
-          // Scroll to pricing section after a brief delay
-          setTimeout(() => {
-            const pricingSection = document.getElementById('pricing');
-            if (pricingSection) {
-              pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 100);
+          setAuthMode('login');
+          setAppView('auth');
         }}
-        onBackToHome={() => setAppView('home')}
+        onBackToHome={() => {
+          setAppView('auth');
+          setAuthMode('login');
+        }}
       />
     );
   }
@@ -461,9 +929,13 @@ const App = () => {
         onSuccess={async () => {
           // Password reset successful, redirect to login
           window.history.pushState({}, '', '/');
+          setAuthMode('login');
           setAppView('auth');
         }}
-        onBackToHome={() => setAppView('home')}
+        onBackToHome={() => {
+          setAppView('auth');
+          setAuthMode('login');
+        }}
       />
     );
   }
@@ -471,54 +943,58 @@ const App = () => {
   if (appView === 'auth') {
     return (
       <Auth
+        initialMode={authMode}
         onLoginSuccess={async () => {
           try {
-            // Wait a moment for auth state to propagate
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // Get auth user immediately and set minimal user object FIRST
+            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
             
-            // Refresh user profile after login with timeout
-            const profilePromise = getCurrentUserProfile();
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
-            );
+            if (!authUser) {
+              console.error('No auth user found after login');
+              return;
+            }
             
-            try {
-              const userProfile = await Promise.race([profilePromise, timeoutPromise]) as any;
-              
+            // Set minimal user immediately BEFORE navigating
+            const minimalUser = { 
+              id: authUser.id, 
+              email: authUser.email || '',
+              full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+              role: 'user',
+              subscription_plan: 'free',
+              subscription_status: 'active',
+            };
+            
+            setUser(minimalUser);
+            
+            // Now navigate to dashboard (user state is set)
+            setAppView('user');
+            setActiveTabSafe('dashboard');
+            
+            // Fetch full profile in background (with timeout)
+            Promise.race([
+              getCurrentUserProfile(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 8000)
+              )
+            ]).then((userProfile: any) => {
               if (userProfile) {
                 setUser(userProfile);
                 console.log('✅ User profile loaded:', userProfile);
-              } else {
-                console.warn('⚠️ User profile is null, but proceeding with login');
-                // Try to get auth user at least
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                if (authUser) {
-                  setUser({ id: authUser.id, email: authUser.email });
-                }
               }
-            } catch (profileError: any) {
-              console.warn('⚠️ Error loading profile (non-critical):', profileError);
-              // Try to get auth user at least
-              try {
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                if (authUser) {
-                  setUser({ id: authUser.id, email: authUser.email });
-                }
-              } catch (authError) {
-                console.error('Error getting auth user:', authError);
-              }
-            }
-            
-            // Directly go to dashboard - no admin/user selection
-            setAppView('user');
+            }).catch((profileError: any) => {
+              console.warn('⚠️ Profile fetch failed (non-critical):', profileError);
+              // Keep using minimal user object - app will work fine
+            });
           } catch (error) {
             console.error('Error in onLoginSuccess:', error);
-            // Still navigate to user view even if profile fetch fails
-            // The auth state change listener will handle profile creation
+            // Still navigate even on error - user can see the dashboard
             setAppView('user');
           }
         }}
-        onBackToHome={() => setAppView('home')}
+        onBackToHome={() => {
+          setAppView('auth');
+          setAuthMode('login');
+        }}
       />
     );
   }
@@ -537,11 +1013,20 @@ const App = () => {
         onSelectUserView={() => setAppView('user')}
         onSelectAdminPanel={() => setAppView('admin-panel')}
         onLogout={async () => {
-          await signOut();
-          setUser(null);
-          window.history.pushState({}, '', '/');
-          setAppView('home');
-          setActiveTab('dashboard');
+          // Bug_62, Bug_76: Ensure proper logout
+          try {
+            await signOut();
+            setUser(null);
+            localStorage.removeItem('supabase.auth.token');
+            sessionStorage.clear();
+            window.location.href = '/';
+          } catch (error) {
+            console.error('Logout error:', error);
+            setUser(null);
+            localStorage.removeItem('supabase.auth.token');
+            sessionStorage.clear();
+            window.location.href = '/';
+          }
         }}
       />
     );
@@ -555,17 +1040,19 @@ const App = () => {
     );
   }
 
-  // Protect user view - require authentication
+  // Protect user view - require authentication (unless bypass)
+  // Wait for user to load from auth listener - it should happen quickly after login
   if (!user && appView === 'user' && !loading) {
-    // Redirect to auth if not authenticated
     return (
-      <HomePage
-        onGetStarted={() => setAppView('auth')}
-        onLogin={() => setAppView('auth')}
-      />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-indigo-800 to-purple-800">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading user profile...</p>
+        </div>
+      </div>
     );
   }
-
+  
   // Show loading state while checking auth
   if (loading) {
     return (
@@ -577,23 +1064,6 @@ const App = () => {
       </div>
     );
   }
-
-  // Default: User view (protected)
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
-    { id: 'campaign-builder', label: 'Campaign Builder', icon: TrendingUp },
-    { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
-    { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
-    { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
-    { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
-    { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
-    { id: 'csv-validator', label: 'CSV Validator', icon: FileCheck },
-    { id: 'csv-validator-2', label: 'CSV Validator 2.0', icon: FileCheck },
-    { id: 'history', label: 'History', icon: FileCheck }, // Using FileCheck as placeholder for History icon if needed, or import History
-    { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
-  ];
 
   const renderContent = () => {
     // Reset history data if leaving the tab to prevent stale data injection
@@ -688,6 +1158,7 @@ const App = () => {
           </ErrorBoundary>
         );
       case 'dashboard':
+        return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
       default:
         return (
           <ErrorBoundary isolate resetKeys={[activeTab]}>
@@ -699,35 +1170,49 @@ const App = () => {
 
   // Get current page title
   const getCurrentPageTitle = () => {
+    // Check main menu items
     const currentItem = menuItems.find(item => item.id === activeTab);
-    return currentItem ? currentItem.label : 'Dashboard';
+    if (currentItem) return currentItem.label;
+    
+    // Check submenu items
+    for (const item of menuItems) {
+      if (item.submenu) {
+        const subItem = item.submenu.find(sub => sub.id === activeTab);
+        if (subItem) return subItem.label;
+      }
+    }
+    
+    return 'Dashboard';
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-cyan-50 overflow-hidden w-full max-w-full">
       {/* Sidebar */}
       <aside 
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
-        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-slate-200/60 shadow-2xl relative z-10`}
+        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-indigo-100/60 shadow-2xl relative z-10 flex-shrink-0 overflow-y-auto`}
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(238, 242, 255, 0.95) 100%)'
+        }}
       >
         {/* Logo Section */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200/60">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-indigo-100/60">
           {sidebarOpen && (
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${COLOR_CLASSES.primaryGradient} flex items-center justify-center shadow-md shadow-indigo-300/40`}>
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-slate-800">Adiology</span>
+                <span className={`font-bold ${COLOR_CLASSES.pageHeaderGradient}`}>Adiology</span>
               </div>
             </div>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer"
           >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {sidebarOpen ? <X className="w-5 h-5 text-slate-600" /> : <Menu className="w-5 h-5 text-slate-600" />}
           </button>
         </div>
 
@@ -735,24 +1220,69 @@ const App = () => {
         <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const hasSubmenu = item.submenu && item.submenu.length > 0;
+            const isExpanded = expandedMenus.has(item.id);
+            const isActive = activeTab === item.id || (hasSubmenu && item.submenu?.some(sub => sub.id === activeTab));
+            
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
-                  isActive
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/50'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-500'}`} />
-                {sidebarOpen && (
-                  <span className="font-medium">{item.label}</span>
+              <div key={item.id}>
+                <button
+                  onClick={() => {
+                    if (hasSubmenu) {
+                      setExpandedMenus(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(item.id)) {
+                          newSet.delete(item.id);
+                        } else {
+                          newSet.add(item.id);
+                        }
+                        return newSet;
+                      });
+                    } else {
+                      setActiveTabSafe(item.id);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
+                    isActive
+                      ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
+                      : `text-slate-700 hover:bg-indigo-50`
+                  }`}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
+                    {sidebarOpen && (
+                      <span className="font-medium">{item.label}</span>
+                    )}
+                  </div>
+                  {sidebarOpen && hasSubmenu && (
+                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  )}
+                </button>
+                {sidebarOpen && hasSubmenu && isExpanded && (
+                  <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-200 pl-2">
+                    {item.submenu?.map((subItem) => {
+                      const SubIcon = subItem.icon;
+                      const isSubActive = activeTab === subItem.id;
+                      return (
+                        <button
+                          key={subItem.id}
+                          onClick={() => {
+                            setActiveTabSafe(subItem.id);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group cursor-pointer ${
+                            isSubActive
+                              ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-md`
+                              : `text-slate-600 hover:bg-indigo-50/50`
+                          }`}
+                        >
+                          <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-400'}`} />
+                          <span className={`text-sm font-medium ${isSubActive ? 'text-white' : 'text-slate-600'}`}>{subItem.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </nav>
@@ -760,32 +1290,88 @@ const App = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">
         {/* Header */}
-        <header className="h-16 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-6 shadow-sm">
-          <div className="flex items-center space-x-4 flex-1 max-w-2xl">
+        <header className="h-16 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm flex-shrink-0">
+          <div className="flex items-center gap-4 flex-1 max-w-2xl">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search campaigns, keywords, tools..."
-                className="w-full pl-10 pr-4 py-2 bg-slate-100/80 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery.trim() && setShowSearchSuggestions(true)}
+                onBlur={() => {
+                  // Delay to allow click on suggestion
+                  setTimeout(() => setShowSearchSuggestions(false), 200);
+                }}
+                onKeyDown={(e) => {
+                  // Bug_63: Handle Enter key to execute search
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    e.preventDefault();
+                    if (searchSuggestions.length > 0) {
+                      handleSearchSuggestionClick(searchSuggestions[0]);
+                    } else {
+                      // If no suggestions, try to find matching menu item
+                      const matchingItem = menuItems.find(item => 
+                        item.label.toLowerCase().includes(searchQuery.toLowerCase())
+                      );
+                      if (matchingItem) {
+                        setActiveTabSafe(matchingItem.id);
+                        setSearchQuery('');
+                        setShowSearchSuggestions(false);
+                        return;
+                      }
+                      // Check submenu items
+                      for (const item of menuItems) {
+                        if (item.submenu) {
+                          const matchingSubItem = item.submenu.find(sub => 
+                            sub.label.toLowerCase().includes(searchQuery.toLowerCase())
+                          );
+                          if (matchingSubItem) {
+                            setActiveTabSafe(matchingSubItem.id);
+                            setSearchQuery('');
+                            setShowSearchSuggestions(false);
+                            return;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }}
+                className="w-full pl-10 pr-4 py-2.5 bg-indigo-50/50 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:bg-white transition-all h-11"
               />
+              {/* Bug_64: Search suggestions dropdown */}
+              {showSearchSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSearchSuggestionClick(suggestion)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    >
+                      <Search className="w-4 h-4 text-slate-400" />
+                      <span className="text-slate-700">{suggestion}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-slate-800 mr-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-slate-800 hidden lg:block">
               {getCurrentPageTitle()}
             </h2>
             
             {/* Notifications Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-            <button className="relative p-2 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer">
+            <button className="relative p-2 rounded-xl hover:bg-indigo-50 transition-colors cursor-pointer">
               <Bell className="w-5 h-5 text-slate-600" />
                   {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-purple-500 rounded-full"></span>
                   )}
                 </button>
               </DropdownMenuTrigger>
@@ -811,25 +1397,25 @@ const App = () => {
                     notifications.map((notification) => (
                       <DropdownMenuItem
                         key={notification.id}
-                        className={`flex flex-col items-start p-3 cursor-pointer hover:bg-slate-50 ${
-                          !notification.read ? 'bg-indigo-50/50' : ''
+                        className={`flex flex-col items-start p-3 cursor-pointer hover:bg-indigo-50 ${
+                          !notification.read ? 'bg-purple-50/50' : ''
                         }`}
                         onClick={() => handleNotificationClick(notification)}
                       >
-                        <div className="flex items-start justify-between w-full">
+                        <div className="flex items-start justify-between w-full gap-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               {!notification.read && (
-                                <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                                <span className="w-2 h-2 bg-indigo-600 rounded-full shrink-0"></span>
                               )}
                               <span className="font-medium text-sm text-slate-800">
                                 {notification.title}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-600 mt-1 ml-4">
+                            <p className="text-xs text-slate-600 mt-1.5 ml-0">
                               {notification.message}
                             </p>
-                            <span className="text-xs text-slate-400 mt-1 ml-4 block">
+                            <span className="text-xs text-slate-400 mt-1 ml-0 block">
                               {notification.time}
                             </span>
                           </div>
@@ -855,7 +1441,7 @@ const App = () => {
             {/* Profile Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium shadow-lg hover:shadow-xl transition-all cursor-pointer">
+                <button className={`w-10 h-10 rounded-xl bg-gradient-to-br ${COLOR_CLASSES.primaryGradient} flex items-center justify-center text-white font-medium shadow-lg shadow-indigo-300/30 hover:shadow-xl transition-all cursor-pointer`}>
                   {user 
                     ? (() => {
                         const name = user.full_name || user.email || 'U';
@@ -868,40 +1454,40 @@ const App = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-2">
+                  <div className="flex flex-col gap-1.5">
                     {user ? (
                       <>
                         <div className="font-semibold text-slate-900">
                           {user.full_name || user.email?.split('@')[0] || 'User'}
-                        </div>
+                            </div>
                         <div className="text-xs text-slate-600">
                           {user.email || 'user@example.com'}
-                        </div>
+                          </div>
                         {user.subscription_plan && user.subscription_plan !== 'free' && (
-                          <Badge className="w-fit bg-indigo-100 text-indigo-700 border-indigo-200">
+                          <Badge className={`w-fit ${COLOR_CLASSES.primaryBadge} mt-1`}>
                             {user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1)}
-                          </Badge>
+                              </Badge>
                         )}
                       </>
                     ) : (
                       <>
                         <div className="font-semibold text-slate-900">User</div>
                         <div className="text-xs text-slate-600">user@example.com</div>
-                      </>
+                        </>
                     )}
             </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setActiveTab('settings')}>
-                  <User className="w-4 h-4 mr-2" />
+                <DropdownMenuItem onClick={() => setActiveTabSafe('settings')}>
+                  <User className="w-4 h-4 mr-2 shrink-0" />
                   Account Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab('billing')}>
-                  <Shield className="w-4 h-4 mr-2" />
+                <DropdownMenuItem onClick={() => setActiveTabSafe('billing')}>
+                  <Shield className="w-4 h-4 mr-2 shrink-0" />
                   Billing
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveTab('support')}>
-                  <HelpCircle className="w-4 h-4 mr-2" />
+                <DropdownMenuItem onClick={() => setActiveTabSafe('support')}>
+                  <HelpCircle className="w-4 h-4 mr-2 shrink-0" />
                   Support
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -918,7 +1504,7 @@ const App = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full min-w-0">
           {renderContent()}
         </main>
       </div>

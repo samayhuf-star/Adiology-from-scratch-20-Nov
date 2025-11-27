@@ -8,14 +8,54 @@ const app = new Hono();
 // Enable logger
 app.use('*', logger(console.log));
 
+// Cookie handling middleware - ensures cookies work in cross-site contexts
+app.use("/*", async (c, next) => {
+  await next();
+  
+  // Get all Set-Cookie headers from response
+  const setCookieHeaders = c.res.headers.get("Set-Cookie");
+  
+  if (setCookieHeaders) {
+    // Parse and update cookie attributes
+    const cookies = Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders];
+    const updatedCookies = cookies.map((cookie: string) => {
+      // If cookie doesn't have SameSite, add SameSite=None; Secure
+      if (!cookie.includes("SameSite")) {
+        // Ensure Secure is present when SameSite=None
+        if (cookie.includes("Secure") || cookie.includes("secure")) {
+          return `${cookie}; SameSite=None`;
+        } else {
+          return `${cookie}; SameSite=None; Secure`;
+        }
+      }
+      // If SameSite is Lax or Strict but we need cross-site, update to None
+      if (cookie.includes("SameSite=Lax") || cookie.includes("SameSite=Strict")) {
+        return cookie
+          .replace(/SameSite=Lax/gi, "SameSite=None")
+          .replace(/SameSite=Strict/gi, "SameSite=None")
+          .replace(/; Secure/gi, "")
+          .concat("; Secure");
+      }
+      return cookie;
+    });
+    
+    // Set updated cookies
+    c.res.headers.delete("Set-Cookie");
+    updatedCookies.forEach((cookie: string) => {
+      c.res.headers.append("Set-Cookie", cookie);
+    });
+  }
+});
+
 // Enable CORS for all routes and methods
 app.use(
   "/*",
   cors({
     origin: "*",
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    exposeHeaders: ["Content-Length"],
+    exposeHeaders: ["Content-Length", "Set-Cookie"],
+    credentials: true,
     maxAge: 600,
   }),
 );

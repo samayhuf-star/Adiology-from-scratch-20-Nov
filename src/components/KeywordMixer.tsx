@@ -1,17 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Shuffle, Plus, X, Download, Save } from 'lucide-react';
+import { Shuffle, Plus, X, Download, Save, Sparkles, FolderOpen, Trash2, Clock } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Button } from './ui/button';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
+import { DEFAULT_MIXER_KEYWORDS } from '../utils/defaultExamples';
+
+// Plumbing service keywords for sample data
+const PLUMBING_KEYWORDS = {
+    services: [
+        'plumber', 'plumbing', 'drain cleaning', 'pipe repair', 'water heater',
+        'leak repair', 'sewer repair', 'toilet repair', 'faucet repair', 
+        'emergency plumber', 'plumbing service', 'drain service'
+    ],
+    locations: [
+        'near me', 'local', 'emergency', '24 hour', 'same day',
+        'residential', 'commercial', 'licensed', 'certified', 'professional'
+    ],
+    extras: [
+        'repair', 'installation', 'replacement', 'maintenance', 'service',
+        'fix', 'contractor', 'company', 'specialist', 'expert'
+    ]
+};
 
 export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     // Store each list as a string (newline-separated)
-    const [listA, setListA] = useState('');
-    const [listB, setListB] = useState('');
+    const [listA, setListA] = useState(DEFAULT_MIXER_KEYWORDS.set1);
+    const [listB, setListB] = useState(DEFAULT_MIXER_KEYWORDS.set2);
     const [listC, setListC] = useState('');
     const [mixedKeywords, setMixedKeywords] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState('mixer');
+    const [savedItems, setSavedItems] = useState<any[]>([]);
     
     // Match types - all selected by default
     const [matchTypes, setMatchTypes] = useState({
@@ -41,6 +63,27 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
         }
     }, [initialData]);
 
+    const fillSampleInfo = () => {
+        // Helper to get random items from array (1-2 words max)
+        const getRandomItems = (arr: string[], count: number) => {
+            const shuffled = [...arr].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, count).filter(item => item.split(' ').length <= 2);
+        };
+
+        // Fill each list with random plumbing keywords
+        const samplesA = getRandomItems(PLUMBING_KEYWORDS.services, 4);
+        const samplesB = getRandomItems(PLUMBING_KEYWORDS.locations, 4);
+        const samplesC = getRandomItems(PLUMBING_KEYWORDS.extras, 3);
+
+        setListA(samplesA.join('\n'));
+        setListB(samplesB.join('\n'));
+        setListC(samplesC.join('\n'));
+
+        notifications.success('Sample plumbing keywords filled!', {
+            title: 'Sample Data Loaded'
+        });
+    };
+
     const handleSave = async () => {
         if (mixedKeywords.length === 0) return;
         setIsSaving(true);
@@ -53,6 +96,8 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
             notifications.success('Mixer result saved!', {
                 title: 'Saved Successfully'
             });
+            // Refresh saved items list
+            await loadSavedItems();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
@@ -62,6 +107,60 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
             setIsSaving(false);
         }
     };
+
+    const loadSavedItems = async () => {
+        try {
+            const items = await historyService.getByType('keyword-mixer');
+            items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            setSavedItems(items);
+        } catch (error) {
+            console.error("Load saved items failed", error);
+        }
+    };
+
+    const handleLoadSavedItem = async (itemId: string) => {
+        try {
+            const allItems = await historyService.getAll();
+            const item = allItems.find(i => i.id === itemId);
+            if (item && item.data) {
+                setListA(item.data.listA || '');
+                setListB(item.data.listB || '');
+                setListC(item.data.listC || '');
+                setMixedKeywords(item.data.mixedKeywords || []);
+                setMatchTypes(item.data.matchTypes || { broad: true, phrase: true, exact: true });
+                setActiveTab('mixer');
+                notifications.success('Saved item loaded successfully!', {
+                    title: 'Loaded'
+                });
+            }
+        } catch (error) {
+            console.error("Load failed", error);
+            notifications.error('Failed to load item. Please try again.', {
+                title: 'Load Failed'
+            });
+        }
+    };
+
+    const handleDeleteSavedItem = async (itemId: string) => {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+        
+        try {
+            await historyService.deleteHistory(itemId);
+            await loadSavedItems();
+            notifications.success('Item deleted successfully!', {
+                title: 'Deleted'
+            });
+        } catch (error) {
+            console.error("Delete failed", error);
+            notifications.error('Failed to delete item. Please try again.', {
+                title: 'Delete Failed'
+            });
+        }
+    };
+
+    useEffect(() => {
+        loadSavedItems();
+    }, []);
 
     const mixKeywords = () => {
         // Parse each list - split by newlines and commas, trim, and filter empty
@@ -119,113 +218,152 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
         setMixedKeywords(formattedKeywords);
     };
 
-    const exportToCSV = () => {
-        // Bug_46: Column name in plural form, filename without "mixed_" prefix
-        const csv = ['Keywords\n', ...mixedKeywords].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'keywords.csv'; // Bug_46: Simplified filename - removed "mixed_" prefix
-        link.click();
-        URL.revokeObjectURL(url);
+    const exportToCSV = async () => {
+        try {
+            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+            const filename = 'keywords.csv';
+            
+            await exportCSVWithValidation(
+                mixedKeywords,
+                filename,
+                'keywords',
+                {
+                    campaignName: 'Keywords Campaign',
+                    adGroupName: 'All Keywords',
+                    finalUrl: 'https://www.example.com'
+                }
+            );
+            
+            notifications.success(`Exported ${mixedKeywords.length} keywords to CSV`, {
+                title: 'Export Complete'
+            });
+        } catch (error: any) {
+            console.error('Export error:', error);
+            notifications.error(
+                error?.message || 'An unexpected error occurred during export',
+                { 
+                    title: '❌ Export Failed',
+                    description: 'Please try again or contact support if the issue persists.'
+                }
+            );
+        }
     };
 
     return (
-        <div className="p-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                    Keyword Mixer
-                </h1>
-                <p className="text-slate-500">
-                    Mix and match multiple keyword lists to generate all possible combinations
-                </p>
+        <div className="p-8 max-w-6xl mx-auto">
+            <div className="mb-10 flex items-start justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                        Keyword Mixer
+                    </h1>
+                    <p className="text-base text-slate-600 leading-relaxed">
+                        Mix and match multiple keyword lists to generate all possible combinations
+                    </p>
+                </div>
+                <button
+                    onClick={fillSampleInfo}
+                    className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                >
+                    <Sparkles className="w-4 h-4" />
+                    Fill Sample Info
+                </button>
             </div>
 
-            <div className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+                <TabsList>
+                    <TabsTrigger value="mixer">Keyword Mixer</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="mixer">
+                    <div className="space-y-8">
                 {/* Input Section - Horizontal Lists */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-                    <h2 className="text-xl font-bold text-slate-800 mb-4">Keyword Lists</h2>
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-8 border border-slate-200/60 shadow-lg">
+                    <h2 className="text-lg font-bold text-slate-800 mb-3">Keyword Lists</h2>
+                    <p className="text-sm text-slate-600 mb-6">Enter keywords for each list (one per line or comma-separated)</p>
                     
                     {/* Lists arranged horizontally */}
-                    <div className="grid grid-cols-3 gap-6 mb-6">
-                        <div className="space-y-2">
-                            <h3 className="font-semibold text-slate-700 mb-2">Keywords A</h3>
+                    <div className="grid grid-cols-3 gap-6 mb-8">
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-slate-700">Keywords A</h3>
                             <Textarea
                                 value={listA}
                                 onChange={(e) => setListA(e.target.value)}
-                                placeholder="Enter keywords for A&#10;One per line or comma-separated"
-                                className="min-h-[200px] px-4 py-3 bg-white border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                placeholder="plumber&#10;plumbing&#10;plumbing services"
+                                className="min-h-[140px] text-sm px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <h3 className="font-semibold text-slate-700 mb-2">Keywords B</h3>
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-slate-700">Keywords B</h3>
                             <Textarea
                                 value={listB}
                                 onChange={(e) => setListB(e.target.value)}
-                                placeholder="Enter keywords for B&#10;One per line or comma-separated"
-                                className="min-h-[200px] px-4 py-3 bg-white border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                placeholder="near me&#10;local&#10;emergency"
+                                className="min-h-[140px] text-sm px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <h3 className="font-semibold text-slate-700 mb-2">Keywords C</h3>
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-slate-700">Keywords C</h3>
                             <Textarea
                                 value={listC}
                                 onChange={(e) => setListC(e.target.value)}
                                 placeholder="Enter keywords for C&#10;One per line or comma-separated"
-                                className="min-h-[200px] px-4 py-3 bg-white border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+                                className="min-h-[140px] text-sm px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                             />
                         </div>
                     </div>
                     
                     {/* Helpful hint */}
-                    <div className="mb-6 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-lg">
-                        <p className="text-sm text-indigo-700">
+                    <div className="mb-8 px-5 py-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                        <p className="text-sm text-indigo-700 leading-relaxed">
                             💡 <span className="font-semibold">Tip:</span> You can enter comma-separated values in any field (e.g., "delta, united, southwest") to create multiple variations at once.
                         </p>
                     </div>
 
                     {/* Match Type Selection */}
-                    <div className="border-t border-slate-200 pt-6">
-                        <h3 className="font-semibold text-slate-700 mb-4">Keyword Match Types</h3>
-                        <div className="flex items-center gap-8">
-                            <div className="flex items-center gap-2">
+                    <div className="border-t border-slate-200 pt-8">
+                        <h3 className="text-sm font-semibold text-slate-700 mb-5">Keyword Match Types</h3>
+                        <div className="flex items-center gap-5 flex-wrap">
+                            <label htmlFor="broad" className="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 border-amber-200 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-300 cursor-pointer transition-all duration-200 group">
                                 <Checkbox 
                                     id="broad" 
                                     checked={matchTypes.broad}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
+                                    className="border-amber-400"
                                 />
-                                <label htmlFor="broad" className="text-sm text-slate-600 cursor-pointer font-medium">
+                                <span className="text-xs text-amber-900 cursor-pointer font-semibold group-hover:text-amber-950 transition-colors">
                                     Broad Match
-                                </label>
-                            </div>
-                            <div className="flex items-center gap-2">
+                                </span>
+                            </label>
+                            <label htmlFor="phrase" className="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all duration-200 group">
                                 <Checkbox 
                                     id="phrase" 
                                     checked={matchTypes.phrase}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
+                                    className="border-blue-400"
                                 />
-                                <label htmlFor="phrase" className="text-sm text-slate-600 cursor-pointer font-medium">
+                                <span className="text-xs text-blue-900 cursor-pointer font-semibold group-hover:text-blue-950 transition-colors">
                                     Phrase Match "keyword"
-                                </label>
-                            </div>
-                            <div className="flex items-center gap-2">
+                                </span>
+                            </label>
+                            <label htmlFor="exact" className="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-300 cursor-pointer transition-all duration-200 group">
                                 <Checkbox 
                                     id="exact" 
                                     checked={matchTypes.exact}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
+                                    className="border-emerald-400"
                                 />
-                                <label htmlFor="exact" className="text-sm text-slate-600 cursor-pointer font-medium">
+                                <span className="text-xs text-emerald-900 cursor-pointer font-semibold group-hover:text-emerald-950 transition-colors">
                                     Exact Match [keyword]
-                                </label>
-                            </div>
+                                </span>
+                            </label>
                         </div>
                     </div>
 
                     {/* Generate Button */}
                     <button
                         onClick={mixKeywords}
-                        className="w-full mt-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                        className="w-full mt-8 py-3.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-base font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
                     >
                         <Shuffle className="w-5 h-5" />
                         Generate Keywords
@@ -233,49 +371,54 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
                 </div>
 
                 {/* Results Section */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-slate-800">
-                            Generated Keywords {mixedKeywords.length > 0 && `(${mixedKeywords.length})`}
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-8 border border-slate-200/60 shadow-lg">
+                    <div className="mb-6">
+                        <h2 className="text-lg font-bold text-slate-800 mb-2">
+                            Generated Keywords
                         </h2>
+                        <p className="text-sm text-slate-600">
+                            {mixedKeywords.length > 0 ? `${mixedKeywords.length} keywords generated` : 'Results will appear here after generation'}
+                        </p>
+                    </div>
+                    <div className="flex justify-between items-center mb-6">
                         {mixedKeywords.length > 0 && (
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="px-4 py-2 bg-white border border-slate-200 text-indigo-600 font-semibold rounded-xl shadow-sm hover:bg-slate-50 transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2"
+                                    className="px-3 py-1.5 bg-white border border-slate-200 text-indigo-600 text-sm font-semibold rounded-lg shadow-sm hover:bg-slate-50 transition-all flex items-center gap-1.5"
                                 >
-                                    <Save className="w-4 h-4" />
+                                    <Save className="w-3.5 h-3.5" />
                                     {isSaving ? 'Saving...' : 'Save'}
                                 </button>
                                 <button
                                     onClick={exportToCSV}
-                                    className="px-4 py-2 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2"
+                                    className="px-3 py-1.5 bg-gradient-to-r from-slate-600 to-slate-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
                                 >
-                                    <Download className="w-4 h-4" />
+                                    <Download className="w-3.5 h-3.5" />
                                     Export
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    <div className="min-h-[400px] max-h-[600px] overflow-y-auto">
+                    <div className="min-h-[300px] max-h-[500px] overflow-y-auto">
                         {mixedKeywords.length > 0 ? (
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 {mixedKeywords.map((keyword, idx) => (
                                     <div
                                         key={idx}
-                                        className="px-4 py-3 bg-slate-50 rounded-lg hover:bg-indigo-50 transition-colors"
+                                        className="px-3 py-2 bg-slate-50 rounded-lg hover:bg-indigo-50 transition-colors"
                                     >
-                                        <span className="text-slate-700 font-medium">{keyword}</span>
+                                        <span className="text-sm text-slate-700 font-medium">{keyword}</span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
                             <div className="flex items-center justify-center h-full">
                                 <div className="text-center">
-                                    <Shuffle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-slate-500">
+                                    <Shuffle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-sm text-slate-500">
                                         Add keywords and click "Generate Keywords" to create combinations
                                     </p>
                                 </div>
@@ -283,7 +426,75 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
                         )}
                     </div>
                 </div>
-            </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="history">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-xl p-6 border border-slate-200/60 shadow-lg">
+                        <h2 className="text-xl font-bold text-indigo-600 mb-6">
+                            Saved Mixes
+                        </h2>
+                        {savedItems.length > 0 ? (
+                            <div className="space-y-4">
+                                {savedItems.map(item => (
+                                    <div
+                                        key={item.id}
+                                        className="px-4 py-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <div className="space-y-1 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-800">{item.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 text-xs text-slate-500">
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="w-3 h-3" />
+                                                        {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                    {item.data?.mixedKeywords && (
+                                                        <span className="text-slate-600">
+                                                            {item.data.mixedKeywords.length} keywords
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => handleLoadSavedItem(item.id)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                >
+                                                    <FolderOpen className="w-4 h-4" />
+                                                    Load
+                                                </Button>
+                                                <Button
+                                                    onClick={() => handleDeleteSavedItem(item.id)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2 bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center h-full py-20">
+                                <div className="text-center">
+                                    <Shuffle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                    <p className="text-slate-500">
+                                        No saved mixes found. Save your mixed keywords to see them here.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };
