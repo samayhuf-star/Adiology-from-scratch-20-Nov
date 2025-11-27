@@ -3783,7 +3783,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   </div>
                   <Textarea 
                     placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
-                    value={manualGeoInput}
                     value={targetType === 'CITY' ? manualGeoInput : manualCityInput}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -4567,7 +4566,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               geoType,
               matchTypes,
               adTypes,
-              structureType,
               intentGroups,
               selectedIntents,
               alphaKeywords,

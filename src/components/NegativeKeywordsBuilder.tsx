@@ -555,7 +555,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         return stats;
     }, [generatedKeywords]);
 
-    const handleDownload = (format: 'standard' | 'google-ads-editor' = 'standard') => {
+    const handleDownload = async (format: 'standard' | 'google-ads-editor' = 'standard') => {
         if (filteredKeywords.length === 0) {
             notifications.warning('No keywords to export', {
                 title: 'No Keywords'
