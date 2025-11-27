@@ -615,9 +615,13 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                     });
                 }
             } else {
-                // For other formats, use legacy export (but still validate if possible)
-                const { exportToCSV } = await import('../utils/negativeKeywordsExporter');
-                const csvContent = exportToCSV(negativeKeywords, exportFormat);
+                // For other formats, use legacy export functions from negativeKeywordsGenerator
+                let csvContent: string;
+                if (exportFormat === 'google-ads-editor') {
+                    csvContent = exportToGoogleAdsEditorCSV(negativeKeywords, 'Negative Keywords Campaign', 'All Ad Groups');
+                } else {
+                    csvContent = exportToCSV(negativeKeywords, exportFormat);
+                }
                 filename = `negative_keywords_${exportFormat}_${new Date().toISOString().split('T')[0]}.csv`;
                 
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
