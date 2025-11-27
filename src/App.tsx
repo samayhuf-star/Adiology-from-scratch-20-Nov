@@ -44,7 +44,7 @@ type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'adm
 
 const App = () => {
   const { theme } = useTheme();
-  const [appView, setAppView] = useState<AppView>('home');
+  const [appView, setAppView] = useState<AppView>('auth');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -164,9 +164,10 @@ const App = () => {
         // Clear any cached data
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
-        // Redirect to home
+        // Redirect to auth
         window.history.pushState({}, '', '/');
-      setAppView('home');
+      setAppView('auth');
+      setAuthMode('login');
       setActiveTab('dashboard');
         // Force page reload to clear all state
         window.location.href = '/';
@@ -176,7 +177,8 @@ const App = () => {
         setUser(null);
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
-        window.location.href = '/';
+        setAppView('auth');
+        setAuthMode('login');
       }
     }
   };
@@ -351,12 +353,13 @@ const App = () => {
             }
             return prevUser;
           });
-          // If user signed out and we're on user view, go to home
+          // If user signed out and we're on user view, go to auth
           if (event === 'SIGNED_OUT') {
             // Use setTimeout to avoid state update during render
             setTimeout(() => {
               if (isMounted) {
-                setAppView('home');
+                setAppView('auth');
+                setAuthMode('login');
               }
             }, 0);
           }
@@ -373,12 +376,13 @@ const App = () => {
 
         // Handle email verification
         if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at && isMounted) {
-          // User just verified email, redirect to pricing/home
+          // User just verified email, redirect to auth
           if (window.location.pathname.includes('/verify-email')) {
             setTimeout(() => {
               if (isMounted) {
                 window.history.pushState({}, '', '/');
-                setAppView('home');
+                setAppView('auth');
+                setAuthMode('login');
               }
             }, 0);
           }
@@ -498,7 +502,7 @@ const App = () => {
         return;
       }
 
-      setView(user ? 'user' : 'home');
+      setView(user ? 'user' : 'auth');
     };
 
     handleRoute();
@@ -544,7 +548,7 @@ const App = () => {
               setAppView('user');
           }
         } else {
-          setAppView('home');
+          setAppView('auth');
         }
       }
     };
@@ -560,7 +564,7 @@ const App = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
         setTimeout(() => {
-            setAppView('home');
+            setAppView('auth');
             setAuthMode('login');
           }, 1000);
         }
@@ -840,22 +844,22 @@ const App = () => {
     }
   };
 
-  // Render homepage
-  if (appView === 'home') {
-    return (
-      <HomePageNew
-        onGetStarted={() => {
-          setAuthMode('signup');
-          setAppView('auth');
-        }}
-        onLogin={() => {
-          setAuthMode('login');
-          setAppView('auth');
-        }}
-        onSelectPlan={handleSelectPlan}
-      />
-    );
-  }
+  // Skip homepage - redirect directly to auth
+  // if (appView === 'home') {
+  //   return (
+  //     <HomePageNew
+  //       onGetStarted={() => {
+  //         setAuthMode('signup');
+  //         setAppView('auth');
+  //       }}
+  //       onLogin={() => {
+  //         setAuthMode('login');
+  //         setAppView('auth');
+  //       }}
+  //       onSelectPlan={handleSelectPlan}
+  //     />
+  //   );
+  // }
 
   if (appView === 'payment' && selectedPlan) {
     return (
@@ -868,9 +872,10 @@ const App = () => {
           // Clear any pending payment attempts
           sessionStorage.removeItem('pending_payment');
           
-          // Go back to pricing page (homepage with pricing section)
+          // Go back to auth page
           window.history.pushState({}, '', '/');
-          setAppView('home');
+          setAppView('auth');
+          setAuthMode('login');
           
           // Scroll to pricing section after a brief delay
           setTimeout(() => {
@@ -905,7 +910,8 @@ const App = () => {
             setActiveTabSafe('dashboard');
           } else {
             window.history.pushState({}, '', '/');
-            setAppView('home');
+            setAppView('auth');
+            setAuthMode('login');
           }
         }}
       />
@@ -921,7 +927,10 @@ const App = () => {
           setAuthMode('login');
           setAppView('auth');
         }}
-        onBackToHome={() => setAppView('home')}
+        onBackToHome={() => {
+          setAppView('auth');
+          setAuthMode('login');
+        }}
       />
     );
   }
@@ -935,7 +944,10 @@ const App = () => {
           setAuthMode('login');
           setAppView('auth');
         }}
-        onBackToHome={() => setAppView('home')}
+        onBackToHome={() => {
+          setAppView('auth');
+          setAuthMode('login');
+        }}
       />
     );
   }
@@ -991,7 +1003,10 @@ const App = () => {
             setAppView('user');
           }
         }}
-        onBackToHome={() => setAppView('home')}
+        onBackToHome={() => {
+          setAppView('auth');
+          setAuthMode('login');
+        }}
       />
     );
   }

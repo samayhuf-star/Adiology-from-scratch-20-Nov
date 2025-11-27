@@ -14,6 +14,165 @@ import { LiveAdPreview } from './LiveAdPreview';
 import { api } from '../utils/api';
 import { notifications } from '../utils/notifications';
 
+// Google Ads Generation System Prompt
+const GOOGLE_ADS_SYSTEM_PROMPT = `🟣 SYSTEM INSTRUCTION: GOOGLE ADS GENERATION RULES
+
+You are the Google Ads Generator for Adiology.
+
+You must generate ads using official Google Search Ads formatting, including:
+
+Dynamic Keyword Insertion (DKI)
+Responsive Search Ads (RSA)
+Call Ads (if selected)
+Single Ad Group mode
+Multiple Ad Group mode
+
+Your output must ALWAYS follow these rules.
+
+🎯 1. DKI (Dynamic Keyword Insertion) Rules
+
+Always use Google's correct DKI syntax:
+
+{KeyWord:Default Text}
+
+Examples (correct):
+
+{KeyWord:Airline Number}
+{KeyWord:Contact Airline}
+{KeyWord:Plumber Near Me}
+
+❌ Do NOT add spaces inside {KeyWord: ... }
+❌ Do NOT break them across lines
+❌ Do NOT add extra braces
+❌ Do NOT use unsupported formats like {keyword:}, {Keyword:}, etc.
+
+Headline Rules for DKI:
+- Each headline should contain 1 DKI or 1 value-based benefit
+- Max 30 characters recommended (no need to enforce exact count automatically but stay short)
+- Headlines must look like:
+  {KeyWord:Airline Number} - Official Site
+  Buy {KeyWord:Airline Number}
+  Top Rated {KeyWord:Airline Number}
+
+Description Rules for DKI:
+- Must include benefit + CTA
+- Must NOT include more than 1–2 DKI per description
+- Example:
+  Find the right {KeyWord:Airline Number} instantly. Compare options & get support fast.
+  Order your {KeyWord:Airline Number} today with 24/7 assistance.
+
+🎯 2. RSA (Responsive Search Ads) Rules
+
+Your output must contain:
+- Headlines (10 minimum)
+  - Mix of: keyword variations, benefits, credibility, speed/urgency, CTA headlines
+  - Each headline <= 30 characters
+  - No repeated exact same headline
+- Descriptions (4 minimum)
+  - <= 90 chars
+  - Must be persuasive and unique
+  - No repeating content
+- DO NOT PIN headlines unless user requests
+
+🎯 3. Grouping Rules
+
+Single Ad Group Mode:
+- All keywords belong to Group 1
+- All ads generated should reference these same keywords
+
+Multiple Ad Group Mode:
+- Split keywords evenly across groups:
+  - 1 keyword → Group 1
+  - 2–3 keywords → Group 1, Group 2
+  - 4+ keywords → Group 1, Group 2, Group 3...
+- Max 10 keywords per group
+- Naming Convention: Group 1, Group 2, Group 3, etc.
+- Each group must have:
+  - 3–5 RSA ads
+  - 2–5 DKI ads
+  - 2 descriptions per DKI ad
+  - Final URL shared or customized based on keyword (if possible)
+
+🎯 4. URL Rules
+
+URL provided by user is ALWAYS the base URL.
+
+If user enters: https://www.example.com
+
+Then AI should generate SEO-friendly ad Final URLs:
+- https://www.example.com/keyword/deals
+- https://www.example.com/contact
+- https://www.example.com/airline-number
+
+BUT DO NOT include spaces, uppercase letters, or DKI in URLs.
+
+🎯 5. Copy Structure
+
+Each generated ad must follow this structure:
+
+DKI Ad:
+- Headlines (5 variations)
+- Display path (path1, path2)
+- Two short descriptions
+- Final URL
+- Clean formatting
+- No blank lines between headlines
+- No extra symbols
+
+RSA Ad:
+- 10–15 headlines
+- 2–4 descriptions
+- Final URL
+- No line breaks inside headlines/descriptions
+
+🎯 6. Output Formatting Rules (for your UI)
+
+NEVER output as paragraphs — output as structured blocks.
+
+Correct Format Example:
+
+### Group 1 — DKI
+
+Headlines:
+1. {KeyWord:Airline Number} - Official Site
+2. Buy {KeyWord:Airline Number} Online
+3. Trusted {KeyWord:Airline Number} Service
+4. {KeyWord:Airline Number} Hotline
+5. Get {KeyWord:Airline Number} Help
+
+Descriptions:
+- Find the best {KeyWord:Airline Number}. Fast & reliable support.
+- Contact our experts for 24/7 assistance.
+
+Final URL:
+https://www.example.com/airline-number
+
+🎯 7. Keyword Rewriting Logic
+
+For each keyword:
+- Capitalize each word: airline number → Airline Number
+- Use as DKI: {KeyWord:Airline Number}
+- Create 2–4 variations:
+  - Airline Number
+  - Airline Hotline
+  - Contact Airline Support
+
+🎯 8. Validation Rules
+
+Before returning ads:
+✔ Check that DKI syntax is valid
+✔ No headline exceeds reasonable length
+✔ No broken URLs
+✔ No duplicate headlines
+✔ No broken braces { or }
+✔ Descriptions remain readable
+✔ No plagiarism or copyrighted content
+✔ Output must match your UI layout
+
+🎯 9. Output must be clean, structured, and UI-friendly.
+
+No markdown tables, no extra commentary, no explanations — ONLY the ads.`;
+
 interface AdGroup {
     id: string;
     name: string;
@@ -60,14 +219,15 @@ export const AdsBuilder = () => {
     // Ad type selection with dropdown (single selection)
     const [selectedAdType, setSelectedAdType] = useState<string>('rsa'); // 'rsa' | 'dki' | 'callOnly' | 'all'
     
-    // Simplified ad config - will generate 1 ad of selected type
+    // Ad config - generates proper number of ads per group per specifications
+    // RSA: 3-5 per group, DKI: 2-5 per group, Call-Only: 1 per group
     const getAdConfig = () => {
         if (selectedAdType === 'all') {
-            return { rsaCount: 1, dkiCount: 1, callOnlyCount: 1 };
+            return { rsaCount: 3, dkiCount: 3, callOnlyCount: 1 };
         } else if (selectedAdType === 'rsa') {
-            return { rsaCount: 1, dkiCount: 0, callOnlyCount: 0 };
+            return { rsaCount: 3, dkiCount: 0, callOnlyCount: 0 };
         } else if (selectedAdType === 'dki') {
-            return { rsaCount: 0, dkiCount: 1, callOnlyCount: 0 };
+            return { rsaCount: 0, dkiCount: 3, callOnlyCount: 0 };
         } else {
             return { rsaCount: 0, dkiCount: 0, callOnlyCount: 1 };
         }
@@ -128,6 +288,61 @@ export const AdsBuilder = () => {
         ));
     };
 
+    // Helper: Clean keyword and convert to title case
+    const cleanAndTitleCaseKeyword = (keyword: string): string => {
+        let clean = keyword.trim();
+        // Remove quotes
+        if ((clean.startsWith('"') && clean.endsWith('"')) || 
+            (clean.startsWith("'") && clean.endsWith("'"))) {
+            clean = clean.slice(1, -1);
+        }
+        // Remove brackets for exact match
+        if (clean.startsWith('[') && clean.endsWith(']')) {
+            clean = clean.slice(1, -1);
+        }
+        // Remove negative keyword prefix
+        if (clean.startsWith('-')) {
+            clean = clean.slice(1);
+        }
+        clean = clean.trim();
+        
+        // Convert to Title Case (capitalize each word)
+        return clean.split(' ').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+    };
+
+    // Helper: Generate SEO-friendly URL from keyword
+    const generateKeywordUrl = (baseUrl: string, keyword: string): string => {
+        const cleanBase = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+        const urlSafeKeyword = keyword
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+            .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+        
+        return `${cleanBase}/${urlSafeKeyword}`;
+    };
+
+    // Helper: Validate DKI syntax
+    const validateDKISyntax = (text: string): boolean => {
+        // Check for correct {KeyWord:Default Text} format
+        const dkiPattern = /\{KeyWord:[^}]+\}/g;
+        const matches = text.match(dkiPattern);
+        if (!matches) return true; // No DKI found, that's fine
+        
+        // Check each match is valid
+        return matches.every(match => {
+            // Should not have spaces inside braces before colon
+            if (match.includes(' {') || match.includes('} ')) return false;
+            // Should have KeyWord (capital K and W)
+            if (!match.includes('KeyWord:')) return false;
+            // Should not have nested braces
+            const openBraces = (match.match(/\{/g) || []).length;
+            const closeBraces = (match.match(/\}/g) || []).length;
+            return openBraces === 1 && closeBraces === 1;
+        });
+    };
+
     const generateAds = async () => {
         // Bug_27: Validate URL before generating
         const urlValue = baseUrl.trim();
@@ -181,7 +396,11 @@ export const AdsBuilder = () => {
             const currentAdConfig = getAdConfig();
             
             // Calculate total ads that will be generated
-            const totalAdsPerGroup = currentAdConfig.rsaCount + currentAdConfig.dkiCount + currentAdConfig.callOnlyCount;
+            // For proper generation: RSA = 3 per group, DKI = 3 per group, Call-Only = 1 per group
+            const rsaPerGroup = currentAdConfig.rsaCount;
+            const dkiPerGroup = currentAdConfig.dkiCount;
+            const callOnlyPerGroup = currentAdConfig.callOnlyCount;
+            const totalAdsPerGroup = rsaPerGroup + dkiPerGroup + callOnlyPerGroup;
             const totalAdsToGenerate = totalAdsPerGroup * groupsToProcess.length;
 
             // Limit total ads to 25
@@ -212,14 +431,16 @@ export const AdsBuilder = () => {
                     continue;
                 }
                 
-                // Generate RSA Ads
-                if (currentAdConfig.rsaCount > 0) {
+                // Generate RSA Ads (3 per group)
+                if (rsaPerGroup > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'RSA',
-                            count: currentAdConfig.rsaCount,
-                            groupName: group.name
+                            count: rsaPerGroup,
+                            groupName: group.name,
+                            baseUrl: baseUrl,
+                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
                         if (response.ads) {
@@ -237,21 +458,23 @@ export const AdsBuilder = () => {
                         }
                     } catch (error) {
                         console.log('API unavailable, using fallback for RSA');
-                        // Fallback RSA generation
-                        for (let i = 0; i < currentAdConfig.rsaCount; i++) {
-                            allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i));
+                        // Fallback RSA generation (3 ads per group)
+                        for (let i = 0; i < rsaPerGroup; i++) {
+                            allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i, baseUrl));
                         }
                     }
                 }
 
-                // Generate DKI Ads
-                if (currentAdConfig.dkiCount > 0) {
+                // Generate DKI Ads (3 per group)
+                if (dkiPerGroup > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'DKI',
-                            count: currentAdConfig.dkiCount,
-                            groupName: group.name
+                            count: dkiPerGroup,
+                            groupName: group.name,
+                            baseUrl: baseUrl,
+                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
                         if (response.ads) {
@@ -269,21 +492,23 @@ export const AdsBuilder = () => {
                         }
                     } catch (error) {
                         console.log('API unavailable, using fallback for DKI');
-                        // Fallback DKI generation
-                        for (let i = 0; i < currentAdConfig.dkiCount; i++) {
-                            allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i));
+                        // Fallback DKI generation (3 ads per group)
+                        for (let i = 0; i < dkiPerGroup; i++) {
+                            allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i, baseUrl));
                         }
                     }
                 }
 
                 // Generate Call Only Ads
-                if (currentAdConfig.callOnlyCount > 0) {
+                if (callOnlyPerGroup > 0) {
                     try {
                         const response = await api.post('/generate-ads', {
                             keywords,
                             adType: 'CallOnly',
-                            count: currentAdConfig.callOnlyCount,
-                            groupName: group.name
+                            count: callOnlyPerGroup,
+                            groupName: group.name,
+                            baseUrl: baseUrl,
+                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
                         if (response.ads) {
@@ -304,8 +529,8 @@ export const AdsBuilder = () => {
                     } catch (error) {
                         console.log('API unavailable, using fallback for Call Only');
                         // Fallback Call Only generation
-                        for (let i = 0; i < currentAdConfig.callOnlyCount; i++) {
-                            allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i));
+                        for (let i = 0; i < callOnlyPerGroup; i++) {
+                            allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i, baseUrl));
                         }
                     }
                 }
@@ -323,169 +548,201 @@ export const AdsBuilder = () => {
         }
     };
 
-    // Helper function for proper title casing (Google Ads best practice)
-    const toTitleCase = (str: string): string => {
-        const exceptions = ['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'by', 'of', 'in'];
-        return str.toLowerCase().split(' ').map((word, index) => {
-            // Always capitalize first word, last word, and words not in exceptions
-            if (index === 0 || !exceptions.includes(word)) {
-                return word.charAt(0).toUpperCase() + word.slice(1);
-            }
-            return word;
-        }).join(' ');
-    };
-
-    const generateFallbackRSA = (groupName: string, keywords: string[], index: number): GeneratedAd => {
+    const generateFallbackRSA = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
         // Select a keyword from the array, cycling through them
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
         
-        // Clean keyword: Remove quotes, brackets, and match type syntax
-        // Google Ads doesn't allow quotes in ad text
-        let cleanKeyword = selectedKeyword.trim();
-        if ((cleanKeyword.startsWith('"') && cleanKeyword.endsWith('"')) || 
-            (cleanKeyword.startsWith("'") && cleanKeyword.endsWith("'"))) {
-            cleanKeyword = cleanKeyword.slice(1, -1);
-        }
-        if (cleanKeyword.startsWith('[') && cleanKeyword.endsWith(']')) {
-            cleanKeyword = cleanKeyword.slice(1, -1);
-        }
-        if (cleanKeyword.startsWith('-')) {
-            cleanKeyword = cleanKeyword.slice(1);
-        }
-        cleanKeyword = cleanKeyword.trim();
-        
-        const mainKeyword = toTitleCase(cleanKeyword);
-        
-        // Google Ads Best Practices: Strong CTAs, Value Props, Urgency
-        const variations = [
-            { 
-                h1: `${mainKeyword} - Best Deals Online`, 
-                h2: 'Shop Now & Save Big', 
-                h3: 'Limited Time Offer',
-                h4: 'Free Shipping Available',
-                h5: 'Order Today'
-            },
-            { 
-                h1: `Professional ${mainKeyword} Service`, 
-                h2: 'Available 24/7', 
-                h3: 'Expert Support Team',
-                h4: 'Get a Free Quote',
-                h5: 'Trusted by 10K+ Customers'
-            },
-            { 
-                h1: `${mainKeyword} Solutions You Need`, 
-                h2: 'Get Started Today', 
-                h3: 'Free Consultation',
-                h4: 'Premium Quality Guaranteed',
-                h5: 'Call Now for Info'
-            },
-            { 
-                h1: `Premium ${mainKeyword} Products`, 
-                h2: 'Trusted by Thousands', 
-                h3: 'Best Price Guarantee',
-                h4: '5-Star Rated Service',
-                h5: 'Shop the Collection'
-            },
-            { 
-                h1: `${mainKeyword} Experts Near You`, 
-                h2: 'Fast & Reliable', 
-                h3: 'Contact Us Now',
-                h4: 'Same-Day Service Available',
-                h5: 'Get Your Free Estimate'
-            }
+        // RSA requires 10-15 headlines ideally, but interface supports 5
+        // Generate 5 unique headlines (mix of keyword variations, benefits, credibility, speed/urgency, CTA)
+        const headlineTemplates = [
+            // Keyword variations
+            `${mainKeyword} - Official Site`,
+            `Best ${mainKeyword} Online`,
+            `Top Rated ${mainKeyword}`,
+            `${mainKeyword} Services`,
+            `Professional ${mainKeyword}`,
+            // Benefits
+            `Fast & Reliable ${mainKeyword}`,
+            `24/7 ${mainKeyword} Support`,
+            `Expert ${mainKeyword} Help`,
+            `Trusted ${mainKeyword} Service`,
+            // Credibility
+            `5-Star Rated ${mainKeyword}`,
+            `Trusted by Thousands`,
+            `Award-Winning ${mainKeyword}`,
+            // Speed/Urgency
+            `Get ${mainKeyword} Today`,
+            `Same-Day ${mainKeyword} Service`,
+            `Instant ${mainKeyword} Access`,
+            // CTA headlines
+            `Shop ${mainKeyword} Now`,
+            `Buy ${mainKeyword} Online`,
+            `Order ${mainKeyword} Today`,
+            `Contact ${mainKeyword} Experts`,
+            `Get Free ${mainKeyword} Quote`
         ];
         
-        const variation = variations[index % variations.length];
+        // Select 5 unique headlines (avoid duplicates) - interface supports 5 headlines
+        const selectedHeadlines: string[] = [];
+        const usedIndices = new Set<number>();
+        const headlineCount = 5;
+        
+        while (selectedHeadlines.length < headlineCount && selectedHeadlines.length < headlineTemplates.length) {
+            const randomIdx = Math.floor(Math.random() * headlineTemplates.length);
+            if (!usedIndices.has(randomIdx)) {
+                usedIndices.add(randomIdx);
+                const headline = headlineTemplates[randomIdx].substring(0, 30);
+                if (!selectedHeadlines.includes(headline)) {
+                    selectedHeadlines.push(headline);
+                }
+            }
+        }
+        
+        // Fill remaining slots if needed
+        while (selectedHeadlines.length < headlineCount) {
+            const template = headlineTemplates[selectedHeadlines.length % headlineTemplates.length];
+            const headline = `${template} ${index + 1}`.substring(0, 30);
+            if (!selectedHeadlines.includes(headline)) {
+                selectedHeadlines.push(headline);
+            }
+        }
+        
+        // Generate 2-4 descriptions (90 chars max each)
+        const descriptionTemplates = [
+            `Find the perfect ${mainKeyword} for your needs. Compare options and get the best price available today with expert support.`,
+            `Get your ${mainKeyword} today with fast delivery, expert support, and 100% satisfaction guaranteed. Contact us now!`,
+            `Looking for ${mainKeyword}? We offer the best solutions with competitive pricing and excellent customer service. Shop with confidence.`,
+            `Order your ${mainKeyword} online with fast shipping and expert customer support. Satisfaction guaranteed! Get started today.`
+        ];
+        
+        const descriptionCount = 2 + (index % 3); // 2-4 descriptions
+        const selectedDescriptions = descriptionTemplates
+            .slice(0, descriptionCount)
+            .map(desc => desc.substring(0, 90));
+        
+        // Generate SEO-friendly URL
+        const keywordUrl = generateKeywordUrl(baseUrl, selectedKeyword);
         
         return {
             id: crypto.randomUUID(),
             groupName,
             adType: 'RSA',
             type: 'rsa',
-            headline1: variation.h1.substring(0, 30), // Google Ads limit: 30 chars
-            headline2: variation.h2.substring(0, 30),
-            headline3: variation.h3.substring(0, 30),
-            headline4: variation.h4.substring(0, 30),
-            headline5: variation.h5.substring(0, 30),
-            description1: `Looking for ${mainKeyword}? We offer the best solutions with competitive pricing and excellent customer service. Shop with confidence today.`.substring(0, 90),
-            description2: `Get your ${mainKeyword} today with fast delivery, expert support, and 100% satisfaction guaranteed. Contact us now for more information!`.substring(0, 90),
+            headline1: selectedHeadlines[0] || '',
+            headline2: selectedHeadlines[1] || '',
+            headline3: selectedHeadlines[2] || '',
+            headline4: selectedHeadlines[3] || '',
+            headline5: selectedHeadlines[4] || '',
+            // Add more headlines if needed (up to 15)
+            description1: selectedDescriptions[0] || '',
+            description2: selectedDescriptions[1] || '',
             path1: mainKeyword.toLowerCase().replace(/\s+/g, '-').substring(0, 15),
             path2: 'deals',
-            finalUrl: baseUrl,
+            finalUrl: keywordUrl,
             selected: false,
             extensions: []
         };
     };
 
-    const generateFallbackDKI = (groupName: string, keywords: string[], index: number): GeneratedAd => {
+    const generateFallbackDKI = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
         // Select a keyword from the array, cycling through them
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
         
-        // Clean keyword: Remove quotes, brackets, and match type syntax
-        // Remove leading/trailing quotes
-        let cleanKeyword = selectedKeyword.trim();
-        if ((cleanKeyword.startsWith('"') && cleanKeyword.endsWith('"')) || 
-            (cleanKeyword.startsWith("'") && cleanKeyword.endsWith("'"))) {
-            cleanKeyword = cleanKeyword.slice(1, -1);
-        }
-        // Remove brackets for exact match
-        if (cleanKeyword.startsWith('[') && cleanKeyword.endsWith(']')) {
-            cleanKeyword = cleanKeyword.slice(1, -1);
-        }
-        // Remove negative keyword prefix
-        if (cleanKeyword.startsWith('-')) {
-            cleanKeyword = cleanKeyword.slice(1);
-        }
-        cleanKeyword = cleanKeyword.trim();
+        // DKI Rules: Use {KeyWord:Default Text} syntax (capital K and W)
+        // Each headline should contain 1 DKI or 1 value-based benefit
+        // Max 30 characters recommended
+        // Generate 5 headline variations
+        const headlineVariations = [
+            `{KeyWord:${mainKeyword}} - Official Site`,
+            `Buy {KeyWord:${mainKeyword}} Online`,
+            `Top Rated {KeyWord:${mainKeyword}}`,
+            `{KeyWord:${mainKeyword}} Hotline`,
+            `Get {KeyWord:${mainKeyword}} Help`
+        ];
         
-        const mainKeyword = toTitleCase(cleanKeyword);
+        // Ensure headlines are within 30 chars (trim if needed)
+        const headlines = headlineVariations.map(h => {
+            if (h.length > 30) {
+                // Try to preserve DKI syntax while trimming
+                const dkiMatch = h.match(/\{KeyWord:[^}]+\}/);
+                if (dkiMatch) {
+                    const dkiPart = dkiMatch[0];
+                    const rest = h.replace(dkiPart, '').trim();
+                    const maxRest = 30 - dkiPart.length;
+                    if (maxRest > 0) {
+                        return `${dkiPart}${rest.substring(0, maxRest)}`;
+                    }
+                    return dkiPart.substring(0, 30);
+                }
+                return h.substring(0, 30);
+            }
+            return h;
+        });
         
-        // DKI Best Practices: Title case for default text, proper formatting
-        // IMPORTANT: DKI syntax must NOT have quotes around the keyword
-        // Correct: {KeyWord:call plumbing services}
-        // Wrong: {KeyWord:"call plumbing services"}
+        // Description Rules: Must include benefit + CTA
+        // Must NOT include more than 1–2 DKI per description
+        // Max 90 characters
+        const descriptionVariations = [
+            `Find the right {KeyWord:${mainKeyword}} instantly. Compare options & get support fast.`,
+            `Order your {KeyWord:${mainKeyword}} today with 24/7 assistance. Satisfaction guaranteed!`
+        ];
+        
+        // Ensure descriptions are within 90 chars
+        const descriptions = descriptionVariations.map(d => {
+            if (d.length > 90) {
+                // Try to preserve DKI syntax while trimming
+                const dkiMatch = d.match(/\{KeyWord:[^}]+\}/);
+                if (dkiMatch) {
+                    const dkiPart = dkiMatch[0];
+                    const rest = d.replace(dkiPart, '').trim();
+                    const maxRest = 90 - dkiPart.length;
+                    if (maxRest > 0) {
+                        return `${dkiPart}${rest.substring(0, maxRest)}`;
+                    }
+                    return dkiPart.substring(0, 90);
+                }
+                return d.substring(0, 90);
+            }
+            return d;
+        });
+        
+        // Generate SEO-friendly URL
+        const keywordUrl = generateKeywordUrl(baseUrl, selectedKeyword);
+        
+        // Generate display paths (max 15 chars each)
+        const urlSafeKeyword = mainKeyword.toLowerCase().replace(/\s+/g, '-');
+        const path1 = urlSafeKeyword.substring(0, 15);
+        const path2 = 'deals';
+        
         return {
             id: crypto.randomUUID(),
             groupName,
             adType: 'DKI',
             type: 'dki',
-            headline1: `{KeyWord:${mainKeyword}} - Official Site`.substring(0, 30),
-            headline2: `Shop {KeyWord:${mainKeyword}} Online`.substring(0, 30),
-            headline3: `Best {KeyWord:${mainKeyword}} Deals`.substring(0, 30),
-            headline4: `Buy {KeyWord:${mainKeyword}} Today`.substring(0, 30),
-            headline5: `Top Rated {KeyWord:${mainKeyword}}`.substring(0, 30),
-            description1: `Find the perfect {KeyWord:${mainKeyword}} for your needs. Compare options and get the best price available today.`.substring(0, 90),
-            description2: `Order your {KeyWord:${mainKeyword}} online with fast shipping and expert customer support. Satisfaction guaranteed!`.substring(0, 90),
-            path1: 'keyword'.substring(0, 15),
-            path2: 'deals'.substring(0, 15),
-            finalUrl: baseUrl,
+            headline1: headlines[0] || '',
+            headline2: headlines[1] || '',
+            headline3: headlines[2] || '',
+            headline4: headlines[3] || '',
+            headline5: headlines[4] || '',
+            description1: descriptions[0] || '',
+            description2: descriptions[1] || '',
+            path1: path1,
+            path2: path2,
+            finalUrl: keywordUrl,
             selected: false,
             extensions: []
         };
     };
 
-    const generateFallbackCallOnly = (groupName: string, keywords: string[], index: number): GeneratedAd => {
+    const generateFallbackCallOnly = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
         // Select a keyword from the array, cycling through them
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        
-        // Clean keyword: Remove quotes, brackets, and match type syntax
-        // Google Ads doesn't allow quotes in ad text
-        let cleanKeyword = selectedKeyword.trim();
-        if ((cleanKeyword.startsWith('"') && cleanKeyword.endsWith('"')) || 
-            (cleanKeyword.startsWith("'") && cleanKeyword.endsWith("'"))) {
-            cleanKeyword = cleanKeyword.slice(1, -1);
-        }
-        if (cleanKeyword.startsWith('[') && cleanKeyword.endsWith(']')) {
-            cleanKeyword = cleanKeyword.slice(1, -1);
-        }
-        if (cleanKeyword.startsWith('-')) {
-            cleanKeyword = cleanKeyword.slice(1);
-        }
-        cleanKeyword = cleanKeyword.trim();
-        
-        const mainKeyword = toTitleCase(cleanKeyword);
+        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
         
         // Call-Only Best Practices: Strong CTAs with "Call" or "Contact"
+        // Required: 2 headlines (30 chars each), 2 descriptions (90 chars each), phone, business name
         const variations = [
             { 
                 h1: `${mainKeyword} - Call Now`, 
@@ -511,17 +768,26 @@ export const AdsBuilder = () => {
         
         const variation = variations[index % variations.length];
         
+        // Ensure headlines are within 30 chars
+        const headline1 = variation.h1.substring(0, 30);
+        const headline2 = variation.h2.substring(0, 30);
+        
+        // Descriptions must be within 90 chars
+        const description1 = `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help you today!`.substring(0, 90);
+        const description2 = `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today for your free quote!`.substring(0, 90);
+        
         return {
             id: crypto.randomUUID(),
             groupName,
             adType: 'CallOnly',
             type: 'callonly',
-            headline1: variation.h1.substring(0, 30),
-            headline2: variation.h2.substring(0, 30),
-            description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing. Our team is ready to help you today!`.substring(0, 90),
-            description2: `Get immediate assistance with ${mainKeyword}. Speak directly with our specialists. Call today for your free quote!`.substring(0, 90),
+            headline1: headline1,
+            headline2: headline2,
+            description1: description1,
+            description2: description2,
             phoneNumber: '+1-800-123-4567',
             businessName: 'Your Business',
+            finalUrl: baseUrl, // Call-only ads still need a final URL
             selected: false,
             extensions: []
         };
