@@ -1033,9 +1033,9 @@ export const WebsiteTemplates: React.FC = () => {
           <TabsTrigger value="saved">My Templates ({savedTemplates.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="templates" className="space-y-6">
+        <TabsContent value="templates" className="space-y-8">
           {/* Search and Filter Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
               <Input
@@ -1043,7 +1043,7 @@ export const WebsiteTemplates: React.FC = () => {
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 h-12"
               />
               {searchQuery && (
                 <button
@@ -1055,10 +1055,10 @@ export const WebsiteTemplates: React.FC = () => {
               )}
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Filter className="w-5 h-5 text-slate-500" />
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[200px] h-12">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1075,54 +1075,54 @@ export const WebsiteTemplates: React.FC = () => {
 
           {/* Templates Grid */}
           {filteredTemplates.length === 0 ? (
-            <Card className="p-12 text-center">
-              <Layout className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-slate-600 mb-2">No templates found</h3>
-              <p className="text-slate-500">Try adjusting your search or filter criteria</p>
+            <Card className="p-16 text-center border-2 border-dashed">
+              <Layout className="w-20 h-20 text-slate-300 mx-auto mb-6" />
+              <h3 className="text-2xl font-semibold text-slate-700 mb-3">No templates found</h3>
+              <p className="text-slate-500 text-base">Try adjusting your search or filter criteria</p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredTemplates.map((template) => (
-                <Card key={template.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300">
+                <Card key={template.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-400">
                   {/* Template Preview/Thumbnail */}
-                  <div className="relative h-48 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
-                    <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
+                  <div className="relative h-56 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
+                    <div className="text-8xl opacity-80 group-hover:scale-110 transition-transform duration-300">
                       {template.thumbnail}
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-white/90 text-slate-700 border-0 shadow-sm">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-white/95 text-slate-700 border-0 shadow-md px-3 py-1 text-sm">
                         {template.category}
                       </Badge>
                     </div>
                   </div>
 
                   {/* Template Info */}
-                  <div className="p-5">
-                    <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2 min-h-[3.5rem]">
                       {template.name}
                     </h3>
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem]">
+                    <p className="text-sm text-slate-600 mb-5 line-clamp-2 min-h-[2.5rem] leading-relaxed">
                       {template.description}
                     </p>
                     
                     {/* Features Badges */}
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      <Badge variant="outline" className="text-xs px-2 py-1 bg-white border-slate-200 text-slate-600 font-medium">
                         {template.sections.length} sections
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
-                        <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
+                      <Badge variant="outline" className="text-xs px-2 py-1 bg-white border-slate-200 text-slate-600 font-medium">
+                        <CheckCircle className="w-3 h-3 mr-1" />
                         Google Ads
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
-                        <Smartphone className="w-2.5 h-2.5 mr-0.5" />
+                      <Badge variant="outline" className="text-xs px-2 py-1 bg-white border-slate-200 text-slate-600 font-medium">
+                        <Smartphone className="w-3 h-3 mr-1" />
                         Responsive
                       </Badge>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <Button 
                         onClick={() => handleViewTemplate(template)}
                         variant="outline"
