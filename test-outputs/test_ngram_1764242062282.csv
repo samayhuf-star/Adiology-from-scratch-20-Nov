@@ -1,0 +1,11 @@
+"Campaign","Ad Group","Keyword","Match type","Final URL","Status","Ad Type","Headline 1","Headline 2","Headline 3","Description 1","Description 2"
+"Test Campaign - Smart Cluster","AG - Default","[plumbing services]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default","[call plumbing services]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default","[contact plumbing services]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default","[emergency plumber]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default","[plumber near me]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default","[drain cleaning]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default","[water heater repair]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default","[pipe repair]","Exact","https://example.com","Enabled",,,,,,
+"Test Campaign - Smart Cluster","AG - Default",,,"https://example.com","Enabled","Responsive search ad","Professional Plumbing Services","24/7 Emergency Service","Licensed & Insured","Get fast, reliable plumbing services. Expert technicians available now.","Call today for a free estimate!"
+"Test Campaign - Smart Cluster","AG - Default",,,"https://example.com","Enabled","Dynamic search ad","{KeyWord:plumbing services} - Best Deals","Order {KeyWord:plumbing services} Online","Find Quality {KeyWord:plumbing services}","Looking for {KeyWord:plumbing services}? We offer competitive prices.","Get your {KeyWord:plumbing services} with fast shipping."

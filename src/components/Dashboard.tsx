@@ -290,9 +290,9 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold theme-gradient-text mb-1">
             Welcome back, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}!
@@ -310,16 +310,16 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* My Resources */}
       <div>
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 flex items-center gap-2">
+        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
           <FolderOpen className="w-5 h-5 text-indigo-600" />
           My Resources
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {/* My Campaigns */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-4 sm:p-5">
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
                   <Layers className="w-6 h-6 text-white" />
                 </div>
@@ -335,10 +335,10 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           </Card>
 
           {/* My Presets */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-4 sm:p-5">
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
                   <Package className="w-6 h-6 text-white" />
                 </div>
@@ -354,10 +354,10 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           </Card>
 
           {/* My Domains */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-4 sm:p-5">
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
             <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
                   <Globe className="w-6 h-6 text-white" />
                 </div>
@@ -376,23 +376,23 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 flex items-center gap-2">
+        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
           <Zap className="w-5 h-5 text-indigo-600" />
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
               <Card
                 key={action.id}
-                className="p-4 sm:p-5 hover:shadow-xl transition-all duration-300 cursor-pointer group border-2 hover:border-indigo-200"
+                className="p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group border-2 hover:border-indigo-200"
                 onClick={() => onNavigate(action.id)}
               >
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${action.bgColor} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                  <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${action.iconColor}`} />
+                <div className={`w-12 h-12 rounded-xl ${action.bgColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <Icon className={`w-6 h-6 ${action.iconColor}`} />
                 </div>
-                <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-1">{action.title}</h3>
+                <h3 className="text-base font-semibold text-slate-800 mb-1">{action.title}</h3>
                 <p className="text-sm text-slate-600">{action.description}</p>
               </Card>
             );
@@ -402,11 +402,11 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-3 flex items-center gap-2">
+        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
           <Clock className="w-5 h-5 text-indigo-600" />
           Recent Activity
         </h2>
-        <Card className="border-2 p-4 sm:p-6">
+        <Card className="border-2 p-6">
           {recentActivity.length > 0 ? (
             <div className="space-y-3">
               {recentActivity.slice(0, 8).map((activity) => (

@@ -341,6 +341,7 @@ export const WebsiteTemplates: React.FC = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [showPreviewDialog, setShowPreviewDialog] = useState<Template | SavedTemplate | null>(null);
+  const [showPolicyModal, setShowPolicyModal] = useState<{ type: 'privacy' | 'terms'; section: TemplateSection | null } | null>(null);
 
   useEffect(() => {
     loadSavedTemplates();
@@ -886,7 +887,16 @@ export const WebsiteTemplates: React.FC = () => {
                         <div>
                             <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">Quick Links</h4>
                             <ul style="list-style: none; space-y: 0.5rem; color: #94a3b8;">
-                                ${content.links.map((link: any) => `<li><a href="${link.href || '#'}" style="color: #94a3b8;">${escapeHtml(link.text || '')}</a></li>`).join('')}
+                                ${content.links.map((link: any) => {
+                                  const isPrivacyLink = link.text === 'Privacy Policy';
+                                  const isTermsLink = link.text === 'Terms of Service';
+                                  if (isPrivacyLink || isTermsLink) {
+                                    // For HTML export, link to the section ID
+                                    const sectionId = isPrivacyLink ? 'privacy-1' : 'terms-1';
+                                    return `<li><a href="#${sectionId}" style="color: #94a3b8; text-decoration: underline; cursor: pointer;">${escapeHtml(link.text || '')}</a></li>`;
+                                  }
+                                  return `<li><a href="${link.href || '#'}" style="color: #94a3b8;">${escapeHtml(link.text || '')}</a></li>`;
+                                }).join('')}
                             </ul>
                         </div>
                     ` : ''}
@@ -964,6 +974,14 @@ export const WebsiteTemplates: React.FC = () => {
       setActiveSection={setActiveSection}
       updateSectionContent={updateSectionContent}
       onExport={handleExportHTML}
+      onPolicyLinkClick={(type) => {
+        const policySection = editingTemplate.customizedSections.find(
+          s => s.type === type
+        );
+        if (policySection) {
+          setShowPolicyModal({ type, section: policySection });
+        }
+      }}
     />;
   }
 
@@ -1255,22 +1273,46 @@ export const WebsiteTemplates: React.FC = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-6 py-4">
-            {showPreviewDialog && (
-              <div className="bg-white shadow-xl rounded-lg overflow-hidden">
-                {('customizedSections' in showPreviewDialog ? showPreviewDialog : {
-                  id: showPreviewDialog.id,
-                  name: showPreviewDialog.name,
-                  originalTemplateId: showPreviewDialog.id,
-                  customizedSections: showPreviewDialog.sections,
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
-                } as SavedTemplate).customizedSections.map(section => (
-                  <div key={section.id}>
-                    {renderSectionPreview(section)}
-                  </div>
-                ))}
-              </div>
-            )}
+            {showPreviewDialog && (() => {
+              const previewTemplate = ('customizedSections' in showPreviewDialog ? showPreviewDialog : {
+                id: showPreviewDialog.id,
+                name: showPreviewDialog.name,
+                originalTemplateId: showPreviewDialog.id,
+                customizedSections: showPreviewDialog.sections,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              } as SavedTemplate);
+              
+              // Filter out privacy and terms from main preview
+              const mainSections = previewTemplate.customizedSections.filter(
+                s => s.type !== 'privacy' && s.type !== 'terms'
+              );
+              
+              return (
+                <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+                  {mainSections.map(section => (
+                    <div key={section.id}>
+                      {renderSectionPreview(
+                        section,
+                        false,
+                        undefined,
+                        undefined,
+                        undefined,
+                        previewTemplate,
+                        (type) => {
+                          const policySection = previewTemplate.customizedSections.find(
+                            s => s.type === type
+                          );
+                          if (policySection) {
+                            setShowPolicyModal({ type, section: policySection });
+                          }
+                        }
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
           <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0 border-t">
             <Button variant="outline" onClick={() => setShowPreviewDialog(null)}>
@@ -1313,6 +1355,7 @@ const TemplateEditor: React.FC<{
   setActiveSection: (id: string) => void;
   updateSectionContent: (sectionId: string, field: string, value: any) => void;
   onExport?: (template: SavedTemplate) => void;
+  onPolicyLinkClick?: (type: 'privacy' | 'terms') => void;
 }> = ({ 
   template, 
   onClose, 
@@ -1323,7 +1366,8 @@ const TemplateEditor: React.FC<{
   activeSection,
   setActiveSection,
   updateSectionContent,
-  onExport
+  onExport,
+  onPolicyLinkClick
 }) => {
   const [editMode, setEditMode] = useState<'visual' | 'properties'>('visual');
   const [editingElement, setEditingElement] = useState<string | null>(null);
@@ -1457,12 +1501,14 @@ const TemplateEditor: React.FC<{
                 onUpdate={updateSectionContent}
                 editingElement={editingElement}
                 setEditingElement={setEditingElement}
+                onPolicyLinkClick={onPolicyLinkClick}
               />
             </div>
           </div>
           {editMode === 'visual' && (
-            <div className="fixed bottom-6 right-6 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
-              💡 Click on any text or image in the preview to edit
+            <div className="fixed bottom-6 right-6 bg-indigo-600 text-white px-4 py-3 rounded-lg shadow-xl text-sm flex items-center gap-2 z-50 animate-pulse">
+              <Edit className="w-4 h-4" />
+              <span>Click on any text or image in the preview to edit</span>
             </div>
           )}
         </div>
@@ -1876,7 +1922,9 @@ const renderSectionPreview = (
   editMode: boolean = false,
   onUpdate?: (sectionId: string, field: string, value: any) => void,
   editingElement?: string | null,
-  setEditingElement?: (id: string | null) => void
+  setEditingElement?: (id: string | null) => void,
+  template?: SavedTemplate,
+  onPolicyLinkClick?: (type: 'privacy' | 'terms') => void
 ) => {
   const handleTextEdit = (field: string, value: string) => {
     if (onUpdate) {
@@ -2524,18 +2572,57 @@ const renderSectionPreview = (
       );
     
     case 'footer':
+      // Find privacy and terms sections from the template
+      const getPolicySection = (type: 'privacy' | 'terms'): TemplateSection | null => {
+        // This will be passed from parent component
+        return null;
+      };
+
       return (
         <footer className="bg-slate-900 text-slate-300 py-16 px-5">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
               {/* Company Info Column */}
               <div>
-                <h4 className="text-white font-semibold mb-4 text-lg">
-                  {section.content.companyName || 'Company Name'}
-                </h4>
-                <p className="text-slate-400 mb-4">{section.content.tagline || ''}</p>
+                {editMode ? (
+                  <h4 
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="text-white font-semibold mb-4 text-lg outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                    onBlur={(e) => handleTextEdit('companyName', e.currentTarget.textContent || '')}
+                  >
+                    {section.content.companyName || 'Company Name'}
+                  </h4>
+                ) : (
+                  <h4 className="text-white font-semibold mb-4 text-lg">
+                    {section.content.companyName || 'Company Name'}
+                  </h4>
+                )}
+                {editMode ? (
+                  <p 
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="text-slate-400 mb-4 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                    onBlur={(e) => handleTextEdit('tagline', e.currentTarget.textContent || '')}
+                  >
+                    {section.content.tagline || ''}
+                  </p>
+                ) : (
+                  <p className="text-slate-400 mb-4">{section.content.tagline || ''}</p>
+                )}
                 {section.content.address && (
-                  <p className="text-slate-400">{section.content.address}</p>
+                  editMode ? (
+                    <p 
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="text-slate-400 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                      onBlur={(e) => handleTextEdit('address', e.currentTarget.textContent || '')}
+                    >
+                      {section.content.address}
+                    </p>
+                  ) : (
+                    <p className="text-slate-400">{section.content.address}</p>
+                  )
                 )}
               </div>
               
@@ -2545,16 +2632,48 @@ const renderSectionPreview = (
                 <ul className="space-y-2 text-slate-400">
                   {section.content.phone && (
                     <li>
-                      <a href={`tel:${section.content.phone}`} className="hover:text-white transition-colors">
-                        📞 {section.content.phone}
-                      </a>
+                      {editMode ? (
+                        <a 
+                          href={`tel:${section.content.phone}`} 
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                          onBlur={(e) => {
+                            const text = e.currentTarget.textContent || '';
+                            const phone = text.replace('📞', '').trim();
+                            handleTextEdit('phone', phone);
+                          }}
+                        >
+                          📞 {section.content.phone}
+                        </a>
+                      ) : (
+                        <a href={`tel:${section.content.phone}`} className="hover:text-white transition-colors">
+                          📞 {section.content.phone}
+                        </a>
+                      )}
                     </li>
                   )}
                   {section.content.email && (
                     <li>
-                      <a href={`mailto:${section.content.email}`} className="hover:text-white transition-colors">
-                        ✉️ {section.content.email}
-                      </a>
+                      {editMode ? (
+                        <a 
+                          href={`mailto:${section.content.email}`} 
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                          onBlur={(e) => {
+                            const text = e.currentTarget.textContent || '';
+                            const email = text.replace('✉️', '').trim();
+                            handleTextEdit('email', email);
+                          }}
+                        >
+                          ✉️ {section.content.email}
+                        </a>
+                      ) : (
+                        <a href={`mailto:${section.content.email}`} className="hover:text-white transition-colors">
+                          ✉️ {section.content.email}
+                        </a>
+                      )}
                     </li>
                   )}
                 </ul>
@@ -2565,13 +2684,32 @@ const renderSectionPreview = (
                 <div>
                   <h4 className="text-white font-semibold mb-4 text-lg">Quick Links</h4>
                   <ul className="space-y-2 text-slate-400">
-                    {section.content.links.map((link: any, linkIdx: number) => (
-                      <li key={linkIdx}>
-                        <a href={link.href || '#'} className="hover:text-white transition-colors">
-                          {link.text}
-                        </a>
-                      </li>
-                    ))}
+                    {section.content.links.map((link: any, linkIdx: number) => {
+                      const isPrivacyLink = link.text === 'Privacy Policy';
+                      const isTermsLink = link.text === 'Terms of Service';
+                      return (
+                        <li key={linkIdx}>
+                          {isPrivacyLink || isTermsLink ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (onPolicyLinkClick) {
+                                  onPolicyLinkClick(isPrivacyLink ? 'privacy' : 'terms');
+                                }
+                              }}
+                              className="hover:text-white transition-colors text-left cursor-pointer underline"
+                            >
+                              {link.text}
+                            </button>
+                          ) : (
+                            <a href={link.href || '#'} className="hover:text-white transition-colors">
+                              {link.text}
+                            </a>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
