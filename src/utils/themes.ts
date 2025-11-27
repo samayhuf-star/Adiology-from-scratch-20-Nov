@@ -52,7 +52,7 @@ export const themes: Record<string, Theme> = {
   purple: {
     id: 'purple',
     name: 'Purple Elegance',
-    description: 'Classic purple and indigo combination',
+    description: 'Classic purple and indigo combination - Professional and modern',
     colors: {
       primary: 'indigo-600',
       primaryLight: 'indigo-50',
@@ -90,7 +90,7 @@ export const themes: Record<string, Theme> = {
   ocean: {
     id: 'ocean',
     name: 'Ocean Blue',
-    description: 'Calming blue and cyan tones',
+    description: 'Calming blue and cyan tones - Fresh and trustworthy',
     colors: {
       primary: 'blue-600',
       primaryLight: 'blue-50',
@@ -128,7 +128,7 @@ export const themes: Record<string, Theme> = {
   forest: {
     id: 'forest',
     name: 'Forest Green',
-    description: 'Natural green and emerald shades',
+    description: 'Natural green and emerald shades - Growth and harmony',
     colors: {
       primary: 'emerald-600',
       primaryLight: 'emerald-50',
@@ -159,44 +159,6 @@ export const themes: Record<string, Theme> = {
       warning: 'amber-600',
       error: 'red-600',
       info: 'teal-600',
-    },
-  },
-
-  // Theme 4: Sunset Orange
-  sunset: {
-    id: 'sunset',
-    name: 'Sunset Orange',
-    description: 'Warm orange and amber tones',
-    colors: {
-      primary: 'orange-600',
-      primaryLight: 'orange-50',
-      primaryDark: 'orange-700',
-      primaryGradient: 'from-orange-500 to-red-600',
-      
-      secondary: 'amber-600',
-      secondaryLight: 'amber-50',
-      secondaryDark: 'amber-700',
-      secondaryGradient: 'from-amber-500 to-orange-600',
-      
-      accent: 'red-600',
-      accentLight: 'red-50',
-      accentDark: 'red-700',
-      
-      bgPrimary: 'orange-50',
-      bgSecondary: 'white',
-      bgCard: 'white/60',
-      
-      textPrimary: 'slate-900',
-      textSecondary: 'slate-600',
-      textMuted: 'slate-400',
-      
-      border: 'orange-200',
-      borderLight: 'orange-100',
-      
-      success: 'emerald-600',
-      warning: 'yellow-600',
-      error: 'red-600',
-      info: 'blue-600',
     },
   },
 };
@@ -266,13 +228,23 @@ export function getThemeClasses(theme: Theme) {
   };
 }
 
-// Apply theme to DOM by setting data attribute
+// Apply theme to DOM by setting data attribute and CSS variables
 export function applyThemeToDOM(theme: Theme): void {
   // Set the theme ID as a data attribute on the html element
   document.documentElement.setAttribute('data-theme', theme.id);
   
   // Also set individual color classes for dynamic usage
-  document.documentElement.classList.remove('theme-purple', 'theme-ocean', 'theme-forest', 'theme-sunset');
+  document.documentElement.classList.remove('theme-purple', 'theme-ocean', 'theme-forest');
   document.documentElement.classList.add(`theme-${theme.id}`);
+  
+  // Apply CSS custom properties for dynamic theme switching
+  const root = document.documentElement;
+  root.style.setProperty('--theme-primary', `var(--color-${theme.colors.primary})`);
+  root.style.setProperty('--theme-secondary', `var(--color-${theme.colors.secondary})`);
+  root.style.setProperty('--theme-accent', `var(--color-${theme.colors.accent})`);
+  root.style.setProperty('--theme-bg-primary', `var(--color-${theme.colors.bgPrimary})`);
+  root.style.setProperty('--theme-bg-secondary', `var(--color-${theme.colors.bgSecondary})`);
+  root.style.setProperty('--theme-text-primary', `var(--color-${theme.colors.textPrimary})`);
+  root.style.setProperty('--theme-text-secondary', `var(--color-${theme.colors.textSecondary})`);
 }
 

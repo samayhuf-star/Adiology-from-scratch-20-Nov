@@ -868,58 +868,82 @@ export const WebsiteTemplates: React.FC = () => {
         </section>`;
 
       case 'footer':
-        return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 4rem 1.25rem;">
+        return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 4rem 1.25rem 2rem;">
             <div style="max-width: 72rem; margin: 0 auto;">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4" style="gap: 2rem; margin-bottom: 2rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
                     <div>
-                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">${escapeHtml(content.companyName || 'Company Name')}</h4>
-                        ${content.tagline ? `<p style="color: #94a3b8; margin-bottom: 1rem;">${escapeHtml(content.tagline)}</p>` : ''}
-                        ${content.address ? `<p style="color: #94a3b8;">${escapeHtml(content.address)}</p>` : ''}
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem; line-height: 1.5;">${escapeHtml(content.companyName || 'Company Name')}</h4>
+                        ${content.tagline ? `<p style="color: #94a3b8; margin-bottom: 1rem; line-height: 1.6;">${escapeHtml(content.tagline)}</p>` : ''}
+                        ${content.address ? `<p style="color: #94a3b8; line-height: 1.6; margin: 0;">${escapeHtml(content.address)}</p>` : ''}
                     </div>
                     <div>
-                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">Contact</h4>
-                        <ul style="list-style: none; space-y: 0.5rem; color: #94a3b8;">
-                            ${content.phone ? `<li><a href="tel:${content.phone}" style="color: #94a3b8;">📞 ${escapeHtml(content.phone)}</a></li>` : ''}
-                            ${content.email ? `<li><a href="mailto:${content.email}" style="color: #94a3b8;">✉️ ${escapeHtml(content.email)}</a></li>` : ''}
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem; line-height: 1.5;">Contact</h4>
+                        <ul style="list-style: none; padding: 0; margin: 0; color: #94a3b8;">
+                            ${content.phone ? `<li style="margin-bottom: 0.5rem;"><a href="tel:${content.phone}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.phone)}</a></li>` : ''}
+                            ${content.email ? `<li style="margin-bottom: 0.5rem;"><a href="mailto:${content.email}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.email)}</a></li>` : ''}
                         </ul>
                     </div>
                     ${(content.links || []).length > 0 ? `
                         <div>
-                            <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">Quick Links</h4>
-                            <ul style="list-style: none; space-y: 0.5rem; color: #94a3b8;">
+                            <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem; line-height: 1.5;">Quick Links</h4>
+                            <ul style="list-style: none; padding: 0; margin: 0; color: #94a3b8;">
                                 ${content.links.map((link: any) => {
                                   const isPrivacyLink = link.text === 'Privacy Policy';
                                   const isTermsLink = link.text === 'Terms of Service';
                                   if (isPrivacyLink || isTermsLink) {
                                     // For HTML export, link to the section ID
                                     const sectionId = isPrivacyLink ? 'privacy-1' : 'terms-1';
-                                    return `<li><a href="#${sectionId}" style="color: #94a3b8; text-decoration: underline; cursor: pointer;">${escapeHtml(link.text || '')}</a></li>`;
+                                    return `<li style="margin-bottom: 0.5rem;"><a href="#${sectionId}" style="color: #94a3b8; text-decoration: underline; cursor: pointer; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
                                   }
-                                  return `<li><a href="${link.href || '#'}" style="color: #94a3b8;">${escapeHtml(link.text || '')}</a></li>`;
+                                  return `<li style="margin-bottom: 0.5rem;"><a href="${link.href || '#'}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
                                 }).join('')}
                             </ul>
                         </div>
                     ` : ''}
                 </div>
-                ${content.copyright ? `<div style="padding-top: 2rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.875rem;">${escapeHtml(content.copyright)}</div>` : ''}
+                ${content.copyright ? `<div style="padding-top: 2rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.875rem; margin-top: 2rem;">${escapeHtml(content.copyright)}</div>` : ''}
             </div>
         </footer>`;
 
       case 'privacy':
+        // Convert markdown to HTML for better rendering
+        const privacyContent = (content.content || '').replace(/\n/g, '<br>')
+          .replace(/##\s+(.+)/g, '<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 2rem; margin-bottom: 1rem; color: #0f172a;">$1</h2>')
+          .replace(/###\s+(.+)/g, '<h3 style="font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #0f172a;">$1</h3>')
+          .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>')
+          .replace(/\*\s+(.+)/g, '<li style="margin-left: 1.5rem; margin-bottom: 0.5rem; list-style-type: disc;">$1</li>')
+          .replace(/^(.+)$/gm, (match) => {
+            if (match.trim().startsWith('<')) return match;
+            if (match.trim().startsWith('#')) return match;
+            return `<p style="margin-bottom: 1rem; line-height: 1.7; color: #334155;">${match}</p>`;
+          });
+        
         return `<section id="${section.id}" class="section" style="padding: 4rem 1.5rem; background: white;">
             <div style="max-width: 64rem; margin: 0 auto;">
-                <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">Privacy Policy</h1>
-                ${content.lastUpdated ? `<p style="color: #64748b; margin-bottom: 2rem;">Last Updated: ${escapeHtml(content.lastUpdated)}</p>` : ''}
-                <div style="color: #334155; white-space: pre-wrap;">${escapeHtml(content.content || '')}</div>
+                <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a; line-height: 1.2;">Privacy Policy</h1>
+                ${content.lastUpdated ? `<p style="color: #64748b; margin-bottom: 2rem; font-size: 0.9375rem;">Last Updated: ${escapeHtml(content.lastUpdated)}</p>` : ''}
+                <div style="color: #334155; line-height: 1.7;">${privacyContent}</div>
             </div>
         </section>`;
 
       case 'terms':
+        // Convert markdown to HTML for better rendering
+        const termsContent = (content.content || '').replace(/\n/g, '<br>')
+          .replace(/##\s+(.+)/g, '<h2 style="font-size: 1.5rem; font-weight: 600; margin-top: 2rem; margin-bottom: 1rem; color: #0f172a;">$1</h2>')
+          .replace(/###\s+(.+)/g, '<h3 style="font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #0f172a;">$1</h3>')
+          .replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>')
+          .replace(/\*\s+(.+)/g, '<li style="margin-left: 1.5rem; margin-bottom: 0.5rem; list-style-type: disc;">$1</li>')
+          .replace(/^(.+)$/gm, (match) => {
+            if (match.trim().startsWith('<')) return match;
+            if (match.trim().startsWith('#')) return match;
+            return `<p style="margin-bottom: 1rem; line-height: 1.7; color: #334155;">${match}</p>`;
+          });
+        
         return `<section id="${section.id}" class="section" style="padding: 4rem 1.5rem; background: white;">
             <div style="max-width: 64rem; margin: 0 auto;">
-                <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">Terms of Service</h1>
-                ${content.lastUpdated ? `<p style="color: #64748b; margin-bottom: 2rem;">Last Updated: ${escapeHtml(content.lastUpdated)}</p>` : ''}
-                <div style="color: #334155; white-space: pre-wrap;">${escapeHtml(content.content || '')}</div>
+                <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a; line-height: 1.2;">Terms of Service</h1>
+                ${content.lastUpdated ? `<p style="color: #64748b; margin-bottom: 2rem; font-size: 0.9375rem;">Last Updated: ${escapeHtml(content.lastUpdated)}</p>` : ''}
+                <div style="color: #334155; line-height: 1.7;">${termsContent}</div>
             </div>
         </section>`;
 
@@ -2581,7 +2605,7 @@ const renderSectionPreview = (
       return (
         <footer className="bg-slate-900 text-slate-300 py-16 px-5">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
               {/* Company Info Column */}
               <div>
                 {editMode ? (
@@ -2594,7 +2618,7 @@ const renderSectionPreview = (
                     {section.content.companyName || 'Company Name'}
                   </h4>
                 ) : (
-                  <h4 className="text-white font-semibold mb-4 text-lg">
+                  <h4 className="text-white font-semibold mb-4 text-lg leading-tight">
                     {section.content.companyName || 'Company Name'}
                   </h4>
                 )}
@@ -2602,76 +2626,76 @@ const renderSectionPreview = (
                   <p 
                     contentEditable
                     suppressContentEditableWarning
-                    className="text-slate-400 mb-4 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                    className="text-slate-400 mb-4 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text leading-relaxed"
                     onBlur={(e) => handleTextEdit('tagline', e.currentTarget.textContent || '')}
                   >
                     {section.content.tagline || ''}
                   </p>
                 ) : (
-                  <p className="text-slate-400 mb-4">{section.content.tagline || ''}</p>
+                  <p className="text-slate-400 mb-4 leading-relaxed">{section.content.tagline || ''}</p>
                 )}
                 {section.content.address && (
                   editMode ? (
                     <p 
                       contentEditable
                       suppressContentEditableWarning
-                      className="text-slate-400 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                      className="text-slate-400 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text leading-relaxed"
                       onBlur={(e) => handleTextEdit('address', e.currentTarget.textContent || '')}
                     >
                       {section.content.address}
                     </p>
                   ) : (
-                    <p className="text-slate-400">{section.content.address}</p>
+                    <p className="text-slate-400 leading-relaxed">{section.content.address}</p>
                   )
                 )}
               </div>
               
               {/* Contact Column */}
               <div>
-                <h4 className="text-white font-semibold mb-4 text-lg">Contact</h4>
-                <ul className="space-y-2 text-slate-400">
+                <h4 className="text-white font-semibold mb-4 text-lg leading-tight">Contact</h4>
+                <ul className="space-y-2 text-slate-400 list-none p-0 m-0">
                   {section.content.phone && (
-                    <li>
+                    <li className="mb-2">
                       {editMode ? (
                         <a 
                           href={`tel:${section.content.phone}`} 
                           contentEditable
                           suppressContentEditableWarning
-                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text no-underline"
                           onBlur={(e) => {
                             const text = e.currentTarget.textContent || '';
                             const phone = text.replace('📞', '').trim();
                             handleTextEdit('phone', phone);
                           }}
                         >
-                          📞 {section.content.phone}
+                          {section.content.phone}
                         </a>
                       ) : (
-                        <a href={`tel:${section.content.phone}`} className="hover:text-white transition-colors">
-                          📞 {section.content.phone}
+                        <a href={`tel:${section.content.phone}`} className="hover:text-white transition-colors no-underline">
+                          {section.content.phone}
                         </a>
                       )}
                     </li>
                   )}
                   {section.content.email && (
-                    <li>
+                    <li className="mb-2">
                       {editMode ? (
                         <a 
                           href={`mailto:${section.content.email}`} 
                           contentEditable
                           suppressContentEditableWarning
-                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text no-underline"
                           onBlur={(e) => {
                             const text = e.currentTarget.textContent || '';
                             const email = text.replace('✉️', '').trim();
                             handleTextEdit('email', email);
                           }}
                         >
-                          ✉️ {section.content.email}
+                          {section.content.email}
                         </a>
                       ) : (
-                        <a href={`mailto:${section.content.email}`} className="hover:text-white transition-colors">
-                          ✉️ {section.content.email}
+                        <a href={`mailto:${section.content.email}`} className="hover:text-white transition-colors no-underline">
+                          {section.content.email}
                         </a>
                       )}
                     </li>
@@ -2682,13 +2706,13 @@ const renderSectionPreview = (
               {/* Quick Links Column */}
               {section.content.links && section.content.links.length > 0 && (
                 <div>
-                  <h4 className="text-white font-semibold mb-4 text-lg">Quick Links</h4>
-                  <ul className="space-y-2 text-slate-400">
+                  <h4 className="text-white font-semibold mb-4 text-lg leading-tight">Quick Links</h4>
+                  <ul className="space-y-2 text-slate-400 list-none p-0 m-0">
                     {section.content.links.map((link: any, linkIdx: number) => {
                       const isPrivacyLink = link.text === 'Privacy Policy';
                       const isTermsLink = link.text === 'Terms of Service';
                       return (
-                        <li key={linkIdx}>
+                        <li key={linkIdx} className="mb-2">
                           {isPrivacyLink || isTermsLink ? (
                             <button
                               type="button"
@@ -2698,12 +2722,12 @@ const renderSectionPreview = (
                                   onPolicyLinkClick(isPrivacyLink ? 'privacy' : 'terms');
                                 }
                               }}
-                              className="hover:text-white transition-colors text-left cursor-pointer underline"
+                              className="hover:text-white transition-colors text-left cursor-pointer underline bg-transparent border-0 p-0 text-slate-400"
                             >
                               {link.text}
                             </button>
                           ) : (
-                            <a href={link.href || '#'} className="hover:text-white transition-colors">
+                            <a href={link.href || '#'} className="hover:text-white transition-colors no-underline">
                               {link.text}
                             </a>
                           )}
@@ -2718,12 +2742,12 @@ const renderSectionPreview = (
               {section.content.columns?.map((column: any, idx: number) => (
                 <div key={idx}>
                   {column.title && (
-                    <h4 className="text-white font-semibold mb-4 text-lg">{column.title}</h4>
+                    <h4 className="text-white font-semibold mb-4 text-lg leading-tight">{column.title}</h4>
                   )}
-                  <ul className="space-y-2 text-slate-400">
+                  <ul className="space-y-2 text-slate-400 list-none p-0 m-0">
                     {column.links?.map((link: any, linkIdx: number) => (
-                      <li key={linkIdx}>
-                        <a href={link.url || '#'} className="hover:text-white transition-colors">
+                      <li key={linkIdx} className="mb-2">
+                        <a href={link.url || '#'} className="hover:text-white transition-colors no-underline">
                           {link.text}
                         </a>
                       </li>
@@ -2735,7 +2759,7 @@ const renderSectionPreview = (
             
             {/* Footer Bottom */}
             {section.content.copyright && (
-              <div className="pt-8 border-t border-slate-800 text-center text-slate-400 text-sm">
+              <div className="pt-8 mt-8 border-t border-slate-800 text-center text-slate-400 text-sm">
                 {section.content.copyright}
               </div>
             )}
@@ -2744,15 +2768,40 @@ const renderSectionPreview = (
       );
     
     case 'privacy':
+      // Parse markdown-like content for better display
+      const parsePrivacyContent = (text: string) => {
+        if (!text) return '';
+        return text
+          .split('\n')
+          .map((line, idx) => {
+            const trimmed = line.trim();
+            if (!trimmed) return <br key={idx} />;
+            if (trimmed.startsWith('## ')) {
+              return <h2 key={idx} className="text-2xl font-semibold mt-8 mb-4 text-slate-900">{trimmed.replace('## ', '')}</h2>;
+            }
+            if (trimmed.startsWith('### ')) {
+              return <h3 key={idx} className="text-xl font-semibold mt-6 mb-3 text-slate-900">{trimmed.replace('### ', '')}</h3>;
+            }
+            if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+              const boldText = trimmed.replace(/\*\*/g, '');
+              return <p key={idx} className="font-semibold text-slate-900 mb-2">{boldText}</p>;
+            }
+            if (trimmed.startsWith('* ')) {
+              return <li key={idx} className="ml-6 mb-2 text-slate-700 list-disc">{trimmed.replace('* ', '')}</li>;
+            }
+            return <p key={idx} className="mb-4 text-slate-700 leading-relaxed">{trimmed}</p>;
+          });
+      };
+
       return (
         <div className="py-16 px-6 bg-white">
-          <div className="max-w-4xl mx-auto prose prose-slate max-w-none">
-            <h1 className="text-4xl font-bold mb-4 text-slate-900">Privacy Policy</h1>
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-4xl font-bold mb-4 text-slate-900 leading-tight">Privacy Policy</h1>
             {section.content.lastUpdated && (
-              <p className="text-slate-600 mb-8">Last Updated: {section.content.lastUpdated}</p>
+              <p className="text-slate-600 mb-8 text-base">Last Updated: {section.content.lastUpdated}</p>
             )}
-            <div className="prose prose-slate max-w-none whitespace-pre-wrap text-slate-700">
-              {section.content.content}
+            <div className="text-slate-700 leading-relaxed">
+              {parsePrivacyContent(section.content.content || '')}
             </div>
           </div>
         </div>

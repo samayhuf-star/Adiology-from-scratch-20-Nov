@@ -37,6 +37,7 @@ import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
+import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 
@@ -1090,11 +1091,10 @@ const App = () => {
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
       case 'campaign-history':
-        return <HistoryPanel onLoadItem={(type, data) => {
+        // Campaign History - Show only saved campaigns, not all activity history
+        return <CampaignHistoryView onLoadCampaign={(data) => {
           setHistoryData(data);
-          if (type === 'builder-2-campaign') {
-            setActiveTabSafe('builder-2');
-          }
+          setActiveTabSafe('builder-2');
         }} />;
       case 'website-templates':
         return <WebsiteTemplates />;
