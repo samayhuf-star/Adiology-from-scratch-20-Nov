@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useState } from 'react';
 
 export function CampaignStructuresFeature() {
@@ -80,8 +80,8 @@ export function CampaignStructuresFeature() {
   ];
 
   return (
-    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-purple-50/30 to-white w-full">
-      <div className="max-w-7xl mx-auto w-full">
+    <section className="py-20 px-6 bg-gradient-to-b from-purple-50/30 to-white">
+      <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left - Content */}
           <motion.div

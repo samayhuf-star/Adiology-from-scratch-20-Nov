@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Check } from 'lucide-react';
 
 const pricingPlans = [
@@ -82,8 +82,8 @@ interface PricingProps {
 
 export function Pricing({ onSelectPlan }: PricingProps) {
   return (
-    <section id="pricing" className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-purple-50/30 to-white w-full">
-      <div className="max-w-7xl mx-auto w-full">
+    <section id="pricing" className="py-24 px-6 bg-gradient-to-b from-white via-purple-50/30 to-white">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -155,22 +155,7 @@ export function Pricing({ onSelectPlan }: PricingProps) {
                 </div>
 
                 {/* CTA Button */}
-                <button 
-                  onClick={() => {
-                    if (onSelectPlan) {
-                      // Map plan names to price IDs - these should match your Stripe price IDs
-                      const priceIdMap: Record<string, { priceId: string; amount: number; isSubscription: boolean }> = {
-                        'Starter': { priceId: 'price_starter_lifetime', amount: 9999, isSubscription: false },
-                        'Pro': { priceId: 'price_pro_lifetime', amount: 19900, isSubscription: false },
-                        'Growth': { priceId: 'price_growth_monthly', amount: 4999, isSubscription: true },
-                        'Enterprise': { priceId: 'price_enterprise_monthly', amount: 9999, isSubscription: true }
-                      };
-                      const planData = priceIdMap[plan.name] || { priceId: '', amount: 0, isSubscription: false };
-                      onSelectPlan(plan.name, planData.priceId, planData.amount, planData.isSubscription);
-                    }
-                  }}
-                  className={`w-full py-3 rounded-xl transition-all ${plan.buttonStyle}`}
-                >
+                <button className={`w-full py-3 rounded-xl transition-all ${plan.buttonStyle}`}>
                   Get Started
                 </button>
               </div>

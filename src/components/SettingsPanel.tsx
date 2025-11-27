@@ -323,7 +323,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current Password</Label>
+            <Label htmlFor="currentPassword" className="text-sm font-semibold">Current Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
               <Input
@@ -331,7 +331,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
                 type={showPassword ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 h-12"
                 placeholder="Enter current password"
               />
               <button
@@ -354,7 +354,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 h-12"
                   placeholder="Enter new password"
                 />
                 <button
@@ -376,7 +376,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-10 pr-10 h-12"
                   placeholder="Confirm new password"
                 />
                 <button

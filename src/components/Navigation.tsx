@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Menu, X } from './Icons';
 
 interface NavigationProps {
-  onGetStarted: () => void;
-  onLogin: () => void;
+  onGetStarted?: () => void;
+  onLogin?: () => void;
 }
 
 export function Navigation({ onGetStarted, onLogin }: NavigationProps) {
@@ -25,9 +25,9 @@ export function Navigation({ onGetStarted, onLogin }: NavigationProps) {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100 w-full">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
-        <div className="flex items-center justify-between w-full">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
           {/* Logo */}
           <motion.div 
             className="flex items-center gap-2"
@@ -51,10 +51,16 @@ export function Navigation({ onGetStarted, onLogin }: NavigationProps) {
                 {item.name}
               </a>
             ))}
-            <button onClick={onLogin} className="px-5 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm">
+            <button 
+              onClick={onLogin}
+              className="px-5 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+            >
               Sign In
             </button>
-            <button onClick={onGetStarted} className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm hover:shadow-lg transition-shadow">
+            <button 
+              onClick={onGetStarted}
+              className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm hover:shadow-lg transition-shadow"
+            >
               Get Started
             </button>
           </div>
@@ -90,10 +96,16 @@ export function Navigation({ onGetStarted, onLogin }: NavigationProps) {
                   {item.name}
                 </motion.a>
               ))}
-              <button onClick={onLogin} className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 transition-colors">
+              <button 
+                onClick={onLogin}
+                className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
                 Sign In
               </button>
-              <button onClick={onGetStarted} className="w-full mt-4 px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm">
+              <button 
+                onClick={onGetStarted}
+                className="w-full mt-4 px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm"
+              >
                 Get Started
               </button>
             </motion.div>

@@ -1,15 +1,16 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowRight } from './Icons';
 
 interface HeroProps {
-  onGetStarted: () => void;
+  onGetStarted?: () => void;
+  onContactSales?: () => void;
 }
 
-export function Hero({ onGetStarted }: HeroProps) {
+export function Hero({ onGetStarted, onContactSales }: HeroProps) {
   return (
-    <section className="pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50/30 to-white w-full">
-      <div className="max-w-7xl mx-auto w-full">
-        <div className="max-w-4xl mx-auto text-center w-full">
+    <section className="pt-32 pb-20 px-6 bg-gradient-to-b from-blue-50/30 to-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="max-w-4xl mx-auto text-center">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -34,11 +35,17 @@ export function Hero({ onGetStarted }: HeroProps) {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex flex-wrap gap-4 justify-center"
           >
-            <button onClick={onGetStarted} className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-xl transition-all flex items-center gap-2 group">
+            <button 
+              onClick={onGetStarted}
+              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-xl transition-all flex items-center gap-2 group"
+            >
               Get Started
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="px-8 py-3 bg-white text-gray-700 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
+            <button 
+              onClick={onContactSales}
+              className="px-8 py-3 bg-white text-gray-700 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all"
+            >
               Contact Sales
             </button>
           </motion.div>

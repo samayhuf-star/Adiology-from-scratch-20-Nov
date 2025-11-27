@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { useState } from 'react';
 
@@ -59,8 +59,8 @@ export function ContactUs() {
   ];
 
   return (
-    <section id="contact" className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-blue-50/30 to-white w-full">
-      <div className="max-w-7xl mx-auto w-full">
+    <section id="contact" className="py-24 px-6 bg-gradient-to-b from-white via-blue-50/30 to-white">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
