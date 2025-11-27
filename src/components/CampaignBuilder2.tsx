@@ -4671,8 +4671,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const structureName = STRUCTURE_TYPES.find(s => s.id === structureType)?.name || 'Standard';
 
     return (
-      <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-6 sm:mb-8">
+      <div className="w-full flex flex-col items-center px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-100 mb-4">
             <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" />
           </div>
@@ -4775,7 +4776,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         <div className="h-24"></div>
 
         {/* Next Actions */}
-        <div className="flex justify-between items-center pt-4">
+        <div className="flex justify-center items-center pt-4 gap-4">
           <Button variant="ghost" size="sm" onClick={() => setStep(5)} className="text-sm">
             <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
             Back to Review
