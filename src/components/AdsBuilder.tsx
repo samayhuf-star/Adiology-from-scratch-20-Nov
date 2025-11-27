@@ -1069,9 +1069,9 @@ export const AdsBuilder = () => {
 
     return (
         <>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-4">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-5">
             {/* Header */}
-            <div className="mb-4">
+            <div className="mb-5">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold theme-gradient-text mb-1">
@@ -1084,9 +1084,9 @@ export const AdsBuilder = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column: Single Form */}
-                <div className="space-y-4">
+                <div className="space-y-5">
                     <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg">
                         <CardHeader>
                             <CardTitle className="text-lg font-bold text-slate-900">
@@ -1096,10 +1096,10 @@ export const AdsBuilder = () => {
                                 Fill in the details below to generate your Google Ads
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-5">
                             {/* URL Input */}
                             <div>
-                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2.5">
                                     URL
                                 </Label>
                                 <Input
@@ -1121,7 +1121,7 @@ export const AdsBuilder = () => {
                                     className={`bg-white border-slate-300 focus:border-indigo-500 h-10 text-sm ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
                                 />
                                 {urlError && (
-                                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                                    <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
                                         <AlertCircle className="w-3 h-3" />
                                         {urlError}
                                     </p>
@@ -1130,7 +1130,7 @@ export const AdsBuilder = () => {
 
                             {/* Ad Type Dropdown */}
                             <div>
-                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2.5">
                                     Type of Ads
                                 </Label>
                                 <Select value={selectedAdType} onValueChange={setSelectedAdType}>
@@ -1148,10 +1148,10 @@ export const AdsBuilder = () => {
 
                             {/* Mode Selection */}
                             <div>
-                                <Label className="block text-sm font-semibold text-slate-700 mb-2">
+                                <Label className="block text-sm font-semibold text-slate-700 mb-2.5">
                                     Choose Your Mode
                                 </Label>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-4">
                                     <Button
                                         variant={mode === 'single' ? 'default' : 'outline'}
                                         onClick={() => setMode('single')}

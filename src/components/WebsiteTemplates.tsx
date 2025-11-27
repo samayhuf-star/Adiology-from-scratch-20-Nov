@@ -2771,26 +2771,74 @@ const renderSectionPreview = (
       // Parse markdown-like content for better display
       const parsePrivacyContent = (text: string) => {
         if (!text) return '';
-        return text
-          .split('\n')
-          .map((line, idx) => {
-            const trimmed = line.trim();
-            if (!trimmed) return <br key={idx} />;
-            if (trimmed.startsWith('## ')) {
-              return <h2 key={idx} className="text-2xl font-semibold mt-8 mb-4 text-slate-900">{trimmed.replace('## ', '')}</h2>;
-            }
-            if (trimmed.startsWith('### ')) {
-              return <h3 key={idx} className="text-xl font-semibold mt-6 mb-3 text-slate-900">{trimmed.replace('### ', '')}</h3>;
-            }
-            if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
-              const boldText = trimmed.replace(/\*\*/g, '');
-              return <p key={idx} className="font-semibold text-slate-900 mb-2">{boldText}</p>;
-            }
-            if (trimmed.startsWith('* ')) {
-              return <li key={idx} className="ml-6 mb-2 text-slate-700 list-disc">{trimmed.replace('* ', '')}</li>;
-            }
-            return <p key={idx} className="mb-4 text-slate-700 leading-relaxed">{trimmed}</p>;
-          });
+        const lines = text.split('\n');
+        const elements: React.ReactNode[] = [];
+        let inList = false;
+        let listItems: string[] = [];
+        
+        const flushList = () => {
+          if (listItems.length > 0) {
+            elements.push(
+              <ul key={`list-${elements.length}`} className="ml-6 mb-4 list-disc space-y-2">
+                {listItems.map((item, itemIdx) => {
+                  // Handle bold text in list items
+                  const parts = item.split(/(\*\*[^*]+\*\*)/g);
+                  return (
+                    <li key={itemIdx} className="text-slate-700 leading-relaxed">
+                      {parts.map((part, partIdx) => 
+                        part.startsWith('**') && part.endsWith('**') ? (
+                          <strong key={partIdx} className="font-semibold">{part.replace(/\*\*/g, '')}</strong>
+                        ) : (
+                          <span key={partIdx}>{part}</span>
+                        )
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+            listItems = [];
+            inList = false;
+          }
+        };
+        
+        lines.forEach((line, idx) => {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            flushList();
+            if (idx < lines.length - 1) elements.push(<br key={`br-${idx}`} />);
+            return;
+          }
+          
+          if (trimmed.startsWith('## ')) {
+            flushList();
+            elements.push(<h2 key={idx} className="text-2xl font-semibold mt-8 mb-4 text-slate-900">{trimmed.replace(/^##\s+/, '')}</h2>);
+          } else if (trimmed.startsWith('### ')) {
+            flushList();
+            elements.push(<h3 key={idx} className="text-xl font-semibold mt-6 mb-3 text-slate-900">{trimmed.replace(/^###\s+/, '')}</h3>);
+          } else if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+            if (!inList) flushList();
+            inList = true;
+            listItems.push(trimmed.replace(/^[*\-]\s+/, ''));
+          } else {
+            flushList();
+            // Handle bold text in paragraphs
+            const parts = trimmed.split(/(\*\*[^*]+\*\*)/g);
+            elements.push(
+              <p key={idx} className="mb-4 text-slate-700 leading-relaxed">
+                {parts.map((part, partIdx) => 
+                  part.startsWith('**') && part.endsWith('**') ? (
+                    <strong key={partIdx} className="font-semibold text-slate-900">{part.replace(/\*\*/g, '')}</strong>
+                  ) : (
+                    <span key={partIdx}>{part}</span>
+                  )
+                )}
+              </p>
+            );
+          }
+        });
+        flushList();
+        return elements;
       };
 
       return (
@@ -2808,15 +2856,88 @@ const renderSectionPreview = (
       );
     
     case 'terms':
+      // Parse markdown-like content for better display
+      const parseTermsContent = (text: string) => {
+        if (!text) return '';
+        const lines = text.split('\n');
+        const elements: React.ReactNode[] = [];
+        let inList = false;
+        let listItems: string[] = [];
+        
+        const flushList = () => {
+          if (listItems.length > 0) {
+            elements.push(
+              <ul key={`list-${elements.length}`} className="ml-6 mb-4 list-disc space-y-2">
+                {listItems.map((item, itemIdx) => {
+                  // Handle bold text in list items
+                  const parts = item.split(/(\*\*[^*]+\*\*)/g);
+                  return (
+                    <li key={itemIdx} className="text-slate-700 leading-relaxed">
+                      {parts.map((part, partIdx) => 
+                        part.startsWith('**') && part.endsWith('**') ? (
+                          <strong key={partIdx} className="font-semibold">{part.replace(/\*\*/g, '')}</strong>
+                        ) : (
+                          <span key={partIdx}>{part}</span>
+                        )
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+            listItems = [];
+            inList = false;
+          }
+        };
+        
+        lines.forEach((line, idx) => {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            flushList();
+            if (idx < lines.length - 1) elements.push(<br key={`br-${idx}`} />);
+            return;
+          }
+          
+          if (trimmed.startsWith('## ')) {
+            flushList();
+            elements.push(<h2 key={idx} className="text-2xl font-semibold mt-8 mb-4 text-slate-900">{trimmed.replace(/^##\s+/, '')}</h2>);
+          } else if (trimmed.startsWith('### ')) {
+            flushList();
+            elements.push(<h3 key={idx} className="text-xl font-semibold mt-6 mb-3 text-slate-900">{trimmed.replace(/^###\s+/, '')}</h3>);
+          } else if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+            if (!inList) flushList();
+            inList = true;
+            listItems.push(trimmed.replace(/^[*\-]\s+/, ''));
+          } else {
+            flushList();
+            // Handle bold text in paragraphs
+            const parts = trimmed.split(/(\*\*[^*]+\*\*)/g);
+            elements.push(
+              <p key={idx} className="mb-4 text-slate-700 leading-relaxed">
+                {parts.map((part, partIdx) => 
+                  part.startsWith('**') && part.endsWith('**') ? (
+                    <strong key={partIdx} className="font-semibold text-slate-900">{part.replace(/\*\*/g, '')}</strong>
+                  ) : (
+                    <span key={partIdx}>{part}</span>
+                  )
+                )}
+              </p>
+            );
+          }
+        });
+        flushList();
+        return elements;
+      };
+
       return (
         <div className="py-16 px-6 bg-white">
-          <div className="max-w-4xl mx-auto prose prose-slate max-w-none">
-            <h1 className="text-4xl font-bold mb-4 text-slate-900">Terms of Service</h1>
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-4xl font-bold mb-4 text-slate-900 leading-tight">Terms of Service</h1>
             {section.content.lastUpdated && (
-              <p className="text-slate-600 mb-8">Last Updated: {section.content.lastUpdated}</p>
+              <p className="text-slate-600 mb-8 text-base">Last Updated: {section.content.lastUpdated}</p>
             )}
-            <div className="prose prose-slate max-w-none whitespace-pre-wrap text-slate-700">
-              {section.content.content}
+            <div className="text-slate-700 leading-relaxed">
+              {parseTermsContent(section.content.content || '')}
             </div>
           </div>
         </div>

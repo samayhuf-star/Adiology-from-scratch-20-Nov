@@ -4671,143 +4671,155 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const structureName = STRUCTURE_TYPES.find(s => s.id === structureType)?.name || 'Standard';
 
     return (
-      <div className="w-full flex flex-col items-center px-4 sm:px-6 lg:px-8">
+      <div className="w-full flex flex-col items-center px-4 sm:px-6 lg:px-8 pb-32">
         <div className="max-w-6xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="text-center mb-6 sm:mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-100 mb-4">
-            <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" />
+          {/* Success Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 mb-6 shadow-lg">
+              <CheckCircle2 className="w-10 h-10 text-green-600" />
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">Campaign Created Successfully!</h2>
+            <p className="text-base text-slate-600">Your campaign is ready to export and implement</p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">Campaign Created Successfully!</h2>
-          <p className="text-slate-500 mt-2">Your campaign is ready to export and implement</p>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-indigo-600">1</div>
-              <div className="text-sm text-slate-600 mt-2">Campaign</div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-purple-600">{totalAdGroups}</div>
-              <div className="text-sm text-slate-600 mt-2">Ad Groups</div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-blue-600">{totalKeywords}</div>
-              <div className="text-sm text-slate-600 mt-2">Keywords</div>
-            </CardContent>
-          </Card>
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-4 sm:p-6 text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-green-600">{totalLocations}</div>
-              <div className="text-sm text-slate-600 mt-2">Locations</div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <Card className="border-2 border-indigo-200/60 bg-white shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl sm:text-5xl font-bold text-indigo-600 mb-2">1</div>
+                <div className="text-sm font-medium text-slate-700">Campaign</div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-purple-200/60 bg-white shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl sm:text-5xl font-bold text-purple-600 mb-2">{totalAdGroups}</div>
+                <div className="text-sm font-medium text-slate-700">Ad Groups</div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-blue-200/60 bg-white shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl sm:text-5xl font-bold text-blue-600 mb-2">{totalKeywords}</div>
+                <div className="text-sm font-medium text-slate-700">Keywords</div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-green-200/60 bg-white shadow-lg hover:shadow-xl transition-all">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl sm:text-5xl font-bold text-green-600 mb-2">{totalLocations}</div>
+                <div className="text-sm font-medium text-slate-700">Locations</div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Campaign Summary */}
-        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-green-600" />
-              Campaign Summary
-            </CardTitle>
-            <CardDescription>All checks passed - ready for export</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label className="text-slate-500">Campaign Name</Label>
-                <Input 
-                  value={campaignName} 
-                  onChange={(e) => setCampaignName(e.target.value)}
-                  placeholder="Enter campaign name"
-                />
+          {/* Campaign Summary */}
+          <Card className="border-2 border-slate-200 bg-white shadow-xl">
+            <CardHeader className="pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold text-slate-900">Campaign Summary</CardTitle>
+                  <CardDescription className="text-sm mt-1">All checks passed - ready for export</CardDescription>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-slate-500">Structure</Label>
-                <p className="font-medium text-slate-800 py-2">{structureName}</p>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Campaign Name</Label>
+                  <Input 
+                    value={campaignName} 
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Enter campaign name"
+                    className="font-medium"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Structure</Label>
+                  <div className="px-3 py-2 bg-slate-50 rounded-md border border-slate-200">
+                    <p className="font-semibold text-slate-900">{structureName}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Target Location</Label>
+                  <div className="px-3 py-2 bg-slate-50 rounded-md border border-slate-200">
+                    <p className="font-semibold text-slate-900">{targetCountry} {targetType !== 'COUNTRY' ? `(${targetType})` : ''}</p>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-slate-500">Target Location</Label>
-                <p className="font-medium text-slate-800 py-2">{targetCountry} {targetType !== 'COUNTRY' ? `(${targetType})` : ''}</p>
+
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 mb-1">Validation Complete</p>
+                    <p className="text-sm text-slate-700">Your campaign is validated and ready to export. Click "Download CSV" below to get your file.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Export Actions - Fixed at bottom */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-slate-200 shadow-2xl z-50">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+              <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3">
+                <Button 
+                  onClick={handleExportCSV}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all"
+                >
+                  <Download className="w-5 h-5 flex-shrink-0" />
+                  <span>Download CSV for Google Ads Editor</span>
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setActiveTab('saved')}
+                  className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-700 shadow-md hover:shadow-lg py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all"
+                >
+                  <FolderOpen className="w-5 h-5 flex-shrink-0" />
+                  <span>View Saved Campaigns</span>
+                </Button>
               </div>
             </div>
+          </div>
 
-            <Separator />
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">
-                <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                <span>Your campaign is validated and ready to export. Click "Download CSV" below to get your file.</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Export Actions - Fixed at bottom center */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 shadow-lg z-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3">
+          {/* Navigation Actions */}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-6">
+            <Button 
+              variant="ghost" 
+              onClick={() => setStep(5)} 
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            >
+              <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
+              Back to Review
+            </Button>
+            <div className="flex gap-3">
               <Button 
-                onClick={handleExportCSV}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold flex items-center justify-center"
+                variant="outline"
+                onClick={() => {
+                  setStep(1);
+                  setCampaignName(generateDefaultCampaignName());
+                  setSelectedKeywords([]);
+                  setGeneratedAds([]);
+                  setCurrentCampaignId(null);
+                  setStructureType(null);
+                }}
+                className="text-sm font-medium border-slate-300 hover:bg-slate-50"
               >
-                <Download className="mr-2 w-4 h-4 flex-shrink-0" />
-                <span>Download CSV for Google Ads Editor</span>
+                <Plus className="mr-2 w-4 h-4" />
+                Create Another Campaign
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => setActiveTab('saved')}
-                className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold flex items-center justify-center"
+                onClick={() => window.location.href = '/'}
+                className="text-sm font-medium border-slate-300 hover:bg-slate-50"
               >
-                <FolderOpen className="mr-2 w-4 h-4 flex-shrink-0" />
-                <span>View Saved Campaigns</span>
+                Go to Dashboard
               </Button>
             </div>
           </div>
-        </div>
-        
-        {/* Add padding to bottom to prevent content from being hidden behind fixed buttons */}
-        <div className="h-24"></div>
-
-        {/* Next Actions */}
-        <div className="flex justify-center items-center pt-4 gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setStep(5)} className="text-sm">
-            <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-            Back to Review
-          </Button>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setStep(1);
-                setCampaignName(generateDefaultCampaignName());
-                setSelectedKeywords([]);
-                setGeneratedAds([]);
-                setCurrentCampaignId(null); // Reset campaign ID for new campaign
-                setStructureType(null);
-              }}
-              className="text-sm"
-            >
-              <Plus className="mr-2 w-3.5 h-3.5" />
-              Create Another Campaign
-            </Button>
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '/'}
-              className="text-sm"
-            >
-              Go to Dashboard
-            </Button>
-          </div>
-        </div>
         </div>
       </div>
     );

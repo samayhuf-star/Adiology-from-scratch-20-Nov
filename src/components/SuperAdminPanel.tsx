@@ -97,7 +97,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 overflow-hidden">
+    <div className="flex h-screen admin-panel-bg overflow-hidden">
       {/* Sidebar */}
       <aside className="w-72 bg-white/80 backdrop-blur-xl border-r border-slate-200/60 shadow-2xl overflow-y-auto">
         {/* Header */}
@@ -1343,7 +1343,12 @@ const ThemeSettingsModule = () => {
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
           <h2 className="text-xl font-bold text-slate-800 mb-4">Current Theme</h2>
           <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${theme.colors.primaryGradient} shadow-lg flex items-center justify-center`}>
+            <div 
+              className="w-16 h-16 rounded-xl shadow-lg flex items-center justify-center"
+              style={{
+                background: `linear-gradient(to bottom right, ${theme.id === 'purple' ? '#4f46e5' : theme.id === 'ocean' ? '#2563eb' : '#059669'}, ${theme.id === 'purple' ? '#9333ea' : theme.id === 'ocean' ? '#0891b2' : '#16a34a'})`
+              }}
+            >
               <Palette className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -1363,28 +1368,70 @@ const ThemeSettingsModule = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {availableThemes.map((availableTheme) => {
               const isActive = theme.id === availableTheme.id;
+              const getPrimaryColor = (themeId: string) => {
+                if (themeId === 'purple') return '#4f46e5';
+                if (themeId === 'ocean') return '#2563eb';
+                if (themeId === 'forest') return '#059669';
+                return '#4f46e5';
+              };
+              const getPrimaryLight = (themeId: string) => {
+                if (themeId === 'purple') return '#eef2ff';
+                if (themeId === 'ocean') return '#eff6ff';
+                if (themeId === 'forest') return '#ecfdf5';
+                return '#eef2ff';
+              };
+              const getSecondaryColor = (themeId: string) => {
+                if (themeId === 'purple') return '#9333ea';
+                if (themeId === 'ocean') return '#0891b2';
+                if (themeId === 'forest') return '#16a34a';
+                return '#9333ea';
+              };
+              const getAccentColor = (themeId: string) => {
+                if (themeId === 'purple') return '#db2777';
+                if (themeId === 'ocean') return '#0d9488';
+                if (themeId === 'forest') return '#65a30d';
+                return '#db2777';
+              };
               return (
                 <button
                   key={availableTheme.id}
                   onClick={() => handleThemeChange(availableTheme.id)}
                   className={`relative p-6 rounded-xl border-2 transition-all duration-300 ${
                     isActive
-                      ? `border-${availableTheme.colors.primary} bg-${availableTheme.colors.primaryLight} shadow-lg`
+                      ? 'shadow-lg'
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
                   }`}
+                  style={isActive ? {
+                    borderColor: getPrimaryColor(availableTheme.id),
+                    backgroundColor: getPrimaryLight(availableTheme.id),
+                  } : {}}
                 >
                   {isActive && (
                     <div className="absolute top-3 right-3">
-                      <CheckCircle className={`w-6 h-6 text-${availableTheme.colors.primary}`} />
+                      <CheckCircle className="w-6 h-6" style={{ color: getPrimaryColor(availableTheme.id) }} />
                     </div>
                   )}
-                  <div className={`w-full h-24 rounded-lg mb-4 bg-gradient-to-br ${availableTheme.colors.primaryGradient} shadow-md`}></div>
+                  <div 
+                    className="w-full h-24 rounded-lg mb-4 shadow-md"
+                    style={{
+                      background: `linear-gradient(to bottom right, ${getPrimaryColor(availableTheme.id)}, ${getSecondaryColor(availableTheme.id)})`
+                    }}
+                  ></div>
                   <h3 className="text-lg font-semibold text-slate-800 mb-2">{availableTheme.name}</h3>
                   <p className="text-sm text-slate-600 text-left">{availableTheme.description}</p>
                   <div className="mt-4 flex gap-2">
-                    <div className={`w-8 h-8 rounded-lg bg-${availableTheme.colors.primary}`}></div>
-                    <div className={`w-8 h-8 rounded-lg bg-${availableTheme.colors.secondary}`}></div>
-                    <div className={`w-8 h-8 rounded-lg bg-${availableTheme.colors.accent}`}></div>
+                    <div 
+                      className="w-8 h-8 rounded-lg" 
+                      style={{ backgroundColor: getPrimaryColor(availableTheme.id) }}
+                    ></div>
+                    <div 
+                      className="w-8 h-8 rounded-lg" 
+                      style={{ backgroundColor: getSecondaryColor(availableTheme.id) }}
+                    ></div>
+                    <div 
+                      className="w-8 h-8 rounded-lg" 
+                      style={{ backgroundColor: getAccentColor(availableTheme.id) }}
+                    ></div>
                   </div>
                 </button>
               );
@@ -1395,7 +1442,12 @@ const ThemeSettingsModule = () => {
         {/* Theme Preview */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
           <h2 className="text-xl font-bold text-slate-800 mb-4">Theme Preview</h2>
-          <div className={`p-6 rounded-xl bg-gradient-to-br ${theme.colors.primaryGradient} text-white`}>
+          <div 
+            className="p-6 rounded-xl text-white"
+            style={{
+              background: `linear-gradient(to bottom right, ${theme.id === 'purple' ? '#4f46e5' : theme.id === 'ocean' ? '#2563eb' : '#059669'}, ${theme.id === 'purple' ? '#9333ea' : theme.id === 'ocean' ? '#0891b2' : '#16a34a'})`
+            }}
+          >
             <h3 className="text-2xl font-bold mb-2">{theme.name} Theme</h3>
             <p className="text-white/90 mb-4">This theme is currently active across the application.</p>
             <div className="flex gap-2">

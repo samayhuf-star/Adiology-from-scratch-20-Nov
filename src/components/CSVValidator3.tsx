@@ -499,13 +499,39 @@ export const CSVValidator3 = () => {
             };
         }
 
-        // Find column names (case-insensitive matching)
-        const campaignCol = headers.find(h => h.toLowerCase() === 'campaign') || '';
-        const adGroupCol = headers.find(h => h.toLowerCase() === 'ad group' || h.toLowerCase() === 'adgroup') || '';
-        const keywordCol = headers.find(h => h.toLowerCase() === 'keyword') || '';
-        const rowTypeCol = headers.find(h => h.toLowerCase() === 'row type' || h.toLowerCase() === 'rowtype') || '';
-        const assetTypeCol = headers.find(h => h.toLowerCase() === 'asset type' || h.toLowerCase() === 'assettype') || '';
-        const locationCol = headers.find(h => h.toLowerCase() === 'location') || '';
+        // Find column names (case-insensitive matching with variations)
+        const campaignCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'campaign' || lower.includes('campaign');
+        }) || '';
+        const adGroupCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'ad group' || lower === 'adgroup' || lower.includes('ad group');
+        }) || '';
+        const keywordCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'keyword' || lower.includes('keyword');
+        }) || '';
+        const rowTypeCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'row type' || lower === 'rowtype' || lower.includes('row type');
+        }) || '';
+        const matchTypeCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'match type' || lower === 'matchtype' || lower.includes('match type');
+        }) || '';
+        const networksCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'networks' || lower.includes('network');
+        }) || '';
+        const assetTypeCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'asset type' || lower === 'assettype' || lower.includes('asset');
+        }) || '';
+        const locationCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'location' || lower.includes('location');
+        }) || '';
 
         // Count unique campaigns
         const uniqueCampaigns = new Set<string>();
@@ -516,19 +542,57 @@ export const CSVValidator3 = () => {
             }
         });
 
-        // Count unique ad groups
+        // Count unique ad groups - check both "Ad Group" column and also infer from campaign + other unique combinations
         const uniqueAdGroups = new Set<string>();
         rows.forEach(row => {
             const adGroup = row[adGroupCol] || '';
             if (adGroup.trim()) {
                 uniqueAdGroups.add(adGroup.trim());
+            } else {
+                // If no explicit ad group column, try to infer from campaign + other fields
+                // This handles cases where ad groups might be implicit
+                const campaign = row[campaignCol] || '';
+                if (campaign.trim()) {
+                    // Use campaign as ad group if no explicit ad group column exists
+                    uniqueAdGroups.add(campaign.trim());
+                }
             }
         });
 
-        // Count keywords (non-empty)
+        // Count keywords - check multiple indicators:
+        // 1. Rows with non-empty Keyword column
+        // 2. Rows with Match Type column (Phrase, Exact, Broad) - these are likely keywords
+        // 3. Rows where Row Type is "keyword" or empty (default is keyword)
         const keywordCount = rows.filter(row => {
             const keyword = row[keywordCol] || '';
-            return keyword.trim() !== '';
+            const matchType = row[matchTypeCol] || '';
+            const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
+            const networks = row[networksCol] || '';
+            
+            // If there's a keyword column with value, it's a keyword
+            if (keyword.trim() !== '') {
+                return true;
+            }
+            
+            // If there's a match type (Phrase, Exact, Broad), it's likely a keyword row
+            const matchTypeLower = matchType.toLowerCase().trim();
+            if (matchTypeLower === 'phrase' || matchTypeLower === 'exact' || matchTypeLower === 'broad' ||
+                matchTypeLower === 'exact (negative)' || matchTypeLower === 'phrase (negative)' || matchTypeLower === 'broad (negative)') {
+                return true;
+            }
+            
+            // If Networks column has match types (Phrase, Exact, Broad), it's likely a keyword
+            const networksLower = networks.toLowerCase().trim();
+            if (networksLower === 'phrase' || networksLower === 'exact' || networksLower === 'broad') {
+                return true;
+            }
+            
+            // If Row Type is empty or "keyword", it's a keyword row
+            if (rowType === '' || rowType === 'keyword') {
+                return true;
+            }
+            
+            return false;
         }).length;
 
         // Count extensions/assets (sitelink, call, or rows with Asset Type)
@@ -536,7 +600,15 @@ export const CSVValidator3 = () => {
             const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
             const assetType = (row[assetTypeCol] || '').trim();
             return rowType === 'sitelink' || 
-                   rowType === 'call' || 
+                   rowType === 'call' ||
+                   rowType === 'callout' ||
+                   rowType === 'snippet' ||
+                   rowType === 'price' ||
+                   rowType === 'promotion' ||
+                   rowType === 'app' ||
+                   rowType === 'leadform' ||
+                   rowType === 'image' ||
+                   rowType === 'message' ||
                    assetType !== '';
         }).length;
 
@@ -549,7 +621,7 @@ export const CSVValidator3 = () => {
 
         return {
             campaigns: uniqueCampaigns.size,
-            adGroups: uniqueAdGroups.size,
+            adGroups: uniqueAdGroups.size > 0 ? uniqueAdGroups.size : (uniqueCampaigns.size > 0 ? uniqueCampaigns.size : 0),
             keywords: keywordCount,
             extensionsAssets: extensionsAssetsCount,
             locations: locationsCount,
