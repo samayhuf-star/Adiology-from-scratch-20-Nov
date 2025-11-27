@@ -4808,6 +4808,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             </Button>
           </div>
         </div>
+        </div>
       </div>
     );
   };
