@@ -545,6 +545,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [matchTypes, setMatchTypes] = useState({ broad: true, phrase: true, exact: true });
   const [adTypes, setAdTypes] = useState({ rsa: true, dki: true, call: true });
   const [url, setUrl] = useState(DEFAULT_URL);
+  const [urlError, setUrlError] = useState<string>('');
   
   // Step 2: Keywords
   const [seedKeywords, setSeedKeywords] = useState(DEFAULT_SEED_KEYWORDS);
@@ -709,6 +710,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [targetCountry, setTargetCountry] = useState('United States');
   const [targetType, setTargetType] = useState('COUNTRY');
   const [manualGeoInput, setManualGeoInput] = useState('');
+  const [manualCityInput, setManualCityInput] = useState('');
+  const [manualStateInput, setManualStateInput] = useState('');
   const [zipPreset, setZipPreset] = useState<string | null>(null);
   const [cityPreset, setCityPreset] = useState<string | null>(null);
   const [statePreset, setStatePreset] = useState<string | null>(null);
@@ -935,10 +938,33 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               <Input
                 id="landing-url"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  const newUrl = e.target.value;
+                  setUrl(newUrl);
+                  // Validate URL format
+                  if (newUrl.trim() && !newUrl.match(/^https?:\/\/.+/i)) {
+                    setUrlError('Please enter a valid URL starting with http:// or https://');
+                  } else {
+                    setUrlError('');
+                  }
+                }}
+                onBlur={(e) => {
+                  const urlValue = e.target.value.trim();
+                  if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                    setUrlError('Please enter a valid URL starting with http:// or https://');
+                  } else {
+                    setUrlError('');
+                  }
+                }}
                 placeholder="https://example.com"
-                className="border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400"
+                className={`border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400 ${urlError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
               />
+              {urlError && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {urlError}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1090,33 +1116,51 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-6">
-              <div className="flex items-center space-x-2 bg-amber-50/50 px-3 py-2 rounded-lg border border-amber-200/50">
+              <Label 
+                htmlFor="broad" 
+                className="flex items-center space-x-2 bg-amber-50/50 px-3 py-2 rounded-lg border border-amber-200/50 cursor-pointer hover:bg-amber-50 transition-colors"
+              >
                 <Checkbox
                   id="broad"
                   checked={matchTypes.broad}
-                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, broad: !!checked })}
+                  onCheckedChange={(checked) => {
+                    setMatchTypes({ ...matchTypes, broad: !!checked });
+                  }}
                   className="border-amber-400"
+                  onClick={(e) => e.stopPropagation()}
                 />
-                <Label htmlFor="broad" className="cursor-pointer font-medium text-sm text-amber-900">Broad Match</Label>
-              </div>
-              <div className="flex items-center space-x-2 bg-blue-50/50 px-3 py-2 rounded-lg border border-blue-200/50">
+                <span className="font-medium text-sm text-amber-900">Broad Match</span>
+              </Label>
+              <Label 
+                htmlFor="phrase" 
+                className="flex items-center space-x-2 bg-blue-50/50 px-3 py-2 rounded-lg border border-blue-200/50 cursor-pointer hover:bg-blue-50 transition-colors"
+              >
                 <Checkbox
                   id="phrase"
                   checked={matchTypes.phrase}
-                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, phrase: !!checked })}
+                  onCheckedChange={(checked) => {
+                    setMatchTypes({ ...matchTypes, phrase: !!checked });
+                  }}
                   className="border-blue-400"
+                  onClick={(e) => e.stopPropagation()}
                 />
-                <Label htmlFor="phrase" className="cursor-pointer font-medium text-sm text-blue-900">Phrase Match</Label>
-              </div>
-              <div className="flex items-center space-x-2 bg-emerald-50/50 px-3 py-2 rounded-lg border border-emerald-200/50">
+                <span className="font-medium text-sm text-blue-900">Phrase Match</span>
+              </Label>
+              <Label 
+                htmlFor="exact" 
+                className="flex items-center space-x-2 bg-emerald-50/50 px-3 py-2 rounded-lg border border-emerald-200/50 cursor-pointer hover:bg-emerald-50 transition-colors"
+              >
                 <Checkbox
                   id="exact"
                   checked={matchTypes.exact}
-                  onCheckedChange={(checked) => setMatchTypes({ ...matchTypes, exact: !!checked })}
+                  onCheckedChange={(checked) => {
+                    setMatchTypes({ ...matchTypes, exact: !!checked });
+                  }}
                   className="border-emerald-400"
+                  onClick={(e) => e.stopPropagation()}
                 />
-                <Label htmlFor="exact" className="cursor-pointer font-medium text-sm text-emerald-900">Exact Match</Label>
-              </div>
+                <span className="font-medium text-sm text-emerald-900">Exact Match</span>
+              </Label>
             </div>
           </CardContent>
         </Card>
@@ -1134,8 +1178,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 notifications.warning('Please select a campaign structure', { title: 'Structure Required' });
                 return;
               }
-              if (!url) {
+              if (!url || !url.trim()) {
                 notifications.warning('Please enter a landing page URL', { title: 'URL Required' });
+                setUrlError('Please enter a landing page URL');
+                return;
+              }
+              if (!url.match(/^https?:\/\/.+/i)) {
+                notifications.error('Please enter a valid URL starting with http:// or https://', { title: 'Invalid URL' });
+                setUrlError('Please enter a valid URL starting with http:// or https://');
                 return;
               }
               setStep(2);
@@ -1647,9 +1697,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
+                  <Label 
+                    htmlFor="select-all-keywords"
+                    className="flex items-center gap-2 cursor-pointer font-semibold"
+                  >
                     <Checkbox
-                      checked={selectedKeywords.length === generatedKeywords.length}
+                      id="select-all-keywords"
+                      checked={generatedKeywords.length > 0 && selectedKeywords.length === generatedKeywords.length}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           const allKeywords = generatedKeywords.map(k => k.text || k.id);
@@ -1658,37 +1712,30 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           setSelectedKeywords([]);
                         }
                       }}
+                      onClick={(e) => e.stopPropagation()}
                     />
-                    <Label className="font-semibold">Select All</Label>
-                  </div>
+                    <span>Select All</span>
+                  </Label>
                   <Badge variant="outline">{selectedKeywords.length} selected</Badge>
                 </div>
                 <ScrollArea className="h-96 border border-slate-200 rounded-lg">
                   <div className="p-2">
                     {generatedKeywords.map((keyword) => {
                       const keywordText = keyword.text || keyword.id;
+                      const keywordId = `keyword-${keyword.id || keywordText}`;
                       const isSelected = selectedKeywords.includes(keywordText);
                       return (
-                        <div
+                        <Label
                           key={keyword.id || keywordText}
+                          htmlFor={keywordId}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer transition-colors ${
                             isSelected 
                               ? 'bg-indigo-50' 
                               : 'hover:bg-slate-50'
                           }`}
-                          onClick={(e) => {
-                            // Prevent double-triggering from checkbox click
-                            e.stopPropagation();
-                            setSelectedKeywords(prev => {
-                              if (prev.includes(keywordText)) {
-                                return prev.filter(k => k !== keywordText);
-                              } else {
-                                return [...prev, keywordText];
-                              }
-                            });
-                          }}
                         >
                           <Checkbox
+                            id={keywordId}
                             checked={isSelected}
                             onCheckedChange={(checked) => {
                               setSelectedKeywords(prev => {
@@ -1700,13 +1747,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                               });
                             }}
                             onClick={(e) => e.stopPropagation()}
-                            className="h-4 w-4"
+                            className="h-4 w-4 flex-shrink-0"
                           />
-                          <Label className="cursor-pointer flex-1 text-sm" onClick={(e) => e.stopPropagation()}>{keywordText}</Label>
+                          <span className="flex-1 text-sm">{keywordText}</span>
                           {keyword.volume && (
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0">{keyword.volume}</Badge>
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0 flex-shrink-0">{keyword.volume}</Badge>
                           )}
-                        </div>
+                        </Label>
                       );
                     })}
                   </div>
@@ -2249,6 +2296,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       }
       if (selectedKeywords.length === 0) {
         return; // Will show error message in renderStep3
+      }
+      // Reset selectedAdGroup when entering step 3 to ensure dropdown shows correct value
+      const dynamicAdGroups = getDynamicAdGroups();
+      if (dynamicAdGroups.length > 0 && (selectedAdGroup === ALL_AD_GROUPS_VALUE || !dynamicAdGroups.some(g => g.name === selectedAdGroup))) {
+        // If current selection is invalid or doesn't exist, reset to ALL_AD_GROUPS_VALUE
+        setSelectedAdGroup(ALL_AD_GROUPS_VALUE);
       }
       
       // Always generate ads when step 3 is reached with valid data
@@ -2911,82 +2964,82 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 </Button>
                 
                 {/* Extension Buttons */}
-                <div className="pt-2 border-t border-slate-300 bg-white rounded-lg p-3 -mx-2 border-2">
-                  <p className="text-xs text-slate-800 mb-3 font-bold uppercase">EXTENSIONS</p>
+                <div className="pt-2 border-t border-slate-300 bg-orange-50 rounded-lg p-3 -mx-2 border-2">
+                  <p className="text-xs text-black mb-3 font-bold uppercase">EXTENSIONS</p>
                   <Button 
                     onClick={() => createNewAd('snippet')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('callout')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('sitelink')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SITELINK EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('call')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALL EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('price')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('app')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('location')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LOCATION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('message')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('leadform')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('promotion')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('image')}
                     disabled={selectedKeywords.length === 0}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> IMAGE EXTENSION
                   </Button>
@@ -3553,7 +3606,19 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 <Label className="text-lg font-bold text-slate-800">Specific Locations</Label>
               </div>
               
-              <Tabs value={targetType} onValueChange={setTargetType} className="w-full">
+              <Tabs value={targetType} onValueChange={(value) => {
+                setTargetType(value);
+                // Bug_84: Clear manual input when switching tabs to keep city/state selection independent
+                if (value === 'CITY') {
+                  setManualGeoInput(manualCityInput);
+                } else if (value === 'STATE') {
+                  setManualGeoInput(manualStateInput);
+                } else if (value === 'ZIP') {
+                  // Keep manualGeoInput for ZIP
+                } else {
+                  setManualGeoInput('');
+                }
+              }} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 mb-6 bg-gradient-to-r from-slate-100 to-slate-50 p-1.5 rounded-xl shadow-inner">
                   <TabsTrigger 
                     value="COUNTRY" 
@@ -3684,7 +3749,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         onClick={() => {
                           setCityPreset(count);
                           const cities = getTopCitiesByIncome(targetCountry, count === '0' ? 0 : parseInt(count));
-                          setManualGeoInput(cities.join(', '));
+                          const citiesStr = cities.join(', ');
+                          setManualCityInput(citiesStr);
+                          setManualGeoInput(citiesStr);
                         }}
                         className={`flex-1 min-w-[120px] font-semibold ${
                           cityPreset === count 
@@ -3716,8 +3783,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <Textarea 
                     placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
                     value={manualGeoInput}
+                    value={targetType === 'CITY' ? manualGeoInput : manualCityInput}
                     onChange={(e) => {
-                      setManualGeoInput(e.target.value);
+                      const value = e.target.value;
+                      setManualCityInput(value);
+                      if (targetType === 'CITY') {
+                        setManualGeoInput(value);
+                      }
                       setCityPreset(null);
                     }}
                     rows={6}
@@ -3744,7 +3816,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         onClick={() => {
                           setStatePreset(count);
                           const states = getTopStatesByPopulation(targetCountry, count === '0' ? 0 : parseInt(count));
-                          setManualGeoInput(states.join(', '));
+                          const statesStr = states.join(', ');
+                          setManualStateInput(statesStr);
+                          setManualGeoInput(statesStr);
                         }}
                         className={`flex-1 min-w-[120px] font-semibold ${
                           statePreset === count 
@@ -3775,9 +3849,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   </div>
                   <Textarea 
                     placeholder="Enter states/provinces manually (comma-separated, e.g., California, New York, Texas, Florida)..."
-                    value={manualGeoInput}
+                    value={targetType === 'STATE' ? manualGeoInput : manualStateInput}
                     onChange={(e) => {
-                      setManualGeoInput(e.target.value);
+                      const value = e.target.value;
+                      setManualStateInput(value);
+                      if (targetType === 'STATE') {
+                        setManualGeoInput(value);
+                      }
                       setStatePreset(null);
                     }}
                     rows={6}
@@ -4324,7 +4402,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Step 6: Final Success Screen
   const renderStep6 = () => {
-    const handleExportCSV = () => {
+    const handleExportCSV = async () => {
       if (!structureType || !campaignName || selectedKeywords.length === 0) {
         notifications.warning('Please complete all required fields', { title: 'Incomplete Campaign' });
         return;
@@ -4470,6 +4548,50 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         // Mark draft as completed (removes draft status in history)
         saveCompleted();
         
+        // Bug_86: Save campaign to saved campaigns list after successful validation
+        try {
+          await historyService.save(
+            'campaign',
+            campaignName,
+            {
+              campaignName,
+              structureType,
+              step: 6,
+              url,
+              seedKeywords,
+              negativeKeywords,
+              selectedKeywords,
+              generatedKeywords,
+              generatedAds,
+              targetCountry,
+              targetType,
+              manualGeoInput,
+              selectedStates,
+              selectedCities,
+              selectedZips,
+              geoType,
+              matchTypes,
+              adTypes,
+              structureType,
+              intentGroups,
+              selectedIntents,
+              alphaKeywords,
+              betaKeywords,
+              funnelGroups,
+              brandKeywords,
+              nonBrandKeywords,
+              competitorKeywords,
+              smartClusters
+            },
+            'completed'
+          );
+          // Reload saved campaigns to show the newly saved one
+          await loadSavedCampaigns();
+        } catch (saveError) {
+          console.error('Failed to save campaign:', saveError);
+          // Don't block export if save fails
+        }
+        
         notifications.success('Campaign exported successfully!', { 
           title: '✅ Export Complete',
           description: `Generated ${structure.campaigns.length} campaign(s) with ${structure.campaigns.reduce((sum, c) => sum + c.adgroups.length, 0)} ad group(s). Ready for Google Ads Editor import.`
@@ -4601,21 +4723,21 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         {/* Export Actions - Fixed at bottom center */}
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 shadow-lg z-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3">
               <Button 
                 onClick={handleExportCSV}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold flex items-center justify-center"
               >
-                <Download className="mr-2 w-4 h-4" />
-                Download CSV for Google Ads Editor
+                <Download className="mr-2 w-4 h-4 flex-shrink-0" />
+                <span>Download CSV for Google Ads Editor</span>
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => setShowSavedCampaigns(true)}
-                className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold"
+                onClick={() => setActiveTab('saved')}
+                className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-md hover:shadow-lg py-2.5 px-6 w-full sm:w-auto text-sm font-semibold flex items-center justify-center"
               >
-                <FolderOpen className="mr-2 w-4 h-4" />
-                View Saved Campaigns
+                <FolderOpen className="mr-2 w-4 h-4 flex-shrink-0" />
+                <span>View Saved Campaigns</span>
               </Button>
             </div>
           </div>
@@ -4796,7 +4918,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'builder' | 'saved')} className="w-full">
-        <div className="bg-white border-b border-slate-300 shadow-sm">
+        <div className="sticky top-0 z-40 bg-white border-b border-slate-300 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <TabsList className="w-full justify-start bg-white h-16 border-0">
               <TabsTrigger 

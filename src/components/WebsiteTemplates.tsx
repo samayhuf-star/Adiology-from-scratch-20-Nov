@@ -737,13 +737,30 @@ export const WebsiteTemplates: React.FC = () => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${template.name}</title>
+    <title>${escapeHtml(template.name)}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         .section { padding: 80px 0; }
-        /* Add more styles based on sections */
+        a { text-decoration: none; color: inherit; }
+        img { max-width: 100%; height: auto; }
+        .grid { display: grid; gap: 2rem; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        @media (min-width: 640px) {
+            .sm\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (min-width: 768px) {
+            .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .md\\:text-2xl { font-size: 1.5rem; }
+            .md\\:text-5xl { font-size: 3rem; }
+            .md\\:text-6xl { font-size: 3.75rem; }
+        }
+        @media (min-width: 1024px) {
+            .lg\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .lg\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
     </style>
 </head>
 <body>
@@ -752,11 +769,157 @@ export const WebsiteTemplates: React.FC = () => {
 </html>`;
   };
 
+  const escapeHtml = (text: string): string => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
   const renderSectionHTML = (section: TemplateSection): string => {
-    // Render each section type to HTML
-    return `<section id="${section.id}" class="section section-${section.type}">
-        <!-- Section content here -->
-    </section>`;
+    const content = section.content || {};
+    
+    switch (section.type) {
+      case 'hero':
+        return `<section id="${section.id}" class="section" style="position: relative; min-height: 600px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${content.backgroundImage || ''}'); background-size: cover; background-position: center;">
+            <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3));"></div>
+            <div style="position: relative; z-index: 10; max-width: 64rem; margin: 0 auto; padding: 2.5rem 1.25rem;">
+                <h1 style="font-size: 3rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">${escapeHtml(content.heading || '')}</h1>
+                <p style="font-size: 1.5rem; margin-bottom: 2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${escapeHtml(content.subheading || '')}</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
+                    <a href="#contact" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s;">${escapeHtml(content.ctaText || 'Get Started')}</a>
+                    <a href="tel:${content.ctaPhone || ''}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaPhone || '')}</a>
+                </div>
+            </div>
+        </section>`;
+
+      case 'features':
+        const features = content.features || [];
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: #f8fafc;">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 3rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style="gap: 2rem;">
+                    ${features.map((feature: any) => `
+                        <div style="background: white; padding: 2rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div style="font-size: 3.75rem; margin-bottom: 1rem;">${escapeHtml(feature.icon || '')}</div>
+                            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; color: #4f46e5;">${escapeHtml(feature.title || '')}</h3>
+                            <p style="color: #64748b;">${escapeHtml(feature.description || '')}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </section>`;
+
+      case 'services':
+        const services = content.services || [];
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: white;">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="text-align: center; color: #64748b; margin-bottom: 3rem; font-size: 1.25rem;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style="gap: 2rem;">
+                    ${services.map((service: any) => `
+                        <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+                            ${service.image ? `<img src="${service.image}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 12rem; object-fit: cover;">` : '<div style="width: 100%; height: 12rem; background: #f1f5f9;"></div>'}
+                            <div style="padding: 1.5rem;">
+                                <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a;">${escapeHtml(service.title || '')}</h3>
+                                <p style="color: #64748b; margin-bottom: 1rem;">${escapeHtml(service.description || '')}</p>
+                                ${service.price ? `<p style="color: #4f46e5; font-weight: 700; font-size: 1.125rem;">${escapeHtml(service.price)}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </section>`;
+
+      case 'testimonials':
+        const testimonials = content.testimonials || [];
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: #f8fafc;">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 3rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style="gap: 2rem;">
+                    ${testimonials.map((testimonial: any) => `
+                        <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                                ${testimonial.avatar ? `<img src="${testimonial.avatar}" alt="${escapeHtml(testimonial.name || '')}" style="width: 3rem; height: 3rem; border-radius: 50%; margin-right: 1rem; object-fit: cover;">` : '<div style="width: 3rem; height: 3rem; border-radius: 50%; margin-right: 1rem; background: #e2e8f0;"></div>'}
+                                <div>
+                                    <h4 style="font-weight: 600; color: #0f172a;">${escapeHtml(testimonial.name || '')}</h4>
+                                    ${testimonial.company ? `<p style="font-size: 0.875rem; color: #64748b;">${escapeHtml(testimonial.company)}</p>` : ''}
+                                </div>
+                            </div>
+                            ${testimonial.rating ? `<div style="display: flex; margin-bottom: 0.75rem; color: #fbbf24; font-size: 1.125rem;">${'★'.repeat(testimonial.rating)}${'☆'.repeat(5 - testimonial.rating)}</div>` : ''}
+                            <p style="color: #334155; font-style: italic;">"${escapeHtml(testimonial.text || '')}"</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </section>`;
+
+      case 'cta':
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; text-align: center; color: white; background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+            <div style="max-width: 64rem; margin: 0 auto;">
+                <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="font-size: 1.5rem; margin-bottom: 2rem; opacity: 0.9;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; align-items: center; margin-bottom: 2rem;">
+                    ${content.phone ? `<a href="tel:${content.phone}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phone)}</a>` : ''}
+                    ${content.email ? `<a href="mailto:${content.email}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s;">✉️ Email Us</a>` : ''}
+                </div>
+                ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem;"><span>🕐</span><p style="opacity: 0.9;">${escapeHtml(content.hours)}</p></div>` : ''}
+            </div>
+        </section>`;
+
+      case 'footer':
+        return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 4rem 1.25rem;">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4" style="gap: 2rem; margin-bottom: 2rem;">
+                    <div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">${escapeHtml(content.companyName || 'Company Name')}</h4>
+                        ${content.tagline ? `<p style="color: #94a3b8; margin-bottom: 1rem;">${escapeHtml(content.tagline)}</p>` : ''}
+                        ${content.address ? `<p style="color: #94a3b8;">${escapeHtml(content.address)}</p>` : ''}
+                    </div>
+                    <div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">Contact</h4>
+                        <ul style="list-style: none; space-y: 0.5rem; color: #94a3b8;">
+                            ${content.phone ? `<li><a href="tel:${content.phone}" style="color: #94a3b8;">📞 ${escapeHtml(content.phone)}</a></li>` : ''}
+                            ${content.email ? `<li><a href="mailto:${content.email}" style="color: #94a3b8;">✉️ ${escapeHtml(content.email)}</a></li>` : ''}
+                        </ul>
+                    </div>
+                    ${(content.links || []).length > 0 ? `
+                        <div>
+                            <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem;">Quick Links</h4>
+                            <ul style="list-style: none; space-y: 0.5rem; color: #94a3b8;">
+                                ${content.links.map((link: any) => `<li><a href="${link.href || '#'}" style="color: #94a3b8;">${escapeHtml(link.text || '')}</a></li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+                ${content.copyright ? `<div style="padding-top: 2rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.875rem;">${escapeHtml(content.copyright)}</div>` : ''}
+            </div>
+        </footer>`;
+
+      case 'privacy':
+        return `<section id="${section.id}" class="section" style="padding: 4rem 1.5rem; background: white;">
+            <div style="max-width: 64rem; margin: 0 auto;">
+                <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">Privacy Policy</h1>
+                ${content.lastUpdated ? `<p style="color: #64748b; margin-bottom: 2rem;">Last Updated: ${escapeHtml(content.lastUpdated)}</p>` : ''}
+                <div style="color: #334155; white-space: pre-wrap;">${escapeHtml(content.content || '')}</div>
+            </div>
+        </section>`;
+
+      case 'terms':
+        return `<section id="${section.id}" class="section" style="padding: 4rem 1.5rem; background: white;">
+            <div style="max-width: 64rem; margin: 0 auto;">
+                <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">Terms of Service</h1>
+                ${content.lastUpdated ? `<p style="color: #64748b; margin-bottom: 2rem;">Last Updated: ${escapeHtml(content.lastUpdated)}</p>` : ''}
+                <div style="color: #334155; white-space: pre-wrap;">${escapeHtml(content.content || '')}</div>
+            </div>
+        </section>`;
+
+      default:
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem;">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <h2>${escapeHtml(section.title || 'Section')}</h2>
+            </div>
+        </section>`;
+    }
   };
 
   const updateSectionContent = (sectionId: string, field: string, value: any) => {
@@ -775,10 +938,12 @@ export const WebsiteTemplates: React.FC = () => {
       return section;
     });
 
-    setEditingTemplate({
+    const updatedTemplate = {
       ...editingTemplate,
       customizedSections: updatedSections
-    });
+    };
+    
+    setEditingTemplate(updatedTemplate);
   };
 
   if (showEditor && editingTemplate) {
@@ -798,6 +963,7 @@ export const WebsiteTemplates: React.FC = () => {
       activeSection={activeSection}
       setActiveSection={setActiveSection}
       updateSectionContent={updateSectionContent}
+      onExport={handleExportHTML}
     />;
   }
 
@@ -829,7 +995,7 @@ export const WebsiteTemplates: React.FC = () => {
           {/* Search and Filter Controls */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
               <Input
                 type="text"
                 placeholder="Search templates..."
@@ -873,77 +1039,95 @@ export const WebsiteTemplates: React.FC = () => {
               <p className="text-slate-500">Try adjusting your search or filter criteria</p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredTemplates.map((template) => (
-                <Card key={template.id} className="p-6 hover:shadow-xl transition-all group">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-5xl">{template.thumbnail}</div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">
-                        {template.name}
-                      </h3>
-                      <Badge variant="secondary" className="mb-2">
+                <Card key={template.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300">
+                  {/* Template Preview/Thumbnail */}
+                  <div className="relative h-48 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
+                    <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
+                      {template.thumbnail}
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-white/90 text-slate-700 border-0 shadow-sm">
                         {template.category}
                       </Badge>
-                      <p className="text-sm text-slate-600">{template.description}</p>
                     </div>
                   </div>
-                  
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    <Badge variant="outline" className="text-xs">
-                      {template.sections.length} sections
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">Google Ads Ready</Badge>
-                    <Badge variant="outline" className="text-xs">Mobile Responsive</Badge>
-                  </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      onClick={() => handleViewTemplate(template)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      View
-                    </Button>
-                    <Button 
-                      onClick={() => handleMakeCopy(template)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Copy
-                    </Button>
-                    <Button 
-                      onClick={() => handleEditTemplate(template, true)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        const savedTemplate: SavedTemplate = {
-                          id: template.id,
-                          name: template.name,
-                          originalTemplateId: template.id,
-                          customizedSections: template.sections,
-                          createdAt: new Date().toISOString(),
-                          updatedAt: new Date().toISOString()
-                        };
-                        handleExportHTML(savedTemplate);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                      Download
-                    </Button>
+                  {/* Template Info */}
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
+                      {template.name}
+                    </h3>
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem]">
+                      {template.description}
+                    </p>
+                    
+                    {/* Features Badges */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      <Badge variant="outline" className="text-xs bg-slate-50">
+                        {template.sections.length} sections
+                      </Badge>
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Google Ads
+                      </Badge>
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                        <Smartphone className="w-3 h-3 mr-1" />
+                        Responsive
+                      </Badge>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        onClick={() => handleViewTemplate(template)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        Preview
+                      </Button>
+                      <Button 
+                        onClick={() => handleEditTemplate(template, true)}
+                        variant="default"
+                        size="sm"
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Use
+                      </Button>
+                      <Button 
+                        onClick={() => handleMakeCopy(template)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copy
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          const savedTemplate: SavedTemplate = {
+                            id: template.id,
+                            name: template.name,
+                            originalTemplateId: template.id,
+                            customizedSections: template.sections,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                          };
+                          handleExportHTML(savedTemplate);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Export
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               ))}
@@ -1064,13 +1248,13 @@ export const WebsiteTemplates: React.FC = () => {
 
       {/* Preview Dialog */}
       <Dialog open={showPreviewDialog !== null} onOpenChange={() => setShowPreviewDialog(null)}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-6xl max-h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
             <DialogTitle>
               {showPreviewDialog && ('name' in showPreviewDialog ? showPreviewDialog.name : showPreviewDialog.name)}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
             {showPreviewDialog && (
               <div className="bg-white shadow-xl rounded-lg overflow-hidden">
                 {('customizedSections' in showPreviewDialog ? showPreviewDialog : {
@@ -1088,7 +1272,7 @@ export const WebsiteTemplates: React.FC = () => {
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0 border-t">
             <Button variant="outline" onClick={() => setShowPreviewDialog(null)}>
               Close
             </Button>
@@ -1128,6 +1312,7 @@ const TemplateEditor: React.FC<{
   activeSection: string;
   setActiveSection: (id: string) => void;
   updateSectionContent: (sectionId: string, field: string, value: any) => void;
+  onExport?: (template: SavedTemplate) => void;
 }> = ({ 
   template, 
   onClose, 
@@ -1137,8 +1322,11 @@ const TemplateEditor: React.FC<{
   setPreviewMode,
   activeSection,
   setActiveSection,
-  updateSectionContent
+  updateSectionContent,
+  onExport
 }) => {
+  const [editMode, setEditMode] = useState<'visual' | 'properties'>('visual');
+  const [editingElement, setEditingElement] = useState<string | null>(null);
   const currentSection = template.customizedSections.find(s => s.id === activeSection);
 
   return (
@@ -1157,6 +1345,26 @@ const TemplateEditor: React.FC<{
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
             <Button
+              variant={editMode === 'visual' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setEditMode('visual')}
+              title="Visual Editor - Click to edit directly on preview"
+            >
+              <Edit className="w-4 h-4 mr-1" />
+              Visual
+            </Button>
+            <Button
+              variant={editMode === 'properties' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setEditMode('properties')}
+              title="Properties Panel - Edit using form fields"
+            >
+              <Settings className="w-4 h-4 mr-1" />
+              Properties
+            </Button>
+          </div>
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+            <Button
               variant={previewMode === 'desktop' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setPreviewMode('desktop')}
@@ -1172,14 +1380,22 @@ const TemplateEditor: React.FC<{
             </Button>
           </div>
           <div className="flex gap-2">
-            <Button onClick={onSave} variant="outline">
+            <Button 
+              onClick={() => {
+                if (onSave) {
+                  onSave();
+                }
+              }} 
+              variant="outline"
+            >
               <Save className="w-4 h-4 mr-2" />
               Save Template
             </Button>
             <Button 
               onClick={() => {
-                if (!editingTemplate) return;
-                handleExportHTML(editingTemplate);
+                if (onExport) {
+                  onExport(template);
+                }
               }}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
             >
@@ -1214,26 +1430,41 @@ const TemplateEditor: React.FC<{
           </div>
         </div>
 
-        {/* Properties Panel */}
-        <div className="w-80 bg-white border-r border-slate-200 overflow-y-auto">
-          <div className="p-6">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Properties</h3>
-            {currentSection && (
-              <SectionEditor
-                section={currentSection}
-                onUpdate={(field, value) => updateSectionContent(currentSection.id, field, value)}
-              />
-            )}
+        {/* Properties Panel - Only show in properties mode */}
+        {editMode === 'properties' && (
+          <div className="w-80 bg-white border-r border-slate-200 overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-sm font-semibold text-slate-700 mb-4">Properties</h3>
+              {currentSection && (
+                <SectionEditor
+                  section={currentSection}
+                  onUpdate={(field, value) => updateSectionContent(currentSection.id, field, value)}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Preview Area */}
         <div className="flex-1 overflow-auto bg-slate-50 p-8">
-          <div className={`mx-auto bg-white shadow-xl ${
-            previewMode === 'mobile' ? 'max-w-sm' : 'max-w-6xl'
+          <div className={`mx-auto bg-white shadow-xl transition-all duration-300 ${
+            previewMode === 'mobile' ? 'max-w-sm w-full' : 'max-w-6xl w-full'
           }`}>
-            <TemplatePreview template={template} />
+            <div className={previewMode === 'mobile' ? 'transform scale-100' : ''}>
+              <TemplatePreview 
+                template={template} 
+                editMode={editMode === 'visual'}
+                onUpdate={updateSectionContent}
+                editingElement={editingElement}
+                setEditingElement={setEditingElement}
+              />
+            </div>
           </div>
+          {editMode === 'visual' && (
+            <div className="fixed bottom-6 right-6 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">
+              💡 Click on any text or image in the preview to edit
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1622,175 +1853,734 @@ const SectionEditor: React.FC<{
 };
 
 // Template Preview Component
-const TemplatePreview: React.FC<{ template: SavedTemplate }> = ({ template }) => {
+const TemplatePreview: React.FC<{ 
+  template: SavedTemplate;
+  editMode?: boolean;
+  onUpdate?: (sectionId: string, field: string, value: any) => void;
+  editingElement?: string | null;
+  setEditingElement?: (id: string | null) => void;
+}> = ({ template, editMode = false, onUpdate, editingElement, setEditingElement }) => {
   return (
     <div className="template-preview">
       {template.customizedSections.map(section => (
         <div key={section.id} id={section.id} className="section-preview">
-          {renderSectionPreview(section)}
+          {renderSectionPreview(section, editMode, onUpdate, editingElement, setEditingElement)}
         </div>
       ))}
     </div>
   );
 };
 
-const renderSectionPreview = (section: TemplateSection) => {
+const renderSectionPreview = (
+  section: TemplateSection, 
+  editMode: boolean = false,
+  onUpdate?: (sectionId: string, field: string, value: any) => void,
+  editingElement?: string | null,
+  setEditingElement?: (id: string | null) => void
+) => {
+  const handleTextEdit = (field: string, value: string) => {
+    if (onUpdate) {
+      onUpdate(section.id, field, value);
+    }
+  };
+
+  const handleImageChange = async (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Convert to data URL for preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (onUpdate) {
+        onUpdate(section.id, field, dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   switch (section.type) {
     case 'hero':
       return (
-        <div 
-          className="relative h-[600px] flex items-center justify-center text-white"
+        <section 
+          className="relative min-h-[600px] flex items-center justify-center text-white"
           style={{
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${section.content.backgroundImage})`,
+            backgroundImage: `url(${section.content.backgroundImage || ''})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
         >
-          <div className="text-center px-6">
-            <h1 className="text-5xl font-bold mb-4">{section.content.heading}</h1>
-            <p className="text-xl mb-8">{section.content.subheading}</p>
-            <div className="flex gap-4 justify-center">
-              <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold">
-                {section.content.ctaText}
-              </button>
-              <button className="bg-white hover:bg-slate-100 text-slate-900 px-8 py-3 rounded-lg font-semibold">
-                📞 {section.content.ctaPhone}
-              </button>
+          {/* Gradient Overlay - matches template.html */}
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3))'
+            }}
+          />
+          
+          {/* Background Image Editor */}
+          {editMode && (
+            <div className="absolute top-4 right-4 z-20">
+              <label className="bg-white/90 text-slate-700 px-3 py-2 rounded-lg cursor-pointer hover:bg-white text-sm flex items-center gap-2 shadow-lg">
+                <ImageIcon className="w-4 h-4" />
+                Change Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageChange('backgroundImage', e)}
+                />
+              </label>
             </div>
+          )}
+          
+          {/* Hero Content - matches template.html structure */}
+          <div className="relative z-10 max-w-4xl mx-auto px-5 py-10 text-center">
+            {editMode ? (
+              <>
+                <h1 
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="text-5xl md:text-6xl font-extrabold mb-4 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+                  onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                >
+                  {section.content.heading}
+                </h1>
+                <p 
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="text-xl md:text-2xl mb-8 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                  onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                >
+                  {section.content.subheading}
+                </p>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <a 
+                    href="#contact"
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text"
+                    onBlur={(e) => handleTextEdit('ctaText', e.currentTarget.textContent || '')}
+                  >
+                    {section.content.ctaText}
+                  </a>
+                  <a 
+                    href={`tel:${section.content.ctaPhone}`}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text"
+                    onBlur={(e) => {
+                      const text = e.currentTarget.textContent || '';
+                      const phone = text.replace('📞', '').trim();
+                      handleTextEdit('ctaPhone', phone);
+                    }}
+                  >
+                    📞 {section.content.ctaPhone}
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1 
+                  className="text-5xl md:text-6xl font-extrabold mb-4 text-white"
+                  style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+                >
+                  {section.content.heading}
+                </h1>
+                <p 
+                  className="text-xl md:text-2xl mb-8 text-white"
+                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                >
+                  {section.content.subheading}
+                </p>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <a 
+                    href="#contact"
+                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5"
+                  >
+                    {section.content.ctaText}
+                  </a>
+                  <a 
+                    href={`tel:${section.content.ctaPhone}`}
+                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                  >
+                    📞 {section.content.ctaPhone}
+                  </a>
+                </div>
+              </>
+            )}
           </div>
-        </div>
+        </section>
       );
     
     case 'features':
       return (
-        <div className="py-20 px-6 bg-white">
+        <section className="py-20 px-5 bg-slate-50" id="features">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-12 text-slate-900">{section.content.heading}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {editMode ? (
+              <h2 
+                contentEditable
+                suppressContentEditableWarning
+                className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
+              >
+                {section.content.heading}
+              </h2>
+            ) : (
+              <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900">
+                {section.content.heading}
+              </h2>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {section.content.features?.map((feature: any, idx: number) => (
-                <div key={idx} className="text-center p-6 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
-                  <div className="text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2 text-slate-900">{feature.title}</h3>
-                  <p className="text-slate-600">{feature.description}</p>
+                <div 
+                  key={idx} 
+                  className="bg-white p-8 rounded-xl text-center shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                >
+                  {editMode ? (
+                    <>
+                      <div 
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-6xl mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded cursor-text"
+                        onBlur={(e) => {
+                          if (onUpdate) {
+                            const newFeatures = [...(section.content.features || [])];
+                            newFeatures[idx] = { ...newFeatures[idx], icon: e.currentTarget.textContent || '' };
+                            onUpdate(section.id, 'features', newFeatures);
+                          }
+                        }}
+                      >
+                        {feature.icon}
+                      </div>
+                      <h3 
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-xl font-semibold mb-3 text-indigo-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                        onBlur={(e) => {
+                          if (onUpdate) {
+                            const newFeatures = [...(section.content.features || [])];
+                            newFeatures[idx] = { ...newFeatures[idx], title: e.currentTarget.textContent || '' };
+                            onUpdate(section.id, 'features', newFeatures);
+                          }
+                        }}
+                      >
+                        {feature.title}
+                      </h3>
+                      <p 
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-slate-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                        onBlur={(e) => {
+                          if (onUpdate) {
+                            const newFeatures = [...(section.content.features || [])];
+                            newFeatures[idx] = { ...newFeatures[idx], description: e.currentTarget.textContent || '' };
+                            onUpdate(section.id, 'features', newFeatures);
+                          }
+                        }}
+                      >
+                        {feature.description}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-6xl mb-4">{feature.icon}</div>
+                      <h3 className="text-xl font-semibold mb-3 text-indigo-600">{feature.title}</h3>
+                      <p className="text-slate-600">{feature.description}</p>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </section>
       );
     
     case 'services':
       return (
-        <div className="py-20 px-6 bg-slate-50">
+        <section className="py-20 px-5 bg-white" id="services">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-4 text-slate-900">{section.content.heading}</h2>
-            {section.content.subheading && (
-              <p className="text-center text-slate-600 mb-12 text-lg">{section.content.subheading}</p>
+            {editMode ? (
+              <>
+                <h2 
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="text-4xl md:text-5xl font-bold text-center mb-4 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
+                >
+                  {section.content.heading}
+                </h2>
+                {section.content.subheading && (
+                  <p 
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="text-center text-slate-600 mb-12 text-xl outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                    onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
+                  >
+                    {section.content.subheading}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-slate-900">
+                  {section.content.heading}
+                </h2>
+                {section.content.subheading && (
+                  <p className="text-center text-slate-600 mb-12 text-xl">
+                    {section.content.subheading}
+                  </p>
+                )}
+              </>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {section.content.services?.map((service: any, idx: number) => (
-                <div key={idx} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  {service.image && (
+                <div 
+                  key={idx} 
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 group relative"
+                >
+                  {editMode && service.image && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <label className="bg-white/90 text-slate-700 px-2 py-1 rounded text-xs cursor-pointer hover:bg-white shadow-lg flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3" />
+                        Change
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !onUpdate) return;
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              const dataUrl = event.target?.result as string;
+                              const newServices = [...(section.content.services || [])];
+                              newServices[idx] = { ...newServices[idx], image: dataUrl };
+                              onUpdate(section.id, 'services', newServices);
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  {service.image ? (
                     <img 
                       src={service.image} 
                       alt={service.title}
                       className="w-full h-48 object-cover"
                     />
+                  ) : editMode ? (
+                    <label className="w-full h-48 flex items-center justify-center bg-slate-100 hover:bg-slate-200 cursor-pointer">
+                      <span className="text-slate-600 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5" />
+                        Add Image
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file || !onUpdate) return;
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const dataUrl = event.target?.result as string;
+                            const newServices = [...(section.content.services || [])];
+                            newServices[idx] = { ...newServices[idx], image: dataUrl };
+                            onUpdate(section.id, 'services', newServices);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <div className="w-full h-48 bg-slate-100" />
                   )}
                   <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2 text-slate-900">{service.title}</h3>
-                    <p className="text-slate-600 mb-4">{service.description}</p>
-                    {service.price && (
-                      <p className="text-indigo-600 font-semibold">{service.price}</p>
+                    {editMode ? (
+                      <>
+                        <h3 
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="text-xl font-semibold mb-2 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                          onBlur={(e) => {
+                            if (onUpdate) {
+                              const newServices = [...(section.content.services || [])];
+                              newServices[idx] = { ...newServices[idx], title: e.currentTarget.textContent || '' };
+                              onUpdate(section.id, 'services', newServices);
+                            }
+                          }}
+                        >
+                          {service.title}
+                        </h3>
+                        <p 
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="text-slate-600 mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                          onBlur={(e) => {
+                            if (onUpdate) {
+                              const newServices = [...(section.content.services || [])];
+                              newServices[idx] = { ...newServices[idx], description: e.currentTarget.textContent || '' };
+                              onUpdate(section.id, 'services', newServices);
+                            }
+                          }}
+                        >
+                          {service.description}
+                        </p>
+                        {service.price && (
+                          <p 
+                            contentEditable
+                            suppressContentEditableWarning
+                            className="text-indigo-600 font-bold text-lg outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                            onBlur={(e) => {
+                              if (onUpdate) {
+                                const newServices = [...(section.content.services || [])];
+                                newServices[idx] = { ...newServices[idx], price: e.currentTarget.textContent || '' };
+                                onUpdate(section.id, 'services', newServices);
+                              }
+                            }}
+                          >
+                            {service.price}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-xl font-semibold mb-2 text-slate-900">{service.title}</h3>
+                        <p className="text-slate-600 mb-4">{service.description}</p>
+                        {service.price && (
+                          <p className="text-indigo-600 font-bold text-lg">{service.price}</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </section>
       );
     
     case 'testimonials':
       return (
-        <div className="py-20 px-6 bg-white">
+        <section className="py-20 px-5 bg-slate-50" id="testimonials">
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl font-bold text-center mb-12 text-slate-900">{section.content.heading}</h2>
+            {editMode ? (
+              <h2 
+                contentEditable
+                suppressContentEditableWarning
+                className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
+              >
+                {section.content.heading}
+              </h2>
+            ) : (
+              <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900">
+                {section.content.heading}
+              </h2>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {section.content.testimonials?.map((testimonial: any, idx: number) => (
-                <div key={idx} className="bg-slate-50 p-6 rounded-lg">
+                <div 
+                  key={idx} 
+                  className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all"
+                >
                   <div className="flex items-center mb-4">
-                    {testimonial.avatar && (
+                    {testimonial.avatar ? (
                       <img 
                         src={testimonial.avatar} 
                         alt={testimonial.name}
                         className="w-12 h-12 rounded-full mr-4 object-cover"
                       />
+                    ) : editMode ? (
+                      <label className="w-12 h-12 rounded-full mr-4 bg-slate-200 flex items-center justify-center cursor-pointer hover:bg-slate-300">
+                        <ImageIcon className="w-4 h-4 text-slate-600" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !onUpdate) return;
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              const dataUrl = event.target?.result as string;
+                              const newTestimonials = [...(section.content.testimonials || [])];
+                              newTestimonials[idx] = { ...newTestimonials[idx], avatar: dataUrl };
+                              onUpdate(section.id, 'testimonials', newTestimonials);
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <div className="w-12 h-12 rounded-full mr-4 bg-slate-200" />
                     )}
-                    <div>
-                      <h4 className="font-semibold text-slate-900">{testimonial.name}</h4>
-                      {testimonial.company && (
-                        <p className="text-sm text-slate-600">{testimonial.company}</p>
+                    <div className="flex-1">
+                      {editMode ? (
+                        <>
+                          <h4 
+                            contentEditable
+                            suppressContentEditableWarning
+                            className="font-semibold text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                            onBlur={(e) => {
+                              if (onUpdate) {
+                                const newTestimonials = [...(section.content.testimonials || [])];
+                                newTestimonials[idx] = { ...newTestimonials[idx], name: e.currentTarget.textContent || '' };
+                                onUpdate(section.id, 'testimonials', newTestimonials);
+                              }
+                            }}
+                          >
+                            {testimonial.name}
+                          </h4>
+                          {testimonial.company && (
+                            <p 
+                              contentEditable
+                              suppressContentEditableWarning
+                              className="text-sm text-slate-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                              onBlur={(e) => {
+                                if (onUpdate) {
+                                  const newTestimonials = [...(section.content.testimonials || [])];
+                                  newTestimonials[idx] = { ...newTestimonials[idx], company: e.currentTarget.textContent || '' };
+                                  onUpdate(section.id, 'testimonials', newTestimonials);
+                                }
+                              }}
+                            >
+                              {testimonial.company}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <h4 className="font-semibold text-slate-900">{testimonial.name}</h4>
+                          {testimonial.company && (
+                            <p className="text-sm text-slate-600">{testimonial.company}</p>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
                   {testimonial.rating && (
-                    <div className="flex mb-3">
+                    <div className="flex mb-3 text-yellow-400 text-lg">
                       {[...Array(5)].map((_, i) => (
-                        <span key={i} className={i < testimonial.rating ? 'text-yellow-400' : 'text-slate-300'}>★</span>
+                        <span key={i}>{i < testimonial.rating ? '★' : '☆'}</span>
                       ))}
                     </div>
                   )}
-                  <p className="text-slate-700 italic">"{testimonial.text}"</p>
+                  {editMode ? (
+                    <p 
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="text-slate-700 italic outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                      onBlur={(e) => {
+                        if (onUpdate) {
+                          const newTestimonials = [...(section.content.testimonials || [])];
+                          newTestimonials[idx] = { ...newTestimonials[idx], text: e.currentTarget.textContent?.replace(/"/g, '') || '' };
+                          onUpdate(section.id, 'testimonials', newTestimonials);
+                        }
+                      }}
+                    >
+                      "{testimonial.text}"
+                    </p>
+                  ) : (
+                    <p className="text-slate-700 italic">"{testimonial.text}"</p>
+                  )}
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </section>
       );
     
     case 'cta':
       return (
-        <div className="py-20 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl font-bold mb-4">{section.content.heading}</h2>
-            {section.content.subheading && (
-              <p className="text-xl mb-8 text-indigo-100">{section.content.subheading}</p>
-            )}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              {section.content.phone && (
-                <a 
-                  href={`tel:${section.content.phone}`}
-                  className="bg-white text-indigo-600 px-8 py-4 rounded-lg font-semibold hover:bg-indigo-50 transition-colors flex items-center gap-2"
+        <section 
+          className="py-20 px-5 text-white text-center"
+          id="contact"
+          style={{
+            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)'
+          }}
+        >
+          <div className="max-w-4xl mx-auto">
+            {editMode ? (
+              <>
+                <h2 
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="text-4xl md:text-5xl font-bold mb-4 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
                 >
-                  📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
-                </a>
-              )}
-              {section.content.email && (
-                <a 
-                  href={`mailto:${section.content.email}`}
-                  className="bg-indigo-700 text-white px-8 py-4 rounded-lg font-semibold hover:bg-indigo-800 transition-colors"
-                >
-                  ✉️ Email Us
-                </a>
-              )}
-            </div>
-            {section.content.hours && (
-              <p className="mt-6 text-indigo-100">{section.content.hours}</p>
+                  {section.content.heading}
+                </h2>
+                {section.content.subheading && (
+                  <p 
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="text-xl md:text-2xl mb-8 opacity-90 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                    onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
+                  >
+                    {section.content.subheading}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-4 justify-center items-center mb-8">
+                  {section.content.phone && (
+                    <a 
+                      href={`tel:${section.content.phone}`}
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text"
+                      onBlur={(e) => {
+                        const text = e.currentTarget.textContent || '';
+                        const phone = text.replace('📞', '').replace(section.content.ctaText || 'Call Now', '').trim();
+                        handleTextEdit('phone', phone);
+                      }}
+                    >
+                      📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
+                    </a>
+                  )}
+                  {section.content.email && (
+                    <a 
+                      href={`mailto:${section.content.email}`}
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-700 text-white hover:bg-indigo-800 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text"
+                      onBlur={(e) => {
+                        const text = e.currentTarget.textContent || '';
+                        const email = text.replace('✉️ Email Us', '').trim();
+                        handleTextEdit('email', email);
+                      }}
+                    >
+                      ✉️ Email Us
+                    </a>
+                  )}
+                </div>
+                {section.content.hours && (
+                  <div className="flex justify-center items-center gap-2 mt-6">
+                    <span>🕐</span>
+                    <p 
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="opacity-90 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                      onBlur={(e) => handleTextEdit('hours', e.currentTarget.textContent || '')}
+                    >
+                      {section.content.hours}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                  {section.content.heading}
+                </h2>
+                {section.content.subheading && (
+                  <p className="text-xl md:text-2xl mb-8 opacity-90">
+                    {section.content.subheading}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-4 justify-center items-center mb-8">
+                  {section.content.phone && (
+                    <a 
+                      href={`tel:${section.content.phone}`}
+                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+                    >
+                      📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
+                    </a>
+                  )}
+                  {section.content.email && (
+                    <a 
+                      href={`mailto:${section.content.email}`}
+                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-700 text-white hover:bg-indigo-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                    >
+                      ✉️ Email Us
+                    </a>
+                  )}
+                </div>
+                {section.content.hours && (
+                  <div className="flex justify-center items-center gap-2 mt-6">
+                    <span>🕐</span>
+                    <p className="opacity-90">{section.content.hours}</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
-        </div>
+        </section>
       );
     
     case 'footer':
       return (
-        <div className="py-12 px-6 bg-slate-900 text-white">
+        <footer className="bg-slate-900 text-slate-300 py-16 px-5">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+              {/* Company Info Column */}
+              <div>
+                <h4 className="text-white font-semibold mb-4 text-lg">
+                  {section.content.companyName || 'Company Name'}
+                </h4>
+                <p className="text-slate-400 mb-4">{section.content.tagline || ''}</p>
+                {section.content.address && (
+                  <p className="text-slate-400">{section.content.address}</p>
+                )}
+              </div>
+              
+              {/* Contact Column */}
+              <div>
+                <h4 className="text-white font-semibold mb-4 text-lg">Contact</h4>
+                <ul className="space-y-2 text-slate-400">
+                  {section.content.phone && (
+                    <li>
+                      <a href={`tel:${section.content.phone}`} className="hover:text-white transition-colors">
+                        📞 {section.content.phone}
+                      </a>
+                    </li>
+                  )}
+                  {section.content.email && (
+                    <li>
+                      <a href={`mailto:${section.content.email}`} className="hover:text-white transition-colors">
+                        ✉️ {section.content.email}
+                      </a>
+                    </li>
+                  )}
+                </ul>
+              </div>
+              
+              {/* Quick Links Column */}
+              {section.content.links && section.content.links.length > 0 && (
+                <div>
+                  <h4 className="text-white font-semibold mb-4 text-lg">Quick Links</h4>
+                  <ul className="space-y-2 text-slate-400">
+                    {section.content.links.map((link: any, linkIdx: number) => (
+                      <li key={linkIdx}>
+                        <a href={link.href || '#'} className="hover:text-white transition-colors">
+                          {link.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Additional Columns from content.columns */}
               {section.content.columns?.map((column: any, idx: number) => (
                 <div key={idx}>
                   {column.title && (
-                    <h4 className="font-semibold mb-4">{column.title}</h4>
+                    <h4 className="text-white font-semibold mb-4 text-lg">{column.title}</h4>
                   )}
                   <ul className="space-y-2 text-slate-400">
                     {column.links?.map((link: any, linkIdx: number) => (
@@ -1804,13 +2594,15 @@ const renderSectionPreview = (section: TemplateSection) => {
                 </div>
               ))}
             </div>
+            
+            {/* Footer Bottom */}
             {section.content.copyright && (
-              <div className="mt-8 pt-8 border-t border-slate-800 text-center text-slate-400 text-sm">
+              <div className="pt-8 border-t border-slate-800 text-center text-slate-400 text-sm">
                 {section.content.copyright}
               </div>
             )}
           </div>
-        </div>
+        </footer>
       );
     
     case 'privacy':

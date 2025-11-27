@@ -274,8 +274,20 @@ export const CSVValidator2 = () => {
             // Try API first, fallback to client-side validation
             try {
                 const resp = await api.post('/validate-csv', { headers, rows });
-                setProblems(resp.problems || []);
+                const problems = resp.problems || [];
+                setProblems(problems);
                 setEditorBehavior(resp.editorBehavior || []);
+                
+                // Show confirmation message
+                if (problems.length === 0) {
+                    notifications.success('CSV validation completed successfully! No errors found.', {
+                        title: 'Validation Complete'
+                    });
+                } else {
+                    notifications.warning(`Validation completed with ${problems.length} problem(s) found.`, {
+                        title: 'Validation Complete'
+                    });
+                }
             } catch (apiError) {
                 // Fallback to client-side validation
                 console.log('API unavailable, using client-side validation');
@@ -285,10 +297,16 @@ export const CSVValidator2 = () => {
                 const behavior: string[] = [];
                 if (problems.length === 0) {
                     behavior.push('Google Ads Editor should accept this CSV without errors.');
+                    notifications.success('CSV validation completed successfully! No errors found.', {
+                        title: 'Validation Complete'
+                    });
                 } else {
                     behavior.push('Google Ads Editor may reject rows with format errors (e.g., match type mismatches) or show them in the "Rejected changes" pane.');
                     behavior.push('Duplicates may be imported but will appear as separate rows unless Editor de-duplicates; consider removing duplicates.');
                     behavior.push('Fields longer than 255 characters may be truncated on import.');
+                    notifications.warning(`Validation completed with ${problems.length} problem(s) found.`, {
+                        title: 'Validation Complete'
+                    });
                 }
                 setEditorBehavior(behavior);
             }

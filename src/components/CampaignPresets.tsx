@@ -537,7 +537,7 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
         {/* Search and View Toggle */}
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
           <input
             type="text"
             placeholder="Search presets..."
@@ -591,20 +591,6 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
         : 'space-y-3'
       }>
         {filteredPresets.map((preset) => {
-          // Get structure color based on type
-          const getStructureColor = (struct: string) => {
-            switch(struct) {
-              case 'SKAG': return { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' };
-              case 'STAG': return { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' };
-              case 'IBAG': return { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-300' };
-              case 'GEO': return { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' };
-              case 'MIX': return { bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-300' };
-              default: return { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-300' };
-            }
-          };
-          
-          const colorScheme = getStructureColor(preset.structure || '');
-          
           // List View Layout
           if (viewMode === 'list') {
             return (
@@ -621,10 +607,6 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                         <h3 className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight flex-1">
                           {preset.title}
                         </h3>
-                        {/* Structure Tag */}
-                        <div className={`px-2.5 py-0.5 rounded-md text-[10px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} shadow-sm shrink-0`}>
-                          {preset.structure || 'SKAG'}
-                        </div>
                       </div>
                       <p className="text-sm text-slate-500 mb-4 leading-tight">{preset.campaign_name}</p>
                       
@@ -703,13 +685,9 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
             <div className="flex-1 flex flex-col">
               <div className="mb-2">
                 <div className="flex items-start justify-between gap-1.5 mb-0.5">
-                  <h3 className="text-xs font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight flex-1 pr-12">
+                  <h3 className="text-xs font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight flex-1">
                     {preset.title}
                   </h3>
-                  {/* Structure Tag */}
-                  <div className={`px-1 py-0.5 rounded text-[8px] font-semibold border ${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} shadow-sm shrink-0 absolute top-2 right-2 z-20 leading-tight`}>
-                    {preset.structure || 'SKAG'}
-                  </div>
                 </div>
                 <p className="text-[10px] text-slate-500 leading-tight">{preset.campaign_name}</p>
               </div>
