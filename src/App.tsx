@@ -25,7 +25,6 @@ import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
-import { HomePageNew } from './components/HomePageNew';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
 import { PaymentPage } from './components/PaymentPage';
@@ -41,7 +40,7 @@ import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 
-type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
+type AppView = 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
 const App = () => {
   const { theme } = useTheme();
@@ -503,12 +502,8 @@ const App = () => {
         return;
       }
 
-      // Show home page if path is root and no user, otherwise show auth or user view
-      if (path === '/' && !user) {
-        setView('home');
-      } else {
-        setView(user ? 'user' : 'auth');
-      }
+      // Show auth/login page if no user, otherwise show user view
+      setView(user ? 'user' : 'auth');
     };
 
     handleRoute();
@@ -850,40 +845,6 @@ const App = () => {
     }
   };
 
-  // Home page view
-  if (appView === 'home') {
-    return (
-      <HomePageNew
-        onGetStarted={() => {
-          setAuthMode('signup');
-          setAppView('auth');
-        }}
-        onLogin={() => {
-          setAuthMode('login');
-          setAppView('auth');
-        }}
-        onSelectPlan={handleSelectPlan}
-        onContactSales={() => {
-          // Scroll to contact section
-          setTimeout(() => {
-            const element = document.querySelector('#contact');
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 100);
-        }}
-        onScheduleDemo={() => {
-          // Scroll to contact section for demo scheduling
-          setTimeout(() => {
-            const element = document.querySelector('#contact');
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 100);
-        }}
-      />
-    );
-  }
 
   if (appView === 'payment' && selectedPlan) {
     return (
