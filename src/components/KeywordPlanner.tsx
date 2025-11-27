@@ -556,6 +556,7 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                                 id="broad-planner" 
                                                 checked={matchTypes.broad}
                                                 onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
+                                                className="border-amber-400"
                                             />
                                             <label htmlFor="broad-planner" className="text-xs text-slate-600 cursor-pointer">
                                                 Broad Match
@@ -566,6 +567,7 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                                 id="phrase-planner" 
                                                 checked={matchTypes.phrase}
                                                 onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
+                                                className="border-blue-400"
                                             />
                                             <label htmlFor="phrase-planner" className="text-xs text-slate-600 cursor-pointer">
                                                 Phrase Match "keyword"
@@ -576,6 +578,7 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                                 id="exact-planner" 
                                                 checked={matchTypes.exact}
                                                 onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
+                                                className="border-emerald-400"
                                             />
                                             <label htmlFor="exact-planner" className="text-xs text-slate-600 cursor-pointer">
                                                 Exact Match [keyword]

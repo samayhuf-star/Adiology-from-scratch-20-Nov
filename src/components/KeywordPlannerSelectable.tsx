@@ -412,6 +412,7 @@ export const KeywordPlannerSelectable = ({
                                     id="broad-planner" 
                                     checked={matchTypes.broad}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
+                                    className="border-amber-400"
                                 />
                                 <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer">
                                     Broad Match
@@ -422,9 +423,10 @@ export const KeywordPlannerSelectable = ({
                                     id="phrase-planner" 
                                     checked={matchTypes.phrase}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
+                                    className="border-blue-400"
                                 />
                                 <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer">
-                                    Phrase Match
+                                    Phrase Match "keyword"
                                 </label>
                             </div>
                             <div className="flex items-center gap-2">
@@ -432,9 +434,10 @@ export const KeywordPlannerSelectable = ({
                                     id="exact-planner" 
                                     checked={matchTypes.exact}
                                     onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
+                                    className="border-emerald-400"
                                 />
                                 <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer">
-                                    Exact Match
+                                    Exact Match [keyword]
                                 </label>
                             </div>
                         </div>

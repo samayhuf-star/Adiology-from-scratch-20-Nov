@@ -882,7 +882,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Step Indicator
   const renderStepIndicator = () => (
-    <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg py-4 px-4 sm:px-6 mb-8 border border-indigo-100/50 shadow-sm">
+    <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg py-4 px-4 sm:px-6 mb-6 sm:mb-8 border border-indigo-100/50 shadow-sm">
       <div className="flex items-center justify-center space-x-2 sm:space-x-4">
         {[
           { num: 1, label: 'Setup' },
@@ -917,7 +917,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return (
       <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Campaign Setup</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Campaign Setup</h2>
           <p className="text-slate-600">Choose your campaign structure and configure basic settings</p>
         </div>
 
@@ -1116,10 +1116,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap gap-4">
               <Label 
                 htmlFor="broad" 
-                className="flex items-center space-x-2 bg-amber-50/50 px-3 py-2 rounded-lg border border-amber-200/50 cursor-pointer hover:bg-amber-50 transition-colors"
+                className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-3 rounded-xl border-2 border-amber-200 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all duration-200 group"
               >
                 <Checkbox
                   id="broad"
@@ -1130,11 +1130,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   className="border-amber-400"
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-medium text-sm text-amber-900">Broad Match</span>
+                <span className="font-semibold text-sm text-amber-900 group-hover:text-amber-950 transition-colors">Broad Match</span>
               </Label>
               <Label 
                 htmlFor="phrase" 
-                className="flex items-center space-x-2 bg-blue-50/50 px-3 py-2 rounded-lg border border-blue-200/50 cursor-pointer hover:bg-blue-50 transition-colors"
+                className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 to-cyan-50 px-4 py-3 rounded-xl border-2 border-blue-200 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
               >
                 <Checkbox
                   id="phrase"
@@ -1145,11 +1145,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   className="border-blue-400"
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-medium text-sm text-blue-900">Phrase Match</span>
+                <span className="font-semibold text-sm text-blue-900 group-hover:text-blue-950 transition-colors">Phrase Match</span>
               </Label>
               <Label 
                 htmlFor="exact" 
-                className="flex items-center space-x-2 bg-emerald-50/50 px-3 py-2 rounded-lg border border-emerald-200/50 cursor-pointer hover:bg-emerald-50 transition-colors"
+                className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-3 rounded-xl border-2 border-emerald-200 cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all duration-200 group"
               >
                 <Checkbox
                   id="exact"
@@ -1160,7 +1160,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   className="border-emerald-400"
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-medium text-sm text-emerald-900">Exact Match</span>
+                <span className="font-semibold text-sm text-emerald-900 group-hover:text-emerald-950 transition-colors">Exact Match</span>
               </Label>
             </div>
           </CardContent>
@@ -1786,7 +1786,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               <CardContent>
                 <div className="space-y-4">
                   {Object.keys(smartClusters).length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
+                    <div className="text-center py-6 sm:py-8 text-slate-500">
                       <Brain className="w-12 h-12 mx-auto mb-4 text-slate-300" />
                       <p>Generate keywords to see smart clusters</p>
                     </div>
@@ -2064,7 +2064,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               <CardContent>
                 <div className="space-y-4">
                   {Object.keys(smartClusters).length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
+                    <div className="text-center py-6 sm:py-8 text-slate-500">
                       <Network className="w-12 h-12 mx-auto mb-4 text-slate-300" />
                       <p>Generate keywords to see smart clusters</p>
                     </div>
@@ -2092,8 +2092,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     return (
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">Keywords</h2>
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Keywords</h2>
           <p className="text-slate-600">Generate and organize keywords based on your structure: {STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</p>
         </div>
 
@@ -2763,14 +2763,16 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
   
   const extensionTypes = [
-    { id: 'callout', label: 'Callout Extension', description: 'Highlight key benefits' },
-    { id: 'sitelink', label: 'Sitelink Extension', description: 'Add links to important pages' },
-    { id: 'call', label: 'Call Extension', description: 'Add phone number' },
-    { id: 'snippet', label: 'Snippet Extension', description: 'Show structured information' },
-    { id: 'price', label: 'Price Extension', description: 'Display pricing' },
-    { id: 'location', label: 'Location Extension', description: 'Show business location' },
-    { id: 'message', label: 'Message Extension', description: 'Enable messaging' },
-    { id: 'promotion', label: 'Promotion Extension', description: 'Show special offers' },
+    { id: 'callout', label: 'Callout Extension', description: 'Highlight key benefits', icon: Tag, color: 'purple' },
+    { id: 'sitelink', label: 'Sitelink Extension', description: 'Add links to important pages', icon: Link2, color: 'blue' },
+    { id: 'call', label: 'Call Extension', description: 'Add phone number', icon: Phone, color: 'green' },
+    { id: 'snippet', label: 'Snippet Extension', description: 'Show structured information', icon: FileText, color: 'indigo' },
+    { id: 'price', label: 'Price Extension', description: 'Display pricing', icon: DollarSign, color: 'emerald' },
+    { id: 'location', label: 'Location Extension', description: 'Show business location', icon: MapPin, color: 'red' },
+    { id: 'message', label: 'Message Extension', description: 'Enable messaging', icon: MessageSquare, color: 'purple' },
+    { id: 'promotion', label: 'Promotion Extension', description: 'Show special offers', icon: Gift, color: 'orange' },
+    { id: 'image', label: 'Image Extension', description: 'Add images', icon: ImageIcon, color: 'pink' },
+    { id: 'app', label: 'App Extension', description: 'Link to mobile app', icon: Smartphone, color: 'slate' },
   ];
 
   const handleConfirmAIExtensions = () => {
@@ -2817,7 +2819,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const renderStep3 = () => {
     if (!structureType) {
       return (
-        <div className="max-w-7xl mx-auto p-8 text-center">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 text-center w-full">
           <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
           <h3 className="text-xl font-semibold text-slate-600 mb-2">Structure Not Selected</h3>
           <p className="text-slate-500 mb-4">Please go back and select a campaign structure first.</p>
@@ -2830,7 +2832,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     if (selectedKeywords.length === 0) {
       return (
-        <div className="max-w-7xl mx-auto p-8 text-center">
+        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 text-center w-full">
           <AlertCircle className="w-16 h-16 mx-auto mb-4 text-slate-300" />
           <h3 className="text-xl font-semibold text-slate-600 mb-2">No Keywords Selected</h3>
           <p className="text-slate-500 mb-4">Please go back and select keywords before creating ads.</p>
@@ -3433,40 +3435,73 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              {extensionTypes.map((ext) => (
-                <div
-                  key={ext.id}
-                  onClick={() => {
-                    setSelectedExtensions(prev =>
-                      prev.includes(ext.id)
-                        ? prev.filter(e => e !== ext.id)
-                        : [...prev, ext.id]
-                    );
-                  }}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedExtensions.includes(ext.id)
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-slate-200 hover:border-indigo-300'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={selectedExtensions.includes(ext.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedExtensions([...selectedExtensions, ext.id]);
-                        } else {
-                          setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
-                        }
-                      }}
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-slate-800">{ext.label}</div>
-                      <div className="text-sm text-slate-600 mt-1">{ext.description}</div>
+              {extensionTypes.map((ext) => {
+                const Icon = ext.icon || FileText;
+                const iconBgClass = {
+                  purple: 'bg-purple-50',
+                  blue: 'bg-blue-50',
+                  green: 'bg-green-50',
+                  indigo: 'bg-indigo-50',
+                  emerald: 'bg-emerald-50',
+                  red: 'bg-red-50',
+                  orange: 'bg-orange-50',
+                  pink: 'bg-pink-50',
+                  slate: 'bg-slate-50'
+                }[ext.color] || 'bg-slate-50';
+                const iconColorClass = {
+                  purple: 'text-purple-600',
+                  blue: 'text-blue-600',
+                  green: 'text-green-600',
+                  indigo: 'text-indigo-600',
+                  emerald: 'text-emerald-600',
+                  red: 'text-red-600',
+                  orange: 'text-orange-600',
+                  pink: 'text-pink-600',
+                  slate: 'text-slate-600'
+                }[ext.color] || 'text-slate-600';
+                return (
+                  <div
+                    key={ext.id}
+                    onClick={() => {
+                      setSelectedExtensions(prev =>
+                        prev.includes(ext.id)
+                          ? prev.filter(e => e !== ext.id)
+                          : [...prev, ext.id]
+                      );
+                    }}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      selectedExtensions.includes(ext.id)
+                        ? 'border-indigo-500 bg-indigo-50/50 shadow-md'
+                        : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedExtensions.includes(ext.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedExtensions([...selectedExtensions, ext.id]);
+                            } else {
+                              setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
+                            }
+                          }}
+                          className="border-indigo-400"
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`p-2 rounded-lg ${iconBgClass} flex-shrink-0`}>
+                          <Icon className={`w-5 h-5 ${iconColorClass}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-base text-slate-800">{ext.label}</div>
+                          <div className="text-sm text-slate-600 mt-1">{ext.description}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => {
@@ -3525,7 +3560,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-500/30 mb-4">
             <Globe className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
+          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">
             Geo Targeting Configuration
           </h2>
           <p className="text-slate-600 text-lg">Select the specific locations where your ads will be shown.</p>
@@ -3563,7 +3598,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         )}
 
         <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-2xl">
-          <CardContent className="p-8 space-y-8">
+          <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
             
             {/* Country Selector with Enhanced Design */}
             <div className="space-y-4">
@@ -3648,7 +3683,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 </TabsList>
 
                 <TabsContent value="COUNTRY" className="space-y-4 mt-6">
-                  <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-300 rounded-2xl p-8 shadow-xl relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-2 border-emerald-300 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
                     {/* Decorative gradient overlay */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-200/20 to-transparent rounded-full blur-3xl"></div>
                     
@@ -3669,7 +3704,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-slate-600 font-semibold uppercase tracking-wide">Target Country:</p>
-                            <p className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mt-2">{targetCountry}</p>
+                            <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mt-2">{targetCountry}</p>
                           </div>
                           <div className="bg-emerald-100 rounded-full p-3">
                             <CheckCircle2 className="w-10 h-10 text-emerald-600" />
@@ -4005,25 +4040,25 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
             <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-indigo-600">{totalAdGroups}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-indigo-600">{totalAdGroups}</div>
               <div className="text-xs text-slate-600 mt-1">Ad Groups</div>
             </CardContent>
           </Card>
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
             <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-purple-600">{totalKeywords}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-purple-600">{totalKeywords}</div>
               <div className="text-xs text-slate-600 mt-1">Keywords</div>
             </CardContent>
           </Card>
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
             <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-blue-600">{totalAds}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600">{totalAds}</div>
               <div className="text-xs text-slate-600 mt-1">Ads</div>
             </CardContent>
           </Card>
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
             <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-green-600">{totalNegatives}</div>
+              <div className="text-2xl sm:text-3xl font-bold text-green-600">{totalNegatives}</div>
               <div className="text-xs text-slate-600 mt-1">Negative Keywords</div>
             </CardContent>
           </Card>
@@ -4637,37 +4672,37 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     return (
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-            <CheckCircle2 className="w-8 h-8 text-green-600" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-100 mb-4">
+            <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-green-600" />
           </div>
-          <h2 className="text-3xl font-bold text-slate-800">Campaign Created Successfully!</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">Campaign Created Successfully!</h2>
           <p className="text-slate-500 mt-2">Your campaign is ready to export and implement</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-bold text-indigo-600">1</div>
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-indigo-600">1</div>
               <div className="text-sm text-slate-600 mt-2">Campaign</div>
             </CardContent>
           </Card>
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-bold text-purple-600">{totalAdGroups}</div>
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-purple-600">{totalAdGroups}</div>
               <div className="text-sm text-slate-600 mt-2">Ad Groups</div>
             </CardContent>
           </Card>
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-bold text-blue-600">{totalKeywords}</div>
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-blue-600">{totalKeywords}</div>
               <div className="text-sm text-slate-600 mt-2">Keywords</div>
             </CardContent>
           </Card>
           <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-bold text-green-600">{totalLocations}</div>
+            <CardContent className="p-4 sm:p-6 text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-green-600">{totalLocations}</div>
               <div className="text-sm text-slate-600 mt-2">Locations</div>
             </CardContent>
           </Card>
@@ -4799,8 +4834,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
               Saved Campaigns
             </h1>
             <p className="text-slate-600">

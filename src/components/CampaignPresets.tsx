@@ -514,17 +514,17 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 </div>
               </div>
 
-                      {/* Ad Groups */}
-                      <div className="flex flex-wrap gap-2">
-                        {preset.ad_groups.slice(0, 4).map((group, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {group.name}
-                          </Badge>
+                      {/* Example Keywords - Display as normal text */}
+                      <div className="space-y-1.5">
+                        {preset.keywords.slice(0, 2).map((keyword, idx) => (
+                          <p key={idx} className="text-sm text-slate-600 leading-tight">
+                            {keyword}
+                          </p>
                         ))}
-                        {preset.ad_groups.length > 4 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{preset.ad_groups.length - 4} more
-                          </Badge>
+                        {preset.keywords.length > 2 && (
+                          <p className="text-xs text-slate-500 leading-tight">
+                            +{preset.keywords.length - 2} more keywords
+                          </p>
                         )}
                       </div>
                     </div>
@@ -595,16 +595,17 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1 mb-2">
-                {preset.ad_groups.slice(0, 2).map((group, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-[9px] py-0 px-1.5">
-                    {group.name}
-                  </Badge>
+              {/* Example Keywords - Display as normal text */}
+              <div className="mb-2 space-y-1">
+                {preset.keywords.slice(0, 2).map((keyword, idx) => (
+                  <p key={idx} className="text-[10px] text-slate-600 leading-tight">
+                    {keyword}
+                  </p>
                 ))}
-                {preset.ad_groups.length > 2 && (
-                  <Badge variant="secondary" className="text-[9px] py-0 px-1.5">
-                    +{preset.ad_groups.length - 2}
-                  </Badge>
+                {preset.keywords.length > 2 && (
+                  <p className="text-[9px] text-slate-500 leading-tight">
+                    +{preset.keywords.length - 2} more keywords
+                  </p>
                 )}
               </div>
 

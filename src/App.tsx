@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -14,7 +14,7 @@ import {
 } from './components/ui/dropdown-menu';
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
-import { CSVValidator2 } from './components/CSVValidator2';
+import { CSVValidator3 } from './components/CSVValidator3';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
@@ -36,6 +36,7 @@ import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
+import { HistoryPanel } from './components/HistoryPanel';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 
@@ -50,18 +51,20 @@ const App = () => {
   const [historyData, setHistoryData] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
   // Valid tab IDs - used for route validation
   const validTabIds = new Set([
     'dashboard',
     'campaign-presets',
     'builder-2',
+    'campaign-history',
     'website-templates',
     'keyword-planner',
     'keyword-mixer',
     'ads-builder',
     'negative-keywords',
-    'csv-validator-2',
+    'csv-validator-3',
     'settings',
     'billing',
     'support',
@@ -126,7 +129,7 @@ const App = () => {
     if (title.includes('campaign')) {
       setActiveTabSafe('builder-2');
     } else if (title.includes('export') || title.includes('csv')) {
-      setActiveTabSafe('csv-validator-2');
+      setActiveTabSafe('csv-validator-3');
     } else if (title.includes('billing') || title.includes('subscription')) {
       setActiveTabSafe('settings');
       // Optionally open billing tab in settings
@@ -399,6 +402,7 @@ const App = () => {
       setActiveTab('dashboard');
     }
   }, [activeTab]);
+
 
   // Handle route/view state when auth or URL changes
   useEffect(() => {
@@ -695,17 +699,42 @@ const App = () => {
   // Default: User view (protected) navigation structure
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
-    { id: 'builder-2', label: 'Builder 2.0', icon: Sparkles },
+    { 
+      id: 'campaign-builder', 
+      label: 'Campaign Builder', 
+      icon: Sparkles,
+      submenu: [
+        { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
+        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+        { id: 'campaign-history', label: 'Campaign History', icon: Clock },
+      ]
+    },
     { id: 'website-templates', label: 'Website Templates', icon: Layout },
     { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
     { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
-    { id: 'csv-validator-2', label: 'CSV Validator 2.0', icon: FileCheck },
+    { id: 'csv-validator-3', label: 'CSV Validator V3', icon: FileCheck },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
+
+  // Auto-expand parent menu if activeTab is a submenu item
+  useEffect(() => {
+    for (const item of menuItems) {
+      if (item.submenu && item.submenu.some(sub => sub.id === activeTab)) {
+        setExpandedMenus(prev => {
+          if (!prev.has(item.id)) {
+            const newSet = new Set(prev);
+            newSet.add(item.id);
+            return newSet;
+          }
+          return prev;
+        });
+        break;
+      }
+    }
+  }, [activeTab]);
 
   // Bug_64: Generate search suggestions based on query
   useEffect(() => {
@@ -721,6 +750,14 @@ const App = () => {
     menuItems.forEach(item => {
       if (item.label.toLowerCase().includes(query)) {
         suggestions.push(item.label);
+      }
+      // Also check submenu items
+      if (item.submenu) {
+        item.submenu.forEach(subItem => {
+          if (subItem.label.toLowerCase().includes(query) && !suggestions.includes(subItem.label)) {
+            suggestions.push(subItem.label);
+          }
+        });
       }
     });
 
@@ -747,6 +784,7 @@ const App = () => {
 
   // Bug_64: Handle search suggestion click
   const handleSearchSuggestionClick = (suggestion: string) => {
+    // Check main menu items
     const matchingItem = menuItems.find(item => 
       item.label.toLowerCase() === suggestion.toLowerCase()
     );
@@ -755,7 +793,26 @@ const App = () => {
       setActiveTabSafe(matchingItem.id);
       setSearchQuery('');
       setShowSearchSuggestions(false);
-    } else {
+      return;
+    }
+    
+    // Check submenu items
+    for (const item of menuItems) {
+      if (item.submenu) {
+        const matchingSubItem = item.submenu.find(sub => 
+          sub.label.toLowerCase() === suggestion.toLowerCase()
+        );
+        if (matchingSubItem) {
+          setActiveTabSafe(matchingSubItem.id);
+          setSearchQuery('');
+          setShowSearchSuggestions(false);
+          return;
+        }
+      }
+    }
+    
+    // Fallback to term mapping
+    {
       const termMap: Record<string, string> = {
         'marketing': 'builder-2',
         'campaign': 'builder-2',
@@ -766,8 +823,8 @@ const App = () => {
         'ads': 'ads-builder',
         'advertising': 'ads-builder',
         'negative keywords': 'negative-keywords',
-        'csv': 'csv-validator-2',
-        'export': 'csv-validator-2',
+        'csv': 'csv-validator-3',
+        'export': 'csv-validator-3',
         'settings': 'settings',
         'billing': 'settings',
         'help': 'support-help',
@@ -1017,10 +1074,17 @@ const App = () => {
         }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
+      case 'campaign-history':
+        return <HistoryPanel onLoadItem={(type, data) => {
+          setHistoryData(data);
+          if (type === 'builder-2-campaign') {
+            setActiveTabSafe('builder-2');
+          }
+        }} />;
       case 'website-templates':
         return <WebsiteTemplates />;
-      case 'csv-validator-2':
-        return <CSVValidator2 />;
+      case 'csv-validator-3':
+        return <CSVValidator3 />;
       case 'keyword-planner':
         return <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />;
       case 'keyword-mixer':
@@ -1049,8 +1113,19 @@ const App = () => {
 
   // Get current page title
   const getCurrentPageTitle = () => {
+    // Check main menu items
     const currentItem = menuItems.find(item => item.id === activeTab);
-    return currentItem ? currentItem.label : 'Dashboard';
+    if (currentItem) return currentItem.label;
+    
+    // Check submenu items
+    for (const item of menuItems) {
+      if (item.submenu) {
+        const subItem = item.submenu.find(sub => sub.id === activeTab);
+        if (subItem) return subItem.label;
+      }
+    }
+    
+    return 'Dashboard';
   };
 
   return (
@@ -1088,24 +1163,69 @@ const App = () => {
         <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const hasSubmenu = item.submenu && item.submenu.length > 0;
+            const isExpanded = expandedMenus.has(item.id);
+            const isActive = activeTab === item.id || (hasSubmenu && item.submenu?.some(sub => sub.id === activeTab));
+            
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTabSafe(item.id);
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
-                  isActive
-                    ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
-                    : `text-slate-700 hover:bg-indigo-50`
-                }`}
-              >
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
-                {sidebarOpen && (
-                  <span className="font-medium">{item.label}</span>
+              <div key={item.id}>
+                <button
+                  onClick={() => {
+                    if (hasSubmenu) {
+                      setExpandedMenus(prev => {
+                        const newSet = new Set(prev);
+                        if (newSet.has(item.id)) {
+                          newSet.delete(item.id);
+                        } else {
+                          newSet.add(item.id);
+                        }
+                        return newSet;
+                      });
+                    } else {
+                      setActiveTabSafe(item.id);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
+                    isActive
+                      ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
+                      : `text-slate-700 hover:bg-indigo-50`
+                  }`}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
+                    {sidebarOpen && (
+                      <span className="font-medium">{item.label}</span>
+                    )}
+                  </div>
+                  {sidebarOpen && hasSubmenu && (
+                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  )}
+                </button>
+                {sidebarOpen && hasSubmenu && isExpanded && (
+                  <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-200 pl-2">
+                    {item.submenu?.map((subItem) => {
+                      const SubIcon = subItem.icon;
+                      const isSubActive = activeTab === subItem.id;
+                      return (
+                        <button
+                          key={subItem.id}
+                          onClick={() => {
+                            setActiveTabSafe(subItem.id);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group cursor-pointer ${
+                            isSubActive
+                              ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-md`
+                              : `text-slate-600 hover:bg-indigo-50/50`
+                          }`}
+                        >
+                          <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-400'}`} />
+                          <span className={`text-sm font-medium ${isSubActive ? 'text-white' : 'text-slate-600'}`}>{subItem.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </nav>
@@ -1144,6 +1264,21 @@ const App = () => {
                         setActiveTabSafe(matchingItem.id);
                         setSearchQuery('');
                         setShowSearchSuggestions(false);
+                        return;
+                      }
+                      // Check submenu items
+                      for (const item of menuItems) {
+                        if (item.submenu) {
+                          const matchingSubItem = item.submenu.find(sub => 
+                            sub.label.toLowerCase().includes(searchQuery.toLowerCase())
+                          );
+                          if (matchingSubItem) {
+                            setActiveTabSafe(matchingSubItem.id);
+                            setSearchQuery('');
+                            setShowSearchSuggestions(false);
+                            return;
+                          }
+                        }
                       }
                     }
                   }

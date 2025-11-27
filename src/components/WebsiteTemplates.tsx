@@ -1065,16 +1065,16 @@ export const WebsiteTemplates: React.FC = () => {
                     </p>
                     
                     {/* Features Badges */}
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      <Badge variant="outline" className="text-xs bg-slate-50">
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
                         {template.sections.length} sections
                       </Badge>
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                        <CheckCircle className="w-3 h-3 mr-1" />
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
+                        <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
                         Google Ads
                       </Badge>
-                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                        <Smartphone className="w-3 h-3 mr-1" />
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
+                        <Smartphone className="w-2.5 h-2.5 mr-0.5" />
                         Responsive
                       </Badge>
                     </div>
@@ -1157,8 +1157,8 @@ export const WebsiteTemplates: React.FC = () => {
                     </p>
                   </div>
                   
-                  <div className="flex gap-2 mb-4">
-                    <Badge variant="outline" className="text-xs">
+                  <div className="flex gap-1 mb-3">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
                       {template.customizedSections.length} sections
                     </Badge>
                   </div>
