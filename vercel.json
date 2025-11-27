@@ -28,7 +28,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "frame-src 'self' *.stripe.com; script-src 'self' 'unsafe-eval' https://js.stripe.com https://cdn.openwidget.com https://vercel.live; script-src-elem 'self' https://vercel.live https://js.stripe.com https://cdn.openwidget.com; connect-src 'self' *.stripe.com https://*.supabase.co https://googleads.googleapis.com https://generativelanguage.googleapis.com https://www.chatbot.com https://cdn.openwidget.com https://vercel.live; style-src 'self' 'unsafe-inline';"
+          "value": "frame-src 'self' *.stripe.com; script-src 'self' 'unsafe-eval' https://js.stripe.com https://cdn.openwidget.com https://api.openwidget.com https://vercel.live; script-src-elem 'self' https://vercel.live https://js.stripe.com https://cdn.openwidget.com https://api.openwidget.com; connect-src 'self' *.stripe.com https://*.supabase.co https://googleads.googleapis.com https://generativelanguage.googleapis.com https://www.chatbot.com https://cdn.openwidget.com https://api.openwidget.com https://vercel.live; style-src 'self' 'unsafe-inline';"
         }
       ]
     },
