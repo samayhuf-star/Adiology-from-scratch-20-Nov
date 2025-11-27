@@ -43,8 +43,8 @@ export function Features() {
   const [hoveredStructure, setHoveredStructure] = useState<number | null>(null);
 
   return (
-    <section id="features" className="py-20 px-6 bg-gradient-to-b from-white via-blue-50/30 to-white">
-      <div className="max-w-7xl mx-auto">
+    <section id="features" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-blue-50/30 to-white w-full">
+      <div className="max-w-7xl mx-auto w-full">
         {/* Top Heading */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

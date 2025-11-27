@@ -23,8 +23,8 @@ export function TemplatesPresetsFeature() {
   ];
 
   return (
-    <section className="py-20 px-6 bg-gradient-to-b from-blue-50/30 to-white">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50/30 to-white w-full">
+      <div className="max-w-7xl mx-auto w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left - Content */}
           <motion.div

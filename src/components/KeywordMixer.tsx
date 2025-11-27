@@ -218,16 +218,35 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
         setMixedKeywords(formattedKeywords);
     };
 
-    const exportToCSV = () => {
-        // Bug_46: Column name in plural form, filename without "mixed_" prefix
-        const csv = ['Keywords\n', ...mixedKeywords].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'keywords.csv'; // Bug_46: Simplified filename - removed "mixed_" prefix
-        link.click();
-        URL.revokeObjectURL(url);
+    const exportToCSV = async () => {
+        try {
+            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+            const filename = 'keywords.csv';
+            
+            await exportCSVWithValidation(
+                mixedKeywords,
+                filename,
+                'keywords',
+                {
+                    campaignName: 'Keywords Campaign',
+                    adGroupName: 'All Keywords',
+                    finalUrl: 'https://www.example.com'
+                }
+            );
+            
+            notifications.success(`Exported ${mixedKeywords.length} keywords to CSV`, {
+                title: 'Export Complete'
+            });
+        } catch (error: any) {
+            console.error('Export error:', error);
+            notifications.error(
+                error?.message || 'An unexpected error occurred during export',
+                { 
+                    title: '❌ Export Failed',
+                    description: 'Please try again or contact support if the issue persists.'
+                }
+            );
+        }
     };
 
     return (

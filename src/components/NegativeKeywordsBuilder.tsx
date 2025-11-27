@@ -579,30 +579,73 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             };
         });
 
-        let csvContent: string;
         let filename: string;
 
-        if (format === 'google-ads-editor') {
-            csvContent = exportToGoogleAdsEditorCSV(negativeKeywords, 'Negative Keywords Campaign', 'All Ad Groups');
-            filename = `negative_keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
-        } else {
-            csvContent = exportToCSV(negativeKeywords, exportFormat);
-            filename = `negative_keywords_${exportFormat}_${new Date().toISOString().split('T')[0]}.csv`;
-        }
-
-        // Add BOM for UTF-8 encoding
-        const BOM = '\ufeff';
-        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+        try {
+            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+            
+            if (format === 'google-ads-editor') {
+                // Use V3 format for Google Ads Editor
+                filename = `negative_keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+                const result = await exportCSVWithValidation(
+                    negativeKeywords,
+                    filename,
+                    'negativeKeywords',
+                    {
+                        campaignName: 'Negative Keywords Campaign',
+                        adGroupName: 'All Ad Groups',
+                        finalUrl: 'https://www.example.com'
+                    }
+                );
+                
+                if (result.warnings && result.warnings.length > 0) {
+                    notifications.warning(
+                        <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+                            {result.warnings.join('\n')}
+                        </div>,
+                        { 
+                            title: '⚠️  CSV Validation Warnings',
+                            description: 'Your campaign will export, but consider fixing these warnings.',
+                            duration: 10000
+                        }
+                    );
+                } else {
+                    notifications.success('Negative keywords exported successfully!', {
+                        title: 'Export Complete'
+                    });
+                }
+            } else {
+                // For other formats, use legacy export (but still validate if possible)
+                const { exportToCSV } = await import('../utils/negativeKeywordsExporter');
+                const csvContent = exportToCSV(negativeKeywords, exportFormat);
+                filename = `negative_keywords_${exportFormat}_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", filename);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }
+                
+                notifications.success('Negative keywords exported successfully!', {
+                    title: 'Export Complete'
+                });
+            }
+        } catch (error: any) {
+            console.error('Export error:', error);
+            notifications.error(
+                error?.message || 'An unexpected error occurred during export',
+                { 
+                    title: '❌ Export Failed',
+                    description: 'Please try again or contact support if the issue persists.'
+                }
+            );
         }
     };
 

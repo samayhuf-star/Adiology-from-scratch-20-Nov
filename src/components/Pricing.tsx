@@ -82,8 +82,8 @@ interface PricingProps {
 
 export function Pricing({ onSelectPlan }: PricingProps) {
   return (
-    <section id="pricing" className="py-24 px-6 bg-gradient-to-b from-white via-purple-50/30 to-white">
-      <div className="max-w-7xl mx-auto">
+    <section id="pricing" className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white via-purple-50/30 to-white w-full">
+      <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

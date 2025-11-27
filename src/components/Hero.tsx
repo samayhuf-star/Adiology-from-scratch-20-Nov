@@ -7,9 +7,9 @@ interface HeroProps {
 
 export function Hero({ onGetStarted }: HeroProps) {
   return (
-    <section className="pt-32 pb-20 px-6 bg-gradient-to-b from-blue-50/30 to-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="max-w-4xl mx-auto text-center">
+    <section className="pt-24 sm:pt-28 md:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50/30 to-white w-full">
+      <div className="max-w-7xl mx-auto w-full">
+        <div className="max-w-4xl mx-auto text-center w-full">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

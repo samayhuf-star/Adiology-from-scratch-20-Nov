@@ -194,172 +194,60 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
       // Continue anyway - user can still export
     }
 
-    const rows: string[] = [];
-    
-    // Google Ads Editor 100% compliant headers
-    const headers = [
-      'Campaign',
-      'Ad Group',
-      'Keyword',
-      'Match Type',
-      'Max CPC',
-      'Status',
-      'Campaign Status',
-      'Ad Group Status',
-      'Final URL',
-      'Headline 1',
-      'Headline 2',
-      'Headline 3',
-      'Description Line 1',
-      'Description Line 2',
-      'Path 1',
-      'Path 2',
-      'Campaign Budget',
-      'Budget Type',
-      'Ad Type',
-      'Labels'
-    ];
-    rows.push(headers.join(','));
-
-    // Helper function to escape CSV fields
-    const escapeCSV = (value: string | number): string => {
-      const strValue = String(value || '');
-      if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n') || strValue.includes('\r')) {
-        return `"${strValue.replace(/"/g, '""')}"`;
+    try {
+      // Convert preset to CampaignStructure format
+      const { presetToCampaignStructure, exportCampaignToCSVV3, validateCSVBeforeExport } = await import('../utils/csvGeneratorV3');
+      const structure = presetToCampaignStructure(exportPreset);
+      
+      // Validate before export
+      const validation = validateCSVBeforeExport(structure);
+      if (!validation.isValid) {
+        const errorMessage = validation.errors.join('\n');
+        notifications.error(
+          <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
+            {errorMessage}
+          </div>,
+          { 
+            title: '❌ CSV Validation Failed',
+            description: 'Please fix the errors above before exporting.',
+            duration: 15000
+          }
+        );
+        return;
       }
-      return strValue;
-    };
-
-    // Generate rows for each ad group and keyword combination
-    exportPreset.ad_groups.forEach((adGroup) => {
-      exportPreset.keywords.forEach(keyword => {
-        const hasExact = exportPreset.match_distribution.exact > 0;
-        const hasPhrase = exportPreset.match_distribution.phrase > 0;
-        const hasBroad = exportPreset.match_distribution.broad_mod > 0;
-
-      // Exact match
-        if (hasExact) {
-        const row = [
-            escapeCSV(exportPreset.campaign_name),
-            escapeCSV(adGroup.name),
-            escapeCSV(`[${keyword}]`), // Exact match syntax
-          'Exact',
-            escapeCSV(exportPreset.max_cpc.toFixed(2)),
-            'Enabled',
-            'Enabled',
-            'Enabled',
-            escapeCSV(exportPreset.final_url),
-            escapeCSV(exportPreset.ads[0].headline1),
-            escapeCSV(exportPreset.ads[0].headline2),
-            escapeCSV(exportPreset.ads[0].headline3 || ''),
-            escapeCSV(exportPreset.ads[0].description1),
-            escapeCSV(exportPreset.ads[0].description2 || ''),
-            escapeCSV(''),
-            escapeCSV(''),
-            escapeCSV(exportPreset.daily_budget),
-            'Daily',
-            'Expanded text ad',
-            escapeCSV('')
-          ];
-          rows.push(row.join(','));
+      
+      // Show warnings if any
+      if (validation.warnings.length > 0) {
+        const warningMessage = validation.warnings.join('\n');
+        notifications.warning(
+          <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+            {warningMessage}
+          </div>,
+          { 
+            title: '⚠️  CSV Validation Warnings',
+            description: 'Your campaign will export, but consider fixing these warnings.',
+            duration: 10000
+          }
+        );
       }
-
-      // Phrase match
-        if (hasPhrase) {
-        const row = [
-            escapeCSV(exportPreset.campaign_name),
-            escapeCSV(adGroup.name),
-            escapeCSV(`"${keyword}"`), // Phrase match syntax
-          'Phrase',
-            escapeCSV(exportPreset.max_cpc.toFixed(2)),
-            'Enabled',
-            'Enabled',
-            'Enabled',
-            escapeCSV(exportPreset.final_url),
-            escapeCSV(exportPreset.ads[0].headline1),
-            escapeCSV(exportPreset.ads[0].headline2),
-            escapeCSV(exportPreset.ads[0].headline3 || ''),
-            escapeCSV(exportPreset.ads[0].description1),
-            escapeCSV(exportPreset.ads[0].description2 || ''),
-            escapeCSV(''),
-            escapeCSV(''),
-            escapeCSV(exportPreset.daily_budget),
-            'Daily',
-            'Expanded text ad',
-            escapeCSV('')
-        ];
-          rows.push(row.join(','));
+      
+      // Export using V3 format
+      const filename = `${exportPreset.slug}-google-ads-editor.csv`;
+      exportCampaignToCSVV3(structure, filename);
+      
+      notifications.success(`Campaign exported successfully! File: ${filename}`, {
+        title: 'Export Complete'
+      });
+    } catch (error: any) {
+      console.error('Export error:', error);
+      notifications.error(
+        error?.message || 'An unexpected error occurred during export',
+        { 
+          title: '❌ Export Failed',
+          description: 'Please try again or contact support if the issue persists.'
         }
-
-        // Broad match (standard broad in modern Google Ads)
-        if (hasBroad) {
-          const row = [
-            escapeCSV(exportPreset.campaign_name),
-            escapeCSV(adGroup.name),
-            escapeCSV(keyword), // Broad match - no syntax
-            'Broad',
-            escapeCSV(exportPreset.max_cpc.toFixed(2)),
-            'Enabled',
-            'Enabled',
-            'Enabled',
-            escapeCSV(exportPreset.final_url),
-            escapeCSV(exportPreset.ads[0].headline1),
-            escapeCSV(exportPreset.ads[0].headline2),
-            escapeCSV(exportPreset.ads[0].headline3 || ''),
-            escapeCSV(exportPreset.ads[0].description1),
-            escapeCSV(exportPreset.ads[0].description2 || ''),
-            escapeCSV(''),
-            escapeCSV(''),
-            escapeCSV(exportPreset.daily_budget),
-            'Daily',
-            'Expanded text ad',
-            escapeCSV('')
-          ];
-          rows.push(row.join(','));
-      }
-      });
-
-      // Add negative keywords (campaign level)
-      exportPreset.negative_keywords.forEach(negKeyword => {
-        const row = [
-          escapeCSV(exportPreset.campaign_name),
-          escapeCSV(adGroup.name),
-          escapeCSV(`-${negKeyword}`), // Negative keyword syntax
-          'Negative Exact',
-          escapeCSV(''),
-          'Enabled',
-          'Enabled',
-          'Enabled',
-          escapeCSV(''),
-          escapeCSV(''),
-          escapeCSV(''),
-          escapeCSV(''),
-          escapeCSV(''),
-          escapeCSV(''),
-          escapeCSV(''),
-          escapeCSV(''),
-          escapeCSV(exportPreset.daily_budget),
-          'Daily',
-          '',
-          escapeCSV('')
-        ];
-        rows.push(row.join(','));
-      });
-    });
-
-    // Download CSV
-    const csvContent = rows.join('\r\n'); // Use Windows line endings for better compatibility
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${exportPreset.slug}-google-ads-editor.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    
-    notifications.success(`Campaign exported successfully! File: ${exportPreset.slug}-google-ads-editor.csv`, {
-      title: 'Export Complete'
-    });
+      );
+    }
   };
 
   if (showReview && selectedPreset) {

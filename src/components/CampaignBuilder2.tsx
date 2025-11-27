@@ -27,6 +27,7 @@ import { LiveAdPreview } from './LiveAdPreview';
 import { notifications } from '../utils/notifications';
 import { generateCampaignStructure, type StructureSettings } from '../utils/campaignStructureGenerator';
 import { exportCampaignToCSV } from '../utils/csvExporter';
+import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
 import { validateCampaignForExport, formatValidationErrors } from '../utils/csvValidator';
 import { DEFAULT_SEED_KEYWORDS, DEFAULT_URL, DEFAULT_CAMPAIGN_NAME, DEFAULT_NEGATIVE_KEYWORDS } from '../utils/defaultExamples';
 import { api } from '../utils/api';
@@ -4503,47 +4504,41 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         // Generate campaign structure
         const structure = generateCampaignStructure(selectedKeywords, settings);
         
-        // Validate campaign structure before export
-        const validationResult = validateCampaignForExport(structure);
-        
-        if (!validationResult.isValid) {
-          // Show validation errors
-          const errorMessage = formatValidationErrors(validationResult);
+        // Validate CSV before export using V3 validator (primary validation)
+        const validation = validateCSVBeforeExport(structure);
+        if (!validation.isValid) {
+          const errorMessage = validation.errors.join('\n');
           notifications.error(
             <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
               {errorMessage}
             </div>,
             { 
-              title: '❌ Validation Failed',
+              title: '❌ CSV Validation Failed',
               description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
-              duration: 15000 // Show for 15 seconds
+              duration: 15000
             }
           );
           return;
         }
-
+        
         // Show warnings if any (but still allow export)
-        if (validationResult.warnings.length > 0) {
-          const warningMessage = formatValidationErrors({ 
-            isValid: true, 
-            errors: [], 
-            warnings: validationResult.warnings 
-          });
+        if (validation.warnings.length > 0) {
+          const warningMessage = validation.warnings.join('\n');
           notifications.warning(
             <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
               {warningMessage}
             </div>,
             { 
-              title: '⚠️  Validation Warnings',
+              title: '⚠️  CSV Validation Warnings',
               description: 'Your campaign will export, but consider fixing these warnings for better results.',
               duration: 10000
             }
           );
         }
         
-        // Export to CSV
+        // Export to CSV using V3 format
         const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-        exportCampaignToCSV(structure, filename);
+        exportCampaignToCSVV3(structure, filename);
         
         // Mark draft as completed (removes draft status in history)
         saveCompleted();

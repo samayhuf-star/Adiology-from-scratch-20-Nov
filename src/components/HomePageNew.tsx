@@ -23,18 +23,20 @@ export const HomePageNew: React.FC<HomePageNewProps> = ({
   onSelectPlan 
 }) => {
   return (
-    <div className="min-h-screen bg-white w-full overflow-x-hidden">
-      <Navigation onGetStarted={onGetStarted} onLogin={onLogin} />
-      <Hero onGetStarted={onGetStarted} />
-      <Features />
-      <CampaignStructuresFeature />
-      <TemplatesPresetsFeature />
-      <AIAdBuilderFeature />
-      <BuilderSection />
-      <Pricing onSelectPlan={onSelectPlan} />
-      <ContactUs />
-      <CTASection onGetStarted={onGetStarted} />
-      <Footer />
+    <div className="min-h-screen bg-white w-full overflow-x-hidden relative">
+      <div className="w-full max-w-full mx-auto">
+        <Navigation onGetStarted={onGetStarted} onLogin={onLogin} />
+        <Hero onGetStarted={onGetStarted} />
+        <Features />
+        <CampaignStructuresFeature />
+        <TemplatesPresetsFeature />
+        <AIAdBuilderFeature />
+        <BuilderSection />
+        <Pricing onSelectPlan={onSelectPlan} />
+        <ContactUs />
+        <CTASection onGetStarted={onGetStarted} />
+        <Footer />
+      </div>
     </div>
   );
 };

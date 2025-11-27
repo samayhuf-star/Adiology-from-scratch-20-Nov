@@ -541,7 +541,7 @@ export const AdsBuilder = () => {
         }
     };
 
-    const exportToCSV = () => {
+    const exportToCSV = async () => {
         if (selectedAds.length === 0) {
             notifications.warning('Please select at least one ad to export', {
                 title: 'No Ads Selected'
@@ -551,50 +551,49 @@ export const AdsBuilder = () => {
 
         const adsToExport = generatedAds.filter(ad => selectedAds.includes(ad.id));
         
-        const headers = [
-            'Ad Group',
-            'Ad Type',
-            'Headline 1',
-            'Headline 2',
-            'Headline 3',
-            'Headline 4',
-            'Headline 5',
-            'Description 1',
-            'Description 2',
-            'Path 1',
-            'Path 2',
-            'Final URL',
-            'Phone Number',
-            'Business Name'
-        ];
-
-        const rows = adsToExport.map(ad => [
-            ad.groupName,
-            ad.adType,
-            ad.headline1 || '',
-            ad.headline2 || '',
-            ad.headline3 || '',
-            ad.headline4 || '',
-            ad.headline5 || '',
-            ad.description1 || '',
-            ad.description2 || '',
-            ad.path1 || '',
-            ad.path2 || '',
-            ad.finalUrl || '',
-            ad.phoneNumber || '',
-            ad.businessName || ''
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `google-ads-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
+        try {
+            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+            const filename = `google-ads-${new Date().toISOString().split('T')[0]}.csv`;
+            
+            // Get default final URL from first ad
+            const defaultUrl = adsToExport[0]?.finalUrl || 'https://www.example.com';
+            
+            const result = await exportCSVWithValidation(
+                adsToExport,
+                filename,
+                'ads',
+                {
+                    campaignName: 'Ads Campaign',
+                    finalUrl: defaultUrl
+                }
+            );
+            
+            if (result.warnings && result.warnings.length > 0) {
+                notifications.warning(
+                    <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+                        {result.warnings.join('\n')}
+                    </div>,
+                    { 
+                        title: '⚠️  CSV Validation Warnings',
+                        description: 'Your ads will export, but consider fixing these warnings.',
+                        duration: 10000
+                    }
+                );
+            } else {
+                notifications.success(`Exported ${adsToExport.length} ad(s) to CSV`, {
+                    title: 'Export Complete'
+                });
+            }
+        } catch (error: any) {
+            console.error('Export error:', error);
+            notifications.error(
+                error?.message || 'An unexpected error occurred during export',
+                { 
+                    title: '❌ Export Failed',
+                    description: 'Please try again or contact support if the issue persists.'
+                }
+            );
+        }
     };
 
     const copyToClipboard = () => {
