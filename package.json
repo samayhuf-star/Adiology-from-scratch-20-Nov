@@ -55,7 +55,8 @@
             "tailwind-merge": "*",
             "vaul": "^1.1.2",
             "xlsx": "^0.18.5",
-            "xlsx-js-style": "^1.2.0"
+            "xlsx-js-style": "^1.2.0",
+            "express": "^4.19.2"
       },
       "devDependencies": {
             "@lambdatest/playwright-node-sdk": "^1.0.2",
