@@ -10,7 +10,21 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
-import { STRUCTURE_TYPES } from '../utils/campaignStructureGenerator';
+
+// Structure types mapping
+const STRUCTURE_TYPES = [
+  { id: 'skag', name: 'SKAG' },
+  { id: 'stag', name: 'STAG' },
+  { id: 'mix', name: 'MIX' },
+  { id: 'stag_plus', name: 'STAG Plus' },
+  { id: 'intent', name: 'Intent-Based' },
+  { id: 'alpha_beta', name: 'Alpha/Beta' },
+  { id: 'match_type', name: 'Match Type Split' },
+  { id: 'funnel', name: 'Funnel-Based' },
+  { id: 'brand_split', name: 'Brand Split' },
+  { id: 'competitor', name: 'Competitor-Based' },
+  { id: 'ngram', name: 'N-Gram' }
+];
 
 interface CampaignHistoryViewProps {
   onLoadCampaign: (data: any) => void;
