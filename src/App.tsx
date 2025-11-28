@@ -1258,7 +1258,7 @@ const App = () => {
         <header className="h-16 bg-white/60 backdrop-blur-xl border-b border-slate-200/60 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm flex-shrink-0">
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
               <input
                 type="text"
                 placeholder="Search campaigns, keywords, tools..."
@@ -1303,7 +1303,7 @@ const App = () => {
                     }
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2.5 bg-indigo-50/50 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:bg-white transition-all h-11"
+                className="w-full pl-11 pr-4 py-2.5 bg-indigo-50/50 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:bg-white transition-all h-11"
               />
               {/* Bug_64: Search suggestions dropdown */}
               {showSearchSuggestions && searchSuggestions.length > 0 && (

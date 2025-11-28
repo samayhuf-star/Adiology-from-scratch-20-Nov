@@ -278,12 +278,12 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-3">
               <Label htmlFor="name" className="text-base font-semibold">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-12 h-12 text-base"
+                  className="pl-12 pr-4 h-12 text-base"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -291,13 +291,13 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-3">
               <Label htmlFor="email" className="text-base font-semibold">Email Address</Label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-12 h-12 text-base"
+                  className="pl-12 pr-4 h-12 text-base"
                   placeholder="Enter your email"
                 />
               </div>
@@ -325,7 +325,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
           <div className="space-y-3">
             <Label htmlFor="currentPassword" className="text-base font-semibold">Current Password</Label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
               <Input
                 id="currentPassword"
                 type={showPassword ? 'text' : 'password'}
@@ -348,7 +348,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-3">
               <Label htmlFor="newPassword" className="text-base font-semibold">New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="newPassword"
                   type={showNewPassword ? 'text' : 'password'}
@@ -370,7 +370,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             <div className="space-y-3">
               <Label htmlFor="confirmPassword" className="text-base font-semibold">Confirm New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}

@@ -1043,7 +1043,7 @@ export const WebsiteTemplates: React.FC = () => {
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-11 pr-10"
               />
               {searchQuery && (
                 <button

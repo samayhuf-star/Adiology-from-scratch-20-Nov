@@ -135,12 +135,12 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
         <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl mb-6">
           <CardContent className="p-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
               <Input
                 placeholder="Search campaigns..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-white border-slate-200"
+                className="pl-11 bg-white border-slate-200"
               />
             </div>
             {!loading && (

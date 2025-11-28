@@ -1327,12 +1327,12 @@ export const AdsBuilder = () => {
                         {generatedAds.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                                 <div className="flex-1 min-w-[120px] relative">
-                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 z-10" />
                                     <Input
                                         placeholder="Search..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-7 h-7 text-xs"
+                                        className="pl-8 h-7 text-xs"
                                     />
                                     {searchQuery && (
                                         <button

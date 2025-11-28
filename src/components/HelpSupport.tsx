@@ -697,12 +697,12 @@ export const HelpSupport = () => {
                 {/* Search Bar */}
                 <div className="mb-8">
                     <div className="relative max-w-2xl">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
                         <Input
                             placeholder="Search documentation, FAQs, or get help..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-12 py-6 text-lg bg-white border-slate-300 shadow-lg"
+                            className="pl-12 pr-4 py-6 text-lg bg-white border-slate-300 shadow-lg"
                         />
                     </div>
                 </div>
