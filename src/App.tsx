@@ -1217,7 +1217,7 @@ const App = () => {
         }}
       >
         {/* Logo Section */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-indigo-100/60">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-indigo-100/60 theme-sidebar-header">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${COLOR_CLASSES.primaryGradient} flex items-center justify-center shadow-md shadow-indigo-300/40`}>
@@ -1230,7 +1230,7 @@ const App = () => {
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer"
+            className="p-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer theme-menu-toggle"
           >
             {sidebarOpen ? <X className="w-5 h-5 text-slate-600" /> : <Menu className="w-5 h-5 text-slate-600" />}
           </button>
