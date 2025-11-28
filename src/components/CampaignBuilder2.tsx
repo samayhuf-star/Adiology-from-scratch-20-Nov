@@ -1290,6 +1290,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
+
+        {/* Step Indicator at Bottom */}
+        <div className="mt-10">
+          {renderStepIndicator()}
+        </div>
       </div>
     );
   };
@@ -2217,6 +2222,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           >
             Next: Ads & Extensions <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
+        </div>
+
+        {/* Step Indicator at Bottom */}
+        <div className="mt-10">
+          {renderStepIndicator()}
         </div>
       </div>
     );
@@ -3517,6 +3527,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               Next Step <ChevronRight className="ml-2 w-5 h-5" />
             </Button>
           </div>
+
+          {/* Step Indicator at Bottom */}
+          <div className="mt-10">
+            {renderStepIndicator()}
+          </div>
         </div>
         
         {/* Extension Selection Dialog */}
@@ -4015,6 +4030,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           >
             Review Campaign <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
+        </div>
+
+        {/* Step Indicator at Bottom */}
+        <div className="mt-10">
+          {renderStepIndicator()}
         </div>
       </div>
     );
@@ -4525,6 +4545,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             <ChevronRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
+
+        {/* Step Indicator at Bottom */}
+        <div className="mt-10">
+          {renderStepIndicator()}
+        </div>
       </div>
     );
   };
@@ -4914,6 +4939,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </Button>
             </div>
           </div>
+
+          {/* Step Indicator at Bottom */}
+          <div className="mt-10">
+            {renderStepIndicator()}
+          </div>
         </div>
       </div>
     );
@@ -5054,46 +5084,16 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 via-purple-50/30 to-indigo-50">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'builder' | 'saved')} className="w-full">
-        <div className="sticky top-0 z-40 bg-gradient-to-r from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl border-b-2 border-indigo-200/60 shadow-xl">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-4 mb-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                  Campaign Builder
-                </h1>
-              </div>
-            </div>
-            <TabsList className="w-full justify-start bg-transparent h-14 border-0 gap-2">
-              <TabsTrigger 
-                value="builder" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 data-[state=inactive]:bg-white/60 data-[state=inactive]:hover:bg-white font-bold px-8 py-3 rounded-xl border-2 data-[state=active]:border-transparent data-[state=inactive]:border-slate-300 transition-all duration-300 shadow-lg data-[state=active]:shadow-xl data-[state=active]:scale-105"
-              >
-                <Sparkles className="w-5 h-5 mr-2" />
-                Campaign Builder
-              </TabsTrigger>
-              <TabsTrigger 
-                value="saved" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 data-[state=inactive]:bg-white/60 data-[state=inactive]:hover:bg-white font-bold px-8 py-3 rounded-xl border-2 data-[state=active]:border-transparent data-[state=inactive]:border-slate-300 transition-all duration-300 shadow-lg data-[state=active]:shadow-xl data-[state=active]:scale-105"
-              >
-                <Save className="w-5 h-5 mr-2" />
-                Saved Campaigns
-                {savedCampaigns.length > 0 && (
-                  <Badge className="ml-2 bg-white/90 text-indigo-600 font-bold border-2 border-indigo-200">
-                    {savedCampaigns.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        {/* Hidden tabs for functionality - user can still switch via code */}
+        <div className="hidden">
+          <TabsList className="w-full justify-start bg-transparent h-14 border-0 gap-2">
+            <TabsTrigger value="builder">Campaign Builder</TabsTrigger>
+            <TabsTrigger value="saved">Saved Campaigns</TabsTrigger>
+          </TabsList>
         </div>
 
         <TabsContent value="builder" className="mt-0">
           <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            {renderStepIndicator()}
-            
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
             {step === 3 && renderStep3()}
