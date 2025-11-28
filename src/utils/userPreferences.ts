@@ -7,12 +7,14 @@ export interface UserPreferences {
   spacing: number; // Spacing multiplier (0.75, 1.0, 1.25, 1.5, 1.75, 2.0)
   fontSize: number; // Font size multiplier (0.875, 1.0, 1.125, 1.25, 1.375, 1.5)
   colorTheme: 'default' | 'blue' | 'green'; // Color theme option
+  sidebarAutoClose: boolean; // Auto-close sidebar after selection (default: true)
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   spacing: 1.0,
   fontSize: 1.0,
-  colorTheme: 'default'
+  colorTheme: 'default',
+  sidebarAutoClose: true // Default: auto-close enabled
 };
 
 const STORAGE_KEY = 'user_preferences';
@@ -42,6 +44,9 @@ export function saveUserPreferences(preferences: Partial<UserPreferences>): void
     const updated = { ...current, ...preferences };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     applyUserPreferences(updated);
+    
+    // Dispatch custom event to notify other components in the same tab
+    window.dispatchEvent(new Event('userPreferencesChanged'));
   } catch (error) {
     console.error('Error saving user preferences:', error);
   }

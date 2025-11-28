@@ -3,7 +3,7 @@ import {
   TrendingUp, Users, DollarSign, Activity, Calendar, Zap, 
   Clock, CheckCircle2, AlertCircle, ArrowUpRight, ArrowDownRight,
   Sparkles, Package, Target, FileText, BarChart3, Globe, FolderOpen, Layers,
-  Plus, Minus, Type, Palette, Maximize2, Minimize2
+  Plus, Minus, Type, Palette, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -112,6 +112,10 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   const handleColorThemeChange = (theme: 'default' | 'blue' | 'green') => {
     setPreferences({ ...preferences, colorTheme: theme });
     setShowColorThemeMenu(false);
+  };
+
+  const handleSidebarAutoCloseToggle = () => {
+    setPreferences({ ...preferences, sidebarAutoClose: !preferences.sidebarAutoClose });
   };
 
   const fetchDashboardData = async () => {
@@ -475,6 +479,34 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                 </button>
               </div>
             )}
+          </div>
+
+          <div className="h-6 w-px bg-slate-300"></div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-700">Auto-Close Sidebar:</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSidebarAutoCloseToggle}
+              className={`h-8 px-3 gap-2 ${
+                preferences.sidebarAutoClose 
+                  ? 'bg-indigo-50 border-indigo-300 text-indigo-700' 
+                  : 'bg-slate-50 border-slate-300 text-slate-600'
+              }`}
+            >
+              {preferences.sidebarAutoClose ? (
+                <>
+                  <PanelLeftClose className="w-4 h-4" />
+                  <span>ON</span>
+                </>
+              ) : (
+                <>
+                  <PanelLeftOpen className="w-4 h-4" />
+                  <span>OFF</span>
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>

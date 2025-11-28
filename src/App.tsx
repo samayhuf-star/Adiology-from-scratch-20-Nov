@@ -57,12 +57,53 @@ const App = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+  const [sidebarHovered, setSidebarHovered] = useState(false);
   
   // Load and apply user preferences on mount
   useEffect(() => {
     const prefs = getUserPreferences();
     applyUserPreferences(prefs);
-  }, []);
+    
+    // Listen for storage changes to sync preferences across tabs/components
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user_preferences') {
+        const updatedPrefs = getUserPreferences();
+        applyUserPreferences(updatedPrefs);
+        // If auto-close is disabled, ensure sidebar is open
+        if (!updatedPrefs.sidebarAutoClose && !sidebarOpen) {
+          setSidebarOpen(true);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event for same-tab updates
+    const handlePreferenceChange = () => {
+      const updatedPrefs = getUserPreferences();
+      applyUserPreferences(updatedPrefs);
+      if (!updatedPrefs.sidebarAutoClose && !sidebarOpen) {
+        setSidebarOpen(true);
+      }
+    };
+    
+    window.addEventListener('userPreferencesChanged', handlePreferenceChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userPreferencesChanged', handlePreferenceChange);
+    };
+  }, [sidebarOpen]);
+
+  // Sync sidebar state with auto-close preference
+  // When auto-close is disabled, ensure sidebar stays open
+  useEffect(() => {
+    const userPrefs = getUserPreferences();
+    if (!userPrefs.sidebarAutoClose && !sidebarOpen && !sidebarHovered) {
+      // If auto-close is disabled and sidebar is closed (not hovered), open it
+      setSidebarOpen(true);
+    }
+  }, [sidebarOpen, sidebarHovered]);
 
   // Valid tab IDs - used for route validation
   const validTabIds = new Set([
@@ -87,6 +128,15 @@ const App = () => {
   const setActiveTabSafe = (tabId: string) => {
     if (validTabIds.has(tabId)) {
       setActiveTab(tabId);
+      
+      // Auto-close sidebar after selection if preference is enabled
+      const userPrefs = getUserPreferences();
+      if (userPrefs.sidebarAutoClose) {
+        // Small delay to allow the click to register
+        setTimeout(() => {
+          setSidebarOpen(false);
+        }, 150);
+      }
     } else {
       console.warn(`Invalid tab ID "${tabId}" - redirecting to dashboard`);
       setActiveTab('dashboard');
@@ -1210,15 +1260,25 @@ const App = () => {
       {/* Sidebar */}
       <aside 
         className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
+          (sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'w-64' : 'w-20'
         } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-indigo-100/60 shadow-2xl relative z-10 flex-shrink-0 overflow-y-auto`}
         style={{
           background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(238, 242, 255, 0.95) 100%)'
         }}
+        onMouseEnter={() => {
+          if (userPrefs.sidebarAutoClose) {
+            setSidebarHovered(true);
+          }
+        }}
+        onMouseLeave={() => {
+          if (userPrefs.sidebarAutoClose) {
+            setSidebarHovered(false);
+          }
+        }}
       >
         {/* Logo Section */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-indigo-100/60 theme-sidebar-header">
-          {sidebarOpen && (
+          {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
             <div className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${COLOR_CLASSES.primaryGradient} flex items-center justify-center shadow-md shadow-indigo-300/40`}>
                 <TrendingUp className="w-5 h-5 text-white" />
@@ -1229,10 +1289,13 @@ const App = () => {
             </div>
           )}
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => {
+              setSidebarOpen(!sidebarOpen);
+              setSidebarHovered(false);
+            }}
             className="p-2 rounded-lg hover:bg-indigo-50 transition-all cursor-pointer theme-menu-toggle"
           >
-            {sidebarOpen ? <X className="w-5 h-5 text-slate-600" /> : <Menu className="w-5 h-5 text-slate-600" />}
+            {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? <X className="w-5 h-5 text-slate-600" /> : <Menu className="w-5 h-5 text-slate-600" />}
           </button>
         </div>
 
@@ -1275,15 +1338,15 @@ const App = () => {
               >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
-                {sidebarOpen && (
+                {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
                   <span className="font-medium">{item.label}</span>
                 )}
                   </div>
-                  {sidebarOpen && hasSubmenu && (
+                  {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && hasSubmenu && (
                     <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive || hasActiveSubmenu ? 'text-white' : 'text-slate-400'}`} />
                   )}
                 </button>
-                {sidebarOpen && hasSubmenu && isExpanded && (
+                {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && hasSubmenu && isExpanded && (
                   <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-200 pl-2">
                     {item.submenu?.map((subItem) => {
                       const SubIcon = subItem.icon;
