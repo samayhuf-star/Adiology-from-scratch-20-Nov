@@ -70,11 +70,13 @@ class ErrorTracker {
     // Filter out expected/benign errors that shouldn't be logged
     const errorMessage = errorObj.message?.toLowerCase() || '';
     const isExpectedError = 
-      errorMessage.includes('request failed') && context?.module === 'api' ||
+      (errorMessage.includes('request failed') && context?.module === 'api') ||
       errorMessage.includes('network error') ||
       errorMessage.includes('fetch') ||
       errorMessage.includes('schema cache') ||
-      errorMessage.includes('could not find the table');
+      errorMessage.includes('could not find the table') ||
+      errorMessage.includes('does not exist') ||
+      (context?.module === 'api' && (errorMessage.includes('404') || errorMessage.includes('failed')));
 
     // Only log unexpected errors
     if (!isExpectedError) {
