@@ -11,7 +11,7 @@ import { submitFeedback } from '../utils/feedbackService';
 
 export const FeedbackButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [feedbackType, setFeedbackType] = useState<'feedback' | 'feature'>('feedback');
+  const [feedbackType, setFeedbackType] = useState<'feedback' | 'feature_request'>('feedback');
   const [rating, setRating] = useState<string>('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,13 +83,13 @@ export const FeedbackButton: React.FC = () => {
             {/* Feedback Type Selection */}
             <div className="space-y-2">
               <Label>What would you like to share?</Label>
-              <Select value={feedbackType} onValueChange={(value: 'feedback' | 'feature') => setFeedbackType(value)}>
+              <Select value={feedbackType} onValueChange={(value: 'feedback' | 'feature_request') => setFeedbackType(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="feedback">General Feedback</SelectItem>
-                  <SelectItem value="feature">Feature Request</SelectItem>
+                  <SelectItem value="feature_request">Feature Request</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -141,7 +141,7 @@ export const FeedbackButton: React.FC = () => {
                 className="resize-none"
               />
               <p className="text-xs text-slate-500">
-                {feedbackType === 'feature' && (
+                {feedbackType === 'feature_request' && (
                   <span className="flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
                     Be as detailed as possible to help us understand your needs
@@ -165,7 +165,7 @@ export const FeedbackButton: React.FC = () => {
               ) : (
                 <>
                   <Send className="w-4 h-4 mr-2" />
-                  Submit {feedbackType === 'feature' ? 'Request' : 'Feedback'}
+                  Submit {feedbackType === 'feature_request' ? 'Request' : 'Feedback'}
                 </>
               )}
             </Button>

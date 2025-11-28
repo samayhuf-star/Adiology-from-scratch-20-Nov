@@ -3,7 +3,7 @@ import { getCurrentAuthUser } from './auth';
 import { api } from './api';
 
 export interface FeedbackData {
-  type: 'feedback' | 'feature';
+  type: 'feedback' | 'feature_request';
   rating?: number;
   message: string;
 }
@@ -12,7 +12,7 @@ export interface FeedbackRecord {
   id: string;
   user_id: string | null;
   user_email: string | null;
-  type: 'feedback' | 'feature';
+  type: 'feedback' | 'feature_request';
   rating: number | null;
   message: string;
   status: 'new' | 'reviewed' | 'in_progress' | 'resolved';
@@ -50,11 +50,11 @@ export async function submitFeedback(data: FeedbackData): Promise<void> {
     try {
       await api.post('/send-feedback-email', {
         to: 'samayhuf@gmail.com',
-        subject: data.type === 'feature' 
+        subject: data.type === 'feature_request' 
           ? `New Feature Request from ${userEmail || 'Anonymous User'}`
           : `New Feedback from ${userEmail || 'Anonymous User'}`,
         body: `
-          Type: ${data.type === 'feature' ? 'Feature Request' : 'Feedback'}
+          Type: ${data.type === 'feature_request' ? 'Feature Request' : 'Feedback'}
           ${data.rating ? `Rating: ${data.rating}/5` : ''}
           User: ${userEmail || 'Anonymous'}
           ${userId ? `User ID: ${userId}` : ''}

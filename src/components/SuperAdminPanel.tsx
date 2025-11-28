@@ -1484,7 +1484,7 @@ const ThemeSettingsModule = () => {
 const FeedbackModule = () => {
   const [feedback, setFeedback] = useState<FeedbackRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'feedback' | 'feature'>('all');
+  const [filter, setFilter] = useState<'all' | 'feedback' | 'feature_request'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | FeedbackRecord['status']>('all');
 
   useEffect(() => {
@@ -1516,7 +1516,10 @@ const FeedbackModule = () => {
   };
 
   const filteredFeedback = feedback.filter(item => {
-    if (filter !== 'all' && item.type !== filter) return false;
+    if (filter !== 'all') {
+      if (filter === 'feature_request' && item.type !== 'feature_request') return false;
+      if (filter === 'feedback' && item.type !== 'feedback') return false;
+    }
     if (statusFilter !== 'all' && item.status !== statusFilter) return false;
     return true;
   });
@@ -1535,14 +1538,14 @@ const FeedbackModule = () => {
     );
   };
 
-  const getTypeBadge = (type: 'feedback' | 'feature') => {
+  const getTypeBadge = (type: 'feedback' | 'feature_request') => {
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-        type === 'feature' 
+        type === 'feature_request' 
           ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
           : 'bg-slate-100 text-slate-700 border border-slate-300'
       }`}>
-        {type === 'feature' ? 'Feature Request' : 'Feedback'}
+        {type === 'feature_request' ? 'Feature Request' : 'Feedback'}
       </span>
     );
   };
@@ -1565,7 +1568,7 @@ const FeedbackModule = () => {
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="feedback">Feedback</SelectItem>
-                <SelectItem value="feature">Feature Requests</SelectItem>
+                <SelectItem value="feature_request">Feature Requests</SelectItem>
               </SelectContent>
             </Select>
           </div>
