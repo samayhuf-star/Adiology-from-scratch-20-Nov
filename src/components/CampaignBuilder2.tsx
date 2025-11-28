@@ -1308,15 +1308,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     // Common keyword input section
     const commonKeywordSection = (
       <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 backdrop-blur-xl shadow-2xl">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
                 <Hash className="w-5 h-5 text-white" />
               </div>
               <div>
-                <CardTitle className="text-xl text-indigo-900">Seed Keywords</CardTitle>
-                <CardDescription className="text-sm mt-1">Enter your seed keywords (one per line)</CardDescription>
+                <CardTitle className="text-xl text-indigo-900 mb-1">Seed Keywords</CardTitle>
+                <CardDescription className="text-sm">Enter your seed keywords (one per line)</CardDescription>
               </div>
             </div>
             <Button
@@ -1333,24 +1333,24 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div>
+        <CardContent className="space-y-8">
+          <div className="space-y-3">
             <Textarea
               value={seedKeywords}
               onChange={(e) => setSeedKeywords(e.target.value)}
               placeholder="Call airline&#10;airline number&#10;call united number"
-              rows={5}
-              className="font-mono text-sm border-2 border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400 rounded-xl"
+              rows={6}
+              className="font-mono text-sm border-2 border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400 rounded-xl p-4"
             />
-            <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
+            <p className="text-xs text-slate-500 mt-3 flex items-center gap-2">
+              <AlertCircle className="w-3.5 h-3.5" />
               <span>Each keyword must be at least 3 characters long.</span>
             </p>
           </div>
           
           {/* Negative Keywords Input */}
-          <div>
-            <Label className="text-sm font-semibold text-indigo-900 mb-2 block flex items-center gap-2">
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold text-indigo-900 mb-3 block flex items-center gap-2">
               <MinusCircle className="w-4 h-4 text-red-500" />
               Negative Keywords
             </Label>
@@ -1358,14 +1358,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               value={negativeKeywords}
               onChange={(e) => setNegativeKeywords(e.target.value)}
               placeholder="cheap, discount, reviews, job, free..."
-              className="font-mono text-sm border-2 border-red-200 focus:border-red-400 focus:ring-red-400 rounded-xl"
+              className="font-mono text-sm border-2 border-red-200 focus:border-red-400 focus:ring-red-400 rounded-xl p-3 h-12"
             />
-            <p className="text-xs text-slate-500 mt-1.5">
+            <p className="text-xs text-slate-500 mt-2">
               Keywords containing these terms will be excluded. Separate with commas.
             </p>
           </div>
           
-          <div>
+          <div className="pt-2">
             <Button
               onClick={async () => {
                 if (!seedKeywords.trim()) {
@@ -2220,12 +2220,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     };
 
     return (
-      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl mb-4">
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl mb-5">
             <Hash className="w-7 h-7 text-white" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
             Keyword Generator
           </h2>
           <p className="text-slate-600 text-sm">
