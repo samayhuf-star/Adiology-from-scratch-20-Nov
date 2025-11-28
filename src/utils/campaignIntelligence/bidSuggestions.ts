@@ -1,12 +1,90 @@
 /**
- * Bid Suggestions - Match Type + Intent Based
+ * Bid Suggestions (Engineer-Ready)
  * 
- * Deterministic formula for recommended bids per keyword + match type
+ * Match type + intent based bid calculation
  */
 
-import type { CampaignIntent, MatchType, BidSuggestion, BidTier } from './schemas';
+import { IntentId, type MatchType } from './schemas';
 
-export interface BidSuggestionInput {
+/**
+ * Suggest bid in cents
+ * baseCPC in cents (e.g. 2000 cents = ₹20.00)
+ */
+export function suggestBidCents(
+  baseCpcCents: number | null,
+  intent: IntentId,
+  matchType: MatchType,
+  modifiers: string[] = []
+): { bid: number; reason: string } {
+  const base = baseCpcCents ?? 1000; // fallback 10.00 (currency smallest unit)
+
+  const intentMul: Record<IntentId, number> = {
+    [IntentId.CALL]: 1.2,
+    [IntentId.LEAD]: 1.0,
+    [IntentId.TRAFFIC]: 0.75,
+    [IntentId.PURCHASE]: 1.1,
+    [IntentId.RESEARCH]: 0.6,
+  };
+
+  const matchMul: Record<MatchType, number> = {
+    EXACT: 1.0,
+    PHRASE: 0.8,
+    BROAD: 0.5,
+    BMM: 0.65
+  };
+
+  let multiplier = (intentMul[intent] ?? 1.0) * (matchMul[matchType] ?? 0.8);
+  
+  // emergency modifier bump
+  if (modifiers.some(m => /24\/7|emergency|urgent|same day/i.test(m))) {
+    multiplier *= 1.2;
+  }
+
+  const bid = Math.max(Math.round(base * multiplier), 1); // at least 1 cent
+  const reason = `base=${base} * intent(${intent})=${intentMul[intent]} * match(${matchType})=${matchMul[matchType]} => ${bid}`;
+  
+  return { bid, reason };
+}
+
+/**
+ * Group keywords into adgroups by overlapping top N tokens
+ */
+export function groupKeywordsToAdGroups(keywords: string[], maxPerGroup = 20): Record<string, string[]> {
+  const groups: Record<string, string[]> = {};
+  
+  for (const k of keywords) {
+    const tokens = k.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 3);
+    const key = tokens.join(" ");
+    
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    
+    if (groups[key].length < maxPerGroup) {
+      groups[key].push(k);
+    } else {
+      // find smaller group
+      let placed = false;
+      for (const gk of Object.keys(groups)) {
+        if (groups[gk].length < maxPerGroup) {
+          groups[gk].push(k);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        groups[key + "#2"] = [k];
+      }
+    }
+  }
+  
+  return groups; // adgroupName => keywords
+}
+
+// Legacy functions for backward compatibility
+import type { CampaignIntent, BidSuggestion as LegacyBidSuggestion } from './schemas';
+
+export function calculateBidSuggestion(input: {
   keyword: string;
   matchType: MatchType;
   intent: CampaignIntent;
@@ -19,120 +97,29 @@ export interface BidSuggestionInput {
     cpa?: number;
     targetCPA?: number;
   };
-}
-
-// Intent multipliers
-const MULTIPLIER_INTENT: Record<CampaignIntent, number> = {
-  CALL_INTENT: 1.2,
-  LEAD_INTENT: 1.0,
-  TRAFFIC_INTENT: 0.7,
-  PURCHASE_INTENT: 1.1,
-};
-
-// Match type multipliers
-const MULTIPLIER_MATCH: Record<MatchType, number> = {
-  exact: 1.0,
-  phrase: 0.8,
-  broad: 0.5,
-  broad_modifier: 0.6,
-};
-
-/**
- * Calculate recommended bid
- */
-export function calculateBidSuggestion(input: BidSuggestionInput): BidSuggestion {
-  const {
-    keyword,
-    matchType,
-    intent,
-    baseCPCEstimate = 0,
-    hasEmergencyModifier = false,
-    hasHighValueModifier = false,
-    historicalData,
-  } = input;
-
-  // Base CPC (use historical if available, otherwise use estimate or default)
-  let B_base = baseCPCEstimate;
+}): LegacyBidSuggestion {
+  const intentId = input.intent.replace('_INTENT', '') as IntentId;
+  const matchType = input.matchType;
+  const baseCents = (input.baseCPCEstimate || 0) * 100; // Convert to cents
+  const modifiers: string[] = [];
   
-  if (historicalData?.cpa && historicalData?.targetCPA) {
-    // Use CPA-based calculation if available
-    const ctr = historicalData.ctr || 0.02; // Default 2% CTR
-    const conversionRate = historicalData.conversionRate || 0.05; // Default 5% conversion
-    B_base = (historicalData.targetCPA * conversionRate) / ctr;
-  } else if (B_base === 0) {
-    // Default base CPC (adjust per market)
-    B_base = 2.0; // Default $2.00
-  }
-
-  // Get multipliers
-  const multiplier_intent = MULTIPLIER_INTENT[intent] || 1.0;
-  const multiplier_match = MULTIPLIER_MATCH[matchType] || 1.0;
-
-  // Risk adjustment for emergency/high-value modifiers
-  let risk_adjust = 1.0;
-  if (hasEmergencyModifier) {
-    risk_adjust = 1.15; // +15% for emergency
-  } else if (hasHighValueModifier) {
-    risk_adjust = 1.1; // +10% for high-value
-  }
-
-  // Calculate recommended bid
-  const recommended_bid = roundToCent(B_base * multiplier_intent * multiplier_match * risk_adjust);
-
-  // Determine confidence
-  let confidence: 'high' | 'medium' | 'low' = 'medium';
-  if (historicalData && historicalData.ctr && historicalData.conversionRate) {
-    confidence = 'high';
-  } else if (baseCPCEstimate > 0) {
-    confidence = 'medium';
-  } else {
-    confidence = 'low';
-  }
-
-  // Build reasoning
-  const reasoningParts: string[] = [];
-  reasoningParts.push(`${intent.replace('_INTENT', '')} intent`);
-  reasoningParts.push(`${matchType} match`);
-  if (hasEmergencyModifier) {
-    reasoningParts.push('emergency modifier');
-  }
-  if (hasHighValueModifier) {
-    reasoningParts.push('high-value modifier');
-  }
-  const reasoning = reasoningParts.join(' × ');
-
+  if (input.hasEmergencyModifier) modifiers.push('emergency');
+  if (input.hasHighValueModifier) modifiers.push('premium');
+  
+  const result = suggestBidCents(baseCents || null, intentId, matchType, modifiers);
+  
   return {
-    keyword,
-    matchType,
-    intent,
-    suggestedCPC: recommended_bid,
-    suggestedCPCFormatted: formatCurrency(recommended_bid),
-    confidence,
-    reasoning,
-    baseCPCMultiplier: multiplier_intent * multiplier_match * risk_adjust,
+    keyword: input.keyword,
+    matchType: input.matchType,
+    intent: input.intent,
+    suggestedCPC: result.bid / 100, // Convert back to dollars
+    suggestedCPCFormatted: `$${(result.bid / 100).toFixed(2)}`,
+    confidence: input.historicalData ? 'high' : baseCents > 0 ? 'medium' : 'low',
+    reasoning: result.reason,
+    baseCPCMultiplier: result.bid / (baseCents || 1000),
   };
 }
 
-/**
- * Get bid tier configuration
- */
-export function getBidTier(matchType: MatchType, intent: CampaignIntent): BidTier {
-  const multiplier = MULTIPLIER_INTENT[intent] * MULTIPLIER_MATCH[matchType];
-  
-  return {
-    matchType,
-    intent,
-    multiplier: {
-      min: multiplier * 0.9,
-      max: multiplier * 1.1,
-      default: multiplier,
-    },
-  };
-}
-
-/**
- * Calculate bid suggestions for multiple keywords
- */
 export function calculateBidSuggestions(
   keywords: Array<{
     keyword: string;
@@ -147,7 +134,7 @@ export function calculateBidSuggestions(
     conversionRate?: number;
     cpa?: number;
   }>
-): BidSuggestion[] {
+): LegacyBidSuggestion[] {
   return keywords.map(kw => {
     const keywordHistorical = historicalData?.[kw.keyword];
     return calculateBidSuggestion({
@@ -161,41 +148,3 @@ export function calculateBidSuggestions(
     });
   });
 }
-
-/**
- * Round to nearest cent
- */
-function roundToCent(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-/**
- * Format currency (simple version - can be enhanced with locale)
- */
-function formatCurrency(value: number, currency = 'USD'): string {
-  if (currency === 'USD') {
-    return `$${value.toFixed(2)}`;
-  }
-  // Add more currency formats as needed
-  return `${value.toFixed(2)} ${currency}`;
-}
-
-/**
- * Check if keyword has emergency modifier
- */
-export function hasEmergencyModifier(keyword: string, emergencyModifiers: string[]): boolean {
-  const lowerKeyword = keyword.toLowerCase();
-  return emergencyModifiers.some(modifier => 
-    lowerKeyword.includes(modifier.toLowerCase())
-  );
-}
-
-/**
- * Check if keyword has high-value modifier
- */
-export function hasHighValueModifier(keyword: string): boolean {
-  const highValueTerms = ['premium', 'luxury', 'professional', 'expert', 'certified', 'licensed'];
-  const lowerKeyword = keyword.toLowerCase();
-  return highValueTerms.some(term => lowerKeyword.includes(term));
-}
-
