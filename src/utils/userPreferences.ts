@@ -6,7 +6,8 @@
 export interface UserPreferences {
   spacing: number; // Spacing multiplier (0.75, 1.0, 1.25, 1.5, 1.75, 2.0)
   fontSize: number; // Font size multiplier (0.875, 1.0, 1.125, 1.25, 1.375, 1.5)
-  colorTheme: 'default' | 'blue' | 'green'; // Color theme option
+  colorTheme: 'default' | 'blue' | 'green' | 'custom'; // Color theme option
+  customColor?: string; // Custom color hex value (e.g., '#6366f1')
   sidebarAutoClose: boolean; // Auto-close sidebar after selection (default: true)
 }
 
@@ -67,9 +68,47 @@ export function applyUserPreferences(prefs: UserPreferences): void {
   // Apply color theme
   root.setAttribute('data-color-theme', prefs.colorTheme);
   
+  // Apply custom color if set
+  if (prefs.colorTheme === 'custom' && prefs.customColor) {
+    root.style.setProperty('--custom-primary-color', prefs.customColor);
+    // Generate complementary colors for gradients
+    const complementaryColor = generateComplementaryColor(prefs.customColor);
+    root.style.setProperty('--custom-secondary-color', complementaryColor);
+  } else {
+    root.style.removeProperty('--custom-primary-color');
+    root.style.removeProperty('--custom-secondary-color');
+  }
+  
   // Remove other theme classes
-  root.classList.remove('theme-default', 'theme-blue', 'theme-green');
+  root.classList.remove('theme-default', 'theme-blue', 'theme-green', 'theme-custom');
   root.classList.add(`theme-${prefs.colorTheme}`);
+}
+
+/**
+ * Generate a complementary color for gradients
+ */
+function generateComplementaryColor(hex: string): string {
+  // Remove # if present
+  const cleanHex = hex.replace('#', '');
+  
+  // Convert to RGB
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  
+  // Generate complementary color (shift hue by 180 degrees)
+  // Simplified: create a purple-like complement
+  const compR = Math.min(255, Math.max(0, 255 - r));
+  const compG = Math.min(255, Math.max(0, 255 - g));
+  const compB = Math.min(255, Math.max(0, 255 - b));
+  
+  // Convert back to hex
+  const toHex = (n: number) => {
+    const hex = n.toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+  
+  return `#${toHex(compR)}${toHex(compG)}${toHex(compB)}`;
 }
 
 /**

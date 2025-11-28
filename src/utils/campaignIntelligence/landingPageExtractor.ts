@@ -4,6 +4,8 @@
  * Robust parsing to extract: title, H1, services, phone, hours, address, structured data
  */
 
+import { PHONE_E164_LOOSE, normalizePhoneToE164, EMAIL_REGEX, extractEmailsFromText } from './regexPatterns';
+
 export interface LandingPageExtractionResult {
   domain: string;
   title: string | null;
@@ -173,16 +175,15 @@ function parseHTML(html: string): Partial<LandingPageExtractionResult> {
  * E.164 normalization
  */
 function extractPhones(html: string, doc: Document): string[] {
-  const phones: string[] = new Set();
+  const phones: Set<string> = new Set();
   
-  // Regex pattern for phone numbers
-  const phoneRegex = /(\+?\d{1,3}[\s-]?)?(\(?\d{2,5}\)?[\s-]?)?[\d\s-]{6,12}/g;
-  const matches = html.matchAll(phoneRegex);
+  // Use loose regex pattern
+  const matches = html.matchAll(PHONE_E164_LOOSE);
   
   for (const match of matches) {
-    const phone = match[0].replace(/\s+/g, '').replace(/[()-]/g, '');
-    if (phone.length >= 10 && phone.length <= 15) {
-      phones.add(phone);
+    const normalized = normalizePhoneToE164(match[0]);
+    if (normalized) {
+      phones.add(normalized);
     }
   }
   
@@ -190,7 +191,10 @@ function extractPhones(html: string, doc: Document): string[] {
   const structuredPhones = doc.querySelectorAll('[itemprop="telephone"], [itemprop="phone"]');
   structuredPhones.forEach(el => {
     const phone = el.textContent?.trim() || el.getAttribute('content') || '';
-    if (phone) phones.add(normalizePhone(phone));
+    if (phone) {
+      const normalized = normalizePhoneToE164(phone);
+      if (normalized) phones.add(normalized);
+    }
   });
   
   // Check schema.org LocalBusiness
@@ -199,12 +203,14 @@ function extractPhones(html: string, doc: Document): string[] {
     try {
       const data = JSON.parse(script.textContent || '{}');
       if (data.telephone) {
-        phones.add(normalizePhone(data.telephone));
+        const normalized = normalizePhoneToE164(data.telephone);
+        if (normalized) phones.add(normalized);
       }
       if (data['@graph']) {
         data['@graph'].forEach((item: any) => {
           if (item.telephone) {
-            phones.add(normalizePhone(item.telephone));
+            const normalized = normalizePhoneToE164(item.telephone);
+            if (normalized) phones.add(normalized);
           }
         });
       }
@@ -216,32 +222,13 @@ function extractPhones(html: string, doc: Document): string[] {
   return Array.from(phones).slice(0, 5); // Limit to 5 phones
 }
 
-/**
- * Normalize phone number to E.164 format
- */
-function normalizePhone(phone: string): string {
-  // Remove all non-digit characters except +
-  let normalized = phone.replace(/[^\d+]/g, '');
-  
-  // Add country code if missing (assume US +1 if starts with 1, or add +1)
-  if (!normalized.startsWith('+')) {
-    if (normalized.startsWith('1') && normalized.length === 11) {
-      normalized = '+' + normalized;
-    } else if (normalized.length === 10) {
-      normalized = '+1' + normalized; // Default to US
-    }
-  }
-  
-  return normalized;
-}
+// normalizePhone function removed - using regexPatterns.normalizePhoneToE164 instead
 
 /**
  * Extract email addresses
  */
 function extractEmails(html: string): string[] {
-  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const matches = html.match(emailRegex) || [];
-  return Array.from(new Set(matches)).slice(0, 5);
+  return extractEmailsFromText(html).slice(0, 5);
 }
 
 /**

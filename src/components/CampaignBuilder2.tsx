@@ -6,7 +6,7 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
   Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map, Funnel, 
-  Users, TrendingDown, Network, Filter, Info, FolderOpen
+  Users, TrendingDown, Network, Filter, Info, FolderOpen, Settings, Megaphone
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';

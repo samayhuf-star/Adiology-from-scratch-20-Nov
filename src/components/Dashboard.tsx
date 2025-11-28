@@ -55,6 +55,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   const [loading, setLoading] = useState(true);
   const [preferences, setPreferences] = useState(getUserPreferences());
   const [showColorThemeMenu, setShowColorThemeMenu] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -109,8 +110,20 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
     setPreferences({ ...preferences, fontSize: fontSizeOptions[newIndex] });
   };
 
-  const handleColorThemeChange = (theme: 'default' | 'blue' | 'green') => {
-    setPreferences({ ...preferences, colorTheme: theme });
+  const handleColorThemeChange = (theme: 'default' | 'blue' | 'green' | 'custom') => {
+    if (theme === 'custom') {
+      setShowColorPicker(true);
+      setShowColorThemeMenu(false);
+    } else {
+      setPreferences({ ...preferences, colorTheme: theme, customColor: undefined });
+      setShowColorThemeMenu(false);
+      setShowColorPicker(false);
+    }
+  };
+
+  const handleCustomColorChange = (color: string) => {
+    setPreferences({ ...preferences, colorTheme: 'custom', customColor: color });
+    setShowColorPicker(false);
     setShowColorThemeMenu(false);
   };
 
@@ -446,7 +459,11 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
               className="h-8 px-3 gap-2"
             >
               <Palette className="w-4 h-4" />
-              <span className="capitalize">{preferences.colorTheme}</span>
+              <span className="capitalize text-xs">
+                {preferences.colorTheme === 'custom' 
+                  ? `Custom`
+                  : preferences.colorTheme}
+              </span>
             </Button>
             {showColorThemeMenu && (
               <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[200px]">
@@ -470,13 +487,84 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                 </button>
                 <button
                   onClick={() => handleColorThemeChange('green')}
-                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 rounded-b-lg ${
+                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 ${
                     preferences.colorTheme === 'green' ? 'bg-green-50 text-green-700' : 'text-slate-700'
                   }`}
                 >
                   <div className="w-4 h-4 rounded border-2 border-green-500 bg-green-500"></div>
                   <span>Green Theme</span>
                 </button>
+                <div className="border-t border-slate-200 my-1"></div>
+                <button
+                  onClick={() => handleColorThemeChange('custom')}
+                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 rounded-b-lg ${
+                    preferences.colorTheme === 'custom' ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
+                  }`}
+                >
+                  <div 
+                    className="w-4 h-4 rounded border-2 border-slate-300" 
+                    style={{ 
+                      backgroundColor: preferences.customColor || '#6366f1',
+                      borderColor: preferences.customColor || '#6366f1'
+                    }}
+                  ></div>
+                  <span>Custom Color</span>
+                </button>
+              </div>
+            )}
+            {showColorPicker && (
+              <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-4 min-w-[250px]">
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-slate-700 block">Choose Custom Color</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={preferences.customColor || '#6366f1'}
+                      onChange={(e) => {
+                        const newColor = e.target.value;
+                        setPreferences({ ...preferences, colorTheme: 'custom', customColor: newColor });
+                      }}
+                      className="w-16 h-10 rounded border-2 border-slate-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={preferences.customColor || '#6366f1'}
+                      onChange={(e) => {
+                        const newColor = e.target.value;
+                        if (/^#[0-9A-Fa-f]{6}$/.test(newColor)) {
+                          setPreferences({ ...preferences, colorTheme: 'custom', customColor: newColor });
+                        }
+                      }}
+                      placeholder="#6366f1"
+                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        setShowColorPicker(false);
+                        setShowColorThemeMenu(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Done
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setPreferences({ ...preferences, colorTheme: 'default', customColor: undefined });
+                        setShowColorPicker(false);
+                        setShowColorThemeMenu(false);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
