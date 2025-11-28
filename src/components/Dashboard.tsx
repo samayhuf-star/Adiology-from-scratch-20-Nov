@@ -290,7 +290,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   ];
 
   return (
-    <div className="p-6 sm:p-8 lg:p-10 space-y-10">
+    <div className="dashboard-modern-theme p-8 sm:p-10 lg:p-12 space-y-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8">
         <div className="space-y-2">

@@ -494,7 +494,7 @@ Generated on ${new Date().toLocaleDateString()}`;
         };
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        <div className="dashboard-modern-theme p-8 sm:p-10 lg:p-12 max-w-7xl mx-auto space-y-10">
             {error && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@
   import App from "./App.tsx";
   import "./index.css";
   import "./styles/themes.css";
+  import "./styles/dashboard-theme-modern.css";
   import { Toaster } from "./components/ui/sonner";
   import { notifications } from "./utils/notifications";
   import { toast } from "sonner";
