@@ -729,7 +729,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Auto-save hook - saves drafts automatically
   const { saveCompleted, clearDraft, currentDraftId } = useAutoSave({
-    type: 'campaign',
+    type: 'builder-2-campaign', // Changed from 'campaign' to 'builder-2-campaign' to match loadSavedCampaigns filter
     name: campaignName,
     data: {
       campaignName,
@@ -4754,7 +4754,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         // Bug_86: Save campaign to saved campaigns list after successful validation
         try {
           await historyService.save(
-            'campaign',
+            'builder-2-campaign', // Changed from 'campaign' to 'builder-2-campaign' to match loadSavedCampaigns filter
             campaignName,
             {
               campaignName,
@@ -4783,7 +4783,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               brandKeywords,
               nonBrandKeywords,
               competitorKeywords,
-              smartClusters
+              smartClusters,
+              status: 'completed' // Add status field
             },
             'completed'
           );
