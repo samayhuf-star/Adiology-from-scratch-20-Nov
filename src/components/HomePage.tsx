@@ -84,10 +84,10 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center w-full mx-auto" style={{ maxWidth: '100%' }}>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center w-full">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-slate-200 z-50 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 w-full">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
