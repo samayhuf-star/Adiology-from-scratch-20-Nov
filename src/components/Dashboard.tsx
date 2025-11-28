@@ -225,7 +225,9 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           // Silently handle published websites errors (table might not exist)
           const errorMessage = websiteError?.message?.toLowerCase() || '';
           // Only log if it's not a missing table error
-          if (!errorMessage.includes('schema cache') && !errorMessage.includes('could not find the table')) {
+          if (!errorMessage.includes('schema cache') && 
+              !errorMessage.includes('could not find the table') &&
+              !errorMessage.includes('does not exist')) {
             console.warn('Could not fetch published websites:', websiteError);
           }
           myWebsites = 0;
@@ -234,8 +236,13 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       } catch (error: any) {
         // Check if error is about missing published_websites table
         const errorMessage = error?.message?.toLowerCase() || '';
-        if (!errorMessage.includes('published websites') || 
-            (!errorMessage.includes('schema cache') && !errorMessage.includes('could not find the table'))) {
+        const isTableMissingError = 
+          errorMessage.includes('schema cache') || 
+          errorMessage.includes('could not find the table') ||
+          errorMessage.includes('does not exist') ||
+          errorMessage.includes('relation') && errorMessage.includes('does not exist');
+        
+        if (!isTableMissingError) {
           // Only log non-table-missing errors
           console.error('Error fetching user resources:', error);
         }

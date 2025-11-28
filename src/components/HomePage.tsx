@@ -84,11 +84,11 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center w-full">
+    <div className="min-h-screen bg-white flex flex-col items-center w-full mx-auto" style={{ maxWidth: '100%' }}>
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-slate-200 z-50 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-center">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex items-center justify-between h-16 w-full">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white" />
@@ -199,7 +199,7 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50 w-full flex justify-center">
+      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50 w-full flex justify-center items-center">
         <div className="max-w-7xl w-full mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">Powerful Features</h2>
@@ -228,7 +228,7 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
       </section>
 
       {/* Policies Section */}
-      <section id="policies" className="py-20 px-4 sm:px-6 lg:px-8 w-full flex justify-center">
+      <section id="policies" className="py-20 px-4 sm:px-6 lg:px-8 w-full flex justify-center items-center">
         <div className="max-w-4xl w-full mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">Policies & Legal</h2>
@@ -262,7 +262,7 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
       </section>
 
       {/* Documentation Section */}
-      <section id="documentation" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50 w-full flex justify-center">
+      <section id="documentation" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50 w-full flex justify-center items-center">
         <div className="max-w-4xl w-full mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">Documentation</h2>
@@ -352,7 +352,7 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 w-full flex justify-center">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 w-full flex justify-center items-center">
         <div className="max-w-4xl w-full mx-auto text-center">
           <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-12 text-white">
             <h2 className="text-4xl font-bold mb-4">Ready to Get Started?</h2>
@@ -380,7 +380,7 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 py-12 px-4 sm:px-6 lg:px-8 w-full flex justify-center">
+      <footer className="border-t border-slate-200 py-12 px-4 sm:px-6 lg:px-8 w-full flex justify-center items-center">
         <div className="max-w-7xl w-full mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>

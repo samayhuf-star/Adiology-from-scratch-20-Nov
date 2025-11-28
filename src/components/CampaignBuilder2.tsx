@@ -6,7 +6,7 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
   Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map, Funnel, 
-  Users, TrendingDown, Network, Filter, Info, FolderOpen, Settings, Megaphone
+  Users, TrendingDown, Network, Filter, Info, FolderOpen, Cog, Megaphone
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -902,7 +902,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-2xl py-6 px-6 sm:px-8 mb-8 border-2 border-indigo-100/60 shadow-xl backdrop-blur-sm">
       <div className="flex items-center justify-center space-x-2 sm:space-x-3 md:space-x-4 overflow-x-auto pb-2">
         {[
-          { num: 1, label: 'Setup', icon: Settings },
+          { num: 1, label: 'Setup', icon: Cog },
           { num: 2, label: 'Keywords', icon: Hash },
           { num: 3, label: 'Ads & Extensions', icon: Megaphone },
           { num: 4, label: 'Geo Target', icon: MapPin },
@@ -961,7 +961,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl mb-4">
-            <Settings className="w-8 h-8 text-white" />
+            <Cog className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
             Campaign Setup

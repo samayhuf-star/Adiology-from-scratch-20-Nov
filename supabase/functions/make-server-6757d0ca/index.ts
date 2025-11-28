@@ -504,22 +504,21 @@ app.post("/billing/subscribe", async (c) => {
 // ============================================
 
 // Helper to verify super admin
-async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: string }> {
+async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: string; error?: string }> {
   try {
     const authHeader = c.req.header("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return { valid: false };
+      console.error("No Authorization header or invalid format");
+      return { valid: false, error: "Missing or invalid Authorization header" };
     }
 
     const token = authHeader.substring(7);
-    // In production, verify JWT token with Supabase
-    // For now, we'll use a simple check - in production use Supabase Admin API
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Supabase credentials missing");
-      return { valid: false };
+      return { valid: false, error: "Server configuration error" };
     }
 
     // Verify token and check user role
@@ -528,25 +527,33 @@ async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: stri
       auth: { persistSession: false }
     });
 
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) {
-      return { valid: false };
+    const { data: { user }, error: getUserError } = await supabase.auth.getUser(token);
+    if (getUserError || !user) {
+      console.error("Error getting user from token:", getUserError);
+      return { valid: false, error: "Invalid or expired token" };
     }
 
-    const { data: userData } = await supabase
+    const { data: userData, error: userDataError } = await supabase
       .from("users")
       .select("role")
       .eq("id", user.id)
       .single();
 
+    if (userDataError) {
+      console.error("Error fetching user data:", userDataError);
+      return { valid: false, error: "Error checking user role" };
+    }
+
     if (!userData || userData.role !== "superadmin") {
-      return { valid: false };
+      console.error(`User ${user.id} does not have superadmin role. Current role: ${userData?.role || 'none'}`);
+      return { valid: false, error: "User does not have superadmin role" };
     }
 
     return { valid: true, userId: user.id };
   } catch (err) {
     console.error("Super admin verification error:", err);
-    return { valid: false };
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return { valid: false, error: `Verification error: ${errorMessage}` };
   }
 }
 
@@ -1035,7 +1042,10 @@ app.post("/admin/users", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid || !auth.userId) {
-      return c.json({ error: "Unauthorized" }, 401);
+      console.error("Super admin verification failed:", auth.error);
+      return c.json({ 
+        error: `Unauthorized: ${auth.error || "Super admin access required"}` 
+      }, 401);
     }
 
     const body = await c.req.json();
@@ -1047,6 +1057,12 @@ app.post("/admin/users", async (c) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Supabase credentials missing");
+      return c.json({ error: "Server configuration error: Supabase credentials missing" }, 500);
+    }
+
     const { createClient } = await import("npm:@supabase/supabase-js@2");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -1063,7 +1079,14 @@ app.post("/admin/users", async (c) => {
 
     if (authError) {
       console.error("Error creating auth user:", authError);
-      return c.json({ error: "Failed to create user: " + authError.message }, 500);
+      return c.json({ 
+        error: `Failed to create auth user: ${authError.message || JSON.stringify(authError)}` 
+      }, 500);
+    }
+
+    if (!authUser || !authUser.user) {
+      console.error("Auth user creation returned no user data");
+      return c.json({ error: "Failed to create auth user: No user data returned" }, 500);
     }
 
     // Create user record in users table
@@ -1083,23 +1106,36 @@ app.post("/admin/users", async (c) => {
     if (userError) {
       console.error("Error creating user record:", userError);
       // Try to clean up auth user if user record creation fails
-      await supabase.auth.admin.deleteUser(authUser.user.id);
-      return c.json({ error: "Failed to create user record" }, 500);
+      try {
+        await supabase.auth.admin.deleteUser(authUser.user.id);
+      } catch (cleanupError) {
+        console.error("Error cleaning up auth user:", cleanupError);
+      }
+      return c.json({ 
+        error: `Failed to create user record: ${userError.message || JSON.stringify(userError)}` 
+      }, 500);
     }
 
-    // Log audit
-    await supabase.from("audit_logs").insert({
-      user_id: auth.userId,
-      action: "create_user",
-      resource_type: "user",
-      resource_id: authUser.user.id,
-      metadata: { email, subscription_plan },
-    });
+    // Log audit (non-blocking - don't fail if this fails)
+    try {
+      await supabase.from("audit_logs").insert({
+        user_id: auth.userId,
+        action: "create_user",
+        resource_type: "user",
+        resource_id: authUser.user.id,
+        metadata: { email, subscription_plan },
+      });
+    } catch (auditError) {
+      console.error("Error logging audit (non-critical):", auditError);
+    }
 
     return c.json({ user: userData });
   } catch (err) {
     console.error("Create user error:", err);
-    return c.json({ error: "Internal server error" }, 500);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return c.json({ 
+      error: `Internal server error: ${errorMessage}` 
+    }, 500);
   }
 });
 

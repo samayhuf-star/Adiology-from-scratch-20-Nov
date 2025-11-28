@@ -45,17 +45,17 @@ async function authenticatedFetch(endpoint: string, options: RequestInit = {}) {
   }
 
   if (!response.ok) {
-    const errorMessage = errorData?.error || `Request failed: ${response.status}`;
+    const errorMessage = errorData?.error || errorData?.message || `Request failed: ${response.status} ${response.statusText}`;
     
     // Check for specific error types
     if (response.status === 401) {
-      throw new Error('Unauthorized. Please check your credentials and try again.');
+      throw new Error(errorMessage || 'Unauthorized. Please check your credentials and try again.');
     } else if (response.status === 403) {
-      throw new Error('Access denied. Superadmin role required.');
+      throw new Error(errorMessage || 'Access denied. Superadmin role required.');
     } else if (response.status === 404) {
-      throw new Error('Endpoint not found. Please ensure the Edge Function is deployed.');
+      throw new Error(errorMessage || 'Endpoint not found. Please ensure the Edge Function is deployed.');
     } else if (response.status === 500) {
-      throw new Error('Server error. Please check backend logs.');
+      throw new Error(errorMessage || 'Server error. Please check backend logs.');
     }
     
     throw new Error(errorMessage);
@@ -162,10 +162,11 @@ export const adminApi = {
         method: 'POST',
         body: JSON.stringify(data),
       });
-    } catch (error) {
-      // Fallback: Admin functions require server-side implementation
-      console.error('Admin API unavailable - createUser requires backend');
-      throw new Error('Admin functions require backend implementation');
+    } catch (error: any) {
+      // Pass through the actual error message from the API
+      console.error('Error creating user:', error);
+      const errorMessage = error?.message || 'Failed to create user. Please check your connection and try again.';
+      throw new Error(errorMessage);
     }
   },
 
