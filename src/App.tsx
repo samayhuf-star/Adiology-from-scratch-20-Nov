@@ -1180,7 +1180,10 @@ const App = () => {
             const Icon = item.icon;
             const hasSubmenu = item.submenu && item.submenu.length > 0;
             const isExpanded = expandedMenus.has(item.id);
-            const isActive = activeTab === item.id || (hasSubmenu && item.submenu?.some(sub => sub.id === activeTab));
+            const isParentActive = activeTab === item.id;
+            const hasActiveSubmenu = hasSubmenu && item.submenu?.some(sub => sub.id === activeTab);
+            // Parent should be highlighted only if it's directly active, not when a submenu is active
+            const isActive = isParentActive && !hasActiveSubmenu;
             
             return (
               <div key={item.id}>
@@ -1203,17 +1206,19 @@ const App = () => {
                   className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
                     isActive
                       ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
+                      : hasActiveSubmenu
+                      ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
                       : `text-slate-700 hover:bg-indigo-50`
                   }`}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
+                    <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
                     {sidebarOpen && (
                       <span className="font-medium">{item.label}</span>
                     )}
                   </div>
                   {sidebarOpen && hasSubmenu && (
-                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive || hasActiveSubmenu ? 'text-white' : 'text-slate-400'}`} />
                   )}
                 </button>
                 {sidebarOpen && hasSubmenu && isExpanded && (
@@ -1229,12 +1234,12 @@ const App = () => {
                           }}
                           className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group cursor-pointer ${
                             isSubActive
-                              ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-md`
+                              ? `bg-indigo-100 text-indigo-700 shadow-sm border border-indigo-200`
                               : `text-slate-600 hover:bg-indigo-50/50`
                           }`}
                         >
-                          <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-400'}`} />
-                          <span className={`text-sm font-medium ${isSubActive ? 'text-white' : 'text-slate-600'}`}>{subItem.label}</span>
+                          <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                          <span className={`text-sm font-medium ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`}>{subItem.label}</span>
                         </button>
                       );
                     })}

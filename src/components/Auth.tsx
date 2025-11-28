@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, User, ArrowLeft, Sparkle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, User, ArrowLeft, Sparkle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -269,14 +269,13 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
               <div className="space-y-3">
                 <Label htmlFor="email" className="text-slate-900 font-semibold text-sm mb-2">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 pr-4 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
+                    className="pl-4 pr-4 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
                     required
                   />
                 </div>
@@ -287,14 +286,13 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
               <div className="space-y-3">
                 <Label htmlFor="password" className="text-slate-900 font-semibold text-sm mb-2">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder={isLogin ? 'Enter your password' : 'Create a password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-12 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
+                    className="pl-4 pr-12 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
                         required={!isForgotPassword}
                   />
                   <button
@@ -313,14 +311,13 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                 <div className="space-y-3">
                   <Label htmlFor="confirmPassword" className="text-slate-900 font-semibold text-sm mb-2">Confirm Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-12 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
+                      className="pl-4 pr-12 py-3 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 h-12"
                       required={!isLogin}
                       disabled={SIGNUP_DISABLED}
                     />

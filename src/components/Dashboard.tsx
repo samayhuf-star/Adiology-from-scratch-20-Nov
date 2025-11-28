@@ -382,10 +382,6 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* Quick Actions */}
       <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
-          <Zap className="w-6 h-6 text-indigo-600" />
-          Quick Actions
-        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action) => {
             const Icon = action.icon;
@@ -412,10 +408,6 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* Recent Activity */}
       <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
-          <Clock className="w-6 h-6 text-indigo-600" />
-          Recent Activity
-        </h2>
         <Card className="border-2 p-8">
           {recentActivity.length > 0 ? (
             <div className="space-y-4">
