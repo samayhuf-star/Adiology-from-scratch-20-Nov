@@ -12,6 +12,9 @@ export interface CampaignStructure {
 export interface Campaign {
   campaign_name: string;
   adgroups: AdGroup[];
+  zip_codes?: string[];
+  cities?: string[];
+  states?: string[];
 }
 
 export interface AdGroup {
@@ -21,6 +24,9 @@ export interface AdGroup {
   ads: Ad[];
   negative_keywords?: string[];
   location_target?: string;
+  zip_codes?: string[];
+  cities?: string[];
+  states?: string[];
 }
 
 export interface Ad {
@@ -134,6 +140,36 @@ function buildLocationTarget(settings: StructureSettings): string | undefined {
 }
 
 /**
+ * Helper function to add location data to campaign
+ */
+function addLocationDataToCampaign(campaign: Campaign, settings: StructureSettings): void {
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+}
+
+/**
+ * Helper function to add location data to ad group
+ */
+function addLocationDataToAdGroup(adGroup: AdGroup, settings: StructureSettings): void {
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    adGroup.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    adGroup.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    adGroup.states = settings.selectedStates;
+  }
+}
+
+/**
  * SKAG: Single Keyword Ad Group
  * Each keyword gets its own ad group
  */
@@ -157,11 +193,24 @@ function generateSKAG(keywords: string[], settings: StructureSettings): Campaign
     location_target: locationTarget
   }));
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -199,11 +248,24 @@ function generateSTAG(keywords: string[], settings: StructureSettings): Campaign
     location_target: locationTarget
   }));
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -225,14 +287,16 @@ function generateMIX(keywords: string[], settings: StructureSettings): CampaignS
   
   // First 5 keywords as SKAG
   keywords.slice(0, 5).forEach((keyword) => {
-    adgroups.push({
+    const adGroup: AdGroup = {
       adgroup_name: keyword,
       keywords: matchTypes.map(mt => formatKeyword(keyword, mt)),
       match_types: matchTypes,
       ads: ads,
       negative_keywords: negativeKeywords,
       location_target: buildLocationTarget(settings)
-    });
+    };
+    addLocationDataToAdGroup(adGroup, settings);
+    adgroups.push(adGroup);
   });
 
   // Rest grouped thematically
@@ -247,21 +311,36 @@ function generateMIX(keywords: string[], settings: StructureSettings): CampaignS
   });
 
   Object.entries(groups).slice(0, 5).forEach(([theme, groupKeywords], idx) => {
-    adgroups.push({
+    const adGroup: AdGroup = {
       adgroup_name: `Mixed Group ${idx + 1} - ${theme}`,
       keywords: groupKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: ads,
       negative_keywords: negativeKeywords,
       location_target: buildLocationTarget(settings)
-    });
+    };
+    addLocationDataToAdGroup(adGroup, settings);
+    adgroups.push(adGroup);
   });
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -281,20 +360,37 @@ function generateSTAGPlus(keywords: string[], settings: StructureSettings): Camp
   // Use smart clusters if available, otherwise use n-gram clustering
   const clusters = settings.smartClusters || clusterByNGram(keywords);
   
-  const adgroups = Object.entries(clusters).map(([clusterName, clusterKeywords], idx) => ({
-    adgroup_name: `Smart Group ${idx + 1} - ${clusterName}`,
-    keywords: clusterKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
-    match_types: matchTypes,
-    ads: ads,
-    negative_keywords: negativeKeywords,
-    location_target: buildLocationTarget(settings)
-  }));
+  const adgroups = Object.entries(clusters).map(([clusterName, clusterKeywords], idx) => {
+    const adGroup: AdGroup = {
+      adgroup_name: `Smart Group ${idx + 1} - ${clusterName}`,
+      keywords: clusterKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
+      match_types: matchTypes,
+      ads: ads,
+      negative_keywords: negativeKeywords,
+      location_target: buildLocationTarget(settings)
+    };
+    addLocationDataToAdGroup(adGroup, settings);
+    return adGroup;
+  });
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -329,11 +425,24 @@ function generateIntentStructure(keywords: string[], settings: StructureSettings
     }
   });
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -372,11 +481,24 @@ function generateAlphaBeta(keywords: string[], settings: StructureSettings): Cam
     });
   }
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -406,11 +528,24 @@ function generateMatchTypeSplit(keywords: string[], settings: StructureSettings)
     });
   });
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -503,22 +638,37 @@ function generateFunnelStructure(keywords: string[], settings: StructureSettings
     const stageKeywords = funnelGroups[stage] || [];
     if (stageKeywords.length > 0) {
       const stageName = stage.toUpperCase();
-      adgroups.push({
+      const adGroup: AdGroup = {
         adgroup_name: `${stageName} - ${getFunnelStageName(stage)}`,
         keywords: stageKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
         match_types: matchTypes,
         ads: getFunnelBasedAds(stage, settings),
         negative_keywords: negativeKeywords,
-    location_target: buildLocationTarget(settings)
-      });
+        location_target: buildLocationTarget(settings)
+      };
+      addLocationDataToAdGroup(adGroup, settings);
+      adgroups.push(adGroup);
     }
   });
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -540,32 +690,49 @@ function generateBrandSplit(keywords: string[], settings: StructureSettings): Ca
   const adgroups: AdGroup[] = [];
   
   if (brandKeywords.length > 0) {
-    adgroups.push({
+    const adGroup: AdGroup = {
       adgroup_name: 'Brand Keywords',
       keywords: brandKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: ads,
       negative_keywords: negativeKeywords,
       location_target: buildLocationTarget(settings)
-    });
+    };
+    addLocationDataToAdGroup(adGroup, settings);
+    adgroups.push(adGroup);
   }
   
   if (nonBrandKeywords.length > 0) {
-    adgroups.push({
+    const adGroup: AdGroup = {
       adgroup_name: 'Non-Brand Keywords',
       keywords: nonBrandKeywords.flatMap(kw => matchTypes.map(mt => formatKeyword(kw, mt))),
       match_types: matchTypes,
       ads: ads,
       negative_keywords: negativeKeywords,
       location_target: buildLocationTarget(settings)
-    });
+    };
+    addLocationDataToAdGroup(adGroup, settings);
+    adgroups.push(adGroup);
   }
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -594,11 +761,24 @@ function generateCompetitor(keywords: string[], settings: StructureSettings): Ca
     });
   }
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 
@@ -625,11 +805,24 @@ function generateNgramClusters(keywords: string[], settings: StructureSettings):
     location_target: buildLocationTarget(settings)
   }));
 
+  const campaign: Campaign = {
+    campaign_name: settings.campaignName,
+    adgroups
+  };
+  
+  // Add location data at campaign level if available
+  if (settings.selectedZips && settings.selectedZips.length > 0) {
+    campaign.zip_codes = settings.selectedZips;
+  }
+  if (settings.selectedCities && settings.selectedCities.length > 0) {
+    campaign.cities = settings.selectedCities;
+  }
+  if (settings.selectedStates && settings.selectedStates.length > 0) {
+    campaign.states = settings.selectedStates;
+  }
+  
   return {
-    campaigns: [{
-      campaign_name: settings.campaignName,
-      adgroups
-    }]
+    campaigns: [campaign]
   };
 }
 

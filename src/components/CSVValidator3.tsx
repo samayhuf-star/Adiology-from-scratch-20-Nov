@@ -612,11 +612,18 @@ export const CSVValidator3 = () => {
                    assetType !== '';
         }).length;
 
-        // Count locations (Row Type = location or Location column has value)
+        // Count locations - check for Location Target column (used in ZIP, City/State, and Location targeting blocks)
+        const locationTargetCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'location target' || lower.includes('location target');
+        }) || '';
+        
+        // Count locations (Row Type = location, Location column has value, or Location Target column has value)
         const locationsCount = rows.filter(row => {
             const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
             const location = row[locationCol] || '';
-            return rowType === 'location' || location.trim() !== '';
+            const locationTarget = row[locationTargetCol] || '';
+            return rowType === 'location' || location.trim() !== '' || locationTarget.trim() !== '';
         }).length;
 
         return {

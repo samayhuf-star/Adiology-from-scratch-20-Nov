@@ -495,12 +495,90 @@ export function generateCSVV3(structure: CampaignStructure): string {
   
   // 24. ZIP/Postal Code Targeting Block
   blocks.push(BLOCK_HEADERS.ZIP_TARGETING);
-  // ZIP targeting would go here
+  structure.campaigns.forEach(campaign => {
+    // Check campaign-level zip codes
+    if (campaign.zip_codes && campaign.zip_codes.length > 0) {
+      campaign.zip_codes.forEach(zip => {
+        const row = [
+          escapeCSVField(campaign.campaign_name),
+          escapeCSVField(zip),
+          escapeCSVField('Postal Code'), // Target Type
+          escapeCSVField('') // Bid Adjustment
+        ];
+        blocks.push(row.join(','));
+      });
+    }
+    // Check ad group-level zip codes
+    campaign.adgroups.forEach(adGroup => {
+      if (adGroup.zip_codes && adGroup.zip_codes.length > 0) {
+        adGroup.zip_codes.forEach(zip => {
+          const row = [
+            escapeCSVField(campaign.campaign_name),
+            escapeCSVField(zip),
+            escapeCSVField('Postal Code'), // Target Type
+            escapeCSVField('') // Bid Adjustment
+          ];
+          blocks.push(row.join(','));
+        });
+      }
+    });
+  });
   blocks.push(''); // Blank line between blocks
   
   // 25. City/State Targeting Block
   blocks.push(BLOCK_HEADERS.CITY_STATE_TARGETING);
-  // City/State targeting would go here
+  structure.campaigns.forEach(campaign => {
+    // Check campaign-level cities
+    if (campaign.cities && campaign.cities.length > 0) {
+      campaign.cities.forEach(city => {
+        const row = [
+          escapeCSVField(campaign.campaign_name),
+          escapeCSVField(city),
+          escapeCSVField('City'), // Target Type
+          escapeCSVField('') // Bid Adjustment
+        ];
+        blocks.push(row.join(','));
+      });
+    }
+    // Check campaign-level states
+    if (campaign.states && campaign.states.length > 0) {
+      campaign.states.forEach(state => {
+        const row = [
+          escapeCSVField(campaign.campaign_name),
+          escapeCSVField(state),
+          escapeCSVField('State'), // Target Type
+          escapeCSVField('') // Bid Adjustment
+        ];
+        blocks.push(row.join(','));
+      });
+    }
+    // Check ad group-level cities
+    campaign.adgroups.forEach(adGroup => {
+      if (adGroup.cities && adGroup.cities.length > 0) {
+        adGroup.cities.forEach(city => {
+          const row = [
+            escapeCSVField(campaign.campaign_name),
+            escapeCSVField(city),
+            escapeCSVField('City'), // Target Type
+            escapeCSVField('') // Bid Adjustment
+          ];
+          blocks.push(row.join(','));
+        });
+      }
+      // Check ad group-level states
+      if (adGroup.states && adGroup.states.length > 0) {
+        adGroup.states.forEach(state => {
+          const row = [
+            escapeCSVField(campaign.campaign_name),
+            escapeCSVField(state),
+            escapeCSVField('State'), // Target Type
+            escapeCSVField('') // Bid Adjustment
+          ];
+          blocks.push(row.join(','));
+        });
+      }
+    });
+  });
   blocks.push(''); // Blank line between blocks
   
   // 26-32. Other targeting and adjustment blocks (can be empty)
