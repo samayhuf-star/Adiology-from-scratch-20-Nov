@@ -57,9 +57,17 @@ export const api = {
       if (e instanceof TypeError && e.message.includes('fetch')) {
         throw new Error('Network error: Unable to reach server');
       }
-      // Only capture non-404 errors to reduce noise
-      if (e instanceof Error && !e.message.includes('404')) {
-        captureError(e, {
+      // Don't capture expected errors (404, network errors, or generic request failures)
+      // These are expected when the server is unavailable
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      const isExpectedError = 
+        errorMessage.includes('404') ||
+        errorMessage.includes('Network error') ||
+        errorMessage.includes('Request failed') ||
+        errorMessage.includes('fetch');
+      
+      if (!isExpectedError) {
+        captureError(e instanceof Error ? e : new Error(String(e)), {
           module: 'api',
           action: 'post',
           metadata: { endpoint },
@@ -100,9 +108,17 @@ export const api = {
       if (e instanceof TypeError && e.message.includes('fetch')) {
         throw new Error('Network error: Unable to reach server');
       }
-      // Only capture non-404 errors to reduce noise
-      if (e instanceof Error && !e.message.includes('404')) {
-        captureError(e, {
+      // Don't capture expected errors (404, network errors, or generic request failures)
+      // These are expected when the server is unavailable
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      const isExpectedError = 
+        errorMessage.includes('404') ||
+        errorMessage.includes('Network error') ||
+        errorMessage.includes('Request failed') ||
+        errorMessage.includes('fetch');
+      
+      if (!isExpectedError) {
+        captureError(e instanceof Error ? e : new Error(String(e)), {
           module: 'api',
           action: 'get',
           metadata: { endpoint },

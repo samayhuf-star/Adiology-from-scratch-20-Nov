@@ -61,17 +61,29 @@ export async function savePublishedWebsite(
 export async function getUserPublishedWebsites(
   userId: string
 ): Promise<PublishedWebsite[]> {
-  const { data, error } = await supabase
-    .from('published_websites')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('published_websites')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    throw new Error(`Failed to fetch published websites: ${error.message}`);
+    // If table doesn't exist, return empty array instead of throwing
+    if (error) {
+      // Check if error is about missing table
+      if (error.message.includes('schema cache') || error.message.includes('does not exist')) {
+        console.warn('published_websites table not found, returning empty array');
+        return [];
+      }
+      throw new Error(`Failed to fetch published websites: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    // Gracefully handle any errors and return empty array
+    console.warn('Error fetching published websites:', error);
+    return [];
   }
-
-  return data || [];
 }
 
 /**

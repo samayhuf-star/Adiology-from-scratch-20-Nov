@@ -172,24 +172,31 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           item.type?.includes('template')
         ).length;
 
-        // Get published websites
-        const websites = await getUserPublishedWebsites(user.id);
-        myWebsites = websites.length;
-        
-        // Domains - count unique domains from published websites
-        const uniqueDomains = new Set(
-          websites
-            .map(w => {
-              try {
-                const url = new URL(w.vercel_url || '');
-                return url.hostname.replace('www.', '');
-              } catch {
-                return null;
-              }
-            })
-            .filter(Boolean)
-        );
-        myDomains = uniqueDomains.size;
+        // Get published websites (gracefully handle missing table)
+        try {
+          const websites = await getUserPublishedWebsites(user.id);
+          myWebsites = websites.length;
+          
+          // Domains - count unique domains from published websites
+          const uniqueDomains = new Set(
+            websites
+              .map(w => {
+                try {
+                  const url = new URL(w.vercel_url || '');
+                  return url.hostname.replace('www.', '');
+                } catch {
+                  return null;
+                }
+              })
+              .filter(Boolean)
+          );
+          myDomains = uniqueDomains.size;
+        } catch (websiteError) {
+          // Silently handle published websites errors (table might not exist)
+          console.warn('Could not fetch published websites:', websiteError);
+          myWebsites = 0;
+          myDomains = 0;
+        }
       } catch (error) {
         console.error('Error fetching user resources:', error);
         // Continue with 0 counts if there's an error
