@@ -1,0 +1,232 @@
+/* User Preferences CSS - Spacing, Font Size, and Color Themes */
+
+/* Spacing Multiplier - Applied via CSS variable */
+:root {
+  --user-spacing-multiplier: 1;
+  --user-font-size-multiplier: 1;
+}
+
+/* Apply spacing multiplier to common spacing classes */
+[style*="--user-spacing-multiplier"] .space-y-1 > * + * {
+  margin-top: calc(0.25rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .space-y-2 > * + * {
+  margin-top: calc(0.5rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .space-y-3 > * + * {
+  margin-top: calc(0.75rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .space-y-4 > * + * {
+  margin-top: calc(1rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .space-y-5 > * + * {
+  margin-top: calc(1.25rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .space-y-6 > * + * {
+  margin-top: calc(1.5rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .space-y-8 > * + * {
+  margin-top: calc(2rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .gap-2 {
+  gap: calc(0.5rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .gap-3 {
+  gap: calc(0.75rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .gap-4 {
+  gap: calc(1rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .gap-5 {
+  gap: calc(1.25rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .gap-6 {
+  gap: calc(1.5rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .gap-8 {
+  gap: calc(2rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .p-4 {
+  padding: calc(1rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .p-5 {
+  padding: calc(1.25rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .p-6 {
+  padding: calc(1.5rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .p-8 {
+  padding: calc(2rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .mb-4 {
+  margin-bottom: calc(1rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .mb-6 {
+  margin-bottom: calc(1.5rem * var(--user-spacing-multiplier));
+}
+
+[style*="--user-spacing-multiplier"] .mb-8 {
+  margin-bottom: calc(2rem * var(--user-spacing-multiplier));
+}
+
+/* Font Size Multiplier */
+[style*="--user-font-size-multiplier"] {
+  font-size: calc(1rem * var(--user-font-size-multiplier));
+}
+
+[style*="--user-font-size-multiplier"] .text-sm {
+  font-size: calc(0.875rem * var(--user-font-size-multiplier));
+}
+
+[style*="--user-font-size-multiplier"] .text-base {
+  font-size: calc(1rem * var(--user-font-size-multiplier));
+}
+
+[style*="--user-font-size-multiplier"] .text-lg {
+  font-size: calc(1.125rem * var(--user-font-size-multiplier));
+}
+
+[style*="--user-font-size-multiplier"] .text-xl {
+  font-size: calc(1.25rem * var(--user-font-size-multiplier));
+}
+
+[style*="--user-font-size-multiplier"] .text-2xl {
+  font-size: calc(1.5rem * var(--user-font-size-multiplier));
+}
+
+[style*="--user-font-size-multiplier"] .text-3xl {
+  font-size: calc(1.875rem * var(--user-font-size-multiplier));
+}
+
+[style*="--user-font-size-multiplier"] .text-4xl {
+  font-size: calc(2.25rem * var(--user-font-size-multiplier));
+}
+
+/* Color Themes */
+
+/* Default Theme (Indigo/Purple) - Already applied via existing theme system */
+[data-color-theme="default"] {
+  --theme-primary: #4f46e5; /* indigo-600 */
+  --theme-primary-light: #eef2ff; /* indigo-50 */
+  --theme-primary-dark: #4338ca; /* indigo-700 */
+  --theme-secondary: #9333ea; /* purple-600 */
+  --theme-secondary-light: #faf5ff; /* purple-50 */
+  --theme-accent: #a855f7; /* purple-500 */
+}
+
+/* Blue Theme */
+[data-color-theme="blue"] {
+  --theme-primary: #2563eb; /* blue-600 */
+  --theme-primary-light: #eff6ff; /* blue-50 */
+  --theme-primary-dark: #1d4ed8; /* blue-700 */
+  --theme-secondary: #0ea5e9; /* sky-500 */
+  --theme-secondary-light: #f0f9ff; /* sky-50 */
+  --theme-accent: #3b82f6; /* blue-500 */
+}
+
+/* Green Theme */
+[data-color-theme="green"] {
+  --theme-primary: #059669; /* emerald-600 */
+  --theme-primary-light: #ecfdf5; /* emerald-50 */
+  --theme-primary-dark: #047857; /* emerald-700 */
+  --theme-secondary: #10b981; /* emerald-500 */
+  --theme-secondary-light: #f0fdf4; /* green-50 */
+  --theme-accent: #22c55e; /* green-500 */
+}
+
+/* Apply theme colors to sidebar and menu */
+[data-color-theme="blue"] aside {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(239, 246, 255, 0.95) 100%);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+[data-color-theme="blue"] aside button[class*="bg-gradient-to-r"][class*="from-indigo"] {
+  background: linear-gradient(to right, #2563eb, #0ea5e9) !important;
+}
+
+[data-color-theme="blue"] aside .bg-indigo-50 {
+  background-color: #eff6ff !important;
+}
+
+[data-color-theme="blue"] aside .text-indigo-600,
+[data-color-theme="blue"] aside .text-indigo-700 {
+  color: #2563eb !important;
+}
+
+[data-color-theme="green"] aside {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(236, 253, 245, 0.95) 100%);
+  border-color: rgba(5, 150, 105, 0.2);
+}
+
+[data-color-theme="green"] aside button[class*="bg-gradient-to-r"][class*="from-indigo"] {
+  background: linear-gradient(to right, #059669, #10b981) !important;
+}
+
+[data-color-theme="green"] aside .bg-indigo-50 {
+  background-color: #ecfdf5 !important;
+}
+
+[data-color-theme="green"] aside .text-indigo-600,
+[data-color-theme="green"] aside .text-indigo-700 {
+  color: #059669 !important;
+}
+
+/* Apply theme colors to main content area */
+[data-color-theme="blue"] .bg-gradient-to-br[class*="from-indigo"] {
+  background: linear-gradient(to bottom right, #eff6ff, #f0f9ff) !important;
+}
+
+[data-color-theme="green"] .bg-gradient-to-br[class*="from-indigo"] {
+  background: linear-gradient(to bottom right, #ecfdf5, #f0fdf4) !important;
+}
+
+/* Apply theme to buttons and interactive elements */
+[data-color-theme="blue"] button[class*="bg-indigo"],
+[data-color-theme="blue"] .bg-indigo-600 {
+  background-color: #2563eb !important;
+}
+
+[data-color-theme="blue"] button[class*="bg-indigo"]:hover {
+  background-color: #1d4ed8 !important;
+}
+
+[data-color-theme="green"] button[class*="bg-indigo"],
+[data-color-theme="green"] .bg-indigo-600 {
+  background-color: #059669 !important;
+}
+
+[data-color-theme="green"] button[class*="bg-indigo"]:hover {
+  background-color: #047857 !important;
+}
+
+/* Apply theme to badges */
+[data-color-theme="blue"] .badge[class*="indigo"] {
+  background-color: #eff6ff !important;
+  color: #1e40af !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-color-theme="green"] .badge[class*="indigo"] {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-color: #10b981 !important;
+}
+

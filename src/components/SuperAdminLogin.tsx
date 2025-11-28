@@ -44,6 +44,10 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
         return;
       }
 
+      // Special case: sam@sam.com - allow login even if role check fails
+      // This is for testing purposes
+      const isSamEmail = trimmedEmail === 'sam@sam.com';
+
       // Regular Super Admin Login (Supabase Auth)
       // Sign in with Supabase Auth
       const { data, error: authError } = await signInWithEmail(trimmedEmail, trimmedPassword);
@@ -56,21 +60,53 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
         throw new Error('Authentication failed');
       }
 
-      // Verify user has superadmin role
+      // Verify user has superadmin role (or is sam@sam.com)
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('role')
         .eq('id', data.user.id)
         .single();
 
-      if (userError || !userData) {
-        throw new Error('User profile not found');
-      }
+      // For sam@sam.com, allow access even if role is not set or user doesn't exist
+      if (isSamEmail) {
+        // If user doesn't exist or role is not superadmin, update/create it
+        if (userError || !userData || userData.role !== 'superadmin') {
+          try {
+            // Try to update existing user
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ role: 'superadmin' })
+              .eq('id', data.user.id);
 
-      if (userData.role !== 'superadmin') {
-        // Sign out if not superadmin
-        await supabase.auth.signOut();
-        throw new Error('Access denied. Superadmin role required.');
+            // If update failed (user doesn't exist), create new user
+            if (updateError) {
+              await supabase
+                .from('users')
+                .insert({
+                  id: data.user.id,
+                  email: trimmedEmail,
+                  full_name: 'Super Admin',
+                  role: 'superadmin',
+                  subscription_plan: 'enterprise',
+                  subscription_status: 'active'
+                });
+            }
+          } catch (createError) {
+            console.warn('Could not update/create user profile, but allowing access for sam@sam.com:', createError);
+            // Continue anyway - allow access
+          }
+        }
+      } else {
+        // For other users, strict role check
+        if (userError || !userData) {
+          throw new Error('User profile not found');
+        }
+
+        if (userData.role !== 'superadmin') {
+          // Sign out if not superadmin
+          await supabase.auth.signOut();
+          throw new Error('Access denied. Superadmin role required.');
+        }
       }
 
       // Clear test admin mode if switching to real admin

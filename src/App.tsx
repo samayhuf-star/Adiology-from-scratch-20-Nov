@@ -41,6 +41,7 @@ import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
+import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
 
 type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -54,6 +55,12 @@ const App = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+  
+  // Load and apply user preferences on mount
+  useEffect(() => {
+    const prefs = getUserPreferences();
+    applyUserPreferences(prefs);
+  }, []);
 
   // Valid tab IDs - used for route validation
   const validTabIds = new Set([
@@ -1176,8 +1183,18 @@ const App = () => {
     return 'Dashboard';
   };
 
+  // Get user preferences for styling
+  const userPrefs = getUserPreferences();
+
   return (
-    <div className="flex h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-cyan-50 overflow-hidden w-full max-w-full">
+    <div 
+      className="flex h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-cyan-50 overflow-hidden w-full max-w-full"
+      style={{
+        '--user-spacing-multiplier': userPrefs.spacing,
+        '--user-font-size-multiplier': userPrefs.fontSize
+      } as React.CSSProperties}
+      data-color-theme={userPrefs.colorTheme}
+    >
       {/* Sidebar */}
       <aside 
         className={`${

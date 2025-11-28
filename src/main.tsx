@@ -4,10 +4,12 @@
   import "./index.css";
   import "./styles/themes.css";
   import "./styles/dashboard-theme-modern.css";
+  import "./styles/userPreferences.css";
   import { Toaster } from "./components/ui/sonner";
   import { notifications } from "./utils/notifications";
   import { toast } from "sonner";
   import { ThemeProvider } from "./contexts/ThemeContext";
+  import { initializeUserPreferences } from "./utils/userPreferences";
 
   // Initialize notification service
   notifications.setToastInstance(toast);
@@ -43,6 +45,9 @@
       }
     });
   }
+
+  // Initialize user preferences on app load
+  initializeUserPreferences();
 
   createRoot(document.getElementById("root")!).render(
     <ThemeProvider>

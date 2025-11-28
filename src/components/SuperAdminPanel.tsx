@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentAuthUser } from '../utils/auth';
 import { themes } from '../utils/themes';
+import { supabase } from '../utils/supabase/client';
 
 interface SuperAdminPanelProps {
   onBackToLanding: () => void;
@@ -1278,9 +1279,22 @@ const ThemeSettingsModule = () => {
         const user = await getCurrentAuthUser();
         if (user && user.email) {
           setUserEmail(user.email);
-          // Only sam@sam.com can access theme settings
-          if (user.email.toLowerCase() === 'sam@sam.com') {
+          // Check if user is sam@sam.com or has superadmin role
+          const isSamEmail = user.email.toLowerCase() === 'sam@sam.com';
+          
+          if (isSamEmail) {
             setIsAuthorized(true);
+          } else {
+            // Check for superadmin role
+            const { data: userData } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', user.id)
+              .single();
+            
+            if (userData && userData.role === 'superadmin') {
+              setIsAuthorized(true);
+            }
           }
         }
       } catch (error) {
