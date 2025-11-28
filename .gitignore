@@ -11,10 +11,6 @@ playwright-report/
 test-results/
 *.zip
 
-# Playwright
-playwright-report/
-test-results/
-
 # Environment variables
 .env
 .env.local
