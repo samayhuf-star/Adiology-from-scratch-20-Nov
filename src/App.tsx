@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight, FolderOpen
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -39,6 +39,7 @@ import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
+import { LogicalFlowTesting } from './components/LogicalFlowTesting';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
@@ -77,7 +78,8 @@ const App = () => {
     'settings',
     'billing',
     'support',
-    'support-help'
+    'support-help',
+    'logical-flow-testing'
   ]);
 
   // Safe setActiveTab wrapper that validates and redirects to dashboard if invalid
@@ -749,6 +751,14 @@ const App = () => {
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'csv-validator-3', label: 'CSV Validator V3', icon: FileCheck },
+    { 
+      id: 'testing', 
+      label: 'Testing', 
+      icon: TestTube,
+      submenu: [
+        { id: 'logical-flow-testing', label: 'Logical Flow Testing', icon: Code },
+      ]
+    },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -1148,6 +1158,8 @@ const App = () => {
         return <KeywordSavedLists />;
       case 'ads-builder':
         return <AdsBuilder />;
+      case 'logical-flow-testing':
+        return <LogicalFlowTesting />;
       case 'support-help':
         return <SupportHelpCombined />;
       case 'support':
