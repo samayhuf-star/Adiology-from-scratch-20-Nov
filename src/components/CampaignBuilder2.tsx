@@ -38,8 +38,9 @@ import { useAutoSave } from '../hooks/useAutoSave';
 // Campaign Intelligence imports
 import { mapGoalToIntent, type IntentResult } from '../utils/campaignIntelligence/intentClassifier';
 import { extractLandingPageContent, type LandingPageExtractionResult } from '../utils/campaignIntelligence/landingPageExtractor';
-import { getVerticalConfig, getServiceTokens, getKeywordModifiers } from '../utils/campaignIntelligence/verticalTemplates';
+import { getVerticalConfig, getServiceTokens, getKeywordModifiers, getEmergencyModifiers } from '../utils/campaignIntelligence/verticalTemplates';
 import { suggestBidCents, groupKeywordsToAdGroups, IntentId } from '../utils/campaignIntelligence/bidSuggestions';
+import type { MatchType } from '../utils/campaignIntelligence/schemas';
 import { runPolicyChecks } from '../utils/campaignIntelligence/policyChecks';
 import { getDeviceConfig, formatDeviceBidModifiersForCSV } from '../utils/campaignIntelligence/deviceDefaults';
 import { buildTrackingParams, generateUTMParams } from '../utils/campaignIntelligence/tracking';
@@ -1613,9 +1614,22 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   const seedList = seedKeywords.split('\n').filter(k => k.trim());
                   const mockKeywords: any[] = [];
                   
-                  // Expanded variation lists for generating 300-600 keywords
-                  // Call/Lead focused prefixes
+                  // Use vertical templates for keyword expansion
+                  const verticalConfig = getVerticalConfig(selectedVertical);
+                  const serviceTokens = verticalConfig.serviceTokens;
+                  const keywordModifiers = getKeywordModifiers(selectedVertical);
+                  const emergencyModifiers = verticalConfig.emergencyModifiers;
+                  
+                  // Add services from landing page if available
+                  const allServiceTokens = [
+                    ...serviceTokens,
+                    ...(landingPageData?.services || [])
+                  ];
+                  
+                  // Expanded variation lists - use vertical-specific modifiers
                   const prefixes = [
+                    ...keywordModifiers.filter(m => !m.includes('near me')), // Location modifiers go to suffixes
+                    ...emergencyModifiers,
                     'call', 'contact', 'phone', 'reach', 'get', 'find', 'hire', 'book',
                     'best', 'top', 'professional', 'expert', 'certified', 'licensed', 
                     'trusted', 'reliable', 'local', 'nearby', 'fast', 'quick', 'easy',
@@ -1623,8 +1637,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     'get quote', 'request quote', 'schedule', 'book now', 'call now'
                   ];
                   
-                  // Call/Lead focused suffixes
+                  // Call/Lead focused suffixes - include vertical modifiers
                   const suffixes = [
+                    ...keywordModifiers.filter(m => m.includes('near me') || m.includes('services')),
                     'call', 'contact', 'phone', 'call now', 'contact us', 'get quote',
                     'free consultation', 'schedule', 'book', 'appointment', 'near me',
                     'service', 'company', 'provider', 'expert', 'professional',
@@ -1643,7 +1658,26 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     'learn more', 'find out more', 'get help', 'need help', 'want to know'
                   ];
                   
-                  const intents = callLeadIntents; // Use call/lead focused intents
+                  // Use intent-based keywords if intent is classified
+                  let intents = callLeadIntents; // Default
+                  if (intentResult) {
+                    if (intentResult.intentId === IntentId.CALL) {
+                      intents = ['call', 'contact', 'phone', 'call now', 'contact us', 'reach', 'speak with', 'talk to'];
+                    } else if (intentResult.intentId === IntentId.LEAD) {
+                      intents = ['get quote', 'request quote', 'free consultation', 'schedule', 'book', 'appointment'];
+                    } else if (intentResult.intentId === IntentId.TRAFFIC) {
+                      intents = ['learn more', 'find out more', 'get info', 'visit', 'browse', 'explore'];
+                    }
+                  }
+                  
+                  // Add service tokens as additional seeds if landing page has services
+                  if (allServiceTokens.length > 0 && seedList.length < 10) {
+                    allServiceTokens.slice(0, 5).forEach(service => {
+                      if (!seedList.some(s => s.toLowerCase().includes(service.toLowerCase()))) {
+                        seedList.push(service);
+                      }
+                    });
+                  }
                   
                   const locations = [
                     'near me', 'local', 'nearby', 'in my area', 'close to me', 'nearby me',
@@ -1836,7 +1870,42 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     return !negativeList.some(neg => keywordText.includes(neg));
                   });
 
-                  setGeneratedKeywords(finalKeywords);
+                  // Apply bid suggestions to keywords if intent is classified
+                  let keywordsWithBids = finalKeywords;
+                  if (intentResult) {
+                    const baseCPCCents = 2000; // Default $20.00 in cents (adjust based on vertical/geo)
+                    const emergencyMods = getEmergencyModifiers(selectedVertical);
+                    
+                    keywordsWithBids = finalKeywords.map((kw: any) => {
+                      const keywordText = (kw.text || kw.id || '').trim();
+                      const matchType: MatchType = 
+                        kw.type === 'Exact' || keywordText.startsWith('[') ? 'EXACT' :
+                        kw.type === 'Phrase' || keywordText.startsWith('"') ? 'PHRASE' :
+                        'BROAD';
+                      
+                      // Check for emergency modifiers
+                      const hasEmergency = emergencyMods.some(m => 
+                        keywordText.toLowerCase().includes(m.toLowerCase())
+                      );
+                      
+                      const bidResult = suggestBidCents(
+                        baseCPCCents,
+                        intentResult.intentId,
+                        matchType,
+                        hasEmergency ? ['emergency'] : []
+                      );
+                      
+                      return {
+                        ...kw,
+                        suggestedBidCents: bidResult.bid,
+                        suggestedBid: `$${(bidResult.bid / 100).toFixed(2)}`,
+                        bidReason: bidResult.reason,
+                        matchType: matchType,
+                      };
+                    });
+                  }
+
+                  setGeneratedKeywords(keywordsWithBids);
                   
                   // Auto-select all generated keywords by default
                   const allKeywordIds = finalKeywords.map(k => k.text || k.id);
@@ -2094,6 +2163,16 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                             <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
                               {keywordText}
                             </span>
+                            {keyword.suggestedBid && intentResult && (
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge className="bg-green-100 text-green-700 border-green-300 text-xs px-2 py-0.5 font-semibold">
+                                  {keyword.suggestedBid}
+                                </Badge>
+                                <span className="text-xs text-slate-500" title={keyword.bidReason}>
+                                  💡
+                                </span>
+                              </div>
+                            )}
                             {keyword.volume && (
                               <Badge className={`text-xs px-2 py-0.5 font-semibold border ${volumeColor} flex-shrink-0`}>
                                 {keyword.volume}
@@ -2506,6 +2585,23 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
       const baseAds: any[] = [];
       const mainKeyword = selectedKeywords[0] || 'your service';
+      
+      // Use vertical templates if available
+      const verticalConfig = getVerticalConfig(selectedVertical);
+      const trustPhrases = verticalConfig.trustPhrases;
+      const emergencyModifiers = verticalConfig.emergencyModifiers;
+      const adTemplates = verticalConfig.adTemplates || [];
+      
+      // Get ad template for current intent
+      let templateToUse = null;
+      if (intentResult && adTemplates.length > 0) {
+        const templateType = 
+          intentResult.intentId === IntentId.CALL ? 'call' :
+          intentResult.intentId === IntentId.LEAD ? 'lead' :
+          intentResult.intentId === IntentId.TRAFFIC ? 'traffic' :
+          'purchase';
+        templateToUse = adTemplates.find(t => t.type === templateType) || adTemplates[0];
+      }
 
       switch (structureType) {
         case 'alpha_beta':
@@ -2643,8 +2739,41 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         });
       });
 
-      setGeneratedAds(allAds);
-  }, [structureType, selectedKeywords.length, url, selectedIntents, getDynamicAdGroups]);
+      // Apply tracking parameters (UTM) to final URLs
+      const adsWithTracking = allAds.map(ad => {
+        const utmParams = generateUTMParams({
+          campaignId: campaignName,
+          adGroupId: ad.adGroup || '',
+          keyword: selectedKeywords[0] || '',
+          source: 'google',
+          medium: 'cpc',
+        });
+        
+        // Convert UTM params to query string
+        const utmQueryString = Object.entries(utmParams)
+          .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+          .join('&');
+        
+        // Add UTM params to final URL
+        const finalUrlWithTracking = ad.finalUrl 
+          ? `${ad.finalUrl}${ad.finalUrl.includes('?') ? '&' : '?'}${utmQueryString}`
+          : ad.finalUrl;
+        
+        return {
+          ...ad,
+          finalUrl: finalUrlWithTracking,
+          // Store intelligence metadata for CSV export
+          intentId: intentResult?.intentId || '',
+          persona: intentResult?.persona || '',
+          suggestedBidReason: ad.suggestedBidCents ? `Bid: $${(ad.suggestedBidCents / 100).toFixed(2)}` : '',
+          dniPhone: landingPageData?.phones[0] || '',
+          locale: 'en-US', // TODO: Get from geo targeting
+          policyStatus: ad.policyStatus || 'ENABLED',
+        };
+      });
+      
+      setGeneratedAds(adsWithTracking);
+  }, [structureType, selectedKeywords.length, url, selectedIntents, getDynamicAdGroups, selectedVertical, intentResult, landingPageData, campaignName]);
 
   // Generate ads when step 3 is reached
   useEffect(() => {
