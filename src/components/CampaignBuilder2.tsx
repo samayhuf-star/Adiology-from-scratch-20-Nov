@@ -509,9 +509,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [activeTab, setActiveTab] = useState<'builder' | 'saved'>('builder');
   const [savedCampaigns, setSavedCampaigns] = useState<any[]>([]);
   const [currentCampaignId, setCurrentCampaignId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Wizard State
   const [step, setStep] = useState(1);
+  
+  // Initialize component
+  useEffect(() => {
+    setIsInitialized(true);
+  }, []);
   const [structureType, setStructureType] = useState<StructureType | null>(null);
   
   // Generate default campaign name with date and time
@@ -5466,6 +5472,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Render content based on active tab
   const renderContent = () => {
+    if (!isInitialized) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/30 via-purple-50/30 to-indigo-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading Campaign Builder...</p>
+          </div>
+        </div>
+      );
+    }
+    
     if (activeTab === 'saved') {
       return renderSavedCampaigns();
     }
