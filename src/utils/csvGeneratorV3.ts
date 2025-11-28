@@ -574,49 +574,121 @@ export function validateCSVBeforeExport(structure: CampaignStructure): CSVValida
  * Helper function for converting presets to V3 format
  */
 export function presetToCampaignStructure(preset: any): CampaignStructure {
-  const adGroups: AdGroup[] = preset.ad_groups.map((adGroup: any) => {
-    // Convert keywords with match types
-    const keywords: string[] = [];
-    const hasExact = preset.match_distribution?.exact > 0;
-    const hasPhrase = preset.match_distribution?.phrase > 0;
-    const hasBroad = preset.match_distribution?.broad_mod > 0;
+  // Clean and validate final URL
+  let finalUrl = preset.final_url || preset.landing_page_url || 'https://www.example.com';
+  if (!finalUrl.match(/^https?:\/\//i)) {
+    finalUrl = 'https://' + finalUrl;
+  }
+  
+  // Clean keywords (remove existing brackets/quotes)
+  const cleanKeywords = (preset.keywords || []).map((kw: string) => {
+    return cleanKeywordText(kw);
+  });
+  
+  // Determine match type distribution
+  const hasExact = preset.match_distribution?.exact > 0;
+  const hasPhrase = preset.match_distribution?.phrase > 0;
+  const hasBroad = preset.match_distribution?.broad_mod > 0;
+  
+  // Structure determines keyword distribution
+  const structure = preset.structure || 'SKAG';
+  const isSKAG = structure === 'SKAG';
+  
+  const adGroups: AdGroup[] = preset.ad_groups.map((adGroup: any, adGroupIdx: number) => {
+    // Distribute keywords based on structure
+    let groupKeywords: string[] = [];
     
-    preset.keywords.forEach((keyword: string) => {
-      if (hasExact) keywords.push(`[${keyword}]`);
-      if (hasPhrase) keywords.push(`"${keyword}"`);
-      if (hasBroad) keywords.push(keyword);
+    if (isSKAG) {
+      // SKAG: One keyword per ad group (use ad group name as keyword if available, otherwise distribute)
+      const keywordIndex = adGroupIdx < cleanKeywords.length ? adGroupIdx : adGroupIdx % cleanKeywords.length;
+      const baseKeyword = cleanKeywords[keywordIndex] || adGroup.name || 'keyword';
+      
+      // Apply match types to this single keyword
+      if (hasExact) groupKeywords.push(`[${baseKeyword}]`);
+      if (hasPhrase) groupKeywords.push(`"${baseKeyword}"`);
+      if (hasBroad) groupKeywords.push(baseKeyword);
+    } else {
+      // STAG/Other: Distribute keywords across ad groups
+      const keywordsPerGroup = Math.ceil(cleanKeywords.length / preset.ad_groups.length);
+      const startIdx = adGroupIdx * keywordsPerGroup;
+      const endIdx = Math.min(startIdx + keywordsPerGroup, cleanKeywords.length);
+      const assignedKeywords = cleanKeywords.slice(startIdx, endIdx);
+      
+      // Apply match types to each keyword
+      assignedKeywords.forEach((keyword: string) => {
+        if (hasExact) groupKeywords.push(`[${keyword}]`);
+        if (hasPhrase) groupKeywords.push(`"${keyword}"`);
+        if (hasBroad) groupKeywords.push(keyword);
+      });
+    }
+    
+    // Convert ads - ensure all required fields are present
+    const ads: Ad[] = (preset.ads || []).map((ad: any) => {
+      // Ensure headline1 and description1 are present (required for RSA)
+      const headline1 = (ad.headline1 || preset.ads?.[0]?.headline1 || 'Your Service Here').trim();
+      const description1 = (ad.description1 || preset.ads?.[0]?.description1 || 'Get the best service today.').trim();
+      
+      // Validate headline and description lengths
+      const validatedHeadline1 = headline1.length > 30 ? headline1.substring(0, 30) : headline1;
+      const validatedDescription1 = description1.length > 90 ? description1.substring(0, 90) : description1;
+      
+      return {
+        type: 'rsa' as const,
+        headline1: validatedHeadline1 || 'Your Service Here',
+        headline2: (ad.headline2 || preset.ads?.[0]?.headline2 || '').trim(),
+        headline3: (ad.headline3 || preset.ads?.[0]?.headline3 || '').trim(),
+        headline4: (ad.headline4 || preset.ads?.[0]?.headline4 || '').trim(),
+        headline5: (ad.headline5 || preset.ads?.[0]?.headline5 || '').trim(),
+        description1: validatedDescription1 || 'Get the best service today.',
+        description2: (ad.description2 || preset.ads?.[0]?.description2 || '').trim(),
+        final_url: finalUrl,
+        path1: (ad.path1 || '').trim(),
+        path2: (ad.path2 || '').trim()
+      };
     });
     
-    // Convert ads
-    const ads: Ad[] = preset.ads.map((ad: any) => ({
-      type: 'rsa' as const,
-      headline1: ad.headline1 || '',
-      headline2: ad.headline2 || '',
-      headline3: ad.headline3 || '',
-      headline4: ad.headline4 || '',
-      headline5: ad.headline5 || '',
-      description1: ad.description1 || '',
-      description2: ad.description2 || '',
-      final_url: preset.final_url || 'https://www.example.com',
-      path1: ad.path1 || '',
-      path2: ad.path2 || ''
-    }));
+    // Ensure at least one ad exists
+    if (ads.length === 0) {
+      ads.push({
+        type: 'rsa' as const,
+        headline1: 'Your Service Here',
+        headline2: '',
+        headline3: '',
+        headline4: '',
+        headline5: '',
+        description1: 'Get the best service today.',
+        description2: '',
+        final_url: finalUrl,
+        path1: '',
+        path2: ''
+      });
+    }
     
-    // Convert negative keywords
-    const negative_keywords = preset.negative_keywords || [];
+    // Convert negative keywords - ensure proper formatting
+    const negative_keywords = (preset.negative_keywords || []).map((negKw: string) => {
+      const clean = cleanKeywordText(negKw);
+      // Add negative prefix if not present
+      if (!clean.startsWith('-')) {
+        return `-${clean}`;
+      }
+      return clean;
+    });
     
     return {
-      adgroup_name: adGroup.name,
-      keywords,
+      adgroup_name: adGroup.name || `Ad Group ${adGroupIdx + 1}`,
+      keywords: groupKeywords,
       match_types: [],
       ads,
       negative_keywords
     };
   });
   
+  // Ensure campaign name is present
+  const campaignName = (preset.campaign_name || preset.title || 'Campaign').trim();
+  
   return {
     campaigns: [{
-      campaign_name: preset.campaign_name || preset.title,
+      campaign_name: campaignName,
       adgroups: adGroups
     }]
   };
