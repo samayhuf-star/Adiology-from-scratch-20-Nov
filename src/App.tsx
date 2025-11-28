@@ -780,7 +780,7 @@ const App = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { 
       id: 'campaign-builder', 
-      label: 'Campaign Builder', 
+      label: 'Campaigns', 
       icon: Sparkles,
       submenu: [
         { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
@@ -788,10 +788,10 @@ const App = () => {
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
-    { id: 'website-templates', label: 'Website Templates', icon: Layout },
+    { id: 'website-templates', label: 'Websites', icon: Layout },
     { 
       id: 'keyword-planner', 
-      label: 'Keyword Planner', 
+      label: 'Keywords', 
       icon: Lightbulb,
       submenu: [
         { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
@@ -801,7 +801,7 @@ const App = () => {
       ]
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
-    { id: 'csv-validator-3', label: 'CSV Validator V3', icon: FileCheck },
+    { id: 'csv-validator-3', label: 'CSV Validator', icon: FileCheck },
     { 
       id: 'testing', 
       label: 'Testing', 

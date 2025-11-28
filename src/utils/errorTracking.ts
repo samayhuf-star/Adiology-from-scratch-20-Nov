@@ -67,13 +67,24 @@ class ErrorTracker {
     const errorObj = typeof error === 'string' ? new Error(error) : error;
     const timestamp = new Date().toISOString();
 
-    // Log to console
-    console.error('🚨 Error Captured:', {
-      message: errorObj.message,
-      stack: errorObj.stack,
-      context,
-      timestamp,
-    });
+    // Filter out expected/benign errors that shouldn't be logged
+    const errorMessage = errorObj.message?.toLowerCase() || '';
+    const isExpectedError = 
+      errorMessage.includes('request failed') && context?.module === 'api' ||
+      errorMessage.includes('network error') ||
+      errorMessage.includes('fetch') ||
+      errorMessage.includes('schema cache') ||
+      errorMessage.includes('could not find the table');
+
+    // Only log unexpected errors
+    if (!isExpectedError) {
+      console.error('🚨 Error Captured:', {
+        message: errorObj.message,
+        stack: errorObj.stack,
+        context,
+        timestamp,
+      });
+    }
 
     // Use production logger (if available)
     try {

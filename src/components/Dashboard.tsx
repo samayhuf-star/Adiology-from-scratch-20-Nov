@@ -12,6 +12,7 @@ import { supabase } from '../utils/supabase/client';
 import { historyService } from '../utils/historyService';
 import { getUserPublishedWebsites } from '../utils/publishedWebsites';
 import { getUserPreferences, saveUserPreferences, initializeUserPreferences } from '../utils/userPreferences';
+import { COLOR_COMBINATIONS, ColorCombination } from '../utils/colorCombinations';
 
 interface DashboardProps {
   user: any;
@@ -56,6 +57,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   const [preferences, setPreferences] = useState(getUserPreferences());
   const [showColorThemeMenu, setShowColorThemeMenu] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const screenSize = useScreenSize();
 
   useEffect(() => {
     fetchDashboardData();
@@ -115,14 +117,25 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       setShowColorPicker(true);
       setShowColorThemeMenu(false);
     } else {
-      setPreferences({ ...preferences, colorTheme: theme, customColor: undefined });
+      setPreferences({ ...preferences, colorTheme: theme, customColor: undefined, colorCombination: undefined });
       setShowColorThemeMenu(false);
       setShowColorPicker(false);
     }
   };
 
+  const handleColorCombinationChange = (combinationId: string) => {
+    setPreferences({ 
+      ...preferences, 
+      colorTheme: combinationId as any, 
+      colorCombination: combinationId,
+      customColor: undefined 
+    });
+    setShowColorThemeMenu(false);
+    setShowColorPicker(false);
+  };
+
   const handleCustomColorChange = (color: string) => {
-    setPreferences({ ...preferences, colorTheme: 'custom', customColor: color });
+    setPreferences({ ...preferences, colorTheme: 'custom', customColor: color, colorCombination: undefined });
     setShowColorPicker(false);
     setShowColorThemeMenu(false);
   };
@@ -470,55 +483,78 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
             >
               <Palette className="w-4 h-4" />
               <span className="capitalize text-xs">
-                {preferences.colorTheme === 'custom' 
-                  ? `Custom`
-                  : preferences.colorTheme}
+                {preferences.colorCombination 
+                  ? COLOR_COMBINATIONS.find(c => c.id === preferences.colorCombination)?.name || 'Custom'
+                  : preferences.colorTheme === 'custom' 
+                    ? 'Custom'
+                    : preferences.colorTheme}
               </span>
             </Button>
             {showColorThemeMenu && (
-              <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[200px]">
-                <button
-                  onClick={() => handleColorThemeChange('default')}
-                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 ${
-                    preferences.colorTheme === 'default' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700'
-                  }`}
-                >
-                  <div className="w-4 h-4 rounded border-2 border-indigo-500 bg-indigo-500"></div>
-                  <span>Default (Indigo/Purple)</span>
-                </button>
-                <button
-                  onClick={() => handleColorThemeChange('blue')}
-                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 ${
-                    preferences.colorTheme === 'blue' ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
-                  }`}
-                >
-                  <div className="w-4 h-4 rounded border-2 border-blue-500 bg-blue-500"></div>
-                  <span>Blue Theme</span>
-                </button>
-                <button
-                  onClick={() => handleColorThemeChange('green')}
-                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 ${
-                    preferences.colorTheme === 'green' ? 'bg-green-50 text-green-700' : 'text-slate-700'
-                  }`}
-                >
-                  <div className="w-4 h-4 rounded border-2 border-green-500 bg-green-500"></div>
-                  <span>Green Theme</span>
-                </button>
-                <div className="border-t border-slate-200 my-1"></div>
+              <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[320px] max-w-[400px] p-3">
+                <div className="text-xs font-semibold text-slate-500 uppercase mb-3 px-2">Color Combinations</div>
+                <div className="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto">
+                  {COLOR_COMBINATIONS.map((combo) => {
+                    const isSelected = preferences.colorCombination === combo.id || 
+                                     (preferences.colorTheme === combo.id);
+                    return (
+                      <button
+                        key={combo.id}
+                        onClick={() => handleColorCombinationChange(combo.id)}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-all flex items-center gap-3 border-2 ${
+                          isSelected 
+                            ? 'bg-slate-50 border-slate-300 shadow-sm' 
+                            : 'border-transparent hover:border-slate-200'
+                        }`}
+                      >
+                        <div className="flex gap-1 shrink-0">
+                          <div 
+                            className="w-6 h-6 rounded border border-slate-300" 
+                            style={{ backgroundColor: combo.primary }}
+                          ></div>
+                          <div 
+                            className="w-6 h-6 rounded border border-slate-300" 
+                            style={{ backgroundColor: combo.secondary }}
+                          ></div>
+                          {combo.tertiary && (
+                            <div 
+                              className="w-6 h-6 rounded border border-slate-300" 
+                              style={{ backgroundColor: combo.tertiary }}
+                            ></div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-medium text-sm ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
+                            {combo.name}
+                          </div>
+                          <div className="text-xs text-slate-500 truncate">{combo.description}</div>
+                        </div>
+                        {isSelected && (
+                          <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="border-t border-slate-200 my-2"></div>
                 <button
                   onClick={() => handleColorThemeChange('custom')}
-                  className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex items-center gap-2 rounded-b-lg ${
+                  className={`w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-3 ${
                     preferences.colorTheme === 'custom' ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
                   }`}
                 >
                   <div 
-                    className="w-4 h-4 rounded border-2 border-slate-300" 
+                    className="w-12 h-6 rounded border-2 border-slate-300 flex gap-0.5 p-0.5" 
                     style={{ 
                       backgroundColor: preferences.customColor || '#6366f1',
-                      borderColor: preferences.customColor || '#6366f1'
                     }}
-                  ></div>
-                  <span>Custom Color</span>
+                  >
+                    <div 
+                      className="flex-1 rounded" 
+                      style={{ backgroundColor: preferences.customColor || '#6366f1' }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium">Custom Color</span>
                 </button>
               </div>
             )}
@@ -611,18 +647,18 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
       {/* My Resources */}
       <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
-          <FolderOpen className="w-6 h-6 text-indigo-600" />
+        <h2 className={`${getResponsiveFontSize(screenSize, 'lg')} font-semibold text-slate-800 flex items-center gap-3`}>
+          <FolderOpen className={`${getResponsiveIconSize(screenSize)} text-indigo-600`} />
           My Resources
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className={`grid ${getResponsiveGridCols(screenSize)} ${getResponsiveGap(screenSize)}`}>
           {/* My Campaigns */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-8">
+          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                  <Layers className="w-7 h-7 text-white" />
+                <div className={`${screenSize.isMobile ? 'w-10 h-10' : screenSize.isTablet ? 'w-12 h-12' : 'w-14 h-14'} rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg`}>
+                  <Layers className={`${getResponsiveIconSize(screenSize)} text-white`} />
                 </div>
                 <Badge className="bg-purple-100 text-purple-700 border-purple-300 px-3 py-1">
                   Total
@@ -638,7 +674,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           </Card>
 
           {/* My Presets */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-8">
+          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
@@ -659,7 +695,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           </Card>
 
           {/* My Domains */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-8">
+          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">

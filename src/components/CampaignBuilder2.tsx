@@ -35,6 +35,15 @@ import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/
 import { projectId } from '../utils/supabase/info';
 import { historyService } from '../utils/historyService';
 import { useAutoSave } from '../hooks/useAutoSave';
+// Campaign Intelligence imports
+import { mapGoalToIntent, type IntentResult } from '../utils/campaignIntelligence/intentClassifier';
+import { extractLandingPageContent, type LandingPageExtractionResult } from '../utils/campaignIntelligence/landingPageExtractor';
+import { getVerticalConfig, getServiceTokens, getKeywordModifiers } from '../utils/campaignIntelligence/verticalTemplates';
+import { suggestBidCents, groupKeywordsToAdGroups, IntentId } from '../utils/campaignIntelligence/bidSuggestions';
+import { runPolicyChecks } from '../utils/campaignIntelligence/policyChecks';
+import { getDeviceConfig, formatDeviceBidModifiersForCSV } from '../utils/campaignIntelligence/deviceDefaults';
+import { buildTrackingParams, generateUTMParams } from '../utils/campaignIntelligence/tracking';
+import type { LandingExtraction } from '../utils/campaignIntelligence/schemas';
 
 // Geo Targeting Constants
 const COUNTRIES = [
@@ -548,6 +557,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [url, setUrl] = useState(DEFAULT_URL);
   const [urlError, setUrlError] = useState<string>('');
   
+  // Campaign Intelligence State
+  const [userGoal, setUserGoal] = useState<string>('');
+  const [selectedVertical, setSelectedVertical] = useState<string>('general');
+  const [intentResult, setIntentResult] = useState<IntentResult | null>(null);
+  const [landingPageData, setLandingPageData] = useState<LandingPageExtractionResult | null>(null);
+  const [isExtractingLandingPage, setIsExtractingLandingPage] = useState(false);
+  
   // Step 2: Keywords
   const [seedKeywords, setSeedKeywords] = useState(DEFAULT_SEED_KEYWORDS);
   const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
@@ -975,41 +991,223 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 <Link2 className="w-5 h-5 text-indigo-600" />
                 Landing Page URL
               </Label>
-              <Input
-                id="landing-url"
-                value={url}
-                onChange={(e) => {
-                  const newUrl = e.target.value;
-                  setUrl(newUrl);
-                  // Validate URL format
-                  if (newUrl.trim() && !newUrl.match(/^https?:\/\/.+/i)) {
-                    setUrlError('Please enter a valid URL starting with http:// or https://');
-                  } else {
-                    setUrlError('');
-                  }
-                }}
-                onBlur={(e) => {
-                  const urlValue = e.target.value.trim();
-                  if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
-                    setUrlError('Please enter a valid URL starting with http:// or https://');
-                  } else {
-                    setUrlError('');
-                  }
-                }}
-                placeholder="https://example.com"
-                className={`h-12 text-base border-2 rounded-xl transition-all ${
-                  urlError 
-                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200' 
-                    : 'border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
-                }`}
-              />
+              <div className="relative">
+                <Input
+                  id="landing-url"
+                  value={url}
+                  onChange={(e) => {
+                    const newUrl = e.target.value;
+                    setUrl(newUrl);
+                    // Validate URL format
+                    if (newUrl.trim() && !newUrl.match(/^https?:\/\/.+/i)) {
+                      setUrlError('Please enter a valid URL starting with http:// or https://');
+                    } else {
+                      setUrlError('');
+                    }
+                  }}
+                  onBlur={async (e) => {
+                    const urlValue = e.target.value.trim();
+                    if (urlValue && !urlValue.match(/^https?:\/\/.+/i)) {
+                      setUrlError('Please enter a valid URL starting with http:// or https://');
+                    } else {
+                      setUrlError('');
+                      // Extract landing page content on valid URL
+                      if (urlValue && urlValue.match(/^https?:\/\/.+/i)) {
+                        setIsExtractingLandingPage(true);
+                        try {
+                          const extracted = await extractLandingPageContent(urlValue);
+                          setLandingPageData(extracted);
+                          // Re-classify intent if goal is set
+                          if (userGoal && selectedVertical) {
+                            const landingExtraction: LandingExtraction | null = {
+                              domain: extracted.domain,
+                              url: urlValue,
+                              title: extracted.title || undefined,
+                              h1: extracted.h1 || undefined,
+                              description: extracted.metaDescription || undefined,
+                              services: extracted.services,
+                              phones: extracted.phones,
+                              emails: extracted.emails,
+                              hours: extracted.hours || undefined,
+                              addresses: extracted.addresses,
+                              structuredData: extracted.schemas,
+                              tokens: extracted.page_text_tokens,
+                            };
+                            const intent = mapGoalToIntent(
+                              userGoal,
+                              landingExtraction,
+                              extracted.phones[0]
+                            );
+                            setIntentResult(intent);
+                          }
+                        } catch (error) {
+                          console.warn('Landing page extraction failed:', error);
+                        } finally {
+                          setIsExtractingLandingPage(false);
+                        }
+                      }
+                    }
+                  }}
+                  placeholder="https://example.com"
+                  className={`h-12 text-base border-2 rounded-xl transition-all ${
+                    urlError 
+                      ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200' 
+                      : 'border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                  }`}
+                />
+                {isExtractingLandingPage && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <RefreshCw className="w-4 h-4 text-indigo-600 animate-spin" />
+                  </div>
+                )}
+              </div>
               {urlError && (
                 <p className="mt-2 text-sm text-red-600 flex items-center gap-2 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {urlError}
                 </p>
               )}
+              {landingPageData && !urlError && (
+                <div className="mt-2 text-sm text-green-600 flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  Extracted: {landingPageData.services.length} services, {landingPageData.phones.length} phone(s)
+                </div>
+              )}
             </div>
+            
+            {/* Goal & Vertical Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="campaign-goal" className="text-base font-bold mb-3 block text-indigo-900 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-indigo-600" />
+                  Campaign Goal
+                </Label>
+                <Select
+                  value={userGoal}
+                  onValueChange={(value) => {
+                    setUserGoal(value);
+                    // Classify intent when goal changes
+                    if (value && selectedVertical) {
+                      const landingExtraction: LandingExtraction | null = landingPageData ? {
+                        domain: landingPageData.domain,
+                        url: url,
+                        title: landingPageData.title || undefined,
+                        h1: landingPageData.h1 || undefined,
+                        description: landingPageData.metaDescription || undefined,
+                        services: landingPageData.services,
+                        phones: landingPageData.phones,
+                        emails: landingPageData.emails,
+                        hours: landingPageData.hours || undefined,
+                        addresses: landingPageData.addresses,
+                        structuredData: landingPageData.schemas,
+                        tokens: landingPageData.page_text_tokens,
+                      } : null;
+                      
+                      const intent = mapGoalToIntent(
+                        value,
+                        landingExtraction,
+                        landingPageData?.phones[0]
+                      );
+                      setIntentResult(intent);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-12 text-base border-2 border-indigo-200 focus:border-indigo-500">
+                    <SelectValue placeholder="Select campaign goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="calls">Get Phone Calls</SelectItem>
+                    <SelectItem value="leads">Generate Leads</SelectItem>
+                    <SelectItem value="traffic">Drive Website Traffic</SelectItem>
+                    <SelectItem value="purchases">Drive Purchases</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="campaign-vertical" className="text-base font-bold mb-3 block text-indigo-900 flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-indigo-600" />
+                  Industry/Vertical
+                </Label>
+                <Select
+                  value={selectedVertical}
+                  onValueChange={(value) => {
+                    setSelectedVertical(value);
+                    // Re-classify intent when vertical changes
+                    if (userGoal && value) {
+                      const landingExtraction: LandingExtraction | null = landingPageData ? {
+                        domain: landingPageData.domain,
+                        url: url,
+                        title: landingPageData.title || undefined,
+                        h1: landingPageData.h1 || undefined,
+                        description: landingPageData.metaDescription || undefined,
+                        services: landingPageData.services,
+                        phones: landingPageData.phones,
+                        emails: landingPageData.emails,
+                        hours: landingPageData.hours || undefined,
+                        addresses: landingPageData.addresses,
+                        structuredData: landingPageData.schemas,
+                        tokens: landingPageData.page_text_tokens,
+                      } : null;
+                      
+                      const intent = mapGoalToIntent(
+                        userGoal,
+                        landingExtraction,
+                        landingPageData?.phones[0]
+                      );
+                      setIntentResult(intent);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-12 text-base border-2 border-indigo-200 focus:border-indigo-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="electrician">Electrician</SelectItem>
+                    <SelectItem value="plumber">Plumber</SelectItem>
+                    <SelectItem value="hvac">HVAC</SelectItem>
+                    <SelectItem value="lawyer">Lawyer</SelectItem>
+                    <SelectItem value="dentist">Dentist</SelectItem>
+                    <SelectItem value="doctor">Doctor</SelectItem>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="auto_repair">Auto Repair</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Intent Classification Result */}
+            {intentResult && (
+              <div className="mt-4 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-200">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
+                    <Brain className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="bg-indigo-100 text-indigo-700 border-indigo-300">
+                        {intentResult.intentLabel}
+                      </Badge>
+                      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300">
+                        {Math.round(intentResult.confidence * 100)}% confidence
+                      </Badge>
+                      {intentResult.persona && (
+                        <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                          {intentResult.persona}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-600 mb-2">
+                      Recommended device: <strong>{intentResult.recommendedDevice}</strong>
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      Primary KPIs: {intentResult.primaryKPIs.join(', ')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -6,8 +6,9 @@
 export interface UserPreferences {
   spacing: number; // Spacing multiplier (0.75, 1.0, 1.25, 1.5, 1.75, 2.0)
   fontSize: number; // Font size multiplier (0.875, 1.0, 1.125, 1.25, 1.375, 1.5)
-  colorTheme: 'default' | 'blue' | 'green' | 'custom'; // Color theme option
+  colorTheme: 'default' | 'blue' | 'green' | 'custom' | 'ocean-breeze' | 'sunset-glow' | 'forest-canopy' | 'royal-purple' | 'rose-gold' | 'midnight-blue' | 'tropical-paradise'; // Color theme option
   customColor?: string; // Custom color hex value (e.g., '#6366f1')
+  colorCombination?: string; // Color combination ID
   sidebarAutoClose: boolean; // Auto-close sidebar after selection (default: true)
 }
 
@@ -74,9 +75,21 @@ export function applyUserPreferences(prefs: UserPreferences): void {
     // Generate complementary colors for gradients
     const complementaryColor = generateComplementaryColor(prefs.customColor);
     root.style.setProperty('--custom-secondary-color', complementaryColor);
+  } else if (prefs.colorCombination) {
+    // Apply color combination
+    const { getColorCombination } = require('./colorCombinations');
+    const combo = getColorCombination(prefs.colorCombination);
+    if (combo) {
+      root.style.setProperty('--custom-primary-color', combo.primary);
+      root.style.setProperty('--custom-secondary-color', combo.secondary);
+      if (combo.tertiary) {
+        root.style.setProperty('--custom-tertiary-color', combo.tertiary);
+      }
+    }
   } else {
     root.style.removeProperty('--custom-primary-color');
     root.style.removeProperty('--custom-secondary-color');
+    root.style.removeProperty('--custom-tertiary-color');
   }
   
   // Remove other theme classes
