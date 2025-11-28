@@ -2454,4 +2454,75 @@ app.post("/stripe/webhook", async (c) => {
   }
 });
 
+// Send feedback email endpoint
+app.post("/send-feedback-email", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { to, subject, body: emailBody, feedbackType, rating, userEmail } = body;
+
+    if (!to || !subject || !emailBody) {
+      return c.json({ error: "Missing required fields: to, subject, body" }, 400);
+    }
+
+    // Use a simple email service (you can replace this with SendGrid, Resend, etc.)
+    // For now, we'll use a basic fetch to an email API
+    // Note: You'll need to configure an email service like Resend, SendGrid, or similar
+    
+    // Example using a generic email service (replace with your actual email service)
+    const emailServiceUrl = Deno.env.get("EMAIL_SERVICE_URL");
+    const emailApiKey = Deno.env.get("EMAIL_API_KEY");
+
+    if (!emailServiceUrl || !emailApiKey) {
+      // If no email service configured, just log it
+      console.log("Feedback Email (Email service not configured):");
+      console.log("To:", to);
+      console.log("Subject:", subject);
+      console.log("Body:", emailBody);
+      console.log("Type:", feedbackType);
+      console.log("Rating:", rating);
+      console.log("User:", userEmail);
+      
+      // Return success even without email service (feedback is saved to DB)
+      return c.json({ 
+        success: true, 
+        message: "Feedback saved. Email service not configured - check logs for details." 
+      });
+    }
+
+    // Send email via configured service
+    const emailResponse = await fetch(emailServiceUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${emailApiKey}`,
+      },
+      body: JSON.stringify({
+        to,
+        subject,
+        html: emailBody.replace(/\n/g, "<br>"),
+        text: emailBody,
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      console.error("Email service error:", errorText);
+      // Still return success since feedback is saved to DB
+      return c.json({ 
+        success: true, 
+        message: "Feedback saved. Email sending failed - check logs." 
+      });
+    }
+
+    return c.json({ success: true, message: "Feedback saved and email sent" });
+  } catch (err) {
+    console.error("Send feedback email error:", err);
+    // Return success since feedback is saved to DB even if email fails
+    return c.json({ 
+      success: true, 
+      message: "Feedback saved. Email error - check logs." 
+    });
+  }
+});
+
 Deno.serve(app.fetch);

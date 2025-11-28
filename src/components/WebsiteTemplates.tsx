@@ -63,6 +63,7 @@ const defaultTemplate: Template = {
         ctaText: 'Get Started Today',
         ctaPhone: '1-800-123-4567',
         backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop',
+        hours: 'Mon-Sat: 7AM-6PM'
       }
     },
     {
@@ -169,161 +170,21 @@ const defaultTemplate: Template = {
       }
     },
     {
-      id: 'privacy-1',
-      type: 'privacy',
-      title: 'Privacy Policy',
-      content: {
-        lastUpdated: new Date().toISOString().split('T')[0],
-        content: `
-# Privacy Policy
-
-Last Updated: ${new Date().toISOString().split('T')[0]}
-
-## Introduction
-We value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your data.
-
-## Information We Collect
-- **Contact Information**: Name, email address, phone number
-- **Usage Data**: How you interact with our website
-- **Technical Data**: IP address, browser type, device information
-- **Communication Data**: Records of your communications with us
-
-## How We Use Your Information
-- To provide and improve our services
-- To respond to your inquiries and requests
-- To send important updates and notifications
-- To comply with legal obligations
-- To detect and prevent fraud
-
-## Data Security
-We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
-
-## Third-Party Services
-We may use third-party services for analytics and advertising:
-- Google Analytics for website analytics
-- Google Ads for advertising
-- Payment processors for secure transactions
-
-## Your Rights
-You have the right to:
-- Access your personal data
-- Request correction of inaccurate data
-- Request deletion of your data
-- Opt-out of marketing communications
-- Lodge a complaint with supervisory authorities
-
-## Cookies
-We use cookies to enhance your browsing experience. You can control cookie preferences through your browser settings.
-
-## Data Retention
-We retain your personal information only as long as necessary for the purposes outlined in this policy or as required by law.
-
-## Children's Privacy
-Our services are not directed to children under 13. We do not knowingly collect information from children.
-
-## Changes to This Policy
-We may update this Privacy Policy periodically. We will notify you of significant changes via email or website notice.
-
-## Contact Us
-If you have questions about this Privacy Policy, please contact us:
-- Email: privacy@yourcompany.com
-- Phone: 1-800-123-4567
-- Address: 123 Business St, City, State 12345
-        `
-      }
-    },
-    {
-      id: 'terms-1',
-      type: 'terms',
-      title: 'Terms of Service',
-      content: {
-        lastUpdated: new Date().toISOString().split('T')[0],
-        content: `
-# Terms of Service
-
-Last Updated: ${new Date().toISOString().split('T')[0]}
-
-## Agreement to Terms
-By accessing or using our services, you agree to be bound by these Terms of Service. If you disagree with any part of these terms, you may not access our services.
-
-## Service Description
-We provide professional services as described on our website. Service details, pricing, and availability are subject to change without notice.
-
-## User Obligations
-You agree to:
-- Provide accurate and complete information
-- Maintain the confidentiality of your account
-- Use our services in compliance with applicable laws
-- Not engage in fraudulent or harmful activities
-- Not misuse or abuse our services
-
-## Payment Terms
-- All prices are in USD unless otherwise stated
-- Payment is due upon completion of services or as agreed
-- We accept major credit cards and other payment methods
-- Refunds are handled on a case-by-case basis
-
-## Service Guarantee
-We stand behind our services with a satisfaction guarantee. If you're not satisfied, contact us within 30 days for resolution.
-
-## Limitation of Liability
-To the fullest extent permitted by law, we shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of our services.
-
-## Intellectual Property
-All content on this website, including text, graphics, logos, and software, is our property and protected by copyright and trademark laws.
-
-## Disclaimer of Warranties
-Our services are provided "as is" without warranties of any kind, either express or implied. We do not warrant that services will be uninterrupted or error-free.
-
-## Indemnification
-You agree to indemnify and hold us harmless from any claims, damages, or expenses arising from your use of our services or violation of these terms.
-
-## Termination
-We reserve the right to terminate or suspend access to our services immediately, without prior notice, for any violation of these Terms.
-
-## Governing Law
-These Terms are governed by the laws of [Your State/Country], without regard to conflict of law principles.
-
-## Dispute Resolution
-Any disputes arising from these Terms will be resolved through binding arbitration in accordance with [Arbitration Rules].
-
-## Severability
-If any provision of these Terms is found to be unenforceable, the remaining provisions will remain in full effect.
-
-## Entire Agreement
-These Terms constitute the entire agreement between you and us regarding our services.
-
-## Contact Information
-For questions about these Terms, contact us:
-- Email: legal@yourcompany.com
-- Phone: 1-800-123-4567
-- Address: 123 Business St, City, State 12345
-        `
-      }
-    },
-    {
       id: 'footer-1',
       type: 'footer',
       title: 'Footer',
       content: {
-        companyName: 'Your Company Name',
-        tagline: 'Professional Services You Can Trust',
+        companyName: 'Professional Services',
+        tagline: 'Your trusted partner for excellence',
         address: '123 Business Street, City, State 12345',
         phone: '1-800-123-4567',
         email: 'info@yourcompany.com',
-        socialLinks: {
-          facebook: 'https://facebook.com',
-          twitter: 'https://twitter.com',
-          linkedin: 'https://linkedin.com',
-          instagram: 'https://instagram.com'
-        },
         links: [
           { text: 'Privacy Policy', href: '#privacy' },
           { text: 'Terms of Service', href: '#terms' },
-          { text: 'Contact Us', href: '#contact' },
-          { text: 'About Us', href: '#about' }
+          { text: 'Cookie Policy', href: '#cookies' }
         ],
-        copyright: `© ${new Date().getFullYear()} Your Company Name. All rights reserved.`
+        copyright: `© ${new Date().getFullYear()} Professional Services. All rights reserved.`
       }
     }
   ]
@@ -383,9 +244,9 @@ export const WebsiteTemplates: React.FC = () => {
       requiredSections[section.type] = section;
     });
     
-    // Add missing sections with default content
-    const sectionTypes: Array<'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer' | 'privacy' | 'terms'> = 
-      ['hero', 'features', 'services', 'testimonials', 'cta', 'footer', 'privacy', 'terms'];
+    // Add missing sections with default content (privacy and terms are now only in footer as links)
+    const sectionTypes: Array<'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer'> = 
+      ['hero', 'features', 'services', 'testimonials', 'cta', 'footer'];
     
     sectionTypes.forEach(type => {
       if (!requiredSections[type]) {
@@ -527,28 +388,8 @@ export const WebsiteTemplates: React.FC = () => {
               }
             };
             break;
-          case 'privacy':
-            requiredSections[type] = {
-              id: 'privacy-1',
-              type: 'privacy',
-              title: 'Privacy Policy',
-              content: {
-                lastUpdated: new Date().toISOString().split('T')[0],
-                content: defaultTemplate.sections.find(s => s.type === 'privacy')?.content.content || ''
-              }
-            };
-            break;
-          case 'terms':
-            requiredSections[type] = {
-              id: 'terms-1',
-              type: 'terms',
-              title: 'Terms of Service',
-              content: {
-                lastUpdated: new Date().toISOString().split('T')[0],
-                content: defaultTemplate.sections.find(s => s.type === 'terms')?.content.content || ''
-              }
-            };
-            break;
+          // Privacy and Terms are now only accessible via footer links (modal/dialog)
+          // They are not rendered as full page sections anymore
         }
       }
     });
@@ -1932,9 +1773,11 @@ const TemplatePreview: React.FC<{
 }> = ({ template, editMode = false, onUpdate, editingElement, setEditingElement }) => {
   return (
     <div className="template-preview">
-      {template.customizedSections.map(section => (
+      {template.customizedSections
+        .filter(section => section.type !== 'privacy' && section.type !== 'terms') // Don't render privacy/terms as full sections - only accessible via footer links
+        .map(section => (
         <div key={section.id} id={section.id} className="section-preview">
-          {renderSectionPreview(section, editMode, onUpdate, editingElement, setEditingElement)}
+            {renderSectionPreview(section, editMode, onUpdate, editingElement, setEditingElement, template, undefined)}
         </div>
       ))}
     </div>

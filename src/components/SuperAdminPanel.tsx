@@ -5,12 +5,13 @@ import {
   UserPlus, UserMinus, Ban, Key, Eye, TrendingUp, AlertCircle,
   CheckCircle, Clock, CreditCard, Zap, Database, Globe, Mail,
   Code, Webhook, Lock, Download, Upload, RefreshCw, Play, Pause,
-  Inbox, Filter, X, TestTube, CheckCircle2, Palette
+  Inbox, Filter, X, TestTube, CheckCircle2, Palette, MessageSquare
 } from 'lucide-react';
 import { CrazyKeywordsBuilder } from './CrazyKeywordsBuilder';
 import { adminApi } from '../utils/api/admin';
 import { lambdaTestApi, type LambdaTestBuild, type LambdaTestSession } from '../utils/api/lambdatest';
 import { notifications } from '../utils/notifications';
+import { getAllFeedback, updateFeedbackStatus, type FeedbackRecord } from '../utils/feedbackService';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -39,7 +40,8 @@ type Module =
   | 'config'
   | 'testing'
   | 'crazy-keywords'
-  | 'themes';
+  | 'themes'
+  | 'feedback';
 
 export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLanding }) => {
   const [activeModule, setActiveModule] = useState<Module>('overview');
@@ -59,6 +61,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
     { id: 'testing' as Module, label: 'LambdaTest Results', icon: TestTube, color: 'from-orange-500 to-red-500' },
     { id: 'crazy-keywords' as Module, label: 'Crazy Keywords Builder', icon: Zap, color: 'from-yellow-500 to-orange-500' },
     { id: 'themes' as Module, label: 'Theme Settings', icon: Palette, color: 'from-indigo-500 to-purple-600' },
+    { id: 'feedback' as Module, label: 'Feedback & Requests', icon: MessageSquare, color: 'from-blue-500 to-indigo-600' },
     { id: 'config' as Module, label: 'Configuration', icon: Settings, color: 'from-violet-500 to-purple-600' },
   ];
 
@@ -90,6 +93,8 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onBackToLandin
         return <CrazyKeywordsBuilder />;
       case 'themes':
         return <ThemeSettingsModule />;
+      case 'feedback':
+        return <FeedbackModule />;
       case 'config':
         return <ConfigModule />;
       default:
@@ -1472,6 +1477,184 @@ const ThemeSettingsModule = () => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+const FeedbackModule = () => {
+  const [feedback, setFeedback] = useState<FeedbackRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'feedback' | 'feature'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | FeedbackRecord['status']>('all');
+
+  useEffect(() => {
+    loadFeedback();
+  }, []);
+
+  const loadFeedback = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllFeedback();
+      setFeedback(data);
+    } catch (error) {
+      console.error('Error loading feedback:', error);
+      notifications.error('Failed to load feedback', { title: 'Error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (id: string, status: FeedbackRecord['status']) => {
+    try {
+      await updateFeedbackStatus(id, status);
+      await loadFeedback();
+      notifications.success('Feedback status updated', { title: 'Success' });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      notifications.error('Failed to update status', { title: 'Error' });
+    }
+  };
+
+  const filteredFeedback = feedback.filter(item => {
+    if (filter !== 'all' && item.type !== filter) return false;
+    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+    return true;
+  });
+
+  const getStatusBadge = (status: FeedbackRecord['status']) => {
+    const styles = {
+      new: 'bg-blue-100 text-blue-700 border-blue-300',
+      reviewed: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+      in_progress: 'bg-purple-100 text-purple-700 border-purple-300',
+      resolved: 'bg-green-100 text-green-700 border-green-300',
+    };
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[status]}`}>
+        {status.replace('_', ' ').toUpperCase()}
+      </span>
+    );
+  };
+
+  const getTypeBadge = (type: 'feedback' | 'feature') => {
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+        type === 'feature' 
+          ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+          : 'bg-slate-100 text-slate-700 border border-slate-300'
+      }`}>
+        {type === 'feature' ? 'Feature Request' : 'Feedback'}
+      </span>
+    );
+  };
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-8">
+        Feedback & Feature Requests
+      </h1>
+
+      {/* Filters */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl mb-6">
+        <div className="flex flex-wrap gap-4">
+          <div className="flex-1 min-w-[200px]">
+            <Label className="mb-2 block">Type</Label>
+            <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="feedback">Feedback</SelectItem>
+                <SelectItem value="feature">Feature Requests</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <Label className="mb-2 block">Status</Label>
+            <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="reviewed">Reviewed</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end">
+            <Button onClick={loadFeedback} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Feedback List */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-slate-500">Loading feedback...</p>
+        </div>
+      ) : filteredFeedback.length === 0 ? (
+        <EmptyState icon={MessageSquare} message="No feedback found" />
+      ) : (
+        <div className="space-y-4">
+          {filteredFeedback.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white/80 backdrop-blur-xl rounded-xl p-6 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    {getTypeBadge(item.type)}
+                    {getStatusBadge(item.status)}
+                    {item.rating && (
+                      <div className="flex items-center gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className={i < item.rating! ? 'text-yellow-400' : 'text-slate-300'}>
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-slate-700 whitespace-pre-wrap">{item.message}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                <div className="text-sm text-slate-500">
+                  <span className="font-medium">{item.user_email || 'Anonymous'}</span>
+                  {' • '}
+                  {new Date(item.created_at).toLocaleString()}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={item.status}
+                    onValueChange={(value: FeedbackRecord['status']) => handleStatusUpdate(item.id, value)}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="reviewed">Reviewed</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

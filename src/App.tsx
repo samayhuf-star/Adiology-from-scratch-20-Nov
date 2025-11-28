@@ -40,6 +40,7 @@ import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { LogicalFlowTesting } from './components/LogicalFlowTesting';
+import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
@@ -1532,6 +1533,11 @@ const App = () => {
           {renderContent()}
         </main>
       </div>
+      
+      {/* Floating Feedback Button - Show on all pages except admin */}
+      {appView !== 'admin-panel' && appView !== 'admin-login' && appView !== 'admin-landing' && (
+        <FeedbackButton />
+      )}
     </div>
   );
 };
