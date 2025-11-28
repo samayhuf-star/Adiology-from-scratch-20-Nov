@@ -1820,6 +1820,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <Label 
                     htmlFor="select-all-keywords"
                     className="flex items-center gap-2 cursor-pointer font-semibold text-indigo-900"
+                    onClick={(e) => {
+                      // Prevent double-toggling when clicking directly on checkbox
+                      if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                        return;
+                      }
+                    }}
                   >
                     <Checkbox
                       id="select-all-keywords"
@@ -1832,7 +1838,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           setSelectedKeywords([]);
                         }
                       }}
-                      onClick={(e) => e.stopPropagation()}
                       className="h-5 w-5 border-indigo-400"
                     />
                     <span>Select All</span>
@@ -1842,51 +1847,64 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   </Badge>
                 </div>
                 <ScrollArea className="h-[400px] border-2 border-indigo-200/50 rounded-xl bg-white/50">
-                  <div className="p-3 space-y-1">
-                    {generatedKeywords.map((keyword) => {
-                      const keywordText = keyword.text || keyword.id;
-                      const keywordId = `keyword-${keyword.id || keywordText}`;
-                      const isSelected = selectedKeywords.includes(keywordText);
-                      const volumeColor = keyword.volume === 'High' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
-                                        keyword.volume === 'Medium' ? 'bg-amber-100 text-amber-700 border-amber-300' :
-                                        'bg-slate-100 text-slate-700 border-slate-300';
-                      return (
-                        <Label
-                          key={keyword.id || keywordText}
-                          htmlFor={keywordId}
-                          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
-                            isSelected 
-                              ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 shadow-sm' 
-                              : 'hover:bg-slate-50 border-2 border-transparent hover:border-indigo-100'
-                          }`}
-                        >
-                          <Checkbox
-                            id={keywordId}
-                            checked={isSelected}
-                            onCheckedChange={(checked) => {
+                    <div className="p-3 space-y-1">
+                      {generatedKeywords.map((keyword) => {
+                        const keywordText = keyword.text || keyword.id;
+                        const keywordId = `keyword-${keyword.id || keywordText}`;
+                        const isSelected = selectedKeywords.includes(keywordText);
+                        const volumeColor = keyword.volume === 'High' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
+                                          keyword.volume === 'Medium' ? 'bg-amber-100 text-amber-700 border-amber-300' :
+                                          'bg-slate-100 text-slate-700 border-slate-300';
+                        return (
+                          <Label
+                            key={keyword.id || keywordText}
+                            htmlFor={keywordId}
+                            onClick={(e) => {
+                              // Prevent double-toggling when clicking directly on checkbox
+                              if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                                return;
+                              }
+                              // Toggle selection when clicking on label
                               setSelectedKeywords(prev => {
-                                if (checked) {
-                                  return prev.includes(keywordText) ? prev : [...prev, keywordText];
-                                } else {
+                                if (isSelected) {
                                   return prev.filter(k => k !== keywordText);
+                                } else {
+                                  return prev.includes(keywordText) ? prev : [...prev, keywordText];
                                 }
                               });
                             }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-4 w-4 flex-shrink-0 border-indigo-400"
-                          />
-                          <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
-                            {keywordText}
-                          </span>
-                          {keyword.volume && (
-                            <Badge className={`text-xs px-2 py-0.5 font-semibold border ${volumeColor} flex-shrink-0`}>
-                              {keyword.volume}
-                            </Badge>
-                          )}
-                        </Label>
-                      );
-                    })}
-                  </div>
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
+                              isSelected 
+                                ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 shadow-sm' 
+                                : 'hover:bg-slate-50 border-2 border-transparent hover:border-indigo-100'
+                            }`}
+                          >
+                            <Checkbox
+                              id={keywordId}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                setSelectedKeywords(prev => {
+                                  if (checked) {
+                                    return prev.includes(keywordText) ? prev : [...prev, keywordText];
+                                  } else {
+                                    return prev.filter(k => k !== keywordText);
+                                  }
+                                });
+                              }}
+                              className="h-4 w-4 flex-shrink-0 border-indigo-400"
+                            />
+                            <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                              {keywordText}
+                            </span>
+                            {keyword.volume && (
+                              <Badge className={`text-xs px-2 py-0.5 font-semibold border ${volumeColor} flex-shrink-0`}>
+                                {keyword.volume}
+                              </Badge>
+                            )}
+                          </Label>
+                        );
+                      })}
+                    </div>
                 </ScrollArea>
               </CardContent>
             </Card>
