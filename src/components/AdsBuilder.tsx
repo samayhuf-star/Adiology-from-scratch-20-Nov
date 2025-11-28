@@ -13,6 +13,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { LiveAdPreview } from './LiveAdPreview';
 import { api } from '../utils/api';
 import { notifications } from '../utils/notifications';
+import { 
+    generateAds, 
+    detectUserIntent,
+    type AdGenerationInput,
+    type ResponsiveSearchAd,
+    type ExpandedTextAd,
+    type CallOnlyAd
+} from '../utils/googleAdGenerator';
 
 // Google Ads Generation System Prompt
 const GOOGLE_ADS_SYSTEM_PROMPT = `🟣 SYSTEM INSTRUCTION: GOOGLE ADS GENERATION RULES
@@ -548,101 +556,67 @@ export const AdsBuilder = () => {
         }
     };
 
-    const generateFallbackRSA = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
-        // Select a keyword from the array, cycling through them
-        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
-        
-        // RSA requires 10-15 headlines ideally, but interface supports 5
-        // Generate 5 unique headlines (mix of keyword variations, benefits, credibility, speed/urgency, CTA)
-        const headlineTemplates = [
-            // Keyword variations
-            `${mainKeyword} - Official Site`,
-            `Best ${mainKeyword} Online`,
-            `Top Rated ${mainKeyword}`,
-            `${mainKeyword} Services`,
-            `Professional ${mainKeyword}`,
-            // Benefits
-            `Fast & Reliable ${mainKeyword}`,
-            `24/7 ${mainKeyword} Support`,
-            `Expert ${mainKeyword} Help`,
-            `Trusted ${mainKeyword} Service`,
-            // Credibility
-            `5-Star Rated ${mainKeyword}`,
-            `Trusted by Thousands`,
-            `Award-Winning ${mainKeyword}`,
-            // Speed/Urgency
-            `Get ${mainKeyword} Today`,
-            `Same-Day ${mainKeyword} Service`,
-            `Instant ${mainKeyword} Access`,
-            // CTA headlines
-            `Shop ${mainKeyword} Now`,
-            `Buy ${mainKeyword} Online`,
-            `Order ${mainKeyword} Today`,
-            `Contact ${mainKeyword} Experts`,
-            `Get Free ${mainKeyword} Quote`
-        ];
-        
-        // Select 5 unique headlines (avoid duplicates) - interface supports 5 headlines
-        const selectedHeadlines: string[] = [];
-        const usedIndices = new Set<number>();
-        const headlineCount = 5;
-        
-        while (selectedHeadlines.length < headlineCount && selectedHeadlines.length < headlineTemplates.length) {
-            const randomIdx = Math.floor(Math.random() * headlineTemplates.length);
-            if (!usedIndices.has(randomIdx)) {
-                usedIndices.add(randomIdx);
-                const headline = headlineTemplates[randomIdx].substring(0, 30);
-                if (!selectedHeadlines.includes(headline)) {
-                    selectedHeadlines.push(headline);
-                }
-            }
-        }
-        
-        // Fill remaining slots if needed
-        while (selectedHeadlines.length < headlineCount) {
-            const template = headlineTemplates[selectedHeadlines.length % headlineTemplates.length];
-            const headline = `${template} ${index + 1}`.substring(0, 30);
-            if (!selectedHeadlines.includes(headline)) {
-                selectedHeadlines.push(headline);
-            }
-        }
-        
-        // Generate 2-4 descriptions (90 chars max each)
-        const descriptionTemplates = [
-            `Find the perfect ${mainKeyword} for your needs. Compare options and get the best price available today with expert support.`,
-            `Get your ${mainKeyword} today with fast delivery, expert support, and 100% satisfaction guaranteed. Contact us now!`,
-            `Looking for ${mainKeyword}? We offer the best solutions with competitive pricing and excellent customer service. Shop with confidence.`,
-            `Order your ${mainKeyword} online with fast shipping and expert customer support. Satisfaction guaranteed! Get started today.`
-        ];
-        
-        const descriptionCount = 2 + (index % 3); // 2-4 descriptions
-        const selectedDescriptions = descriptionTemplates
-            .slice(0, descriptionCount)
-            .map(desc => desc.substring(0, 90));
-        
-        // Generate SEO-friendly URL
-        const keywordUrl = generateKeywordUrl(baseUrl, selectedKeyword);
-        
+    // Helper function to convert new ad generator output to GeneratedAd format
+    const convertRSAToGeneratedAd = (rsa: ResponsiveSearchAd, groupName: string, baseUrl: string): GeneratedAd => {
         return {
             id: crypto.randomUUID(),
             groupName,
             adType: 'RSA',
             type: 'rsa',
-            headline1: selectedHeadlines[0] || '',
-            headline2: selectedHeadlines[1] || '',
-            headline3: selectedHeadlines[2] || '',
-            headline4: selectedHeadlines[3] || '',
-            headline5: selectedHeadlines[4] || '',
-            // Add more headlines if needed (up to 15)
-            description1: selectedDescriptions[0] || '',
-            description2: selectedDescriptions[1] || '',
-            path1: mainKeyword.toLowerCase().replace(/\s+/g, '-').substring(0, 15),
-            path2: 'deals',
-            finalUrl: keywordUrl,
+            headline1: rsa.headlines[0] || '',
+            headline2: rsa.headlines[1] || '',
+            headline3: rsa.headlines[2] || '',
+            headline4: rsa.headlines[3] || '',
+            headline5: rsa.headlines[4] || '',
+            headline6: rsa.headlines[5] || '',
+            headline7: rsa.headlines[6] || '',
+            headline8: rsa.headlines[7] || '',
+            headline9: rsa.headlines[8] || '',
+            headline10: rsa.headlines[9] || '',
+            headline11: rsa.headlines[10] || '',
+            headline12: rsa.headlines[11] || '',
+            headline13: rsa.headlines[12] || '',
+            headline14: rsa.headlines[13] || '',
+            headline15: rsa.headlines[14] || '',
+            description1: rsa.descriptions[0] || '',
+            description2: rsa.descriptions[1] || '',
+            description3: rsa.descriptions[2] || '',
+            description4: rsa.descriptions[3] || '',
+            path1: rsa.displayPath[0] || '',
+            path2: rsa.displayPath[1] || '',
+            finalUrl: rsa.finalUrl || baseUrl,
             selected: false,
             extensions: []
         };
+    };
+
+    const generateFallbackRSA = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
+        // Use the new comprehensive ad generation logic
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        
+        // Extract industry from keyword or use default
+        // Try to detect industry from keyword, default to 'Services'
+        const intent = detectUserIntent([selectedKeyword], 'Services');
+        const industry = intent === 'product' ? 'Products' : 'Services';
+        
+        // Create input for ad generator
+        const input: AdGenerationInput = {
+            keywords: [selectedKeyword],
+            industry: industry,
+            businessName: 'Your Business', // Default, can be enhanced later
+            baseUrl: baseUrl,
+            adType: 'RSA',
+            filters: {
+                matchType: 'phrase', // Default match type
+                campaignStructure: 'STAG', // Default structure
+            }
+        };
+        
+        // Generate ad using new logic
+        const generatedAd = generateAds(input) as ResponsiveSearchAd;
+        
+        // Convert to GeneratedAd format
+        return convertRSAToGeneratedAd(generatedAd, groupName, baseUrl);
     };
 
     const generateFallbackDKI = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
