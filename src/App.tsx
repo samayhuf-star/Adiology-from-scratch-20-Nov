@@ -1050,7 +1050,16 @@ const App = () => {
         onLogout={async () => {
           // Bug_62, Bug_76: Ensure proper logout
           try {
-            await signOut();
+            // Clear test admin mode if it exists
+            sessionStorage.removeItem('test_admin_mode');
+            sessionStorage.removeItem('test_admin_email');
+            
+            // Only sign out from Supabase if actually logged in (not test admin)
+            const testAdminMode = sessionStorage.getItem('test_admin_mode');
+            if (!testAdminMode) {
+              await signOut();
+            }
+            
             setUser(null);
             localStorage.removeItem('supabase.auth.token');
             sessionStorage.clear();

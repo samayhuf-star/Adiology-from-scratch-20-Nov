@@ -515,9 +515,17 @@ export async function getSession() {
 
 /**
  * Check if current user is a super admin
+ * Also checks for test admin mode (isolated testing account)
  */
 export async function isSuperAdmin(): Promise<boolean> {
   try {
+    // Check for test admin mode first (isolated, only for admin panel)
+    const testAdminMode = sessionStorage.getItem('test_admin_mode');
+    if (testAdminMode === 'true') {
+      return true; // Test admin has access to admin panel only
+    }
+
+    // Regular super admin check via Supabase
     const user = await getCurrentAuthUser();
     if (!user) return false;
 

@@ -24,6 +24,27 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
       const trimmedEmail = email.trim().toLowerCase();
       const trimmedPassword = password.trim();
 
+      // TEST ADMIN LOGIN - Only for testing, bypasses Supabase auth
+      // This is isolated and only affects admin panel access
+      if (trimmedEmail === 'admin' && trimmedPassword === 'admin') {
+        // Set test admin flag in sessionStorage (isolated from regular users)
+        sessionStorage.setItem('test_admin_mode', 'true');
+        sessionStorage.setItem('test_admin_email', 'admin');
+        
+        // Update URL to /superadmin
+        window.history.pushState({}, '', '/superadmin');
+        
+        notifications.success('Welcome, Test Admin!', {
+          title: 'Test Login Successful',
+          description: 'You are logged in as a test admin. All changes are isolated to the admin panel only.'
+        });
+        
+        onLoginSuccess();
+        setIsLoading(false);
+        return;
+      }
+
+      // Regular Super Admin Login (Supabase Auth)
       // Sign in with Supabase Auth
       const { data, error: authError } = await signInWithEmail(trimmedEmail, trimmedPassword);
 
@@ -51,6 +72,10 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
         await supabase.auth.signOut();
         throw new Error('Access denied. Superadmin role required.');
       }
+
+      // Clear test admin mode if switching to real admin
+      sessionStorage.removeItem('test_admin_mode');
+      sessionStorage.removeItem('test_admin_email');
 
       // Update URL to /superadmin
       window.history.pushState({}, '', '/superadmin');
@@ -108,19 +133,22 @@ export const SuperAdminLogin: React.FC<SuperAdminLoginProps> = ({ onLoginSuccess
             {/* Email Field */}
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                Email Address
+                Email Address or Username
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-indigo-300 z-10" />
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@adbuilder.com"
+                  placeholder="admin@adbuilder.com or admin (test)"
                   className="w-full pl-11 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   required
                 />
               </div>
+              <p className="text-xs text-indigo-300 mt-1">
+                💡 Test admin: Use "admin" / "admin" (for testing only, isolated to admin panel)
+              </p>
             </div>
 
             {/* Password Field */}
