@@ -791,7 +791,7 @@ export const WebsiteTemplates: React.FC = () => {
                     <a href="tel:${content.ctaPhone || ''}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaPhone || '')}</a>
                 </div>
             </div>
-        </section>`;
+    </section>`;
 
       case 'features':
         const features = content.features || [];
@@ -1096,7 +1096,7 @@ export const WebsiteTemplates: React.FC = () => {
                       </Badge>
                     </div>
                   </div>
-
+                  
                   {/* Template Info */}
                   <div className="p-5">
                     <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
@@ -1109,8 +1109,8 @@ export const WebsiteTemplates: React.FC = () => {
                     {/* Features Badges */}
                     <div className="flex flex-wrap gap-1 mb-3">
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
-                        {template.sections.length} sections
-                      </Badge>
+                      {template.sections.length} sections
+                    </Badge>
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
                         <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
                         Google Ads
@@ -1119,56 +1119,56 @@ export const WebsiteTemplates: React.FC = () => {
                         <Smartphone className="w-2.5 h-2.5 mr-0.5" />
                         Responsive
                       </Badge>
-                    </div>
+                  </div>
 
                     {/* Action Buttons */}
                     <div className="grid grid-cols-2 gap-2">
-                      <Button 
-                        onClick={() => handleViewTemplate(template)}
-                        variant="outline"
-                        size="sm"
+                    <Button 
+                      onClick={() => handleViewTemplate(template)}
+                      variant="outline"
+                      size="sm"
                         className="w-full"
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
                         Preview
-                      </Button>
-                      <Button 
+                    </Button>
+                    <Button 
                         onClick={() => handleEditTemplate(template, true)}
                         variant="default"
-                        size="sm"
+                      size="sm"
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                      >
+                    >
                         <Edit className="w-4 h-4 mr-1" />
                         Use
-                      </Button>
-                      <Button 
+                    </Button>
+                    <Button 
                         onClick={() => handleMakeCopy(template)}
-                        variant="outline"
-                        size="sm"
+                      variant="outline"
+                      size="sm"
                         className="w-full"
-                      >
+                    >
                         <Copy className="w-4 h-4 mr-1" />
                         Copy
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          const savedTemplate: SavedTemplate = {
-                            id: template.id,
-                            name: template.name,
-                            originalTemplateId: template.id,
-                            customizedSections: template.sections,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                          };
-                          handleExportHTML(savedTemplate);
-                        }}
-                        variant="outline"
-                        size="sm"
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        const savedTemplate: SavedTemplate = {
+                          id: template.id,
+                          name: template.name,
+                          originalTemplateId: template.id,
+                          customizedSections: template.sections,
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString()
+                        };
+                        handleExportHTML(savedTemplate);
+                      }}
+                      variant="outline"
+                      size="sm"
                         className="w-full"
-                      >
-                        <Download className="w-4 h-4 mr-1" />
+                    >
+                      <Download className="w-4 h-4 mr-1" />
                         Export
-                      </Button>
+                    </Button>
                     </div>
                   </div>
                 </Card>
@@ -1299,12 +1299,12 @@ export const WebsiteTemplates: React.FC = () => {
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {showPreviewDialog && (() => {
               const previewTemplate = ('customizedSections' in showPreviewDialog ? showPreviewDialog : {
-                id: showPreviewDialog.id,
-                name: showPreviewDialog.name,
-                originalTemplateId: showPreviewDialog.id,
-                customizedSections: showPreviewDialog.sections,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                  id: showPreviewDialog.id,
+                  name: showPreviewDialog.name,
+                  originalTemplateId: showPreviewDialog.id,
+                  customizedSections: showPreviewDialog.sections,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
               } as SavedTemplate);
               
               // Filter out privacy and terms from main preview
@@ -1315,7 +1315,7 @@ export const WebsiteTemplates: React.FC = () => {
               return (
                 <div className="bg-white shadow-xl rounded-lg overflow-hidden">
                   {mainSections.map(section => (
-                    <div key={section.id}>
+                  <div key={section.id}>
                       {renderSectionPreview(
                         section,
                         false,
@@ -1332,9 +1332,9 @@ export const WebsiteTemplates: React.FC = () => {
                           }
                         }
                       )}
-                    </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
               );
             })()}
           </div>
@@ -1500,17 +1500,17 @@ const TemplateEditor: React.FC<{
 
         {/* Properties Panel - Only show in properties mode */}
         {editMode === 'properties' && (
-          <div className="w-80 bg-white border-r border-slate-200 overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-sm font-semibold text-slate-700 mb-4">Properties</h3>
-              {currentSection && (
-                <SectionEditor
-                  section={currentSection}
-                  onUpdate={(field, value) => updateSectionContent(currentSection.id, field, value)}
-                />
-              )}
-            </div>
+        <div className="w-80 bg-white border-r border-slate-200 overflow-y-auto">
+          <div className="p-6">
+            <h3 className="text-sm font-semibold text-slate-700 mb-4">Properties</h3>
+            {currentSection && (
+              <SectionEditor
+                section={currentSection}
+                onUpdate={(field, value) => updateSectionContent(currentSection.id, field, value)}
+              />
+            )}
           </div>
+        </div>
         )}
 
         {/* Preview Area */}
@@ -1527,8 +1527,8 @@ const TemplateEditor: React.FC<{
                 setEditingElement={setEditingElement}
                 onPolicyLinkClick={onPolicyLinkClick}
               />
-            </div>
           </div>
+        </div>
           {editMode === 'visual' && (
             <div className="fixed bottom-6 right-6 bg-indigo-600 text-white px-4 py-3 rounded-lg shadow-xl text-sm flex items-center gap-2 z-50 animate-pulse">
               <Edit className="w-4 h-4" />
@@ -2048,7 +2048,7 @@ const renderSectionPreview = (
                     className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text"
                     onBlur={(e) => handleTextEdit('ctaText', e.currentTarget.textContent || '')}
                   >
-                    {section.content.ctaText}
+                {section.content.ctaText}
                   </a>
                   <a 
                     href={`tel:${section.content.ctaPhone}`}
@@ -2061,9 +2061,9 @@ const renderSectionPreview = (
                       handleTextEdit('ctaPhone', phone);
                     }}
                   >
-                    📞 {section.content.ctaPhone}
+                📞 {section.content.ctaPhone}
                   </a>
-                </div>
+            </div>
               </>
             ) : (
               <>
@@ -2092,10 +2092,10 @@ const renderSectionPreview = (
                   >
                     📞 {section.content.ctaPhone}
                   </a>
-                </div>
+          </div>
               </>
             )}
-          </div>
+        </div>
         </section>
       );
     
@@ -2172,7 +2172,7 @@ const renderSectionPreview = (
                     <>
                       <div className="text-6xl mb-4">{feature.icon}</div>
                       <h3 className="text-xl font-semibold mb-3 text-indigo-600">{feature.title}</h3>
-                      <p className="text-slate-600">{feature.description}</p>
+                  <p className="text-slate-600">{feature.description}</p>
                     </>
                   )}
                 </div>
@@ -2196,7 +2196,7 @@ const renderSectionPreview = (
                 >
                   {section.content.heading}
                 </h2>
-                {section.content.subheading && (
+            {section.content.subheading && (
                   <p 
                     contentEditable
                     suppressContentEditableWarning
@@ -2333,9 +2333,9 @@ const renderSectionPreview = (
                       </>
                     ) : (
                       <>
-                        <h3 className="text-xl font-semibold mb-2 text-slate-900">{service.title}</h3>
-                        <p className="text-slate-600 mb-4">{service.description}</p>
-                        {service.price && (
+                    <h3 className="text-xl font-semibold mb-2 text-slate-900">{service.title}</h3>
+                    <p className="text-slate-600 mb-4">{service.description}</p>
+                    {service.price && (
                           <p className="text-indigo-600 font-bold text-lg">{service.price}</p>
                         )}
                       </>
@@ -2439,9 +2439,9 @@ const renderSectionPreview = (
                         </>
                       ) : (
                         <>
-                          <h4 className="font-semibold text-slate-900">{testimonial.name}</h4>
-                          {testimonial.company && (
-                            <p className="text-sm text-slate-600">{testimonial.company}</p>
+                      <h4 className="font-semibold text-slate-900">{testimonial.name}</h4>
+                      {testimonial.company && (
+                        <p className="text-sm text-slate-600">{testimonial.company}</p>
                           )}
                         </>
                       )}
@@ -2470,7 +2470,7 @@ const renderSectionPreview = (
                       "{testimonial.text}"
                     </p>
                   ) : (
-                    <p className="text-slate-700 italic">"{testimonial.text}"</p>
+                  <p className="text-slate-700 italic">"{testimonial.text}"</p>
                   )}
                 </div>
               ))}
@@ -2499,7 +2499,7 @@ const renderSectionPreview = (
                 >
                   {section.content.heading}
                 </h2>
-                {section.content.subheading && (
+            {section.content.subheading && (
                   <p 
                     contentEditable
                     suppressContentEditableWarning
@@ -2510,9 +2510,9 @@ const renderSectionPreview = (
                   </p>
                 )}
                 <div className="flex flex-wrap gap-4 justify-center items-center mb-8">
-                  {section.content.phone && (
-                    <a 
-                      href={`tel:${section.content.phone}`}
+              {section.content.phone && (
+                <a 
+                  href={`tel:${section.content.phone}`}
                       contentEditable
                       suppressContentEditableWarning
                       className="px-8 py-4 text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text"
@@ -2521,13 +2521,13 @@ const renderSectionPreview = (
                         const phone = text.replace('📞', '').replace(section.content.ctaText || 'Call Now', '').trim();
                         handleTextEdit('phone', phone);
                       }}
-                    >
-                      📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
-                    </a>
-                  )}
-                  {section.content.email && (
-                    <a 
-                      href={`mailto:${section.content.email}`}
+                >
+                  📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
+                </a>
+              )}
+              {section.content.email && (
+                <a 
+                  href={`mailto:${section.content.email}`}
                       contentEditable
                       suppressContentEditableWarning
                       className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-700 text-white hover:bg-indigo-800 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text"
@@ -2536,12 +2536,12 @@ const renderSectionPreview = (
                         const email = text.replace('✉️ Email Us', '').trim();
                         handleTextEdit('email', email);
                       }}
-                    >
-                      ✉️ Email Us
-                    </a>
-                  )}
-                </div>
-                {section.content.hours && (
+                >
+                  ✉️ Email Us
+                </a>
+              )}
+            </div>
+            {section.content.hours && (
                   <div className="flex justify-center items-center gap-2 mt-6">
                     <span>🕐</span>
                     <p 
@@ -2581,13 +2581,13 @@ const renderSectionPreview = (
                     >
                       ✉️ Email Us
                     </a>
-                  )}
-                </div>
+            )}
+          </div>
                 {section.content.hours && (
                   <div className="flex justify-center items-center gap-2 mt-6">
                     <span>🕐</span>
                     <p className="opacity-90">{section.content.hours}</p>
-                  </div>
+        </div>
                 )}
               </>
             )}

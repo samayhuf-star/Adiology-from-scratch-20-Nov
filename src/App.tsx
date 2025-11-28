@@ -710,7 +710,7 @@ const App = () => {
       icon: Sparkles,
       submenu: [
         { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
-        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
@@ -1187,8 +1187,8 @@ const App = () => {
             
             return (
               <div key={item.id}>
-                <button
-                  onClick={() => {
+              <button
+                onClick={() => {
                     if (hasSubmenu) {
                       setExpandedMenus(prev => {
                         const newSet = new Set(prev);
@@ -1200,22 +1200,22 @@ const App = () => {
                         return newSet;
                       });
                     } else {
-                      setActiveTabSafe(item.id);
+                  setActiveTabSafe(item.id);
                     }
-                  }}
+                }}
                   className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-200 group cursor-pointer ${
-                    isActive
+                  isActive
                       ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
                       : hasActiveSubmenu
-                      ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
-                      : `text-slate-700 hover:bg-indigo-50`
-                  }`}
-                >
+                    ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
+                    : `text-slate-700 hover:bg-indigo-50`
+                }`}
+              >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
-                    {sidebarOpen && (
-                      <span className="font-medium">{item.label}</span>
-                    )}
+                {sidebarOpen && (
+                  <span className="font-medium">{item.label}</span>
+                )}
                   </div>
                   {sidebarOpen && hasSubmenu && (
                     <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive || hasActiveSubmenu ? 'text-white' : 'text-slate-400'}`} />
@@ -1240,7 +1240,7 @@ const App = () => {
                         >
                           <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-indigo-600' : 'text-slate-400'}`} />
                           <span className={`text-sm font-medium ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`}>{subItem.label}</span>
-                        </button>
+              </button>
                       );
                     })}
                   </div>
