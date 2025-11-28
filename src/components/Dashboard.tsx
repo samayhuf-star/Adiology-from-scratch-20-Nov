@@ -290,110 +290,120 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+    <div className="p-6 sm:p-8 lg:p-10 space-y-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold theme-gradient-text mb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-bold theme-gradient-text">
             Welcome back, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}!
           </h1>
-          <p className="text-sm text-slate-600">Here's what's happening with your campaigns today.</p>
+          <p className="text-base text-slate-600">Here's what's happening with your campaigns today.</p>
         </div>
         <Button
           onClick={() => onNavigate('builder-2')}
-          className="theme-button-primary shadow-lg hover:shadow-xl transition-all"
+          className="theme-button-primary shadow-lg hover:shadow-xl transition-all px-6 py-3"
         >
-          <Sparkles className="w-4 h-4 mr-2" />
+          <Sparkles className="w-5 h-5 mr-2" />
           New Campaign
         </Button>
       </div>
 
       {/* My Resources */}
-      <div>
-        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <FolderOpen className="w-5 h-5 text-indigo-600" />
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
+          <FolderOpen className="w-6 h-6 text-indigo-600" />
           My Resources
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* My Campaigns */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-8">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                  <Layers className="w-6 h-6 text-white" />
+            <div className="relative space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <Layers className="w-7 h-7 text-white" />
                 </div>
-                <Badge className="bg-purple-100 text-purple-700 border-purple-300">
+                <Badge className="bg-purple-100 text-purple-700 border-purple-300 px-3 py-1">
                   Total
                 </Badge>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-1">
-                {(stats?.userResources?.myCampaigns || 0).toLocaleString()}
-              </h3>
-              <p className="text-sm text-slate-600">My Campaigns</p>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-bold text-slate-800">
+                  {(stats?.userResources?.myCampaigns || 0).toLocaleString()}
+                </h3>
+                <p className="text-base text-slate-600">My Campaigns</p>
+              </div>
             </div>
           </Card>
 
           {/* My Presets */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-8">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
-                  <Package className="w-6 h-6 text-white" />
+            <div className="relative space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                  <Package className="w-7 h-7 text-white" />
                 </div>
-                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 px-3 py-1">
                   Saved
                 </Badge>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-1">
-                {(stats?.userResources?.myPresets || 0).toLocaleString()}
-              </h3>
-              <p className="text-sm text-slate-600">My Presets</p>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-bold text-slate-800">
+                  {(stats?.userResources?.myPresets || 0).toLocaleString()}
+                </h3>
+                <p className="text-base text-slate-600">My Presets</p>
+              </div>
             </div>
           </Card>
 
           {/* My Domains */}
-          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-6">
+          <Card className="relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group p-8">
             <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
-                  <Globe className="w-6 h-6 text-white" />
+            <div className="relative space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                  <Globe className="w-7 h-7 text-white" />
                 </div>
-                <Badge className="bg-amber-100 text-amber-700 border-amber-300">
+                <Badge className="bg-amber-100 text-amber-700 border-amber-300 px-3 py-1">
                   Active
                 </Badge>
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-1">
-                {(stats?.userResources?.myDomains || 0).toLocaleString()}
-              </h3>
-              <p className="text-sm text-slate-600">My Domains</p>
+              <div className="space-y-2">
+                <h3 className="text-3xl font-bold text-slate-800">
+                  {(stats?.userResources?.myDomains || 0).toLocaleString()}
+                </h3>
+                <p className="text-base text-slate-600">My Domains</p>
+              </div>
             </div>
           </Card>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-indigo-600" />
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
+          <Zap className="w-6 h-6 text-indigo-600" />
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
               <Card
                 key={action.id}
-                className="p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group border-2 hover:border-indigo-200"
+                className="p-8 hover:shadow-xl transition-all duration-300 cursor-pointer group border-2 hover:border-indigo-200"
                 onClick={() => onNavigate(action.id)}
               >
-                <div className={`w-12 h-12 rounded-xl ${action.bgColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <Icon className={`w-6 h-6 ${action.iconColor}`} />
+                <div className="space-y-5">
+                  <div className={`w-14 h-14 rounded-xl ${action.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <Icon className={`w-7 h-7 ${action.iconColor}`} />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-slate-800">{action.title}</h3>
+                    <p className="text-base text-slate-600">{action.description}</p>
+                  </div>
                 </div>
-                <h3 className="text-base font-semibold text-slate-800 mb-1">{action.title}</h3>
-                <p className="text-sm text-slate-600">{action.description}</p>
               </Card>
             );
           })}
@@ -401,29 +411,29 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       </div>
 
       {/* Recent Activity */}
-      <div>
-        <h2 className="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-indigo-600" />
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-3">
+          <Clock className="w-6 h-6 text-indigo-600" />
           Recent Activity
         </h2>
-        <Card className="border-2 p-6">
+        <Card className="border-2 p-8">
           {recentActivity.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {recentActivity.slice(0, 8).map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-start justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors gap-4"
+                  className="flex items-start justify-between p-5 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors gap-6"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${getActionColor(activity.action)}`}>
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-lg ${getActionColor(activity.action)}`}>
                       {getActionIcon(activity.action)}
                     </div>
-                    <div>
-                      <p className="font-medium text-slate-800">
+                    <div className="space-y-1">
+                      <p className="font-medium text-base text-slate-800">
                         {activity.action.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                       </p>
                       {activity.resourceType && (
-                        <p className="text-sm text-slate-600 mt-0.5">
+                        <p className="text-sm text-slate-600">
                           {activity.resourceType.charAt(0).toUpperCase() + activity.resourceType.slice(1)}
                         </p>
                       )}
@@ -436,17 +446,17 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-600 mb-2">No recent activity</h3>
-              <p className="text-sm text-slate-500 mb-6">
+            <div className="text-center py-16">
+              <AlertCircle className="w-20 h-20 text-slate-300 mx-auto mb-6" />
+              <h3 className="text-xl font-medium text-slate-600 mb-3">No recent activity</h3>
+              <p className="text-base text-slate-500 mb-8">
                 Start creating campaigns to see your activity here
               </p>
               <Button
                 onClick={() => onNavigate('builder-2')}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-3"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="w-5 h-5 mr-2" />
                 Create First Campaign
               </Button>
             </div>
@@ -455,16 +465,16 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       </div>
 
       {/* Account Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Last Login */}
-        <Card className="border-2 p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
-              <Calendar className="w-6 h-6 text-white" />
+        <Card className="border-2 p-8">
+          <div className="flex items-center gap-6">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg">
+              <Calendar className="w-7 h-7 text-white" />
             </div>
-            <div>
-              <p className="text-sm text-slate-600">Last Login</p>
-              <p className="text-base font-semibold text-slate-800 mt-0.5">
+            <div className="space-y-1">
+              <p className="text-base text-slate-600">Last Login</p>
+              <p className="text-lg font-semibold text-slate-800">
                 {formatRelativeTime(stats?.activity.lastLogin || null)}
               </p>
             </div>
@@ -472,14 +482,14 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
         </Card>
 
         {/* Total Actions */}
-        <Card className="border-2 p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0">
-              <Activity className="w-6 h-6 text-white" />
+        <Card className="border-2 p-8">
+          <div className="flex items-center gap-6">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-lg">
+              <Activity className="w-7 h-7 text-white" />
             </div>
-            <div>
-              <p className="text-sm text-slate-600">Total Actions (Recent)</p>
-              <p className="text-base font-semibold text-slate-800 mt-0.5">
+            <div className="space-y-1">
+              <p className="text-base text-slate-600">Total Actions (Recent)</p>
+              <p className="text-lg font-semibold text-slate-800">
                 {stats?.activity.totalActions || 0}
               </p>
             </div>
