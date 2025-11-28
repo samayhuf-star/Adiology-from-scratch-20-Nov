@@ -5137,6 +5137,31 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     );
   };
 
+  // Render content based on active tab
+  const renderContent = () => {
+    if (activeTab === 'saved') {
+      return renderSavedCampaigns();
+    }
+    
+    // Default to builder tab
+    return (
+      <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        {step === 1 && renderStep1()}
+        {step === 2 && renderStep2()}
+        {step === 3 && renderStep3()}
+        {step === 4 && renderStep4()}
+        {step === 5 && renderStep5()}
+        {step === 6 && renderStep6()}
+        {(!step || (step < 1 || step > 6)) && (
+          <div className="text-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Initializing campaign builder...</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 via-purple-50/30 to-indigo-50">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'builder' | 'saved')} className="w-full">
@@ -5149,14 +5174,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         </div>
 
         <TabsContent value="builder" className="mt-0">
-          <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            {step === 1 && renderStep1()}
-            {step === 2 && renderStep2()}
-            {step === 3 && renderStep3()}
-            {step === 4 && renderStep4()}
-            {step === 5 && renderStep5()}
-            {step === 6 && renderStep6()}
-          </div>
+          {renderContent()}
         </TabsContent>
 
         <TabsContent value="saved" className="mt-0">
