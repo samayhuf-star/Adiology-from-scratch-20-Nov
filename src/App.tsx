@@ -26,7 +26,7 @@ import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
-import HomePage from './components/HomePage';
+import HomePageComplete from './components/HomePageComplete';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
 import { PaymentPage } from './components/PaymentPage';
@@ -938,7 +938,7 @@ const App = () => {
   // Homepage view
   if (appView === 'home') {
     return (
-      <HomePage
+      <HomePageComplete
         onGetStarted={() => {
           setAuthMode('signup');
           setAppView('auth');
