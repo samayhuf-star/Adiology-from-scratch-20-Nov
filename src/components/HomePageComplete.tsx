@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { Check, Mail, Phone, MapPin, Send } from 'lucide-react';
 
@@ -36,7 +36,12 @@ function ArrowRight({ size = 24, className = '' }: { size?: number; className?: 
 // ============================================
 // NAVIGATION
 // ============================================
-function Navigation() {
+interface NavigationProps {
+  onGetStarted?: () => void;
+  onLogin?: () => void;
+}
+
+function Navigation({ onGetStarted, onLogin }: NavigationProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
@@ -75,10 +80,16 @@ function Navigation() {
                 {item.name}
               </a>
             ))}
-            <button className="px-5 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm">
+            <button 
+              onClick={onLogin}
+              className="px-5 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+            >
               Sign In
             </button>
-            <button className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm hover:shadow-lg transition-shadow">
+            <button 
+              onClick={onGetStarted}
+              className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm hover:shadow-lg transition-shadow"
+            >
               Get Started
             </button>
           </div>
@@ -109,10 +120,16 @@ function Navigation() {
                   {item.name}
                 </motion.a>
               ))}
-              <button className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 transition-colors">
+              <button 
+                onClick={onLogin}
+                className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
                 Sign In
               </button>
-              <button className="w-full mt-4 px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm">
+              <button 
+                onClick={onGetStarted}
+                className="w-full mt-4 px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm"
+              >
                 Get Started
               </button>
             </motion.div>
@@ -126,7 +143,11 @@ function Navigation() {
 // ============================================
 // HERO
 // ============================================
-function Hero() {
+interface HeroProps {
+  onGetStarted?: () => void;
+}
+
+function Hero({ onGetStarted }: HeroProps) {
   return (
     <section className="pt-32 pb-20 px-6 bg-gradient-to-b from-blue-50/30 to-white">
       <div className="max-w-7xl mx-auto">
@@ -155,11 +176,17 @@ function Hero() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex flex-wrap gap-4 justify-center"
           >
-            <button className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-xl transition-all flex items-center gap-2 group">
+            <button 
+              onClick={onGetStarted}
+              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-xl transition-all flex items-center gap-2 group"
+            >
               Get Started
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="px-8 py-3 bg-white text-gray-700 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
+            <button 
+              onClick={onGetStarted}
+              className="px-8 py-3 bg-white text-gray-700 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all"
+            >
               Contact Sales
             </button>
           </motion.div>
@@ -172,6 +199,10 @@ function Hero() {
 // ============================================
 // FEATURES
 // ============================================
+interface FeaturesProps {
+  onGetStarted?: () => void;
+}
+
 const campaignStructures = [
   { name: 'SKAG', icon: '🎯', color: 'from-blue-400 to-blue-600' },
   { name: 'STAG+', icon: '📊', color: 'from-purple-400 to-purple-600' },
@@ -194,7 +225,7 @@ const otherFeatures = [
   { icon: '📍', title: 'Zip & City Targeting', description: 'Target up to 30,000 zips in one go' }
 ];
 
-function Features() {
+function Features({ onGetStarted }: FeaturesProps) {
   const [hoveredStructure, setHoveredStructure] = useState<number | null>(null);
 
   return (
@@ -300,7 +331,10 @@ function Features() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mt-12">
-          <button className="px-10 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-2xl transition-all flex items-center gap-3 mx-auto group font-semibold">
+          <button 
+            onClick={onGetStarted}
+            className="px-10 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-2xl transition-all flex items-center gap-3 mx-auto group font-semibold"
+          >
             <span>Explore All Features</span>
             <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -315,7 +349,11 @@ function Features() {
 // ============================================
 // CAMPAIGN STRUCTURES FEATURE
 // ============================================
-function CampaignStructuresFeature() {
+interface CampaignStructuresFeatureProps {
+  onGetStarted?: () => void;
+}
+
+function CampaignStructuresFeature({ onGetStarted }: CampaignStructuresFeatureProps) {
   const [selectedStructure, setSelectedStructure] = useState(0);
 
   const structures = [
@@ -367,7 +405,10 @@ function CampaignStructuresFeature() {
                 </motion.div>
               ))}
             </div>
-            <button className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold">
+            <button 
+              onClick={onGetStarted}
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold"
+            >
               Explore All 12 Structures
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -451,7 +492,11 @@ function CampaignStructuresFeature() {
 // ============================================
 // TEMPLATES PRESETS FEATURE
 // ============================================
-function TemplatesPresetsFeature() {
+interface TemplatesPresetsFeatureProps {
+  onGetStarted?: () => void;
+}
+
+function TemplatesPresetsFeature({ onGetStarted }: TemplatesPresetsFeatureProps) {
   const [activeTab, setActiveTab] = useState<'templates' | 'presets'>('templates');
 
   const templateCategories = [
@@ -506,7 +551,10 @@ function TemplatesPresetsFeature() {
                 </motion.div>
               ))}
             </div>
-            <button className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold">
+            <button 
+              onClick={onGetStarted}
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold"
+            >
               Explore Templates & Presets
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -653,7 +701,11 @@ function TemplatesPresetsFeature() {
 // ============================================
 // AI AD BUILDER FEATURE
 // ============================================
-function AIAdBuilderFeature() {
+interface AIAdBuilderFeatureProps {
+  onGetStarted?: () => void;
+}
+
+function AIAdBuilderFeature({ onGetStarted }: AIAdBuilderFeatureProps) {
   const extensions = [
     { name: 'Sitelink Extensions', icon: '🔗' },
     { name: 'Callout Extensions', icon: '💬' },
@@ -701,7 +753,10 @@ function AIAdBuilderFeature() {
                 </motion.div>
               ))}
             </div>
-            <button className="px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold">
+            <button 
+              onClick={onGetStarted}
+              className="px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold"
+            >
               Let AI Build Your Ads
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -785,7 +840,11 @@ function AIAdBuilderFeature() {
 // ============================================
 // BUILDER SECTION
 // ============================================
-function BuilderSection() {
+interface BuilderSectionProps {
+  onGetStarted?: () => void;
+}
+
+function BuilderSection({ onGetStarted }: BuilderSectionProps) {
   return (
     <section className="py-20 px-6 bg-white">
       <div className="max-w-7xl mx-auto">
@@ -820,7 +879,10 @@ function BuilderSection() {
                 </motion.div>
               ))}
             </div>
-            <button className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold">
+            <button 
+              onClick={onGetStarted}
+              className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:shadow-xl transition-all flex items-center gap-2 group font-semibold"
+            >
               Try Campaign Wizard
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -915,6 +977,10 @@ function BuilderSection() {
 // ============================================
 // PRICING
 // ============================================
+interface PricingProps {
+  onSelectPlan?: (planName: string, priceId: string, amount: number, isSubscription: boolean) => void;
+}
+
 const pricingPlans = [
   {
     name: 'Starter',
@@ -962,7 +1028,24 @@ const pricingPlans = [
   }
 ];
 
-function Pricing() {
+function Pricing({ onSelectPlan }: PricingProps) {
+  const handlePlanClick = (plan: typeof pricingPlans[0]) => {
+    if (onSelectPlan) {
+      // Map plan names to price IDs (you may need to adjust these)
+      const priceIdMap: Record<string, string> = {
+        'Starter': 'price_starter',
+        'Pro': 'price_pro',
+        'Growth': 'price_growth',
+        'Enterprise': 'price_enterprise'
+      };
+      
+      const amount = parseFloat(plan.price.replace('$', '').replace(',', ''));
+      const isSubscription = plan.period.includes('month');
+      
+      onSelectPlan(plan.name, priceIdMap[plan.name] || '', amount, isSubscription);
+    }
+  };
+
   return (
     <section id="pricing" className="py-24 px-6 bg-gradient-to-b from-white via-purple-50/30 to-white">
       <div className="max-w-7xl mx-auto">
@@ -1005,7 +1088,12 @@ function Pricing() {
                   ))}
                 </div>
 
-                <button className={`w-full py-3 rounded-xl transition-all font-semibold ${plan.buttonStyle}`}>Get Started</button>
+                <button 
+                  onClick={() => handlePlanClick(plan)}
+                  className={`w-full py-3 rounded-xl transition-all font-semibold ${plan.buttonStyle}`}
+                >
+                  Get Started
+                </button>
               </div>
             </motion.div>
           ))}
@@ -1172,7 +1260,11 @@ function ContactUs() {
 // ============================================
 // CTA SECTION
 // ============================================
-function CTASection() {
+interface CTASectionProps {
+  onGetStarted?: () => void;
+}
+
+function CTASection({ onGetStarted }: CTASectionProps) {
   return (
     <section className="py-20 px-6 bg-white">
       <div className="max-w-4xl mx-auto">
@@ -1189,11 +1281,24 @@ function CTASection() {
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.4 }} className="flex flex-wrap gap-4 justify-center">
-              <button className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:shadow-2xl transition-all flex items-center gap-2 group font-semibold">
+              <button 
+                onClick={onGetStarted}
+                className="px-8 py-4 bg-white text-blue-600 rounded-xl hover:shadow-2xl transition-all flex items-center gap-2 group font-semibold"
+              >
                 <span>Start Free Trial</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
-              <button className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all font-semibold">
+              <button 
+                onClick={() => {
+                  const contactSection = document.querySelector('#contact');
+                  if (contactSection) {
+                    contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  } else if (onGetStarted) {
+                    onGetStarted();
+                  }
+                }}
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all font-semibold"
+              >
                 Schedule Demo
               </button>
             </motion.div>
@@ -1289,19 +1394,25 @@ function Footer() {
 // ============================================
 // MAIN EXPORT
 // ============================================
-export default function HomePageComplete() {
+interface HomePageCompleteProps {
+  onGetStarted?: () => void;
+  onLogin?: () => void;
+  onSelectPlan?: (planName: string, priceId: string, amount: number, isSubscription: boolean) => void;
+}
+
+export default function HomePageComplete({ onGetStarted, onLogin, onSelectPlan }: HomePageCompleteProps) {
   return (
     <div className="min-h-screen bg-white">
-      <Navigation />
-      <Hero />
-      <Features />
-      <CampaignStructuresFeature />
-      <TemplatesPresetsFeature />
-      <AIAdBuilderFeature />
-      <BuilderSection />
-      <Pricing />
+      <Navigation onGetStarted={onGetStarted} onLogin={onLogin} />
+      <Hero onGetStarted={onGetStarted} />
+      <Features onGetStarted={onGetStarted} />
+      <CampaignStructuresFeature onGetStarted={onGetStarted} />
+      <TemplatesPresetsFeature onGetStarted={onGetStarted} />
+      <AIAdBuilderFeature onGetStarted={onGetStarted} />
+      <BuilderSection onGetStarted={onGetStarted} />
+      <Pricing onSelectPlan={onSelectPlan} />
       <ContactUs />
-      <CTASection />
+      <CTASection onGetStarted={onGetStarted} />
       <Footer />
     </div>
   );

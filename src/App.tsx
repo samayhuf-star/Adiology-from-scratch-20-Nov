@@ -25,7 +25,7 @@ import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
-import { HomePageNew } from './components/HomePageNew';
+import HomePageComplete from './components/HomePageComplete';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
 import { PaymentPage } from './components/PaymentPage';
@@ -45,7 +45,7 @@ type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'adm
 
 const App = () => {
   const { theme } = useTheme();
-  const [appView, setAppView] = useState<AppView>('auth');
+  const [appView, setAppView] = useState<AppView>('home');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -503,7 +503,7 @@ const App = () => {
         return;
       }
 
-      setView(user ? 'user' : 'auth');
+      setView(user ? 'user' : 'home');
     };
 
     handleRoute();
@@ -549,7 +549,7 @@ const App = () => {
               setAppView('user');
           }
         } else {
-          setAppView('auth');
+          setAppView('home');
         }
       }
     };
@@ -845,22 +845,22 @@ const App = () => {
     }
   };
 
-  // Skip homepage - redirect directly to auth
-  // if (appView === 'home') {
-  //   return (
-  //     <HomePageNew
-  //       onGetStarted={() => {
-  //         setAuthMode('signup');
-  //         setAppView('auth');
-  //       }}
-  //       onLogin={() => {
-  //         setAuthMode('login');
-  //         setAppView('auth');
-  //       }}
-  //       onSelectPlan={handleSelectPlan}
-  //     />
-  //   );
-  // }
+  // Homepage view
+  if (appView === 'home') {
+    return (
+      <HomePageComplete
+        onGetStarted={() => {
+          setAuthMode('signup');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onSelectPlan={handleSelectPlan}
+      />
+    );
+  }
 
   if (appView === 'payment' && selectedPlan) {
     return (
