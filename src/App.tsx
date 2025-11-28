@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight, FolderOpen
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -18,6 +18,7 @@ import { CSVValidator3 } from './components/CSVValidator3';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
+import { KeywordSavedLists } from './components/KeywordSavedLists';
 import { AdsBuilder } from './components/AdsBuilder';
 import { BillingPanel } from './components/BillingPanel';
 import { SupportPanel } from './components/SupportPanel';
@@ -220,6 +221,19 @@ const App = () => {
     };
     
     setFavicon();
+  }, []);
+
+  // Listen for loadHistoryItem events from KeywordSavedLists
+  useEffect(() => {
+    const handleLoadHistoryItem = (event: CustomEvent) => {
+      const { type, data } = event.detail;
+      handleLoadHistory(type, data);
+    };
+
+    window.addEventListener('loadHistoryItem', handleLoadHistoryItem as EventListener);
+    return () => {
+      window.removeEventListener('loadHistoryItem', handleLoadHistoryItem as EventListener);
+    };
   }, []);
 
   // Initialize auth state and listen for changes
@@ -715,10 +729,18 @@ const App = () => {
       ]
     },
     { id: 'website-templates', label: 'Website Templates', icon: Layout },
-    { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
-    { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
+    { 
+      id: 'keyword-planner', 
+      label: 'Keyword Planner', 
+      icon: Lightbulb,
+      submenu: [
+        { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
+        { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
+        { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
+        { id: 'keyword-saved-lists', label: 'Saved Lists', icon: FolderOpen },
+      ]
+    },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
-    { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
     { id: 'csv-validator-3', label: 'CSV Validator V3', icon: FileCheck },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
@@ -1106,6 +1128,8 @@ const App = () => {
         return <KeywordMixer initialData={activeTab === 'keyword-mixer' ? historyData : null} />;
       case 'negative-keywords':
         return <NegativeKeywordsBuilder initialData={activeTab === 'negative-keywords' ? historyData : null} />;
+      case 'keyword-saved-lists':
+        return <KeywordSavedLists />;
       case 'ads-builder':
         return <AdsBuilder />;
       case 'support-help':
