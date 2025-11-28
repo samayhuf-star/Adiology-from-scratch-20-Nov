@@ -1307,12 +1307,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     // Common keyword input section
     const commonKeywordSection = (
-      <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-        <CardHeader>
+      <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 backdrop-blur-xl shadow-2xl">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Seed Keywords</CardTitle>
-              <CardDescription>Enter your seed keywords (one per line)</CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                <Hash className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl text-indigo-900">Seed Keywords</CardTitle>
+                <CardDescription className="text-sm mt-1">Enter your seed keywords (one per line)</CardDescription>
+              </div>
             </div>
             <Button
               variant="outline"
@@ -1321,42 +1326,46 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 // Fill with test seed keywords
                 setSeedKeywords('call airline\nairline number\nairline phone number\ncall united number\nunited airlines phone\nairline customer service');
               }}
-              className="gap-2"
+              className="gap-2 border-indigo-200 hover:bg-indigo-50"
             >
               <Info className="w-4 h-4" />
               Fill Info
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            value={seedKeywords}
-            onChange={(e) => setSeedKeywords(e.target.value)}
-            placeholder="Call airline&#10;airline number&#10;call united number"
-            rows={6}
-            className="font-mono text-sm"
-          />
-          <p className="text-xs text-slate-500 mt-2">
-            <span className="font-semibold">Note:</span> Each keyword must be at least 3 characters long.
-          </p>
+        <CardContent className="space-y-5">
+          <div>
+            <Textarea
+              value={seedKeywords}
+              onChange={(e) => setSeedKeywords(e.target.value)}
+              placeholder="Call airline&#10;airline number&#10;call united number"
+              rows={5}
+              className="font-mono text-sm border-2 border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400 rounded-xl"
+            />
+            <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              <span>Each keyword must be at least 3 characters long.</span>
+            </p>
+          </div>
           
           {/* Negative Keywords Input */}
-          <div className="mt-4">
-            <Label className="text-sm font-semibold text-slate-700 mb-2 block">
-              Negative Keywords (comma-separated)
+          <div>
+            <Label className="text-sm font-semibold text-indigo-900 mb-2 block flex items-center gap-2">
+              <MinusCircle className="w-4 h-4 text-red-500" />
+              Negative Keywords
             </Label>
             <Input
               value={negativeKeywords}
               onChange={(e) => setNegativeKeywords(e.target.value)}
               placeholder="cheap, discount, reviews, job, free..."
-              className="font-mono text-sm"
+              className="font-mono text-sm border-2 border-red-200 focus:border-red-400 focus:ring-red-400 rounded-xl"
             />
-            <p className="text-xs text-slate-500 mt-1">
-              Keywords containing these terms will be excluded from generation. Separate with commas.
+            <p className="text-xs text-slate-500 mt-1.5">
+              Keywords containing these terms will be excluded. Separate with commas.
             </p>
           </div>
           
-          <div className="mt-4">
+          <div>
             <Button
               onClick={async () => {
                 if (!seedKeywords.trim()) {
@@ -1778,10 +1787,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 }
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600"
+              className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 py-6 text-base font-semibold"
             >
               {isGeneratingKeywords ? (
-                <><RefreshCw className="w-5 h-5 mr-2 animate-spin"/> Generating...</>
+                <><RefreshCw className="w-5 h-5 mr-2 animate-spin"/> Generating Keywords...</>
               ) : (
                 <><Sparkles className="w-5 h-5 mr-2"/> Generate Keywords</>
               )}
@@ -1790,16 +1799,27 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           
           {/* Display Generated Keywords */}
           {generatedKeywords.length > 0 && (
-            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl mt-4">
-              <CardHeader>
-                <CardTitle>Generated Keywords ({generatedKeywords.length})</CardTitle>
-                <CardDescription>Select keywords to include in your campaign</CardDescription>
+            <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-purple-50/20 to-indigo-50/20 backdrop-blur-xl shadow-2xl mt-6">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
+                      <CheckCircle2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl text-indigo-900">Generated Keywords</CardTitle>
+                      <CardDescription className="text-sm mt-1">
+                        {generatedKeywords.length} keywords found • Select keywords to include in your campaign
+                      </CardDescription>
+                    </div>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-xl border border-indigo-200/50">
                   <Label 
                     htmlFor="select-all-keywords"
-                    className="flex items-center gap-2 cursor-pointer font-semibold"
+                    className="flex items-center gap-2 cursor-pointer font-semibold text-indigo-900"
                   >
                     <Checkbox
                       id="select-all-keywords"
@@ -1813,25 +1833,31 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         }
                       }}
                       onClick={(e) => e.stopPropagation()}
+                      className="h-5 w-5 border-indigo-400"
                     />
                     <span>Select All</span>
                   </Label>
-                  <Badge variant="outline">{selectedKeywords.length} selected</Badge>
+                  <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1 font-semibold">
+                    {selectedKeywords.length} selected
+                  </Badge>
                 </div>
-                <ScrollArea className="h-96 border border-slate-200 rounded-lg">
-                  <div className="p-2">
+                <ScrollArea className="h-[400px] border-2 border-indigo-200/50 rounded-xl bg-white/50">
+                  <div className="p-3 space-y-1">
                     {generatedKeywords.map((keyword) => {
                       const keywordText = keyword.text || keyword.id;
                       const keywordId = `keyword-${keyword.id || keywordText}`;
                       const isSelected = selectedKeywords.includes(keywordText);
+                      const volumeColor = keyword.volume === 'High' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
+                                        keyword.volume === 'Medium' ? 'bg-amber-100 text-amber-700 border-amber-300' :
+                                        'bg-slate-100 text-slate-700 border-slate-300';
                       return (
                         <Label
                           key={keyword.id || keywordText}
                           htmlFor={keywordId}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer transition-colors ${
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
                             isSelected 
-                              ? 'bg-indigo-50' 
-                              : 'hover:bg-slate-50'
+                              ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 shadow-sm' 
+                              : 'hover:bg-slate-50 border-2 border-transparent hover:border-indigo-100'
                           }`}
                         >
                           <Checkbox
@@ -1847,11 +1873,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                               });
                             }}
                             onClick={(e) => e.stopPropagation()}
-                            className="h-4 w-4 flex-shrink-0"
+                            className="h-4 w-4 flex-shrink-0 border-indigo-400"
                           />
-                          <span className="flex-1 text-sm">{keywordText}</span>
+                          <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                            {keywordText}
+                          </span>
                           {keyword.volume && (
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0 flex-shrink-0">{keyword.volume}</Badge>
+                            <Badge className={`text-xs px-2 py-0.5 font-semibold border ${volumeColor} flex-shrink-0`}>
+                              {keyword.volume}
+                            </Badge>
                           )}
                         </Label>
                       );
@@ -2190,10 +2220,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     };
 
     return (
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">Keywords</h2>
-          <p className="text-slate-600">Generate and organize keywords based on your structure: {STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</p>
+      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl mb-4">
+            <Hash className="w-7 h-7 text-white" />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            Keyword Generator
+          </h2>
+          <p className="text-slate-600 text-sm">
+            Generate and organize keywords based on your structure: <span className="font-semibold text-indigo-700">{STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</span>
+          </p>
         </div>
 
         {commonKeywordSection}
