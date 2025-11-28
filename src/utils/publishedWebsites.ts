@@ -70,17 +70,38 @@ export async function getUserPublishedWebsites(
 
     // If table doesn't exist, return empty array instead of throwing
     if (error) {
-      // Check if error is about missing table
-      if (error.message.includes('schema cache') || error.message.includes('does not exist')) {
-        console.warn('published_websites table not found, returning empty array');
+      // Check if error is about missing table (various error message formats)
+      const errorMessage = error.message?.toLowerCase() || '';
+      const errorCode = error.code || '';
+      
+      if (
+        errorMessage.includes('schema cache') || 
+        errorMessage.includes('does not exist') ||
+        errorMessage.includes('could not find the table') ||
+        errorMessage.includes('relation') && errorMessage.includes('does not exist') ||
+        errorCode === 'PGRST116' || // PostgREST error code for missing table
+        errorCode === '42P01' // PostgreSQL error code for undefined table
+      ) {
+        // Silently return empty array for missing table (expected in some deployments)
         return [];
       }
       throw new Error(`Failed to fetch published websites: ${error.message}`);
     }
 
     return data || [];
-  } catch (error) {
+  } catch (error: any) {
     // Gracefully handle any errors and return empty array
+    // Check if it's a missing table error that wasn't caught above
+    const errorMessage = error?.message?.toLowerCase() || '';
+    if (
+      errorMessage.includes('schema cache') || 
+      errorMessage.includes('could not find the table') ||
+      errorMessage.includes('does not exist')
+    ) {
+      // Silently return empty array for missing table
+      return [];
+    }
+    // Only log non-table-missing errors
     console.warn('Error fetching published websites:', error);
     return [];
   }

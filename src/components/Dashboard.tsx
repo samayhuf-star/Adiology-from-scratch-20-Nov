@@ -208,14 +208,24 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
               .filter(Boolean)
           );
           myDomains = uniqueDomains.size;
-        } catch (websiteError) {
+        } catch (websiteError: any) {
           // Silently handle published websites errors (table might not exist)
-          console.warn('Could not fetch published websites:', websiteError);
+          const errorMessage = websiteError?.message?.toLowerCase() || '';
+          // Only log if it's not a missing table error
+          if (!errorMessage.includes('schema cache') && !errorMessage.includes('could not find the table')) {
+            console.warn('Could not fetch published websites:', websiteError);
+          }
           myWebsites = 0;
           myDomains = 0;
         }
-      } catch (error) {
-        console.error('Error fetching user resources:', error);
+      } catch (error: any) {
+        // Check if error is about missing published_websites table
+        const errorMessage = error?.message?.toLowerCase() || '';
+        if (!errorMessage.includes('published websites') || 
+            (!errorMessage.includes('schema cache') && !errorMessage.includes('could not find the table'))) {
+          // Only log non-table-missing errors
+          console.error('Error fetching user resources:', error);
+        }
         // Continue with 0 counts if there's an error
       }
 
