@@ -1,0 +1,444 @@
+/**
+ * Landing Page Content Extractor
+ * 
+ * Robust parsing to extract: title, H1, services, phone, hours, address, structured data
+ */
+
+export interface LandingPageExtractionResult {
+  domain: string;
+  title: string | null;
+  h1: string | null;
+  metaDescription: string | null;
+  services: string[];
+  phones: string[];
+  emails: string[];
+  hours: Record<string, string> | null;
+  addresses: string[];
+  schemas: {
+    org?: any;
+    localBusiness?: any;
+  };
+  page_text_tokens: string[];
+  extractionMethod: 'crawl' | 'api' | 'manual' | 'fallback';
+  extractedAt: string;
+}
+
+/**
+ * Extract content from landing page URL
+ * Supports both client-side and server-side extraction
+ */
+export async function extractLandingPageContent(
+  url: string,
+  options?: {
+    useHeadless?: boolean;
+    timeout?: number;
+  }
+): Promise<LandingPageExtractionResult> {
+  const domain = extractDomain(url);
+  const result: LandingPageExtractionResult = {
+    domain,
+    title: null,
+    h1: null,
+    metaDescription: null,
+    services: [],
+    phones: [],
+    emails: [],
+    hours: null,
+    addresses: [],
+    schemas: {},
+    page_text_tokens: [],
+    extractionMethod: 'crawl',
+    extractedAt: new Date().toISOString(),
+  };
+
+  try {
+    // Try server-side extraction first (if available)
+    if (options?.useHeadless) {
+      const serverResult = await extractViaHeadless(url, options.timeout);
+      if (serverResult) {
+        return { ...result, ...serverResult, extractionMethod: 'crawl' };
+      }
+    }
+
+    // Fallback to client-side extraction
+    const clientResult = await extractViaClient(url);
+    return { ...result, ...clientResult, extractionMethod: 'crawl' };
+  } catch (error) {
+    console.warn('Landing page extraction failed:', error);
+    return { ...result, extractionMethod: 'fallback' };
+  }
+}
+
+/**
+ * Extract domain from URL
+ */
+function extractDomain(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace(/^www\./, '');
+  } catch {
+    return url.split('/')[0].replace(/^www\./, '');
+  }
+}
+
+/**
+ * Extract via headless browser (server-side)
+ */
+async function extractViaHeadless(url: string, timeout = 10000): Promise<Partial<LandingPageExtractionResult> | null> {
+  // TODO: Implement headless browser extraction (Puppeteer/Playwright)
+  // For now, return null to use client-side fallback
+  return null;
+}
+
+/**
+ * Extract via client-side fetch (limited but works for most pages)
+ */
+async function extractViaClient(url: string): Promise<Partial<LandingPageExtractionResult>> {
+  try {
+    // Use CORS proxy or direct fetch if same-origin
+    const response = await fetch(url, {
+      mode: 'cors',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; AdiologyBot/1.0)',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const html = await response.text();
+    return parseHTML(html);
+  } catch (error) {
+    // If CORS fails, return empty result (user can manually enter)
+    console.warn('Client-side extraction failed (CORS or network):', error);
+    return {};
+  }
+}
+
+/**
+ * Parse HTML content
+ */
+function parseHTML(html: string): Partial<LandingPageExtractionResult> {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  // Extract title
+  const title = doc.querySelector('title')?.textContent?.trim() || null;
+
+  // Extract H1
+  const h1 = doc.querySelector('h1')?.textContent?.trim() || null;
+
+  // Extract meta description
+  const metaDescription = doc.querySelector('meta[name="description"]')?.getAttribute('content')?.trim() || null;
+
+  // Extract phones
+  const phones = extractPhones(html, doc);
+
+  // Extract emails
+  const emails = extractEmails(html);
+
+  // Extract addresses
+  const addresses = extractAddresses(html, doc);
+
+  // Extract hours
+  const hours = extractHours(html, doc);
+
+  // Extract services
+  const services = extractServices(html, doc);
+
+  // Extract structured data (JSON-LD)
+  const schemas = extractStructuredData(doc);
+
+  // Extract page text tokens
+  const pageText = doc.body?.textContent || '';
+  const page_text_tokens = extractTokens(pageText);
+
+  return {
+    title,
+    h1,
+    metaDescription,
+    services,
+    phones,
+    emails,
+    hours,
+    addresses,
+    schemas,
+    page_text_tokens,
+  };
+}
+
+/**
+ * Extract phone numbers using regex
+ * E.164 normalization
+ */
+function extractPhones(html: string, doc: Document): string[] {
+  const phones: string[] = new Set();
+  
+  // Regex pattern for phone numbers
+  const phoneRegex = /(\+?\d{1,3}[\s-]?)?(\(?\d{2,5}\)?[\s-]?)?[\d\s-]{6,12}/g;
+  const matches = html.matchAll(phoneRegex);
+  
+  for (const match of matches) {
+    const phone = match[0].replace(/\s+/g, '').replace(/[()-]/g, '');
+    if (phone.length >= 10 && phone.length <= 15) {
+      phones.add(phone);
+    }
+  }
+  
+  // Also check structured data
+  const structuredPhones = doc.querySelectorAll('[itemprop="telephone"], [itemprop="phone"]');
+  structuredPhones.forEach(el => {
+    const phone = el.textContent?.trim() || el.getAttribute('content') || '';
+    if (phone) phones.add(normalizePhone(phone));
+  });
+  
+  // Check schema.org LocalBusiness
+  const schemaScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+  schemaScripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent || '{}');
+      if (data.telephone) {
+        phones.add(normalizePhone(data.telephone));
+      }
+      if (data['@graph']) {
+        data['@graph'].forEach((item: any) => {
+          if (item.telephone) {
+            phones.add(normalizePhone(item.telephone));
+          }
+        });
+      }
+    } catch (e) {
+      // Ignore JSON parse errors
+    }
+  });
+  
+  return Array.from(phones).slice(0, 5); // Limit to 5 phones
+}
+
+/**
+ * Normalize phone number to E.164 format
+ */
+function normalizePhone(phone: string): string {
+  // Remove all non-digit characters except +
+  let normalized = phone.replace(/[^\d+]/g, '');
+  
+  // Add country code if missing (assume US +1 if starts with 1, or add +1)
+  if (!normalized.startsWith('+')) {
+    if (normalized.startsWith('1') && normalized.length === 11) {
+      normalized = '+' + normalized;
+    } else if (normalized.length === 10) {
+      normalized = '+1' + normalized; // Default to US
+    }
+  }
+  
+  return normalized;
+}
+
+/**
+ * Extract email addresses
+ */
+function extractEmails(html: string): string[] {
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const matches = html.match(emailRegex) || [];
+  return Array.from(new Set(matches)).slice(0, 5);
+}
+
+/**
+ * Extract addresses
+ */
+function extractAddresses(html: string, doc: Document): string[] {
+  const addresses: string[] = [];
+  
+  // Check structured data
+  const addressElements = doc.querySelectorAll('[itemprop="address"], [itemprop="streetAddress"]');
+  addressElements.forEach(el => {
+    const address = el.textContent?.trim();
+    if (address && address.length > 10) {
+      addresses.push(address);
+    }
+  });
+  
+  // Check schema.org
+  const schemaScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+  schemaScripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent || '{}');
+      if (data.address) {
+        const addr = typeof data.address === 'string' 
+          ? data.address 
+          : [data.address.streetAddress, data.address.addressLocality, data.address.addressRegion]
+              .filter(Boolean).join(', ');
+        if (addr) addresses.push(addr);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  });
+  
+  return Array.from(new Set(addresses));
+}
+
+/**
+ * Extract business hours
+ */
+function extractHours(html: string, doc: Document): Record<string, string> | null {
+  const hours: Record<string, string> = {};
+  
+  // Look for "Open", "Hours", "Opening" patterns
+  const hoursText = html.match(/(?:open|hours|opening)[\s\S]{0,200}/i)?.[0] || '';
+  
+  // Pattern: Mon-Fri: 9:00 AM - 6:00 PM
+  const timePattern = /(\w{3}(?:-\w{3})?)[\s:]+(\d{1,2}[:.]?\d{0,2}\s*(?:AM|PM)?)[\s-]+(\d{1,2}[:.]?\d{0,2}\s*(?:AM|PM)?)/gi;
+  const matches = hoursText.matchAll(timePattern);
+  
+  for (const match of matches) {
+    const dayRange = match[1].toLowerCase();
+    const openTime = match[2].trim();
+    const closeTime = match[3].trim();
+    hours[dayRange] = `${openTime}-${closeTime}`;
+  }
+  
+  // Also check structured data
+  const schemaScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+  schemaScripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent || '{}');
+      if (data.openingHoursSpecification) {
+        data.openingHoursSpecification.forEach((spec: any) => {
+          const day = spec.dayOfWeek?.toLowerCase() || '';
+          const open = spec.opens || '';
+          const close = spec.closes || '';
+          if (day && open && close) {
+            hours[day] = `${open}-${close}`;
+          }
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+  });
+  
+  return Object.keys(hours).length > 0 ? hours : null;
+}
+
+/**
+ * Extract services from page content
+ */
+function extractServices(html: string, doc: Document): string[] {
+  const services: string[] = new Set();
+  
+  // Look for service lists (common patterns)
+  const serviceKeywords = ['services', 'we do', 'we offer', 'our services', 'what we do'];
+  const serviceSections = Array.from(doc.querySelectorAll('section, div, ul, ol')).filter(el => {
+    const text = el.textContent?.toLowerCase() || '';
+    return serviceKeywords.some(keyword => text.includes(keyword));
+  });
+  
+  serviceSections.forEach(section => {
+    // Extract list items
+    const listItems = section.querySelectorAll('li, dt, .service-item, [class*="service"]');
+    listItems.forEach(item => {
+      const text = item.textContent?.trim() || '';
+      if (text.length > 3 && text.length < 50) {
+        // Simple heuristic: if it's a short phrase, likely a service
+        services.add(text);
+      }
+    });
+  });
+  
+  // Also extract from structured data
+  const schemaScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+  schemaScripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent || '{}');
+      if (data.hasOfferCatalog) {
+        data.hasOfferCatalog.itemListElement?.forEach((item: any) => {
+          if (item.name) services.add(item.name);
+        });
+      }
+      if (data.serviceType) {
+        services.add(data.serviceType);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  });
+  
+  return Array.from(services).slice(0, 20); // Limit to 20 services
+}
+
+/**
+ * Extract structured data (JSON-LD)
+ */
+function extractStructuredData(doc: Document): { org?: any; localBusiness?: any } {
+  const schemas: { org?: any; localBusiness?: any } = {};
+  
+  const schemaScripts = doc.querySelectorAll('script[type="application/ld+json"]');
+  schemaScripts.forEach(script => {
+    try {
+      const data = JSON.parse(script.textContent || '{}');
+      if (data['@type'] === 'Organization' || data['@type'] === 'LocalBusiness') {
+        if (data['@type'] === 'LocalBusiness') {
+          schemas.localBusiness = data;
+        } else {
+          schemas.org = data;
+        }
+      }
+    } catch (e) {
+      // Ignore JSON parse errors
+    }
+  });
+  
+  return schemas;
+}
+
+/**
+ * Extract meaningful tokens from page text
+ */
+function extractTokens(text: string): string[] {
+  // Extract words that might be relevant (emergency, licensed, 24/7, etc.)
+  const relevantPatterns = [
+    /\b(emergency|24\/7|licensed|insured|certified|guaranteed|free|same.?day|fast|quick)\b/gi,
+    /\b(service|services|repair|installation|maintenance)\b/gi,
+  ];
+  
+  const tokens: string[] = new Set();
+  relevantPatterns.forEach(pattern => {
+    const matches = text.match(pattern);
+    if (matches) {
+      matches.forEach(match => tokens.add(match.toLowerCase()));
+    }
+  });
+  
+  return Array.from(tokens).slice(0, 30);
+}
+
+/**
+ * Manual extraction form data (fallback when automatic extraction fails)
+ */
+export interface ManualExtractionData {
+  title?: string;
+  h1?: string;
+  services?: string[];
+  phones?: string[];
+  hours?: Record<string, string>;
+  address?: string;
+}
+
+export function mergeManualExtraction(
+  automatic: LandingPageExtractionResult,
+  manual: ManualExtractionData
+): LandingPageExtractionResult {
+  return {
+    ...automatic,
+    title: manual.title || automatic.title,
+    h1: manual.h1 || automatic.h1,
+    services: manual.services || automatic.services,
+    phones: manual.phones || automatic.phones,
+    hours: manual.hours || automatic.hours,
+    addresses: manual.address ? [manual.address, ...automatic.addresses] : automatic.addresses,
+    extractionMethod: 'manual',
+  };
+}
+

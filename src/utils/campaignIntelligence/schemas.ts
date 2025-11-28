@@ -1,49 +1,101 @@
 /**
- * Campaign Intelligence - Data Schemas
+ * Campaign Intelligence - Data Schemas (Engineer-Ready)
  * 
- * TypeScript interfaces for all campaign intelligence modules
- * 
- * TODO: Update with actual schemas from user specifications
+ * Complete and explicit TypeScript types
  */
 
 // ============================================================================
-// Intent Classification
+// Enums
+// ============================================================================
+
+export enum IntentId {
+  CALL = "CALL_INTENT",
+  LEAD = "LEAD_INTENT",
+  TRAFFIC = "TRAFFIC_INTENT",
+  PURCHASE = "PURCHASE_INTENT",
+  RESEARCH = "RESEARCH_INTENT",
+}
+
+export type MatchType = "EXACT" | "PHRASE" | "BROAD" | "BMM";
+
+// ============================================================================
+// Core Objects
+// ============================================================================
+
+export interface IntentResult {
+  intentId: IntentId;
+  intentLabel: string;
+  confidence: number;       // 0..1
+  persona?: string;         // e.g. "Local Emergency Seeker"
+  recommendedDevice: "mobile-first" | "desktop-first" | "any";
+  primaryKPIs: string[];    // e.g. ["calls","call_conversion_rate"]
+  suggestedAdTypes: string[]; // e.g. ["CallOnly","RSA"]
+}
+
+export interface LandingExtraction {
+  domain: string;
+  url: string;
+  title?: string;
+  h1?: string;
+  description?: string;
+  services: string[];       // normalized tokens e.g. ["wiring","fan repair"]
+  phones: string[];         // E.164 normalized preferred
+  emails: string[];
+  hours?: Record<string, string>; // { "mon":"09:00-18:00", ... }
+  addresses: string[];     // freeform
+  structuredData?: any;     // parsed schema.org
+  tokens: string[];        // tokenized page text (for keyword gen)
+}
+
+export interface VerticalConfig {
+  verticalId: string;       // "electrician"
+  serviceTokens: string[];  // seeds
+  trustPhrases: string[];   // "licensed","insured"
+  emergencyModifiers: string[]; // "24/7","emergency"
+  negativeDefaults: string[]; // "free","DIY","jobs"
+  adTemplates?: Array<{ type: string; template: string }>;
+}
+
+export interface KeywordObject {
+  text: string;             // raw text e.g. "electrician near me"
+  normalized: string;       // normalized lowercase no punctuation
+  matchType: MatchType;
+  intentScore: number;      // 0..1
+  suggestedBidCents?: number; // in account currency cents (or paise)
+  generatedBy?: string;     // template id
+}
+
+export interface AdObject {
+  id?: string;
+  type: "RSA" | "CALL_ONLY" | "ETA" | "DISPLAY";
+  headlines: string[];
+  descriptions: string[];
+  finalUrl: string;
+  phone?: string;           // for call-only or call extension
+  paths?: string[];         // path1, path2
+  status?: "ENABLED" | "PAUSED" | "DISABLED";
+  policyIssues?: PolicyIssue[];
+}
+
+export interface PolicyIssue {
+  code: string;
+  severity: "warning" | "error" | "block";
+  message: string;
+}
+
+export interface DNIMap {
+  keyHash: string;          // deterministic key (campaign+adgroup hash)
+  phone: string;            // E.164
+  providerId?: string;
+  expiresAt?: string;       // ISO date
+}
+
+// ============================================================================
+// Legacy Types (for backward compatibility)
 // ============================================================================
 
 export type CampaignGoal = 'calls' | 'leads' | 'purchases' | 'traffic';
 export type CampaignIntent = 'CALL_INTENT' | 'LEAD_INTENT' | 'TRAFFIC_INTENT' | 'PURCHASE_INTENT';
-export type MatchType = 'exact' | 'phrase' | 'broad' | 'broad_modifier';
-
-export interface IntentClassification {
-  intent: CampaignIntent;
-  suggestedMatchTypes: MatchType[];
-  tone: 'urgent' | 'professional' | 'friendly' | 'authoritative';
-  voice: string;
-  confidence: number; // 0-1
-}
-
-// ============================================================================
-// Landing Page Extraction
-// ============================================================================
-
-export interface LandingPageData {
-  url: string;
-  title: string | null;
-  h1: string | null;
-  metaDescription: string | null;
-  services: string[];
-  serviceAreas: string[];
-  phoneNumbers: string[];
-  businessHours: string | null;
-  address: string | null;
-  extractedAt: string;
-  extractionMethod: 'crawl' | 'api' | 'manual';
-}
-
-// ============================================================================
-// Vertical Templates
-// ============================================================================
-
 export type Vertical = 
   | 'electrician' 
   | 'plumber' 
@@ -57,29 +109,36 @@ export type Vertical =
   | 'auto_repair'
   | 'general';
 
-export interface VerticalTemplate {
-  vertical: Vertical;
-  serviceTokens: string[];
-  durationTokens: string[];
-  priceTokens: string[];
-  regulatoryFlags: string[];
-  disclaimers: string[];
-  adTemplates: AdTemplate[];
-  keywordModifiers: string[];
+// ============================================================================
+// Additional Types
+// ============================================================================
+
+export interface IntentClassification {
+  intent: CampaignIntent;
+  suggestedMatchTypes: MatchType[];
+  tone: 'urgent' | 'professional' | 'friendly' | 'authoritative';
+  voice: string;
+  confidence: number; // 0-1
 }
 
-export interface AdTemplate {
-  id: string;
-  headlinePatterns: string[];
-  descriptionPatterns: string[];
-  ctaPatterns: string[];
-  pathPatterns: string[];
-  intent: CampaignIntent[];
+export interface LandingPageData {
+  domain: string;
+  title: string | null;
+  h1: string | null;
+  metaDescription: string | null;
+  services: string[];
+  phones: string[];
+  emails: string[];
+  hours: Record<string, string> | null;
+  addresses: string[];
+  schemas: {
+    org?: any;
+    localBusiness?: any;
+  };
+  page_text_tokens: string[];
+  extractionMethod: 'crawl' | 'api' | 'manual' | 'fallback';
+  extractedAt: string;
 }
-
-// ============================================================================
-// Bid Suggestions
-// ============================================================================
 
 export interface BidSuggestion {
   keyword: string;
@@ -101,10 +160,6 @@ export interface BidTier {
     default: number;
   };
 }
-
-// ============================================================================
-// Policy & Safety
-// ============================================================================
 
 export interface PolicyCheck {
   passed: boolean;
@@ -129,10 +184,6 @@ export interface PolicyWarning {
   suggestion?: string;
 }
 
-// ============================================================================
-// Localization
-// ============================================================================
-
 export interface LocalizationConfig {
   geo: string; // Country code or region
   language: string; // ISO 639-1 code
@@ -148,10 +199,6 @@ export interface LocalizedContent {
   locale: string;
   confidence: number;
 }
-
-// ============================================================================
-// Tracking
-// ============================================================================
 
 export interface TrackingConfig {
   utmSource: string;
@@ -171,10 +218,6 @@ export interface TrackingParams {
   utmParams: Record<string, string>;
   dniParams?: Record<string, string>;
 }
-
-// ============================================================================
-// Device Defaults
-// ============================================================================
 
 export interface DeviceConfig {
   primaryDevice: 'mobile' | 'desktop' | 'tablet' | 'all';
@@ -197,14 +240,10 @@ export interface DesktopOptimizations {
   maxDescriptionLength: number; // Typically 90 for desktop
 }
 
-// ============================================================================
-// Combined Campaign Intelligence
-// ============================================================================
-
 export interface CampaignIntelligence {
   intent: IntentClassification;
   landingPage: LandingPageData;
-  vertical: VerticalTemplate | null;
+  vertical: VerticalConfig | null;
   bidSuggestions: BidSuggestion[];
   policyCheck: PolicyCheck;
   localization: LocalizationConfig;
@@ -212,4 +251,3 @@ export interface CampaignIntelligence {
   deviceConfig: DeviceConfig;
   generatedAt: string;
 }
-

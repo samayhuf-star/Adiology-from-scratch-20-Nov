@@ -1336,10 +1336,12 @@ const App = () => {
                     : `text-slate-700 hover:bg-indigo-50`
                 }`}
               >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
                 {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
+                    {item.label}
+                  </span>
                 )}
                   </div>
                   {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && hasSubmenu && (
@@ -1357,14 +1359,17 @@ const App = () => {
                           onClick={() => {
                             setActiveTabSafe(subItem.id);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 group cursor-pointer ${
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 group cursor-pointer ${
                             isSubActive
                               ? `bg-indigo-100 text-indigo-700 shadow-sm border border-indigo-200`
                               : `text-slate-600 hover:bg-indigo-50/50`
                           }`}
+                          style={{ minWidth: 0 }}
                         >
                           <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                          <span className={`text-sm font-medium ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`}>{subItem.label}</span>
+                          <span className={`text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`} style={{ fontSize: 'clamp(0.7rem, 1.1vw, 0.8125rem)' }}>
+                            {subItem.label}
+                          </span>
               </button>
                       );
                     })}
