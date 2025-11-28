@@ -1596,8 +1596,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         '', '', '', '', '', '', '', '', '', '', '', '', // Headlines 6-15 (empty)
                         escapeCSV(ad.description1 || ''),               // Description 1
                         escapeCSV(ad.description2 || ''),               // Description 2
-                        escapeCSV(ad.description3 || ''),               // Description 3
-                        escapeCSV(ad.description4 || ''),               // Description 4
+                        '',                                            // Description 3 (not in interface)
+                        '',                                            // Description 4 (not in interface)
                         escapeCSV(ad.path1 || ''),                      // Path 1
                         escapeCSV(ad.path2 || ''),                      // Path 2
                         '', '', '', '',                                 // Asset fields (empty)
@@ -2690,10 +2690,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     };
                     
                     // Generate ad
-                    if (type === 'rsa') {
+                if (type === 'rsa') {
                         const generatedAd = generateAds(input) as ResponsiveSearchAd;
-                        baseAd = {
-                            ...baseAd,
+                    baseAd = {
+                        ...baseAd,
                             headline1: generatedAd.headlines[0] || '',
                             headline2: generatedAd.headlines[1] || '',
                             headline3: generatedAd.headlines[2] || '',
@@ -2701,13 +2701,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             headline5: generatedAd.headlines[4] || '',
                             description1: generatedAd.descriptions[0] || '',
                             description2: generatedAd.descriptions[1] || '',
-                            description3: generatedAd.descriptions[2] || '',
-                            description4: generatedAd.descriptions[3] || '',
                             finalUrl: generatedAd.finalUrl || formattedUrl,
                             path1: generatedAd.displayPath[0] || 'shop',
                             path2: generatedAd.displayPath[1] || 'now'
-                        };
-                    } else if (type === 'dki') {
+                    };
+                } else if (type === 'dki') {
                         // Generate RSA first, then convert to DKI format
                         const generatedAd = generateAds(input) as ResponsiveSearchAd;
                         const mainKeywordTitle = mainKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -2734,8 +2732,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             return d.substring(0, 90);
                         });
                         
-                        baseAd = {
-                            ...baseAd,
+                    baseAd = {
+                        ...baseAd,
                             headline1: dkiHeadlines[0] || '',
                             headline2: dkiHeadlines[1] || '',
                             headline3: dkiHeadlines[2] || '',
@@ -2744,11 +2742,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             finalUrl: generatedAd.finalUrl || formattedUrl,
                             path1: generatedAd.displayPath[0] || 'keyword',
                             path2: generatedAd.displayPath[1] || 'deals'
-                        };
-                    } else if (type === 'callonly') {
+                    };
+                } else if (type === 'callonly') {
                         const generatedAd = generateAds(input) as CallOnlyAd;
-                        baseAd = {
-                            ...baseAd,
+                    baseAd = {
+                        ...baseAd,
                             headline1: generatedAd.headline1 || '',
                             headline2: generatedAd.headline2 || '',
                             description1: generatedAd.description1 || '',
@@ -2756,7 +2754,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             phone: generatedAd.phoneNumber || '(555) 123-4567',
                             businessName: generatedAd.businessName || 'Your Business',
                             finalUrl: generatedAd.verificationUrl || formattedUrl
-                        };
+                    };
                     }
                 } else if (type === 'snippet') {
                     baseAd = {
@@ -2930,10 +2928,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             };
             
             // Generate ad
-            if (type === 'rsa') {
+        if (type === 'rsa') {
                 const generatedAd = generateAds(input) as ResponsiveSearchAd;
-                newAd = {
-                    ...newAd,
+            newAd = {
+                ...newAd,
                     headline1: generatedAd.headlines[0] || '',
                     headline2: generatedAd.headlines[1] || '',
                     headline3: generatedAd.headlines[2] || '',
@@ -2941,13 +2939,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     headline5: generatedAd.headlines[4] || '',
                     description1: generatedAd.descriptions[0] || '',
                     description2: generatedAd.descriptions[1] || '',
-                    description3: generatedAd.descriptions[2] || '',
-                    description4: generatedAd.descriptions[3] || '',
                     finalUrl: generatedAd.finalUrl || formattedUrl,
                     path1: generatedAd.displayPath[0] || 'shop',
                     path2: generatedAd.displayPath[1] || 'now'
-                };
-            } else if (type === 'dki') {
+            };
+        } else if (type === 'dki') {
                 // Generate RSA first, then convert to DKI format
                 const generatedAd = generateAds(input) as ResponsiveSearchAd;
                 const mainKeywordTitle = mainKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -2974,8 +2970,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     return d.substring(0, 90);
                 });
                 
-                newAd = {
-                    ...newAd,
+            newAd = {
+                ...newAd,
                     headline1: dkiHeadlines[0] || '',
                     headline2: dkiHeadlines[1] || '',
                     headline3: dkiHeadlines[2] || '',
@@ -2984,11 +2980,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     finalUrl: generatedAd.finalUrl || formattedUrl,
                     path1: generatedAd.displayPath[0] || 'keyword',
                     path2: generatedAd.displayPath[1] || 'deals'
-                };
-            } else if (type === 'callonly') {
+            };
+        } else if (type === 'callonly') {
                 const generatedAd = generateAds(input) as CallOnlyAd;
-                newAd = {
-                    ...newAd,
+            newAd = {
+                ...newAd,
                     headline1: generatedAd.headline1 || '',
                     headline2: generatedAd.headline2 || '',
                     description1: generatedAd.description1 || '',
@@ -2996,7 +2992,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     phone: generatedAd.phoneNumber || '(555) 123-4567',
                     businessName: generatedAd.businessName || 'Your Business',
                     finalUrl: generatedAd.verificationUrl || formattedUrl
-                };
+            };
             }
         } else if (type === 'snippet') {
             newAd = {
