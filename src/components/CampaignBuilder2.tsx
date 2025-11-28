@@ -880,34 +880,60 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
   };
 
-  // Step Indicator
+  // Step Indicator - Enhanced Design
   const renderStepIndicator = () => (
-    <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-lg py-4 px-4 sm:px-6 mb-6 sm:mb-8 border border-indigo-100/50 shadow-sm">
-      <div className="flex items-center justify-center space-x-2 sm:space-x-4">
+    <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 rounded-2xl py-6 px-6 sm:px-8 mb-8 border-2 border-indigo-100/60 shadow-xl backdrop-blur-sm">
+      <div className="flex items-center justify-center space-x-2 sm:space-x-3 md:space-x-4 overflow-x-auto pb-2">
         {[
-          { num: 1, label: 'Setup' },
-          { num: 2, label: 'Keywords' },
-          { num: 3, label: 'Ads & Extensions' },
-          { num: 4, label: 'Geo Target' },
-          { num: 5, label: 'Review' },
-          { num: 6, label: 'Validate' }
-        ].map((s, idx) => (
-          <div key={s.num} className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold transition-all ${
-              step >= s.num 
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200' 
-                : 'bg-white text-slate-400 border border-slate-200'
-            }`}>
-              {s.num}
+          { num: 1, label: 'Setup', icon: Settings },
+          { num: 2, label: 'Keywords', icon: Hash },
+          { num: 3, label: 'Ads & Extensions', icon: Megaphone },
+          { num: 4, label: 'Geo Target', icon: MapPin },
+          { num: 5, label: 'Review', icon: Eye },
+          { num: 6, label: 'Validate', icon: ShieldCheck }
+        ].map((s, idx) => {
+          const Icon = s.icon;
+          const isActive = step === s.num;
+          const isCompleted = step > s.num;
+          
+          return (
+            <div key={s.num} className="flex items-center flex-shrink-0">
+              <div className="flex flex-col items-center">
+                <div className={`relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full font-bold text-base sm:text-lg transition-all duration-300 ${
+                  isActive
+                    ? 'bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-xl shadow-indigo-300/50 scale-110 ring-4 ring-indigo-200' 
+                    : isCompleted
+                    ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-200/50'
+                    : 'bg-white text-slate-400 border-2 border-slate-300 shadow-sm'
+                }`}>
+                  {isCompleted ? (
+                    <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} />
+                  ) : (
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  )}
+                </div>
+                <span className={`mt-2 text-xs sm:text-sm font-semibold transition-colors ${
+                  isActive 
+                    ? 'text-indigo-700' 
+                    : isCompleted
+                    ? 'text-green-700'
+                    : 'text-slate-500'
+                }`}>
+                  {s.label}
+                </span>
+              </div>
+              {idx < 5 && (
+                <div className={`w-8 sm:w-16 md:w-20 h-1.5 mx-2 sm:mx-3 rounded-full transition-all duration-500 ${
+                  isCompleted 
+                    ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-sm' 
+                    : step === s.num
+                    ? 'bg-gradient-to-r from-indigo-300 to-purple-300'
+                    : 'bg-slate-200'
+                }`} />
+              )}
             </div>
-            <span className={`ml-3 font-medium hidden sm:block ${step >= s.num ? 'text-slate-800' : 'text-slate-500'}`}>
-              {s.label}
-            </span>
-            {idx < 5 && (
-              <div className={`w-6 sm:w-12 h-1 mx-2 sm:mx-3 rounded-full ${step > s.num ? 'bg-indigo-300' : 'bg-slate-200'}`} />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -915,27 +941,40 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 1: Setup with Structure Selection
   const renderStep1 = () => {
     return (
-      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">Campaign Setup</h2>
-          <p className="text-slate-600">Choose your campaign structure and configure basic settings</p>
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl mb-4">
+            <Settings className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+            Campaign Setup
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Choose your campaign structure and configure basic settings to get started
+          </p>
         </div>
 
-        {/* Campaign Name & URL - Compact */}
-        <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-xl">
-          <CardContent className="pt-6 space-y-4">
-            <div>
-              <Label htmlFor="campaign-name" className="text-sm font-semibold mb-2 block text-indigo-900">Campaign Name</Label>
+        {/* Campaign Name & URL - Enhanced Design */}
+        <Card className="border-2 border-indigo-200/80 bg-gradient-to-br from-white via-indigo-50/40 to-purple-50/40 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-300">
+          <CardContent className="pt-8 pb-8 space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="campaign-name" className="text-base font-bold mb-3 block text-indigo-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-indigo-600" />
+                Campaign Name
+              </Label>
               <Input
                 id="campaign-name"
                 value={campaignName}
                 onChange={(e) => setCampaignName(e.target.value)}
                 placeholder="e.g., Summer Sale Campaign 2025"
-                className="border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400"
+                className="h-12 text-base border-2 border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl transition-all"
               />
             </div>
-            <div>
-              <Label htmlFor="landing-url" className="text-sm font-semibold mb-2 block text-indigo-900">Landing Page URL</Label>
+            <div className="space-y-2">
+              <Label htmlFor="landing-url" className="text-base font-bold mb-3 block text-indigo-900 flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-indigo-600" />
+                Landing Page URL
+              </Label>
               <Input
                 id="landing-url"
                 value={url}
@@ -958,11 +997,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   }
                 }}
                 placeholder="https://example.com"
-                className={`border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400 ${urlError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                className={`h-12 text-base border-2 rounded-xl transition-all ${
+                  urlError 
+                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200' 
+                    : 'border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200'
+                }`}
               />
               {urlError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-2 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {urlError}
                 </p>
               )}
@@ -970,105 +1013,142 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
-        {/* Structure Selection */}
-        <Card className="border-purple-200/60 bg-gradient-to-br from-white via-purple-50/20 to-pink-50/20 backdrop-blur-xl shadow-xl">
-          <CardHeader className="pb-4 border-b border-purple-100/50">
-            <CardTitle className="text-lg text-purple-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
+        {/* Structure Selection - Enhanced Design */}
+        <Card className="border-2 border-purple-200/80 bg-gradient-to-br from-white via-purple-50/30 to-pink-50/30 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-300">
+          <CardHeader className="pb-6 border-b-2 border-purple-100/60">
+            <CardTitle className="text-2xl font-bold text-purple-900 flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
               Campaign Structure
             </CardTitle>
+            <CardDescription className="text-base mt-2 text-purple-700">
+              Choose the structure that best fits your campaign strategy
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CardContent className="pt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {STRUCTURE_TYPES.map((structure) => {
                 const Icon = structure.icon;
                 const isSelected = structureType === structure.id;
                 
-                // Define color schemes for each structure
-                const colorSchemes: { [key: string]: { border: string; bg: string; iconBg: string; iconColor: string; hoverBorder: string } } = {
+                // Enhanced color schemes with gradients
+                const colorSchemes: { [key: string]: { 
+                  border: string; 
+                  bg: string; 
+                  iconBg: string; 
+                  iconGradient: string;
+                  iconColor: string; 
+                  hoverBorder: string;
+                  selectedRing: string;
+                } } = {
                   skag: { 
-                    border: 'border-blue-200', 
-                    bg: 'bg-gradient-to-br from-blue-50 to-cyan-50/50',
-                    iconBg: 'bg-blue-600',
-                    iconColor: 'text-blue-600',
-                    hoverBorder: 'hover:border-blue-300'
+                    border: 'border-blue-300', 
+                    bg: 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100/50',
+                    iconBg: 'bg-gradient-to-br from-blue-500 to-blue-600',
+                    iconGradient: 'from-blue-500 to-cyan-500',
+                    iconColor: 'text-blue-700',
+                    hoverBorder: 'hover:border-blue-400',
+                    selectedRing: 'ring-4 ring-blue-200'
                   },
                   stag: { 
-                    border: 'border-emerald-200', 
-                    bg: 'bg-gradient-to-br from-emerald-50 to-teal-50/50',
-                    iconBg: 'bg-emerald-600',
-                    iconColor: 'text-emerald-600',
-                    hoverBorder: 'hover:border-emerald-300'
+                    border: 'border-emerald-300', 
+                    bg: 'bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100/50',
+                    iconBg: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+                    iconGradient: 'from-emerald-500 to-teal-500',
+                    iconColor: 'text-emerald-700',
+                    hoverBorder: 'hover:border-emerald-400',
+                    selectedRing: 'ring-4 ring-emerald-200'
                   },
                   mix: { 
-                    border: 'border-purple-200', 
-                    bg: 'bg-gradient-to-br from-purple-50 to-pink-50/50',
-                    iconBg: 'bg-purple-600',
-                    iconColor: 'text-purple-600',
-                    hoverBorder: 'hover:border-purple-300'
+                    border: 'border-purple-300', 
+                    bg: 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100/50',
+                    iconBg: 'bg-gradient-to-br from-purple-500 to-purple-600',
+                    iconGradient: 'from-purple-500 to-pink-500',
+                    iconColor: 'text-purple-700',
+                    hoverBorder: 'hover:border-purple-400',
+                    selectedRing: 'ring-4 ring-purple-200'
                   },
-                  'stag-plus': { 
-                    border: 'border-amber-200', 
-                    bg: 'bg-gradient-to-br from-amber-50 to-orange-50/50',
-                    iconBg: 'bg-amber-600',
-                    iconColor: 'text-amber-600',
-                    hoverBorder: 'hover:border-amber-300'
+                  stag_plus: { 
+                    border: 'border-amber-300', 
+                    bg: 'bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100/50',
+                    iconBg: 'bg-gradient-to-br from-amber-500 to-amber-600',
+                    iconGradient: 'from-amber-500 to-orange-500',
+                    iconColor: 'text-amber-700',
+                    hoverBorder: 'hover:border-amber-400',
+                    selectedRing: 'ring-4 ring-amber-200'
                   },
-                  ibag: { 
-                    border: 'border-rose-200', 
-                    bg: 'bg-gradient-to-br from-rose-50 to-pink-50/50',
-                    iconBg: 'bg-rose-600',
-                    iconColor: 'text-rose-600',
-                    hoverBorder: 'hover:border-rose-300'
+                  intent: { 
+                    border: 'border-rose-300', 
+                    bg: 'bg-gradient-to-br from-rose-50 via-pink-50 to-rose-100/50',
+                    iconBg: 'bg-gradient-to-br from-rose-500 to-rose-600',
+                    iconGradient: 'from-rose-500 to-pink-500',
+                    iconColor: 'text-rose-700',
+                    hoverBorder: 'hover:border-rose-400',
+                    selectedRing: 'ring-4 ring-rose-200'
                   },
-                  'alpha-beta': { 
-                    border: 'border-violet-200', 
-                    bg: 'bg-gradient-to-br from-violet-50 to-purple-50/50',
-                    iconBg: 'bg-violet-600',
-                    iconColor: 'text-violet-600',
-                    hoverBorder: 'hover:border-violet-300'
+                  alpha_beta: { 
+                    border: 'border-violet-300', 
+                    bg: 'bg-gradient-to-br from-violet-50 via-purple-50 to-violet-100/50',
+                    iconBg: 'bg-gradient-to-br from-violet-500 to-violet-600',
+                    iconGradient: 'from-violet-500 to-purple-500',
+                    iconColor: 'text-violet-700',
+                    hoverBorder: 'hover:border-violet-400',
+                    selectedRing: 'ring-4 ring-violet-200'
                   },
-                  'match-type': { 
-                    border: 'border-indigo-200', 
-                    bg: 'bg-gradient-to-br from-indigo-50 to-blue-50/50',
-                    iconBg: 'bg-indigo-600',
-                    iconColor: 'text-indigo-600',
-                    hoverBorder: 'hover:border-indigo-300'
+                  match_type: { 
+                    border: 'border-indigo-300', 
+                    bg: 'bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-100/50',
+                    iconBg: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+                    iconGradient: 'from-indigo-500 to-blue-500',
+                    iconColor: 'text-indigo-700',
+                    hoverBorder: 'hover:border-indigo-400',
+                    selectedRing: 'ring-4 ring-indigo-200'
                   },
-                  'geo-segmented': { 
-                    border: 'border-teal-200', 
-                    bg: 'bg-gradient-to-br from-teal-50 to-cyan-50/50',
-                    iconBg: 'bg-teal-600',
-                    iconColor: 'text-teal-600',
-                    hoverBorder: 'hover:border-teal-300'
+                  geo: { 
+                    border: 'border-teal-300', 
+                    bg: 'bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-100/50',
+                    iconBg: 'bg-gradient-to-br from-teal-500 to-teal-600',
+                    iconGradient: 'from-teal-500 to-cyan-500',
+                    iconColor: 'text-teal-700',
+                    hoverBorder: 'hover:border-teal-400',
+                    selectedRing: 'ring-4 ring-teal-200'
                   },
-                  'funnel-based': { 
-                    border: 'border-cyan-200', 
-                    bg: 'bg-gradient-to-br from-cyan-50 to-sky-50/50',
-                    iconBg: 'bg-cyan-600',
-                    iconColor: 'text-cyan-600',
-                    hoverBorder: 'hover:border-cyan-300'
+                  funnel: { 
+                    border: 'border-cyan-300', 
+                    bg: 'bg-gradient-to-br from-cyan-50 via-sky-50 to-cyan-100/50',
+                    iconBg: 'bg-gradient-to-br from-cyan-500 to-cyan-600',
+                    iconGradient: 'from-cyan-500 to-sky-500',
+                    iconColor: 'text-cyan-700',
+                    hoverBorder: 'hover:border-cyan-400',
+                    selectedRing: 'ring-4 ring-cyan-200'
                   },
-                  'brand-vs-nonbrand': { 
-                    border: 'border-slate-200', 
-                    bg: 'bg-gradient-to-br from-slate-50 to-gray-50/50',
-                    iconBg: 'bg-slate-600',
-                    iconColor: 'text-slate-600',
-                    hoverBorder: 'hover:border-slate-300'
+                  brand_split: { 
+                    border: 'border-slate-300', 
+                    bg: 'bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100/50',
+                    iconBg: 'bg-gradient-to-br from-slate-500 to-slate-600',
+                    iconGradient: 'from-slate-500 to-gray-500',
+                    iconColor: 'text-slate-700',
+                    hoverBorder: 'hover:border-slate-400',
+                    selectedRing: 'ring-4 ring-slate-200'
                   },
-                  'competitor': { 
-                    border: 'border-red-200', 
-                    bg: 'bg-gradient-to-br from-red-50 to-rose-50/50',
-                    iconBg: 'bg-red-600',
-                    iconColor: 'text-red-600',
-                    hoverBorder: 'hover:border-red-300'
+                  competitor: { 
+                    border: 'border-red-300', 
+                    bg: 'bg-gradient-to-br from-red-50 via-rose-50 to-red-100/50',
+                    iconBg: 'bg-gradient-to-br from-red-500 to-red-600',
+                    iconGradient: 'from-red-500 to-rose-500',
+                    iconColor: 'text-red-700',
+                    hoverBorder: 'hover:border-red-400',
+                    selectedRing: 'ring-4 ring-red-200'
                   },
-                  'smart-cluster': { 
-                    border: 'border-fuchsia-200', 
-                    bg: 'bg-gradient-to-br from-fuchsia-50 to-pink-50/50',
-                    iconBg: 'bg-fuchsia-600',
-                    iconColor: 'text-fuchsia-600',
-                    hoverBorder: 'hover:border-fuchsia-300'
+                  ngram: { 
+                    border: 'border-fuchsia-300', 
+                    bg: 'bg-gradient-to-br from-fuchsia-50 via-pink-50 to-fuchsia-100/50',
+                    iconBg: 'bg-gradient-to-br from-fuchsia-500 to-fuchsia-600',
+                    iconGradient: 'from-fuchsia-500 to-pink-500',
+                    iconColor: 'text-fuchsia-700',
+                    hoverBorder: 'hover:border-fuchsia-400',
+                    selectedRing: 'ring-4 ring-fuchsia-200'
                   },
                 };
                 
@@ -1078,25 +1158,33 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <Card
                     key={structure.id}
                     onClick={() => setStructureType(structure.id)}
-                    className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${
+                    className={`cursor-pointer transition-all duration-300 transform hover:scale-[1.03] hover:shadow-xl ${
                       isSelected 
-                        ? `border-2 ${colors.border} ${colors.bg} shadow-md` 
-                        : `border ${colors.border} bg-white/60 ${colors.hoverBorder}`
+                        ? `border-2 ${colors.border} ${colors.bg} shadow-xl ${colors.selectedRing} scale-[1.02]` 
+                        : `border-2 ${colors.border} bg-white/80 ${colors.hoverBorder} hover:bg-white`
                     }`}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2">
-                        <div className={`p-1.5 rounded-lg ${
-                          isSelected ? `${colors.iconBg} text-white shadow-sm` : `bg-gradient-to-br from-slate-100 to-slate-50 ${colors.iconColor}`
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-xl shadow-lg transition-all duration-300 ${
+                          isSelected 
+                            ? `${colors.iconBg} text-white scale-110` 
+                            : `bg-gradient-to-br ${colors.iconGradient} text-white opacity-80 hover:opacity-100`
                         }`}>
-                          <Icon className="w-4 h-4" />
+                          <Icon className="w-6 h-6" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className={`font-semibold text-sm mb-0.5 ${isSelected ? colors.iconColor : 'text-slate-800'}`}>{structure.name}</h3>
-                          <p className="text-xs text-slate-600 line-clamp-2">{structure.description}</p>
+                          <h3 className={`font-bold text-base mb-1.5 ${isSelected ? colors.iconColor : 'text-slate-800'}`}>
+                            {structure.name}
+                          </h3>
+                          <p className={`text-sm leading-relaxed ${isSelected ? 'text-slate-700' : 'text-slate-600'}`}>
+                            {structure.description}
+                          </p>
                         </div>
                         {isSelected && (
-                          <CheckCircle2 className={`w-4 h-4 ${colors.iconColor} flex-shrink-0`} />
+                          <div className={`flex-shrink-0 ${colors.iconColor}`}>
+                            <CheckCircle2 className="w-6 h-6" strokeWidth={2.5} />
+                          </div>
                         )}
                       </div>
                     </CardContent>
@@ -1107,19 +1195,24 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
-        {/* Match Types - Keyword Match Types */}
-        <Card className="border-teal-200/60 bg-gradient-to-br from-white via-teal-50/20 to-cyan-50/20 backdrop-blur-xl shadow-xl">
-          <CardHeader className="pb-4 border-b border-teal-100/50">
-            <CardTitle className="text-lg text-teal-900 flex items-center gap-2">
-              <Tag className="w-5 h-5 text-teal-600" />
+        {/* Match Types - Enhanced Design */}
+        <Card className="border-2 border-teal-200/80 bg-gradient-to-br from-white via-teal-50/30 to-cyan-50/30 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-300">
+          <CardHeader className="pb-6 border-b-2 border-teal-100/60">
+            <CardTitle className="text-2xl font-bold text-teal-900 flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl shadow-lg">
+                <Tag className="w-6 h-6 text-white" />
+              </div>
               Match Types
             </CardTitle>
+            <CardDescription className="text-base mt-2 text-teal-700">
+              Select which keyword match types to include in your campaign
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-4">
+          <CardContent className="pt-8">
+            <div className="flex flex-wrap gap-5">
               <Label 
                 htmlFor="broad" 
-                className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-3 rounded-xl border-2 border-amber-200 cursor-pointer hover:border-amber-300 hover:shadow-md transition-all duration-200 group"
+                className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 px-6 py-4 rounded-xl border-2 border-amber-300 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
               >
                 <Checkbox
                   id="broad"
@@ -1127,14 +1220,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes({ ...matchTypes, broad: !!checked });
                   }}
-                  className="border-amber-400"
+                  className="border-amber-500 w-5 h-5"
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-semibold text-sm text-amber-900 group-hover:text-amber-950 transition-colors">Broad Match</span>
+                <span className="font-bold text-base text-amber-900 group-hover:text-amber-950 transition-colors">Broad Match</span>
               </Label>
               <Label 
                 htmlFor="phrase" 
-                className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 to-cyan-50 px-4 py-3 rounded-xl border-2 border-blue-200 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 px-6 py-4 rounded-xl border-2 border-blue-300 cursor-pointer hover:border-blue-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
               >
                 <Checkbox
                   id="phrase"
@@ -1142,14 +1235,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes({ ...matchTypes, phrase: !!checked });
                   }}
-                  className="border-blue-400"
+                  className="border-blue-500 w-5 h-5"
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-semibold text-sm text-blue-900 group-hover:text-blue-950 transition-colors">Phrase Match</span>
+                <span className="font-bold text-base text-blue-900 group-hover:text-blue-950 transition-colors">Phrase Match</span>
               </Label>
               <Label 
                 htmlFor="exact" 
-                className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 to-teal-50 px-4 py-3 rounded-xl border-2 border-emerald-200 cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all duration-200 group"
+                className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 px-6 py-4 rounded-xl border-2 border-emerald-300 cursor-pointer hover:border-emerald-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
               >
                 <Checkbox
                   id="exact"
@@ -1157,17 +1250,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes({ ...matchTypes, exact: !!checked });
                   }}
-                  className="border-emerald-400"
+                  className="border-emerald-500 w-5 h-5"
                   onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-semibold text-sm text-emerald-900 group-hover:text-emerald-950 transition-colors">Exact Match</span>
+                <span className="font-bold text-base text-emerald-900 group-hover:text-emerald-950 transition-colors">Exact Match</span>
               </Label>
             </div>
           </CardContent>
         </Card>
 
-        {/* Navigation */}
-        <div className="flex justify-end">
+        {/* Navigation - Enhanced */}
+        <div className="flex justify-end pt-6">
           <Button
             size="lg"
             onClick={() => {
@@ -1191,9 +1284,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               }
               setStep(2);
             }}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+            className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 px-8 py-6 text-lg font-bold h-auto"
           >
-            Next: Keywords <ArrowRight className="ml-2 w-5 h-5" />
+            Next: Keywords 
+            <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
       </div>
@@ -4958,26 +5052,38 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 via-purple-50/30 to-indigo-50">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'builder' | 'saved')} className="w-full">
-        <div className="sticky top-0 z-40 bg-white border-b border-slate-300 shadow-sm">
+        <div className="sticky top-0 z-40 bg-gradient-to-r from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl border-b-2 border-indigo-200/60 shadow-xl">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <TabsList className="w-full justify-start bg-white h-16 border-0">
+            <div className="flex items-center justify-between py-4 mb-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Campaign Builder
+                </h1>
+              </div>
+            </div>
+            <TabsList className="w-full justify-start bg-transparent h-14 border-0 gap-2">
               <TabsTrigger 
                 value="builder" 
-                className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 font-semibold px-6 rounded-t-lg border-b-2 data-[state=active]:border-indigo-600 data-[state=inactive]:border-transparent"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 data-[state=inactive]:bg-white/60 data-[state=inactive]:hover:bg-white font-bold px-8 py-3 rounded-xl border-2 data-[state=active]:border-transparent data-[state=inactive]:border-slate-300 transition-all duration-300 shadow-lg data-[state=active]:shadow-xl data-[state=active]:scale-105"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
+                <Sparkles className="w-5 h-5 mr-2" />
                 Campaign Builder
               </TabsTrigger>
               <TabsTrigger 
                 value="saved" 
-                className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 font-semibold px-6 rounded-t-lg border-b-2 data-[state=active]:border-indigo-600 data-[state=inactive]:border-transparent"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=inactive]:text-slate-700 data-[state=inactive]:bg-white/60 data-[state=inactive]:hover:bg-white font-bold px-8 py-3 rounded-xl border-2 data-[state=active]:border-transparent data-[state=inactive]:border-slate-300 transition-all duration-300 shadow-lg data-[state=active]:shadow-xl data-[state=active]:scale-105"
               >
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="w-5 h-5 mr-2" />
                 Saved Campaigns
                 {savedCampaigns.length > 0 && (
-                  <Badge className="ml-2 bg-white text-indigo-600">{savedCampaigns.length}</Badge>
+                  <Badge className="ml-2 bg-white/90 text-indigo-600 font-bold border-2 border-indigo-200">
+                    {savedCampaigns.length}
+                  </Badge>
                 )}
               </TabsTrigger>
             </TabsList>
@@ -4985,15 +5091,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         </div>
 
         <TabsContent value="builder" className="mt-0">
-          <div className="py-8 px-4 sm:px-6 lg:px-8">
-      {renderStepIndicator()}
-      
-      {step === 1 && renderStep1()}
-      {step === 2 && renderStep2()}
-      {step === 3 && renderStep3()}
-      {step === 4 && renderStep4()}
-      {step === 5 && renderStep5()}
-      {step === 6 && renderStep6()}
+          <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            {renderStepIndicator()}
+            
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
+            {step === 4 && renderStep4()}
+            {step === 5 && renderStep5()}
+            {step === 6 && renderStep6()}
           </div>
         </TabsContent>
 
