@@ -34,6 +34,14 @@ import { rateLimiter } from '../utils/rateLimiter';
 import { usageTracker } from '../utils/usageTracker';
 import { inputValidator } from '../utils/inputValidator';
 import { adHistoryManager, type AdHistoryState } from '../utils/adHistory';
+import { 
+    generateAds, 
+    detectUserIntent,
+    type AdGenerationInput,
+    type ResponsiveSearchAd,
+    type ExpandedTextAd,
+    type CallOnlyAd
+} from '../utils/googleAdGenerator';
 
 // --- Constants & Mock Data ---
 
@@ -2465,20 +2473,67 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
             const mainKeyword = allGroups[0]?.keywords?.[0] || 'your service';
             
-            // Create DKI ad
-            // Bug_77b: Fix DKI format - should be {Keyword:Default Text} not {KeyWord:}
+            // Use new comprehensive ad generation logic for DKI ad
+            const intent = detectUserIntent([mainKeyword], 'Services');
+            const industry = intent === 'product' ? 'Products' : 'Services';
+            
+            let matchType: 'broad' | 'phrase' | 'exact' = 'phrase';
+            if (matchTypes.exact) matchType = 'exact';
+            else if (matchTypes.phrase) matchType = 'phrase';
+            else if (matchTypes.broad) matchType = 'broad';
+            
+            let campaignStructure: 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta' = 'STAG';
+            if (structure === 'SKAG') campaignStructure = 'SKAG';
+            else if (structure === 'STAG') campaignStructure = 'STAG';
+            
+            const input: AdGenerationInput = {
+                keywords: [mainKeyword],
+                industry: industry,
+                businessName: 'Your Business',
+                baseUrl: formattedUrl,
+                adType: 'RSA', // Generate as RSA first, then convert to DKI
+                filters: {
+                    matchType: matchType,
+                    campaignStructure: campaignStructure,
+                }
+            };
+            
+            const generatedAd = generateAds(input) as ResponsiveSearchAd;
+            const mainKeywordTitle = mainKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            
+            // Convert to DKI format
+            const dkiHeadlines = generatedAd.headlines.slice(0, 3).map(h => {
+                const keywordLower = mainKeyword.toLowerCase();
+                const headlineLower = h.toLowerCase();
+                if (headlineLower.includes(keywordLower)) {
+                    const regex = new RegExp(keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                    return h.replace(regex, `{Keyword:${mainKeywordTitle}}`).substring(0, 30);
+                }
+                return `{Keyword:${mainKeywordTitle}} - ${h}`.substring(0, 30);
+            });
+            
+            const dkiDescriptions = generatedAd.descriptions.slice(0, 2).map(d => {
+                const keywordLower = mainKeyword.toLowerCase();
+                const descLower = d.toLowerCase();
+                if (descLower.includes(keywordLower)) {
+                    const regex = new RegExp(keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                    return d.replace(regex, `{Keyword:${mainKeywordTitle}}`).substring(0, 90);
+                }
+                return d.substring(0, 90);
+            });
+            
             const dkiAd: any = {
                 id: Date.now(),
                 type: 'dki',
                 adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
-                headline1: `{Keyword:${mainKeyword}} - Official Site`,
-                headline2: `Best {Keyword:${mainKeyword}} Deals`,
-                headline3: `Order {Keyword:${mainKeyword}} Online`,
-                description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
-                description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
-                finalUrl: formattedUrl,
-                path1: 'keyword',
-                path2: 'deals'
+                headline1: dkiHeadlines[0] || '',
+                headline2: dkiHeadlines[1] || '',
+                headline3: dkiHeadlines[2] || '',
+                description1: dkiDescriptions[0] || '',
+                description2: dkiDescriptions[1] || '',
+                finalUrl: generatedAd.finalUrl || formattedUrl,
+                path1: generatedAd.displayPath[0] || 'keyword',
+                path2: generatedAd.displayPath[1] || 'deals'
             };
             
             // Save state before creating DKI ad
@@ -2603,43 +2658,106 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     adGroup: ALL_AD_GROUPS_VALUE // Mark as ALL_AD_GROUPS ad
                 };
                 
-                // Create ad based on type
-                if (type === 'rsa') {
-                    baseAd = {
-                        ...baseAd,
-                        headline1: `${mainKeyword} - Best Deals`,
-                        headline2: 'Shop Now & Save',
-                        headline3: 'Fast Delivery Available',
-                        description1: `Looking for ${mainKeyword}? We offer competitive prices and excellent service.`,
-                        description2: `Get your ${mainKeyword} today with free shipping on orders over $50.`,
-                        finalUrl: formattedUrl,
-                        path1: 'shop',
-                        path2: 'now'
-                    };
-                } else if (type === 'dki') {
-                    baseAd = {
-                        ...baseAd,
-                        // Bug_77b: Fix DKI format
-                        headline1: `{Keyword:${mainKeyword}} - Official Site`,
-                        headline2: `Best {Keyword:${mainKeyword}} Deals`,
-                        headline3: `Order {Keyword:${mainKeyword}} Online`,
-                        description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
-                        description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
-                        finalUrl: formattedUrl,
-                        path1: 'keyword',
-                        path2: 'deals'
-                    };
-                } else if (type === 'callonly') {
-                    baseAd = {
-                        ...baseAd,
-                        headline1: `Call for ${mainKeyword}`,
-                        headline2: 'Available 24/7 - Speak to Expert',
-                        description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing.`,
-                        description2: 'Get immediate assistance. Our specialists are ready to help!',
-                        phone: '(555) 123-4567',
+                // Use new comprehensive ad generation logic
+                if (type === 'rsa' || type === 'dki' || type === 'callonly') {
+                    // Detect intent and industry
+                    const intent = detectUserIntent([mainKeyword], 'Services');
+                    const industry = intent === 'product' ? 'Products' : 'Services';
+                    
+                    // Determine match type from state
+                    let matchType: 'broad' | 'phrase' | 'exact' = 'phrase';
+                    if (matchTypes.exact) matchType = 'exact';
+                    else if (matchTypes.phrase) matchType = 'phrase';
+                    else if (matchTypes.broad) matchType = 'broad';
+                    
+                    // Determine campaign structure
+                    let campaignStructure: 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta' = 'STAG';
+                    if (structure === 'SKAG') campaignStructure = 'SKAG';
+                    else if (structure === 'STAG') campaignStructure = 'STAG';
+                    else campaignStructure = 'STAG';
+                    
+                    // Create input for ad generator
+                    const input: AdGenerationInput = {
+                        keywords: [mainKeyword],
+                        industry: industry,
                         businessName: 'Your Business',
-                        finalUrl: formattedUrl
+                        baseUrl: formattedUrl,
+                        adType: type === 'rsa' ? 'RSA' : type === 'dki' ? 'RSA' : 'CALL_ONLY',
+                        filters: {
+                            matchType: matchType,
+                            campaignStructure: campaignStructure,
+                        }
                     };
+                    
+                    // Generate ad
+                    if (type === 'rsa') {
+                        const generatedAd = generateAds(input) as ResponsiveSearchAd;
+                        baseAd = {
+                            ...baseAd,
+                            headline1: generatedAd.headlines[0] || '',
+                            headline2: generatedAd.headlines[1] || '',
+                            headline3: generatedAd.headlines[2] || '',
+                            headline4: generatedAd.headlines[3] || '',
+                            headline5: generatedAd.headlines[4] || '',
+                            description1: generatedAd.descriptions[0] || '',
+                            description2: generatedAd.descriptions[1] || '',
+                            description3: generatedAd.descriptions[2] || '',
+                            description4: generatedAd.descriptions[3] || '',
+                            finalUrl: generatedAd.finalUrl || formattedUrl,
+                            path1: generatedAd.displayPath[0] || 'shop',
+                            path2: generatedAd.displayPath[1] || 'now'
+                        };
+                    } else if (type === 'dki') {
+                        // Generate RSA first, then convert to DKI format
+                        const generatedAd = generateAds(input) as ResponsiveSearchAd;
+                        const mainKeywordTitle = mainKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                        
+                        // Convert headlines to DKI format
+                        const dkiHeadlines = generatedAd.headlines.slice(0, 3).map(h => {
+                            const keywordLower = mainKeyword.toLowerCase();
+                            const headlineLower = h.toLowerCase();
+                            if (headlineLower.includes(keywordLower)) {
+                                const regex = new RegExp(keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                                return h.replace(regex, `{Keyword:${mainKeywordTitle}}`).substring(0, 30);
+                            }
+                            return `{Keyword:${mainKeywordTitle}} - ${h}`.substring(0, 30);
+                        });
+                        
+                        // Convert descriptions to DKI format
+                        const dkiDescriptions = generatedAd.descriptions.slice(0, 2).map(d => {
+                            const keywordLower = mainKeyword.toLowerCase();
+                            const descLower = d.toLowerCase();
+                            if (descLower.includes(keywordLower)) {
+                                const regex = new RegExp(keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                                return d.replace(regex, `{Keyword:${mainKeywordTitle}}`).substring(0, 90);
+                            }
+                            return d.substring(0, 90);
+                        });
+                        
+                        baseAd = {
+                            ...baseAd,
+                            headline1: dkiHeadlines[0] || '',
+                            headline2: dkiHeadlines[1] || '',
+                            headline3: dkiHeadlines[2] || '',
+                            description1: dkiDescriptions[0] || '',
+                            description2: dkiDescriptions[1] || '',
+                            finalUrl: generatedAd.finalUrl || formattedUrl,
+                            path1: generatedAd.displayPath[0] || 'keyword',
+                            path2: generatedAd.displayPath[1] || 'deals'
+                        };
+                    } else if (type === 'callonly') {
+                        const generatedAd = generateAds(input) as CallOnlyAd;
+                        baseAd = {
+                            ...baseAd,
+                            headline1: generatedAd.headline1 || '',
+                            headline2: generatedAd.headline2 || '',
+                            description1: generatedAd.description1 || '',
+                            description2: generatedAd.description2 || '',
+                            phone: generatedAd.phoneNumber || '(555) 123-4567',
+                            businessName: generatedAd.businessName || 'Your Business',
+                            finalUrl: generatedAd.verificationUrl || formattedUrl
+                        };
+                    }
                 } else if (type === 'snippet') {
                     baseAd = {
                         ...baseAd,
@@ -2780,42 +2898,106 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const baseUrl = url || 'www.example.com';
         const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
 
-        if (type === 'rsa') {
-            newAd = {
-                ...newAd,
-                headline1: `${mainKeyword} - Best Deals`,
-                headline2: 'Shop Now & Save',
-                headline3: 'Fast Delivery Available',
-                description1: `Looking for ${mainKeyword}? We offer competitive prices and excellent service.`,
-                description2: `Get your ${mainKeyword} today with free shipping on orders over $50.`,
-                finalUrl: formattedUrl,
-                path1: 'shop',
-                path2: 'now'
-            };
-        } else if (type === 'dki') {
-            // Bug_77b: Fix DKI format - should be {Keyword:Default Text} not {KeyWord:}
-            newAd = {
-                ...newAd,
-                headline1: `{Keyword:${mainKeyword}} - Official Site`,
-                headline2: `Best {Keyword:${mainKeyword}} Deals`,
-                headline3: `Order {Keyword:${mainKeyword}} Online`,
-                description1: `Find quality {Keyword:${mainKeyword}} at great prices. Shop our selection today.`,
-                description2: `Get your {Keyword:${mainKeyword}} with fast shipping and expert support.`,
-                finalUrl: formattedUrl,
-                path1: 'keyword',
-                path2: 'deals'
-            };
-        } else if (type === 'callonly') {
-            newAd = {
-                ...newAd,
-                headline1: `Call for ${mainKeyword}`,
-                headline2: 'Available 24/7 - Speak to Expert',
-                description1: `Need ${mainKeyword}? Call us now for expert advice and the best pricing.`,
-                description2: 'Get immediate assistance. Our specialists are ready to help!',
-                phone: '(555) 123-4567',
+        // Use new comprehensive ad generation logic
+        if (type === 'rsa' || type === 'dki' || type === 'callonly') {
+            // Detect intent and industry
+            const intent = detectUserIntent([mainKeyword], 'Services');
+            const industry = intent === 'product' ? 'Products' : 'Services';
+            
+            // Determine match type from state
+            let matchType: 'broad' | 'phrase' | 'exact' = 'phrase';
+            if (matchTypes.exact) matchType = 'exact';
+            else if (matchTypes.phrase) matchType = 'phrase';
+            else if (matchTypes.broad) matchType = 'broad';
+            
+            // Determine campaign structure
+            let campaignStructure: 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta' = 'STAG';
+            if (structure === 'SKAG') campaignStructure = 'SKAG';
+            else if (structure === 'STAG') campaignStructure = 'STAG';
+            else campaignStructure = 'STAG';
+            
+            // Create input for ad generator
+            const input: AdGenerationInput = {
+                keywords: [mainKeyword],
+                industry: industry,
                 businessName: 'Your Business',
-                finalUrl: formattedUrl
+                baseUrl: formattedUrl,
+                adType: type === 'rsa' ? 'RSA' : type === 'dki' ? 'RSA' : 'CALL_ONLY', // DKI uses RSA generation then converts
+                filters: {
+                    matchType: matchType,
+                    campaignStructure: campaignStructure,
+                }
             };
+            
+            // Generate ad
+            if (type === 'rsa') {
+                const generatedAd = generateAds(input) as ResponsiveSearchAd;
+                newAd = {
+                    ...newAd,
+                    headline1: generatedAd.headlines[0] || '',
+                    headline2: generatedAd.headlines[1] || '',
+                    headline3: generatedAd.headlines[2] || '',
+                    headline4: generatedAd.headlines[3] || '',
+                    headline5: generatedAd.headlines[4] || '',
+                    description1: generatedAd.descriptions[0] || '',
+                    description2: generatedAd.descriptions[1] || '',
+                    description3: generatedAd.descriptions[2] || '',
+                    description4: generatedAd.descriptions[3] || '',
+                    finalUrl: generatedAd.finalUrl || formattedUrl,
+                    path1: generatedAd.displayPath[0] || 'shop',
+                    path2: generatedAd.displayPath[1] || 'now'
+                };
+            } else if (type === 'dki') {
+                // Generate RSA first, then convert to DKI format
+                const generatedAd = generateAds(input) as ResponsiveSearchAd;
+                const mainKeywordTitle = mainKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                
+                // Convert headlines to DKI format
+                const dkiHeadlines = generatedAd.headlines.slice(0, 3).map(h => {
+                    const keywordLower = mainKeyword.toLowerCase();
+                    const headlineLower = h.toLowerCase();
+                    if (headlineLower.includes(keywordLower)) {
+                        const regex = new RegExp(keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                        return h.replace(regex, `{Keyword:${mainKeywordTitle}}`).substring(0, 30);
+                    }
+                    return `{Keyword:${mainKeywordTitle}} - ${h}`.substring(0, 30);
+                });
+                
+                // Convert descriptions to DKI format
+                const dkiDescriptions = generatedAd.descriptions.slice(0, 2).map(d => {
+                    const keywordLower = mainKeyword.toLowerCase();
+                    const descLower = d.toLowerCase();
+                    if (descLower.includes(keywordLower)) {
+                        const regex = new RegExp(keywordLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                        return d.replace(regex, `{Keyword:${mainKeywordTitle}}`).substring(0, 90);
+                    }
+                    return d.substring(0, 90);
+                });
+                
+                newAd = {
+                    ...newAd,
+                    headline1: dkiHeadlines[0] || '',
+                    headline2: dkiHeadlines[1] || '',
+                    headline3: dkiHeadlines[2] || '',
+                    description1: dkiDescriptions[0] || '',
+                    description2: dkiDescriptions[1] || '',
+                    finalUrl: generatedAd.finalUrl || formattedUrl,
+                    path1: generatedAd.displayPath[0] || 'keyword',
+                    path2: generatedAd.displayPath[1] || 'deals'
+                };
+            } else if (type === 'callonly') {
+                const generatedAd = generateAds(input) as CallOnlyAd;
+                newAd = {
+                    ...newAd,
+                    headline1: generatedAd.headline1 || '',
+                    headline2: generatedAd.headline2 || '',
+                    description1: generatedAd.description1 || '',
+                    description2: generatedAd.description2 || '',
+                    phone: generatedAd.phoneNumber || '(555) 123-4567',
+                    businessName: generatedAd.businessName || 'Your Business',
+                    finalUrl: generatedAd.verificationUrl || formattedUrl
+                };
+            }
         } else if (type === 'snippet') {
             newAd = {
                 ...newAd,
