@@ -84,10 +84,10 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center">
+    <div className="min-h-screen bg-white flex flex-col items-center w-full">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-b border-slate-200 z-50 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-center">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
@@ -168,7 +168,7 @@ export default function HomePage({ onGetStarted, onLogin }: HomePageProps) {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 w-full flex justify-center">
+      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 w-full flex justify-center items-center">
         <div className="max-w-4xl w-full mx-auto text-center">
           <h1 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6">
             Build Better
