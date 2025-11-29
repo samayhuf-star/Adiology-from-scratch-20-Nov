@@ -577,6 +577,25 @@ const App = () => {
         return;
       }
 
+      // Preserve home page when on root path - don't auto-redirect logged-in users
+      // This prevents the home page from disappearing when a user is logged in
+      if (path === '/' || path === '') {
+        // If already on home view, preserve it (even if user is logged in)
+        if (appView === 'home') {
+          return;
+        }
+        // If not on home and no user, go to home
+        if (!user) {
+          setView('home');
+          return;
+        }
+        // If user exists but we're on root, default to home (not user view)
+        // Users can manually navigate to dashboard via login/signup buttons
+        setView('home');
+        return;
+      }
+
+      // For non-root paths, use normal logic
       setView(user ? 'user' : 'home');
     };
 
