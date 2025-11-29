@@ -6,7 +6,7 @@ import {
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
   Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map, Funnel, 
-  Users, TrendingDown, Network, Filter, Info, FolderOpen, Cog, Megaphone
+  Users, TrendingDown, Network, Filter, Info, FolderOpen, Cog, Megaphone, MinusCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -1367,7 +1367,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     className={`cursor-pointer transition-all duration-300 transform hover:scale-[1.03] hover:shadow-xl ${
                       isSelected 
                         ? `border-2 ${colors.border} ${colors.bg} shadow-xl ${colors.selectedRing} scale-[1.02]` 
-                        : `border-2 ${colors.border} bg-white/80 ${colors.hoverBorder} hover:bg-white`
+                        : `border-2 border-slate-200 bg-slate-50/50 opacity-60 hover:opacity-80 hover:border-slate-300`
                     }`}
                   >
                     <CardContent className="p-5">
@@ -1375,15 +1375,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         <div className={`p-3 rounded-xl shadow-lg transition-all duration-300 ${
                           isSelected 
                             ? `${colors.iconBg} text-white scale-110` 
-                            : `bg-gradient-to-br ${colors.iconGradient} text-white opacity-80 hover:opacity-100`
+                            : `bg-slate-300 text-slate-500 opacity-50`
                         }`}>
                           <Icon className="w-6 h-6" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className={`font-bold text-base mb-1.5 ${isSelected ? colors.iconColor : 'text-slate-800'}`}>
+                          <h3 className={`font-bold text-base mb-1.5 ${isSelected ? colors.iconColor : 'text-slate-500'}`}>
                             {structure.name}
                           </h3>
-                          <p className={`text-sm leading-relaxed ${isSelected ? 'text-slate-700' : 'text-slate-600'}`}>
+                          <p className={`text-sm leading-relaxed ${isSelected ? 'text-slate-700' : 'text-slate-400'}`}>
                             {structure.description}
                           </p>
                         </div>
@@ -1416,10 +1416,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardHeader>
           <CardContent className="pt-8">
             <div className="flex flex-wrap gap-5">
-              <Label 
-                htmlFor="broad" 
-                className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 px-6 py-4 rounded-xl border-2 border-amber-300 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
-              >
+              <div className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 px-6 py-4 rounded-xl border-2 border-amber-300 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]">
                 <Checkbox
                   id="broad"
                   checked={matchTypes.broad}
@@ -1427,14 +1424,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     setMatchTypes({ ...matchTypes, broad: !!checked });
                   }}
                   className="border-amber-500 w-5 h-5"
-                  onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-bold text-base text-amber-900 group-hover:text-amber-950 transition-colors">Broad Match</span>
-              </Label>
-              <Label 
-                htmlFor="phrase" 
-                className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 px-6 py-4 rounded-xl border-2 border-blue-300 cursor-pointer hover:border-blue-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
-              >
+                <Label 
+                  htmlFor="broad" 
+                  className="font-bold text-base text-amber-900 group-hover:text-amber-950 transition-colors cursor-pointer"
+                >
+                  Broad Match
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 px-6 py-4 rounded-xl border-2 border-blue-300 cursor-pointer hover:border-blue-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]">
                 <Checkbox
                   id="phrase"
                   checked={matchTypes.phrase}
@@ -1442,14 +1440,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     setMatchTypes({ ...matchTypes, phrase: !!checked });
                   }}
                   className="border-blue-500 w-5 h-5"
-                  onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-bold text-base text-blue-900 group-hover:text-blue-950 transition-colors">Phrase Match</span>
-              </Label>
-              <Label 
-                htmlFor="exact" 
-                className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 px-6 py-4 rounded-xl border-2 border-emerald-300 cursor-pointer hover:border-emerald-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
-              >
+                <Label 
+                  htmlFor="phrase" 
+                  className="font-bold text-base text-blue-900 group-hover:text-blue-950 transition-colors cursor-pointer"
+                >
+                  Phrase Match
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 px-6 py-4 rounded-xl border-2 border-emerald-300 cursor-pointer hover:border-emerald-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]">
                 <Checkbox
                   id="exact"
                   checked={matchTypes.exact}
@@ -1457,10 +1456,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     setMatchTypes({ ...matchTypes, exact: !!checked });
                   }}
                   className="border-emerald-500 w-5 h-5"
-                  onClick={(e) => e.stopPropagation()}
                 />
-                <span className="font-bold text-base text-emerald-900 group-hover:text-emerald-950 transition-colors">Exact Match</span>
-              </Label>
+                <Label 
+                  htmlFor="exact" 
+                  className="font-bold text-base text-emerald-900 group-hover:text-emerald-950 transition-colors cursor-pointer"
+                >
+                  Exact Match
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1490,7 +1493,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               }
               setStep(2);
             }}
-            className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 px-8 py-6 text-lg font-bold h-auto"
+            className="bg-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-105 hover:bg-indigo-700 transition-all duration-300 px-8 py-6 text-lg font-bold h-auto"
           >
             Next: Keywords 
             <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />

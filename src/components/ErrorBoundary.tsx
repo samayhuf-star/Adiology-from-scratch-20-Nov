@@ -24,23 +24,25 @@ class ErrorBoundary extends Component<Props, State> {
     // Log to console
     console.error('App Error:', error, errorInfo);
     
-    // Optional: Send to your backend
-    try {
-      fetch('/api/log-error', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          error: error.message, 
-          stack: error.stack,
-          componentStack: errorInfo.componentStack 
-        })
-      }).catch(() => {
-        // Silently fail if error logging endpoint doesn't exist
-      });
-    } catch (e) {
-      // Silently fail if fetch is not available
+    // Optional: Send to your backend (only in production, and silently fail if endpoint doesn't exist)
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        fetch('/api/log-error', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            error: error.message, 
+            stack: error.stack,
+            componentStack: errorInfo.componentStack 
+          })
+        }).catch(() => {
+          // Silently fail if error logging endpoint doesn't exist or returns an error
+        });
+      } catch (e) {
+        // Silently fail if fetch is not available
+      }
     }
   }
 
