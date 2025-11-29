@@ -13,6 +13,14 @@ import { historyService } from '../utils/historyService';
 import { getUserPublishedWebsites } from '../utils/publishedWebsites';
 import { getUserPreferences, saveUserPreferences, initializeUserPreferences } from '../utils/userPreferences';
 import { COLOR_COMBINATIONS, ColorCombination } from '../utils/colorCombinations';
+import { 
+  useScreenSize, 
+  getResponsiveGridCols, 
+  getResponsiveGap, 
+  getResponsiveIconSize, 
+  getResponsiveFontSize,
+  getResponsivePadding
+} from '../utils/responsive';
 
 interface DashboardProps {
   user: any;
