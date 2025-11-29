@@ -629,7 +629,7 @@ export const WebsiteTemplates: React.FC = () => {
                 <p style="font-size: 1.5rem; margin-bottom: 2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${escapeHtml(content.subheading || '')}</p>
                 <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
                     <a href="#contact" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s;">${escapeHtml(content.ctaText || 'Get Started')}</a>
-                    <a href="tel:${content.ctaPhone || ''}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaPhone || '')}</a>
+                    <a href="tel:${content.ctaPhoneNumber || content.ctaPhone || ''}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
                 </div>
             </div>
     </section>`;
@@ -701,7 +701,7 @@ export const WebsiteTemplates: React.FC = () => {
                 <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem;">${escapeHtml(content.heading || '')}</h2>
                 ${content.subheading ? `<p style="font-size: 1.5rem; margin-bottom: 2rem; opacity: 0.9;">${escapeHtml(content.subheading)}</p>` : ''}
                 <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; align-items: center; margin-bottom: 2rem;">
-                    ${content.phone ? `<a href="tel:${content.phone}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phone)}</a>` : ''}
+                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${content.phoneNumber || content.phone}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
                     ${content.email ? `<a href="mailto:${content.email}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s;">✉️ Email Us</a>` : ''}
                 </div>
                 ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem;"><span>🕐</span><p style="opacity: 0.9;">${escapeHtml(content.hours)}</p></div>` : ''}
@@ -720,7 +720,7 @@ export const WebsiteTemplates: React.FC = () => {
                     <div>
                         <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem; line-height: 1.5;">Contact</h4>
                         <ul style="list-style: none; padding: 0; margin: 0; color: #94a3b8;">
-                            ${content.phone ? `<li style="margin-bottom: 0.5rem;"><a href="tel:${content.phone}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.phone)}</a></li>` : ''}
+                            ${(content.phoneNumber || content.phone) ? `<li style="margin-bottom: 0.5rem;"><a href="tel:${content.phoneNumber || content.phone}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></li>` : ''}
                             ${content.email ? `<li style="margin-bottom: 0.5rem;"><a href="mailto:${content.email}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.email)}</a></li>` : ''}
                         </ul>
                     </div>
@@ -923,97 +923,129 @@ export const WebsiteTemplates: React.FC = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredTemplates.map((template) => (
-                <Card key={template.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300">
-                  {/* Template Preview/Thumbnail */}
-                  <div className="relative h-48 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
-                    <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
-                      {template.thumbnail}
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              {filteredTemplates.map((template) => {
+                // Get vertical image from template (first service image or hero background)
+                const heroSection = template.sections.find(s => s.type === 'hero');
+                const serviceSection = template.sections.find(s => s.type === 'services');
+                const verticalImage = serviceSection?.content?.services?.[0]?.image || 
+                                     heroSection?.content?.backgroundImage || 
+                                     null;
+                
+                return (
+                  <Card key={template.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300 flex flex-col">
+                  {/* Template Preview/Thumbnail with Vertical Image */}
+                  <div className="relative h-64 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
+                    {verticalImage ? (
+                      <img 
+                        src={verticalImage} 
+                        alt={template.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
+                        {template.thumbnail}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="absolute top-3 right-3">
-                      <Badge className="bg-white/90 text-slate-700 border-0 shadow-sm">
+                      <Badge className="bg-white/90 backdrop-blur-sm text-slate-700 border-0 shadow-lg font-semibold">
                         {template.category}
                       </Badge>
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+                          {template.sections.length} sections
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+                          <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
+                          Google Ads
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+                          <Smartphone className="w-2.5 h-2.5 mr-0.5" />
+                          Responsive
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                   
                   {/* Template Info */}
-                  <div className="p-5">
+                  <div className="p-5 flex-1 flex flex-col">
                     <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
                       {template.name}
                     </h3>
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem]">
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem] flex-1">
                       {template.description}
                     </p>
                     
-                    {/* Features Badges */}
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
-                      {template.sections.length} sections
-                    </Badge>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
-                        <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
-                        Google Ads
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-white border-slate-200 text-slate-600 font-normal">
-                        <Smartphone className="w-2.5 h-2.5 mr-0.5" />
-                        Responsive
-                      </Badge>
-                  </div>
-
                     {/* Action Buttons */}
-                    <div className="grid grid-cols-2 gap-2">
-                    <Button 
-                      onClick={() => handleViewTemplate(template)}
-                      variant="outline"
-                      size="sm"
-                        className="w-full"
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                        Preview
-                    </Button>
-                    <Button 
-                        onClick={() => handleEditTemplate(template, true)}
+                    <div className="flex gap-2 mt-auto">
+                      <Button 
+                        onClick={async () => {
+                          // Automatically copy template to user's templates before editing
+                          try {
+                            const completedTemplate = completeTemplateSections(template.sections);
+                            const newTemplate: SavedTemplate = {
+                              id: `template-${Date.now()}`,
+                              name: template.name,
+                              originalTemplateId: template.id,
+                              customizedSections: completedTemplate,
+                              createdAt: new Date().toISOString(),
+                              updatedAt: new Date().toISOString()
+                            };
+                            
+                            // Save to user's templates
+                            await historyService.save('website-template', newTemplate.name, {
+                              template: newTemplate
+                            });
+                            
+                            // Load saved templates to refresh list
+                            const saved = await historyService.loadAll('website-template');
+                            setSavedTemplates(saved.map((item: any) => item.data.template).filter(Boolean));
+                            
+                            // Open editor with the copied template
+                            setEditingTemplate(newTemplate);
+                            setShowEditor(true);
+                            
+                            notifications.success('Template copied to your templates and ready to edit!', {
+                              title: 'Template Ready'
+                            });
+                          } catch (error) {
+                            console.error('Failed to copy template:', error);
+                            notifications.error('Failed to copy template', { title: 'Error' });
+                          }
+                        }}
                         variant="default"
-                      size="sm"
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                    >
+                        size="sm"
+                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl"
+                      >
                         <Edit className="w-4 h-4 mr-1" />
-                        Use
-                    </Button>
-                    <Button 
-                        onClick={() => handleMakeCopy(template)}
-                      variant="outline"
-                      size="sm"
-                        className="w-full"
-                    >
-                        <Copy className="w-4 h-4 mr-1" />
-                        Copy
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        const savedTemplate: SavedTemplate = {
-                          id: template.id,
-                          name: template.name,
-                          originalTemplateId: template.id,
-                          customizedSections: template.sections,
-                          createdAt: new Date().toISOString(),
-                          updatedAt: new Date().toISOString()
-                        };
-                        handleExportHTML(savedTemplate);
-                      }}
-                      variant="outline"
-                      size="sm"
-                        className="w-full"
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                        Export
-                    </Button>
+                        Use / Edit
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          const savedTemplate: SavedTemplate = {
+                            id: template.id,
+                            name: template.name,
+                            originalTemplateId: template.id,
+                            customizedSections: template.sections,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                          };
+                          handleExportHTML(savedTemplate);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="px-3"
+                        title="Export as HTML"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -1240,8 +1272,14 @@ const TemplateEditor: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-slate-100 z-50 flex flex-col">
+      {/* Visual Editor Banner */}
+      {editMode === 'visual' && (
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 text-center text-sm font-semibold shadow-lg">
+          ✨ Visual Editor Active - Click any text or element on the preview to edit directly! ✨
+        </div>
+      )}
       {/* Editor Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b-2 border-slate-300 px-6 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4 mr-2" />
@@ -1433,15 +1471,28 @@ const SectionEditor: React.FC<{
                 value={section.content.ctaText || ''}
                 onChange={(e) => onUpdate('ctaText', e.target.value)}
                 className="mt-2"
+                placeholder="e.g., Get Started Today"
               />
             </div>
             <div>
-              <Label>Phone Number</Label>
+              <Label>Call Now Button Display Text</Label>
               <Input
-                value={section.content.ctaPhone || ''}
-                onChange={(e) => onUpdate('ctaPhone', e.target.value)}
+                value={section.content.ctaPhoneDisplay || section.content.ctaPhone || ''}
+                onChange={(e) => onUpdate('ctaPhoneDisplay', e.target.value)}
                 className="mt-2"
+                placeholder="e.g., 1-800-HOT-LINE"
               />
+              <p className="text-xs text-slate-500 mt-1">This is what users will see on the button</p>
+            </div>
+            <div>
+              <Label>Actual Phone Number (for dialing)</Label>
+              <Input
+                value={section.content.ctaPhoneNumber || section.content.ctaPhone || ''}
+                onChange={(e) => onUpdate('ctaPhoneNumber', e.target.value)}
+                className="mt-2"
+                placeholder="e.g., +18004686543"
+              />
+              <p className="text-xs text-slate-500 mt-1">This is the number that will be dialed when clicked</p>
             </div>
             <div>
               <Label>Background Image URL</Label>
@@ -1639,15 +1690,28 @@ const SectionEditor: React.FC<{
                 value={section.content.ctaText || ''}
                 onChange={(e) => onUpdate('ctaText', e.target.value)}
                 className="mt-2"
+                placeholder="e.g., Call Now"
               />
             </div>
             <div>
-              <Label>Phone Number</Label>
+              <Label>Call Now Button Display Text</Label>
               <Input
-                value={section.content.phone || ''}
-                onChange={(e) => onUpdate('phone', e.target.value)}
+                value={section.content.phoneDisplay || section.content.phone || ''}
+                onChange={(e) => onUpdate('phoneDisplay', e.target.value)}
                 className="mt-2"
+                placeholder="e.g., 1-800-HOT-LINE"
               />
+              <p className="text-xs text-slate-500 mt-1">This is what users will see on the button</p>
+            </div>
+            <div>
+              <Label>Actual Phone Number (for dialing)</Label>
+              <Input
+                value={section.content.phoneNumber || section.content.phone || ''}
+                onChange={(e) => onUpdate('phoneNumber', e.target.value)}
+                className="mt-2"
+                placeholder="e.g., +18004686543"
+              />
+              <p className="text-xs text-slate-500 mt-1">This is the number that will be dialed when clicked</p>
             </div>
             <div>
               <Label>Email</Label>
@@ -1894,17 +1958,17 @@ const renderSectionPreview = (
                 {section.content.ctaText}
                   </a>
                   <a 
-                    href={`tel:${section.content.ctaPhone}`}
+                    href={`tel:${section.content.ctaPhoneNumber || section.content.ctaPhone || ''}`}
                     contentEditable
                     suppressContentEditableWarning
                     className="px-8 py-4 text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text"
                     onBlur={(e) => {
                       const text = e.currentTarget.textContent || '';
                       const phone = text.replace('📞', '').trim();
-                      handleTextEdit('ctaPhone', phone);
+                      handleTextEdit('ctaPhoneDisplay', phone);
                     }}
                   >
-                📞 {section.content.ctaPhone}
+                📞 {section.content.ctaPhoneDisplay || section.content.ctaPhone || ''}
                   </a>
             </div>
               </>
@@ -1930,10 +1994,10 @@ const renderSectionPreview = (
                     {section.content.ctaText}
                   </a>
                   <a 
-                    href={`tel:${section.content.ctaPhone}`}
+                    href={`tel:${section.content.ctaPhoneNumber || section.content.ctaPhone || ''}`}
                     className="px-8 py-4 text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5"
                   >
-                    📞 {section.content.ctaPhone}
+                    📞 {section.content.ctaPhoneDisplay || section.content.ctaPhone || ''}
                   </a>
           </div>
               </>
@@ -1950,7 +2014,7 @@ const renderSectionPreview = (
               <h2 
                 contentEditable
                 suppressContentEditableWarning
-                className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-3 hover:outline-indigo-500 hover:outline-dashed rounded px-2 py-1 cursor-text hover:bg-indigo-50/50 transition-all"
                 onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
               >
                 {section.content.heading}
@@ -2199,7 +2263,7 @@ const renderSectionPreview = (
               <h2 
                 contentEditable
                 suppressContentEditableWarning
-                className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-3 hover:outline-indigo-500 hover:outline-dashed rounded px-2 py-1 cursor-text hover:bg-indigo-50/50 transition-all"
                 onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
               >
                 {section.content.heading}
@@ -2353,19 +2417,19 @@ const renderSectionPreview = (
                   </p>
                 )}
                 <div className="flex flex-wrap gap-4 justify-center items-center mb-8">
-              {section.content.phone && (
+              {(section.content.phoneNumber || section.content.phone) && (
                 <a 
-                  href={`tel:${section.content.phone}`}
+                  href={`tel:${section.content.phoneNumber || section.content.phone || ''}`}
                       contentEditable
                       suppressContentEditableWarning
                       className="px-8 py-4 text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text"
                       onBlur={(e) => {
                         const text = e.currentTarget.textContent || '';
                         const phone = text.replace('📞', '').replace(section.content.ctaText || 'Call Now', '').trim();
-                        handleTextEdit('phone', phone);
+                        handleTextEdit('phoneDisplay', phone);
                       }}
                 >
-                  📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
+                  📞 {section.content.ctaText || 'Call Now'} {section.content.phoneDisplay || section.content.phone || ''}
                 </a>
               )}
               {section.content.email && (
@@ -2409,12 +2473,12 @@ const renderSectionPreview = (
                   </p>
                 )}
                 <div className="flex flex-wrap gap-4 justify-center items-center mb-8">
-                  {section.content.phone && (
+                  {(section.content.phoneNumber || section.content.phone) && (
                     <a 
-                      href={`tel:${section.content.phone}`}
+                      href={`tel:${section.content.phoneNumber || section.content.phone || ''}`}
                       className="px-8 py-4 text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
                     >
-                      📞 {section.content.ctaText || 'Call Now'} {section.content.phone}
+                      📞 {section.content.ctaText || 'Call Now'} {section.content.phoneDisplay || section.content.phone || ''}
                     </a>
                   )}
                   {section.content.email && (
@@ -2446,22 +2510,22 @@ const renderSectionPreview = (
       };
 
       return (
-        <footer className="bg-slate-900 text-slate-300 py-16 px-5">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
+        <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-300 py-20 px-5 border-t-4 border-indigo-600">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 mb-12">
               {/* Company Info Column */}
-              <div>
+              <div className="space-y-4">
                 {editMode ? (
                   <h4 
                     contentEditable
                     suppressContentEditableWarning
-                    className="text-white font-semibold mb-4 text-lg outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text"
+                    className="text-white font-bold mb-4 text-xl outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text bg-indigo-500/20"
                     onBlur={(e) => handleTextEdit('companyName', e.currentTarget.textContent || '')}
                   >
                     {section.content.companyName || 'Company Name'}
                   </h4>
                 ) : (
-                  <h4 className="text-white font-semibold mb-4 text-lg leading-tight">
+                  <h4 className="text-white font-bold mb-4 text-xl leading-tight">
                     {section.content.companyName || 'Company Name'}
                   </h4>
                 )}
@@ -2469,34 +2533,37 @@ const renderSectionPreview = (
                   <p 
                     contentEditable
                     suppressContentEditableWarning
-                    className="text-slate-400 mb-4 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text leading-relaxed"
+                    className="text-indigo-300 mb-4 font-medium outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text leading-relaxed bg-indigo-500/10"
                     onBlur={(e) => handleTextEdit('tagline', e.currentTarget.textContent || '')}
                   >
                     {section.content.tagline || ''}
                   </p>
                 ) : (
-                  <p className="text-slate-400 mb-4 leading-relaxed">{section.content.tagline || ''}</p>
+                  <p className="text-indigo-300 mb-4 font-medium leading-relaxed">{section.content.tagline || ''}</p>
                 )}
                 {section.content.address && (
                   editMode ? (
                     <p 
                       contentEditable
                       suppressContentEditableWarning
-                      className="text-slate-400 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text leading-relaxed"
+                      className="text-slate-400 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text leading-relaxed bg-indigo-500/10"
                       onBlur={(e) => handleTextEdit('address', e.currentTarget.textContent || '')}
                     >
-                      {section.content.address}
+                      📍 {section.content.address}
                     </p>
                   ) : (
-                    <p className="text-slate-400 leading-relaxed">{section.content.address}</p>
+                    <p className="text-slate-400 leading-relaxed flex items-start gap-2">
+                      <span>📍</span>
+                      <span>{section.content.address}</span>
+                    </p>
                   )
                 )}
               </div>
               
               {/* Contact Column */}
-              <div>
-                <h4 className="text-white font-semibold mb-4 text-lg leading-tight">Contact</h4>
-                <ul className="space-y-2 text-slate-400 list-none p-0 m-0">
+              <div className="space-y-3">
+                <h4 className="text-white font-bold mb-4 text-xl leading-tight">Contact</h4>
+                <ul className="space-y-3 text-slate-300 list-none p-0 m-0">
                   {section.content.phone && (
                     <li className="mb-2">
                       {editMode ? (
@@ -2504,18 +2571,20 @@ const renderSectionPreview = (
                           href={`tel:${section.content.phone}`} 
                           contentEditable
                           suppressContentEditableWarning
-                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text no-underline"
+                          className="hover:text-indigo-300 transition-colors outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text no-underline flex items-center gap-2 bg-indigo-500/10"
                           onBlur={(e) => {
                             const text = e.currentTarget.textContent || '';
                             const phone = text.replace('📞', '').trim();
                             handleTextEdit('phone', phone);
                           }}
                         >
-                          {section.content.phone}
+                          <span>📞</span>
+                          <span>{section.content.phone}</span>
                         </a>
                       ) : (
-                        <a href={`tel:${section.content.phone}`} className="hover:text-white transition-colors no-underline">
-                          {section.content.phone}
+                        <a href={`tel:${section.content.phone}`} className="hover:text-indigo-300 transition-colors no-underline flex items-center gap-2">
+                          <span>📞</span>
+                          <span>{section.content.phone}</span>
                         </a>
                       )}
                     </li>
@@ -2527,18 +2596,20 @@ const renderSectionPreview = (
                           href={`mailto:${section.content.email}`} 
                           contentEditable
                           suppressContentEditableWarning
-                          className="hover:text-white transition-colors outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-1 cursor-text no-underline"
+                          className="hover:text-indigo-300 transition-colors outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text no-underline flex items-center gap-2 bg-indigo-500/10"
                           onBlur={(e) => {
                             const text = e.currentTarget.textContent || '';
                             const email = text.replace('✉️', '').trim();
                             handleTextEdit('email', email);
                           }}
                         >
-                          {section.content.email}
+                          <span>✉️</span>
+                          <span>{section.content.email}</span>
                         </a>
                       ) : (
-                        <a href={`mailto:${section.content.email}`} className="hover:text-white transition-colors no-underline">
-                          {section.content.email}
+                        <a href={`mailto:${section.content.email}`} className="hover:text-indigo-300 transition-colors no-underline flex items-center gap-2">
+                          <span>✉️</span>
+                          <span>{section.content.email}</span>
                         </a>
                       )}
                     </li>
@@ -2548,9 +2619,9 @@ const renderSectionPreview = (
               
               {/* Quick Links Column */}
               {section.content.links && section.content.links.length > 0 && (
-                <div>
-                  <h4 className="text-white font-semibold mb-4 text-lg leading-tight">Quick Links</h4>
-                  <ul className="space-y-2 text-slate-400 list-none p-0 m-0">
+                <div className="space-y-3">
+                  <h4 className="text-white font-bold mb-4 text-xl leading-tight">Quick Links</h4>
+                  <ul className="space-y-3 text-slate-300 list-none p-0 m-0">
                     {section.content.links.map((link: any, linkIdx: number) => {
                       const isPrivacyLink = link.text === 'Privacy Policy';
                       const isTermsLink = link.text === 'Terms of Service';
@@ -2565,12 +2636,12 @@ const renderSectionPreview = (
                                   onPolicyLinkClick(isPrivacyLink ? 'privacy' : 'terms');
                                 }
                               }}
-                              className="hover:text-white transition-colors text-left cursor-pointer underline bg-transparent border-0 p-0 text-slate-400"
+                              className="hover:text-indigo-300 transition-colors text-left cursor-pointer underline bg-transparent border-0 p-0 text-slate-300 hover:bg-indigo-500/10 rounded px-2 py-1"
                             >
                               {link.text}
                             </button>
                           ) : (
-                            <a href={link.href || '#'} className="hover:text-white transition-colors no-underline">
+                            <a href={link.href || '#'} className="hover:text-indigo-300 transition-colors no-underline hover:bg-indigo-500/10 rounded px-2 py-1 block">
                               {link.text}
                             </a>
                           )}
@@ -2602,7 +2673,7 @@ const renderSectionPreview = (
             
             {/* Footer Bottom */}
             {section.content.copyright && (
-              <div className="pt-8 mt-8 border-t border-slate-800 text-center text-slate-400 text-sm">
+              <div className="pt-8 mt-8 border-t-2 border-slate-700/50 text-center text-slate-400 text-sm font-medium">
                 {section.content.copyright}
               </div>
             )}
@@ -2790,4 +2861,6 @@ const renderSectionPreview = (
       return <div className="p-8 text-slate-500">Section preview: {section.title}</div>;
   }
 };
+
+
 

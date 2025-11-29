@@ -524,6 +524,92 @@ export const templateLibrary: Template[] = [
         }
       },
       {
+        id: 'about-elec-1',
+        type: 'about',
+        title: 'About Us',
+        content: {
+          heading: 'About Licensed Electrician Services',
+          subheading: 'Powering Your Home & Business Safely',
+          description: 'With over 30 years of experience, we are your trusted electrical service professionals. Our licensed and bonded electricians provide safe, reliable electrical solutions for residential and commercial properties. We prioritize safety, code compliance, and customer satisfaction on every project.',
+          image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&h=400&fit=crop',
+          stats: [
+            { number: '30+', label: 'Years Experience' },
+            { number: '12,000+', label: 'Projects Completed' },
+            { number: '100%', label: 'Licensed & Bonded' },
+            { number: '24/7', label: 'Emergency Service' }
+          ],
+          values: [
+            { icon: '🛡️', title: 'Safety First', description: 'Your safety is our top priority' },
+            { icon: '✅', title: 'Code Compliant', description: 'All work meets electrical code standards' },
+            { icon: '⚡', title: 'Expert Service', description: 'Licensed electricians with years of experience' },
+            { icon: '🔌', title: 'Reliability', description: 'Dependable service you can trust' }
+          ]
+        }
+      },
+      {
+        id: 'how-it-works-elec-1',
+        type: 'how-it-works',
+        title: 'How It Works',
+        content: {
+          heading: 'Simple Process, Professional Results',
+          subheading: 'Getting your electrical work done is easy with our streamlined process',
+          steps: [
+            {
+              number: '1',
+              title: 'Contact Us',
+              description: 'Call us or request service online. We\'ll respond quickly to your inquiry.',
+              image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=300&fit=crop',
+              icon: '📞'
+            },
+            {
+              number: '2',
+              title: 'Free Estimate',
+              description: 'Our licensed electrician will assess your needs and provide upfront pricing.',
+              image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=300&fit=crop',
+              icon: '💰'
+            },
+            {
+              number: '3',
+              title: 'Schedule Service',
+              description: 'We\'ll schedule a convenient time that works for you.',
+              image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+              icon: '📅'
+            },
+            {
+              number: '4',
+              title: 'Professional Installation',
+              description: 'We complete the work safely, test everything, and clean up thoroughly.',
+              image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400&h=300&fit=crop',
+              icon: '✅'
+            }
+          ]
+        }
+      },
+      {
+        id: 'contact-elec-1',
+        type: 'contact',
+        title: 'Contact Us',
+        content: {
+          heading: 'Get In Touch',
+          subheading: 'We\'re here to help with all your electrical needs',
+          description: 'Have a question or need immediate service? Contact us today and our team will be happy to assist you.',
+          formFields: [
+            { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Doe' },
+            { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'john@example.com' },
+            { name: 'phone', label: 'Phone Number', type: 'tel', required: true, placeholder: '(555) 123-4567' },
+            { name: 'service', label: 'Service Needed', type: 'select', required: true, options: ['Electrical Repair', 'Panel Upgrade', 'Lighting Installation', 'Emergency Service', 'Inspection', 'Other'] },
+            { name: 'message', label: 'Message', type: 'textarea', required: false, placeholder: 'Tell us about your electrical needs...' }
+          ],
+          contactInfo: {
+            phone: '1-800-WATT-NOW',
+            email: 'service@electricpro.com',
+            address: '789 Electric Blvd, Your City, ST 12345',
+            hours: 'Available 24/7 for Emergencies'
+          },
+          mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.184132576684!2d-73.98811768459398!3d40.75889597932681!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855c6480299%3A0x55194ec5a1ae072e!2sTimes%20Square!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus'
+        }
+      },
+      {
         id: 'cta-elec-1',
         type: 'cta',
         title: 'Call to Action',
@@ -656,6 +742,92 @@ export const templateLibrary: Template[] = [
         }
       },
       {
+        id: 'about-roof-1',
+        type: 'about',
+        title: 'About Us',
+        content: {
+          heading: 'About Professional Roofing Company',
+          subheading: 'Protecting Your Home From Above',
+          description: 'With over 30 years of roofing experience, we are your trusted local roofing professionals. We specialize in roof installation, repair, and replacement using premium materials and expert craftsmanship. Our licensed and insured team is committed to protecting your home with quality roofing solutions.',
+          image: 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=600&h=400&fit=crop',
+          stats: [
+            { number: '30+', label: 'Years Experience' },
+            { number: '8,000+', label: 'Roofs Installed' },
+            { number: '100%', label: 'Licensed & Insured' },
+            { number: '10 Year', label: 'Warranty' }
+          ],
+          values: [
+            { icon: '🏆', title: 'Experience', description: 'Decades of roofing expertise' },
+            { icon: '✅', title: 'Warranty', description: 'Comprehensive warranty on all work' },
+            { icon: '👷', title: 'Professional', description: 'Licensed roofing contractors' },
+            { icon: '💪', title: 'Quality', description: 'Top-brand roofing materials' }
+          ]
+        }
+      },
+      {
+        id: 'how-it-works-roof-1',
+        type: 'how-it-works',
+        title: 'How It Works',
+        content: {
+          heading: 'Simple Process, Professional Results',
+          subheading: 'Getting your roof fixed or replaced is easy with our streamlined process',
+          steps: [
+            {
+              number: '1',
+              title: 'Free Inspection',
+              description: 'Schedule a free roof inspection. Our expert will assess your roof\'s condition.',
+              image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=300&fit=crop',
+              icon: '🔍'
+            },
+            {
+              number: '2',
+              title: 'Detailed Estimate',
+              description: 'We provide a detailed written estimate with no hidden costs.',
+              image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+              icon: '💰'
+            },
+            {
+              number: '3',
+              title: 'Schedule Installation',
+              description: 'We\'ll schedule your roof work at a time that works for you.',
+              image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=300&fit=crop',
+              icon: '📅'
+            },
+            {
+              number: '4',
+              title: 'Professional Installation',
+              description: 'Our team completes the work efficiently and cleans up thoroughly.',
+              image: 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=400&h=300&fit=crop',
+              icon: '✅'
+            }
+          ]
+        }
+      },
+      {
+        id: 'contact-roof-1',
+        type: 'contact',
+        title: 'Contact Us',
+        content: {
+          heading: 'Get In Touch',
+          subheading: 'We\'re here to help with all your roofing needs',
+          description: 'Have a question or need a free roof inspection? Contact us today and our team will be happy to assist you.',
+          formFields: [
+            { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Doe' },
+            { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'john@example.com' },
+            { name: 'phone', label: 'Phone Number', type: 'tel', required: true, placeholder: '(555) 123-4567' },
+            { name: 'service', label: 'Service Needed', type: 'select', required: true, options: ['Roof Inspection', 'Roof Repair', 'Roof Replacement', 'Emergency Repair', 'Other'] },
+            { name: 'message', label: 'Message', type: 'textarea', required: false, placeholder: 'Tell us about your roofing needs...' }
+          ],
+          contactInfo: {
+            phone: '1-800-NEW-ROOF',
+            email: 'info@roofingpro.com',
+            address: '321 Roofing Way, Your City, ST 12345',
+            hours: 'Mon-Sat: 7AM-6PM'
+          },
+          mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.184132576684!2d-73.98811768459398!3d40.75889597932681!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855c6480299%3A0x55194ec5a1ae072e!2sTimes%20Square!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus'
+        }
+      },
+      {
         id: 'cta-roof-1',
         type: 'cta',
         title: 'Call to Action',
@@ -785,6 +957,92 @@ export const templateLibrary: Template[] = [
               avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop'
             }
           ]
+        }
+      },
+      {
+        id: 'about-land-1',
+        type: 'about',
+        title: 'About Us',
+        content: {
+          heading: 'About Professional Landscaping',
+          subheading: 'Creating Beautiful Outdoor Spaces',
+          description: 'For over 20 years, we\'ve been transforming outdoor spaces into beautiful, functional landscapes. Our team of experienced landscapers combines creative design with sustainable practices to create stunning yards that enhance your property value and quality of life.',
+          image: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=600&h=400&fit=crop',
+          stats: [
+            { number: '20+', label: 'Years Experience' },
+            { number: '5,000+', label: 'Projects Completed' },
+            { number: '100%', label: 'Satisfaction Rate' },
+            { number: 'Eco-Friendly', label: 'Sustainable Practices' }
+          ],
+          values: [
+            { icon: '🎨', title: 'Custom Design', description: 'Unique landscape designs for your property' },
+            { icon: '🌱', title: 'Eco-Friendly', description: 'Sustainable landscaping practices' },
+            { icon: '🔧', title: 'Full Service', description: 'Design, installation, and maintenance' },
+            { icon: '💯', title: 'Quality', description: 'Satisfaction guaranteed on all projects' }
+          ]
+        }
+      },
+      {
+        id: 'how-it-works-land-1',
+        type: 'how-it-works',
+        title: 'How It Works',
+        content: {
+          heading: 'Simple Process, Beautiful Results',
+          subheading: 'Getting your landscape designed and installed is easy with our streamlined process',
+          steps: [
+            {
+              number: '1',
+              title: 'Free Consultation',
+              description: 'Schedule a free consultation. We\'ll assess your space and discuss your vision.',
+              image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=300&fit=crop',
+              icon: '📞'
+            },
+            {
+              number: '2',
+              title: 'Custom Design',
+              description: 'We create a custom landscape design tailored to your needs and budget.',
+              image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=300&fit=crop',
+              icon: '🎨'
+            },
+            {
+              number: '3',
+              title: 'Approval & Quote',
+              description: 'Review the design and approve the quote. We\'ll schedule installation.',
+              image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+              icon: '✅'
+            },
+            {
+              number: '4',
+              title: 'Installation & Maintenance',
+              description: 'We install your landscape and offer ongoing maintenance services.',
+              image: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=400&h=300&fit=crop',
+              icon: '🌳'
+            }
+          ]
+        }
+      },
+      {
+        id: 'contact-land-1',
+        type: 'contact',
+        title: 'Contact Us',
+        content: {
+          heading: 'Get In Touch',
+          subheading: 'We\'re here to help with all your landscaping needs',
+          description: 'Have a question or ready to transform your outdoor space? Contact us today and our team will be happy to assist you.',
+          formFields: [
+            { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Doe' },
+            { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'john@example.com' },
+            { name: 'phone', label: 'Phone Number', type: 'tel', required: true, placeholder: '(555) 123-4567' },
+            { name: 'service', label: 'Service Needed', type: 'select', required: true, options: ['Landscape Design', 'Installation', 'Maintenance', 'Hardscaping', 'Consultation', 'Other'] },
+            { name: 'message', label: 'Message', type: 'textarea', required: false, placeholder: 'Tell us about your landscaping needs...' }
+          ],
+          contactInfo: {
+            phone: '1-800-GREEN-GO',
+            email: 'info@landscapepro.com',
+            address: '555 Garden Lane, Your City, ST 12345',
+            hours: 'Mon-Sat: 7AM-6PM'
+          },
+          mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.184132576684!2d-73.98811768459398!3d40.75889597932681!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855c6480299%3A0x55194ec5a1ae072e!2sTimes%20Square!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus'
         }
       },
       {
@@ -1172,6 +1430,92 @@ export const generateAdditionalTemplates = (): Template[] => {
               avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop'
             }
           ]
+        }
+      },
+      {
+        id: `about-${index + 6}`,
+        type: 'about',
+        title: 'About Us',
+        content: {
+          heading: `About ${service.name}`,
+          subheading: `Professional ${service.category} You Can Trust`,
+          description: `With years of experience, we are your trusted ${service.category.toLowerCase()} professionals. We provide comprehensive ${service.category.toLowerCase()} services for residential and commercial properties, delivering quality workmanship and exceptional customer service on every project.`,
+          image: service.image,
+          stats: [
+            { number: '15+', label: 'Years Experience' },
+            { number: '5,000+', label: 'Happy Customers' },
+            { number: '100%', label: 'Satisfaction Rate' },
+            { number: '24/7', label: 'Available Service' }
+          ],
+          values: [
+            { icon: '⚡', title: 'Fast Service', description: 'Quick response and completion times' },
+            { icon: '💰', title: 'Fair Pricing', description: 'Competitive rates with no hidden fees' },
+            { icon: '🎓', title: 'Expert Team', description: 'Trained and certified professionals' },
+            { icon: '✅', title: 'Guaranteed Work', description: 'Satisfaction guaranteed on all services' }
+          ]
+        }
+      },
+      {
+        id: `how-it-works-${index + 6}`,
+        type: 'how-it-works',
+        title: 'How It Works',
+        content: {
+          heading: 'Simple Process, Professional Results',
+          subheading: `Getting your ${service.category.toLowerCase()} service is easy with our streamlined process`,
+          steps: [
+            {
+              number: '1',
+              title: 'Contact Us',
+              description: 'Call us or request service online. We\'ll respond quickly to your inquiry.',
+              image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=300&fit=crop',
+              icon: '📞'
+            },
+            {
+              number: '2',
+              title: 'Free Estimate',
+              description: 'Our expert will assess your needs and provide upfront pricing.',
+              image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=300&fit=crop',
+              icon: '💰'
+            },
+            {
+              number: '3',
+              title: 'Schedule Service',
+              description: 'We\'ll schedule a convenient time that works for you.',
+              image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+              icon: '📅'
+            },
+            {
+              number: '4',
+              title: 'Professional Service',
+              description: 'We complete the work efficiently, test everything, and clean up thoroughly.',
+              image: service.image,
+              icon: '✅'
+            }
+          ]
+        }
+      },
+      {
+        id: `contact-${index + 6}`,
+        type: 'contact',
+        title: 'Contact Us',
+        content: {
+          heading: 'Get In Touch',
+          subheading: `We're here to help with all your ${service.category.toLowerCase()} needs`,
+          description: 'Have a question or need immediate service? Contact us today and our team will be happy to assist you.',
+          formFields: [
+            { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Doe' },
+            { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'john@example.com' },
+            { name: 'phone', label: 'Phone Number', type: 'tel', required: true, placeholder: '(555) 123-4567' },
+            { name: 'service', label: 'Service Needed', type: 'select', required: true, options: ['Service Request', 'Estimate', 'Emergency Service', 'Maintenance', 'Other'] },
+            { name: 'message', label: 'Message', type: 'textarea', required: false, placeholder: `Tell us about your ${service.category.toLowerCase()} needs...` }
+          ],
+          contactInfo: {
+            phone: service.phone,
+            email: `info@${service.category.toLowerCase().replace(/\s+/g, '')}pro.com`,
+            address: '123 Service Street, Your City, ST 12345',
+            hours: 'Mon-Sat: 7AM-7PM'
+          },
+          mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.184132576684!2d-73.98811768459398!3d40.75889597932681!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855c6480299%3A0x55194ec5a1ae072e!2sTimes%20Square!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus'
         }
       },
       {
