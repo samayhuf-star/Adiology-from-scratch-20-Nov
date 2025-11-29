@@ -1416,7 +1416,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardHeader>
           <CardContent className="pt-8">
             <div className="flex flex-wrap gap-5">
-              <div className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 px-6 py-4 rounded-xl border-2 border-amber-300 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]">
+              <div 
+                className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 px-6 py-4 rounded-xl border-2 border-amber-300 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
+                onClick={(e) => {
+                  // Only toggle if click didn't come from checkbox or label
+                  const target = e.target as HTMLElement;
+                  if (target.closest('[role="checkbox"]') || target.closest('label')) {
+                    return;
+                  }
+                  setMatchTypes({ ...matchTypes, broad: !matchTypes.broad });
+                }}
+              >
                 <Checkbox
                   id="broad"
                   checked={matchTypes.broad}
@@ -1432,7 +1442,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   Broad Match
                 </Label>
               </div>
-              <div className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 px-6 py-4 rounded-xl border-2 border-blue-300 cursor-pointer hover:border-blue-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]">
+              <div 
+                className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 px-6 py-4 rounded-xl border-2 border-blue-300 cursor-pointer hover:border-blue-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
+                onClick={(e) => {
+                  // Only toggle if click didn't come from checkbox or label
+                  const target = e.target as HTMLElement;
+                  if (target.closest('[role="checkbox"]') || target.closest('label')) {
+                    return;
+                  }
+                  setMatchTypes({ ...matchTypes, phrase: !matchTypes.phrase });
+                }}
+              >
                 <Checkbox
                   id="phrase"
                   checked={matchTypes.phrase}
@@ -1448,7 +1468,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   Phrase Match
                 </Label>
               </div>
-              <div className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 px-6 py-4 rounded-xl border-2 border-emerald-300 cursor-pointer hover:border-emerald-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]">
+              <div 
+                className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 px-6 py-4 rounded-xl border-2 border-emerald-300 cursor-pointer hover:border-emerald-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
+                onClick={(e) => {
+                  // Only toggle if click didn't come from checkbox or label
+                  const target = e.target as HTMLElement;
+                  if (target.closest('[role="checkbox"]') || target.closest('label')) {
+                    return;
+                  }
+                  setMatchTypes({ ...matchTypes, exact: !matchTypes.exact });
+                }}
+              >
                 <Checkbox
                   id="exact"
                   checked={matchTypes.exact}
