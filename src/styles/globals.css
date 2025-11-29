@@ -124,53 +124,8 @@
     @apply border-border outline-ring/50;
   }
 
-  /* Ensure all clickable elements have pointer cursor */
-button:not(:disabled),
-a,
-[role="button"],
-[onclick],
-.cursor-pointer,
-input[type="button"],
-input[type="submit"],
-input[type="reset"],
-select {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
-
-body {
+  body {
     @apply bg-background text-foreground;
-  }
-
-  /* Homepage override - prevent background color from interfering */
-  body[data-homepage="true"],
-  html[data-homepage="true"] {
-    background-color: transparent !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    overflow-x: hidden !important;
-  }
-
-  /* Ensure ThemeProvider wrapper doesn't add spacing */
-  body[data-homepage="true"] #root > * {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* Ensure homepage content is centered */
-  body[data-homepage="true"] #root {
-    margin: 0 auto !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
   }
 }
 

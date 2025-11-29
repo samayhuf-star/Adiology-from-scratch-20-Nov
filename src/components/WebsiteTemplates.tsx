@@ -361,6 +361,98 @@ export const WebsiteTemplates: React.FC = () => {
               }
             };
             break;
+          case 'about':
+            requiredSections[type] = {
+              id: 'about-1',
+              type: 'about',
+              title: 'About Us',
+              content: {
+                heading: 'About Our Company',
+                subheading: 'Your Trusted Service Provider',
+                description: 'With years of experience, we are your trusted professionals. We provide comprehensive services for residential and commercial properties, delivering quality workmanship and exceptional customer service on every project.',
+                image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop',
+                stats: [
+                  { number: '15+', label: 'Years Experience' },
+                  { number: '5,000+', label: 'Happy Customers' },
+                  { number: '100%', label: 'Satisfaction Rate' },
+                  { number: '24/7', label: 'Available Service' }
+                ],
+                values: [
+                  { icon: '⚡', title: 'Fast Service', description: 'Quick response and completion times' },
+                  { icon: '💰', title: 'Fair Pricing', description: 'Competitive rates with no hidden fees' },
+                  { icon: '🎓', title: 'Expert Team', description: 'Trained and certified professionals' },
+                  { icon: '✅', title: 'Guaranteed Work', description: 'Satisfaction guaranteed on all services' }
+                ]
+              }
+            };
+            break;
+          case 'how-it-works':
+            requiredSections[type] = {
+              id: 'how-it-works-1',
+              type: 'how-it-works',
+              title: 'How It Works',
+              content: {
+                heading: 'Simple Process, Professional Results',
+                subheading: 'Getting your service is easy with our streamlined process',
+                steps: [
+                  {
+                    number: '1',
+                    title: 'Contact Us',
+                    description: 'Call us or request service online. We\'ll respond quickly to your inquiry.',
+                    image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=300&fit=crop',
+                    icon: '📞'
+                  },
+                  {
+                    number: '2',
+                    title: 'Free Estimate',
+                    description: 'Our expert will assess your needs and provide upfront pricing.',
+                    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400&h=300&fit=crop',
+                    icon: '💰'
+                  },
+                  {
+                    number: '3',
+                    title: 'Schedule Service',
+                    description: 'We\'ll schedule a convenient time that works for you.',
+                    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop',
+                    icon: '📅'
+                  },
+                  {
+                    number: '4',
+                    title: 'Professional Service',
+                    description: 'We complete the work efficiently, test everything, and clean up thoroughly.',
+                    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop',
+                    icon: '✅'
+                  }
+                ]
+              }
+            };
+            break;
+          case 'contact':
+            requiredSections[type] = {
+              id: 'contact-1',
+              type: 'contact',
+              title: 'Contact Us',
+              content: {
+                heading: 'Get In Touch',
+                subheading: 'We\'re here to help with all your needs',
+                description: 'Have a question or need immediate service? Contact us today and our team will be happy to assist you.',
+                formFields: [
+                  { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Doe' },
+                  { name: 'email', label: 'Email Address', type: 'email', required: true, placeholder: 'john@example.com' },
+                  { name: 'phone', label: 'Phone Number', type: 'tel', required: true, placeholder: '(555) 123-4567' },
+                  { name: 'service', label: 'Service Needed', type: 'select', required: true, options: ['Service Request', 'Estimate', 'Emergency Service', 'Maintenance', 'Other'] },
+                  { name: 'message', label: 'Message', type: 'textarea', required: false, placeholder: 'Tell us about your needs...' }
+                ],
+                contactInfo: {
+                  phone: '1-800-123-4567',
+                  email: 'info@yourcompany.com',
+                  address: '123 Service Street, Your City, ST 12345',
+                  hours: 'Mon-Sat: 7AM-7PM'
+                },
+                mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.184132576684!2d-73.98811768459398!3d40.75889597932681!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25855c6480299%3A0x55194ec5a1ae072e!2sTimes%20Square!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus'
+              }
+            };
+            break;
           case 'footer':
             requiredSections[type] = {
               id: 'footer-1',
@@ -785,6 +877,138 @@ export const WebsiteTemplates: React.FC = () => {
                 <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a; line-height: 1.2;">Terms of Service</h1>
                 ${content.lastUpdated ? `<p style="color: #64748b; margin-bottom: 2rem; font-size: 0.9375rem;">Last Updated: ${escapeHtml(content.lastUpdated)}</p>` : ''}
                 <div style="color: #334155; line-height: 1.7;">${termsContent}</div>
+            </div>
+        </section>`;
+
+      case 'about':
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: linear-gradient(to bottom, white, #f8fafc, white);">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;">
+                    <div>
+                        <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                        ${content.subheading ? `<p style="font-size: 1.25rem; color: #4f46e5; font-weight: 600; margin-bottom: 1.5rem;">${escapeHtml(content.subheading)}</p>` : ''}
+                        ${content.description ? `<p style="font-size: 1.125rem; color: #64748b; margin-bottom: 2rem; line-height: 1.7;">${escapeHtml(content.description)}</p>` : ''}
+                        ${content.stats ? `
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+                                ${content.stats.map((stat: any) => `
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; font-weight: 700; color: #4f46e5; margin-bottom: 0.5rem;">${escapeHtml(stat.number || '')}</div>
+                                        <div style="font-size: 0.875rem; color: #64748b;">${escapeHtml(stat.label || '')}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        ${content.values ? `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                                ${content.values.map((value: any) => `
+                                    <div style="display: flex; align-items: start; gap: 1rem;">
+                                        <div style="font-size: 2rem;">${escapeHtml(value.icon || '')}</div>
+                                        <div>
+                                            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 0.25rem;">${escapeHtml(value.title || '')}</h3>
+                                            <p style="font-size: 0.875rem; color: #64748b;">${escapeHtml(value.description || '')}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div>
+                        ${content.image ? `<img src="${content.image}" alt="About us" style="width: 100%; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">` : ''}
+                    </div>
+                </div>
+            </div>
+        </section>`;
+
+      case 'how-it-works':
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: white;">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="font-size: 1.25rem; color: #64748b; text-align: center; margin-bottom: 3rem;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;">
+                    ${(content.steps || []).map((step: any, idx: number) => `
+                        <div style="text-align: center;">
+                            <div style="position: relative; margin-bottom: 1.5rem;">
+                                <div style="width: 5rem; height: 5rem; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.875rem; font-weight: 700; margin: 0 auto 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                                    ${step.number || (idx + 1)}
+                                </div>
+                                <div style="font-size: 2.5rem; margin-bottom: 1rem;">${escapeHtml(step.icon || '')}</div>
+                                ${step.image ? `<img src="${step.image}" alt="${escapeHtml(step.title || '')}" style="width: 100%; height: 12rem; object-fit: cover; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1rem;">` : ''}
+                            </div>
+                            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a;">${escapeHtml(step.title || '')}</h3>
+                            <p style="color: #64748b; line-height: 1.6;">${escapeHtml(step.description || '')}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </section>`;
+
+      case 'contact':
+        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: linear-gradient(to bottom, #f8fafc, white);">
+            <div style="max-width: 72rem; margin: 0 auto;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+                    <div>
+                        <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                        ${content.subheading ? `<p style="font-size: 1.25rem; color: #4f46e5; font-weight: 600; margin-bottom: 1rem;">${escapeHtml(content.subheading)}</p>` : ''}
+                        ${content.description ? `<p style="font-size: 1.125rem; color: #64748b; margin-bottom: 2rem; line-height: 1.7;">${escapeHtml(content.description)}</p>` : ''}
+                        ${content.contactInfo ? `
+                            <div style="margin-bottom: 2rem;">
+                                ${content.contactInfo.phone ? `
+                                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                                        <span style="font-size: 1.5rem;">📞</span>
+                                        <a href="tel:${content.contactInfo.phone}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.phone)}</a>
+                                    </div>
+                                ` : ''}
+                                ${content.contactInfo.email ? `
+                                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                                        <span style="font-size: 1.5rem;">✉️</span>
+                                        <a href="mailto:${content.contactInfo.email}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.email)}</a>
+                                    </div>
+                                ` : ''}
+                                ${content.contactInfo.address ? `
+                                    <div style="display: flex; align-items: start; gap: 0.75rem; margin-bottom: 1rem;">
+                                        <span style="font-size: 1.5rem;">📍</span>
+                                        <p style="font-size: 1.125rem; color: #334155; line-height: 1.6;">${escapeHtml(content.contactInfo.address)}</p>
+                                    </div>
+                                ` : ''}
+                                ${content.contactInfo.hours ? `
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <span style="font-size: 1.5rem;">🕐</span>
+                                        <p style="font-size: 1.125rem; color: #334155;">${escapeHtml(content.contactInfo.hours)}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        ${content.mapEmbed ? `
+                            <div style="margin-top: 2rem; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                <iframe src="${content.mapEmbed}" width="100%" height="300" style="border: 0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div>
+                        <form style="background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+                            ${(content.formFields || []).map((field: any) => `
+                                <div style="margin-bottom: 1.5rem;">
+                                    <label style="display: block; font-size: 0.875rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">
+                                        ${escapeHtml(field.label || '')} ${field.required ? '<span style="color: #ef4444;">*</span>' : ''}
+                                    </label>
+                                    ${field.type === 'textarea' ? `
+                                        <textarea style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 1rem; font-family: inherit; resize: vertical;" placeholder="${escapeHtml(field.placeholder || '')}" ${field.required ? 'required' : ''} rows="4"></textarea>
+                                    ` : field.type === 'select' ? `
+                                        <select style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 1rem; font-family: inherit;" ${field.required ? 'required' : ''}>
+                                            <option value="">Select ${escapeHtml(field.label || '')}</option>
+                                            ${(field.options || []).map((opt: string) => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}
+                                        </select>
+                                    ` : `
+                                        <input type="${field.type || 'text'}" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 1rem; font-family: inherit;" placeholder="${escapeHtml(field.placeholder || '')}" ${field.required ? 'required' : ''}>
+                                    `}
+                                </div>
+                            `).join('')}
+                            <button type="submit" style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; border-radius: 0.5rem; font-size: 1.125rem; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                Send Message
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </section>`;
 

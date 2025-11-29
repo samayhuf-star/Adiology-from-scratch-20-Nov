@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   user_email TEXT,
-  type TEXT NOT NULL CHECK (type IN ('feedback', 'feature')),
+  type TEXT NOT NULL CHECK (type IN ('feedback', 'feature_request')),
   rating INTEGER CHECK (rating >= 1 AND rating <= 5),
   message TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'reviewed', 'in_progress', 'resolved')),
