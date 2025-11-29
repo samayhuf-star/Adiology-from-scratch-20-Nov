@@ -1401,6 +1401,12 @@ interface HomePageCompleteProps {
 }
 
 export default function HomePageComplete({ onGetStarted, onLogin, onSelectPlan }: HomePageCompleteProps) {
+  // Debug: Verify this component is loading
+  if (typeof window !== 'undefined' && !(window as any).__homepagecomplete_logged) {
+    console.log('✅ HomePageComplete component loaded (NEW HOMEPAGE)');
+    (window as any).__homepagecomplete_logged = true;
+  }
+  
   return (
     <div className="min-h-screen bg-white">
       <Navigation onGetStarted={onGetStarted} onLogin={onLogin} />

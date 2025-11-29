@@ -954,8 +954,13 @@ const App = () => {
     }
   };
 
-  // Homepage view
+  // Homepage view - Using HomePageComplete (new homepage)
   if (appView === 'home') {
+    // Debug: Log which homepage component is being used
+    if (typeof window !== 'undefined' && !(window as any).__homepage_logged) {
+      console.log('✅ Using HomePageComplete component (new homepage)');
+      (window as any).__homepage_logged = true;
+    }
     return (
       <HomePageComplete
         onGetStarted={() => {
