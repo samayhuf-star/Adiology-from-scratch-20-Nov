@@ -69,20 +69,25 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     return (
       <>
         {/* Sidebar Menu Item Button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={() => setIsOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer text-slate-700 hover:bg-indigo-50"
-            aria-label="Provide Feedback"
-          >
-            <MessageSquare className="w-5 h-5 shrink-0 text-slate-500 group-hover:text-indigo-600" />
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`w-full flex items-center gap-2 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer text-slate-700 hover:bg-indigo-50 ${
+            !(sidebarOpen || sidebarHovered) 
+              ? 'justify-center px-2' 
+              : 'justify-start px-3'
+          }`}
+          aria-label="Provide Feedback"
+          style={{ minWidth: 0 }}
+        >
+          <div className={`flex items-center ${!(sidebarOpen || sidebarHovered) ? 'justify-center flex-shrink-0' : 'gap-2 flex-1 min-w-0 overflow-hidden justify-start'}`}>
+            <MessageSquare className={`w-5 h-5 shrink-0 ${!(sidebarOpen || sidebarHovered) ? 'text-slate-700 group-hover:text-indigo-600' : 'text-slate-500 group-hover:text-indigo-600'}`} />
             {(sidebarOpen || sidebarHovered) && (
               <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 text-left" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
                 Feedback
               </span>
             )}
-          </button>
-        </div>
+          </div>
+        </button>
         
         {/* Feedback Dialog */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>

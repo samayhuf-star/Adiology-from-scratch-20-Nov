@@ -1283,8 +1283,7 @@ export const WebsiteTemplates: React.FC = () => {
                             });
                             
                             // Load saved templates to refresh list
-                            const saved = await historyService.loadAll('website-template');
-                            setSavedTemplates(saved.map((item: any) => item.data.template).filter(Boolean));
+                            await loadSavedTemplates();
                             
                             // Open editor with the copied template
                             setEditingTemplate(newTemplate);

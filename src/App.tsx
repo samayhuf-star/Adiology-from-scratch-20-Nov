@@ -38,7 +38,6 @@ import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
-import { LogicalFlowTesting } from './components/LogicalFlowTesting';
 import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
@@ -120,7 +119,6 @@ const App = () => {
     'billing',
     'support',
     'support-help',
-    'logical-flow-testing'
   ]);
 
   // Safe setActiveTab wrapper that validates and redirects to dashboard if invalid
@@ -716,14 +714,6 @@ const App = () => {
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'csv-validator-3', label: 'CSV Validator', icon: FileCheck },
-    { 
-      id: 'testing', 
-      label: 'Testing', 
-      icon: TestTube,
-      submenu: [
-        { id: 'logical-flow-testing', label: 'Logical Flow Testing', icon: Code },
-      ]
-    },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -1107,8 +1097,6 @@ const App = () => {
         return <KeywordSavedLists />;
       case 'ads-builder':
         return <AdsBuilder />;
-      case 'logical-flow-testing':
-        return <LogicalFlowTesting />;
       case 'support-help':
         return <SupportHelpCombined />;
       case 'support':

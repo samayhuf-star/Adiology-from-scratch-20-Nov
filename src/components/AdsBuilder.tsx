@@ -582,7 +582,8 @@ export const AdsBuilder = () => {
                 setGeneratedAds(allGeneratedAds);
                 setSelectedAds([]);
                 notifications.success(`Successfully generated ${allGeneratedAds.length} ad(s)`, {
-                    title: 'Ads Generated'
+                    title: 'Ads Generated',
+                    duration: 3000
                 });
             } else {
                 // If no ads were generated, show an error
@@ -1599,30 +1600,21 @@ export const AdsBuilder = () => {
                             return (
                                 <div
                                     key={ext.id}
-                                    onClick={() => {
-                                        if (!alreadyAdded) {
-                                        setSelectedExtensions(prev =>
-                                            prev.includes(ext.id)
-                                                ? prev.filter(e => e !== ext.id)
-                                                : [...prev, ext.id]
-                                        );
-                                        }
-                                    }}
                                     className={`p-4 border-2 rounded-lg transition-all ${
                                         alreadyAdded
                                             ? 'border-slate-300 bg-slate-100 cursor-not-allowed opacity-60'
                                             : isSelected
-                                                ? (ext.color === 'purple' ? 'border-purple-500 bg-purple-50 cursor-pointer' :
-                                                   ext.color === 'blue' ? 'border-blue-500 bg-blue-50 cursor-pointer' :
-                                                   ext.color === 'green' ? 'border-green-500 bg-green-50 cursor-pointer' :
-                                                   ext.color === 'indigo' ? 'border-indigo-500 bg-indigo-50 cursor-pointer' :
-                                                   ext.color === 'emerald' ? 'border-emerald-500 bg-emerald-50 cursor-pointer' :
-                                                   ext.color === 'red' ? 'border-red-500 bg-red-50 cursor-pointer' :
-                                                   ext.color === 'orange' ? 'border-orange-500 bg-orange-50 cursor-pointer' :
-                                                   ext.color === 'pink' ? 'border-pink-500 bg-pink-50 cursor-pointer' :
-                                                   ext.color === 'cyan' ? 'border-cyan-500 bg-cyan-50 cursor-pointer' :
-                                                   'border-purple-500 bg-purple-50 cursor-pointer')
-                                                : 'border-slate-200 hover:border-indigo-300 bg-white cursor-pointer'
+                                                ? (ext.color === 'purple' ? 'border-purple-500 bg-purple-50' :
+                                                   ext.color === 'blue' ? 'border-blue-500 bg-blue-50' :
+                                                   ext.color === 'green' ? 'border-green-500 bg-green-50' :
+                                                   ext.color === 'indigo' ? 'border-indigo-500 bg-indigo-50' :
+                                                   ext.color === 'emerald' ? 'border-emerald-500 bg-emerald-50' :
+                                                   ext.color === 'red' ? 'border-red-500 bg-red-50' :
+                                                   ext.color === 'orange' ? 'border-orange-500 bg-orange-50' :
+                                                   ext.color === 'pink' ? 'border-pink-500 bg-pink-50' :
+                                                   ext.color === 'cyan' ? 'border-cyan-500 bg-cyan-50' :
+                                                   'border-purple-500 bg-purple-50')
+                                                : 'border-slate-200 hover:border-indigo-300 bg-white'
                                     }`}
                                 >
                                     <div className="flex items-start gap-3">
@@ -1631,12 +1623,18 @@ export const AdsBuilder = () => {
                                             disabled={alreadyAdded}
                                             onCheckedChange={(checked) => {
                                                 if (!alreadyAdded) {
-                                                if (checked) {
-                                                    setSelectedExtensions([...selectedExtensions, ext.id]);
-                                                } else {
-                                                    setSelectedExtensions(selectedExtensions.filter(e => e !== ext.id));
-                                                    }
+                                                    setSelectedExtensions(prev => {
+                                                        if (checked) {
+                                                            return prev.includes(ext.id) ? prev : [...prev, ext.id];
+                                                        } else {
+                                                            return prev.filter(e => e !== ext.id);
+                                                        }
+                                                    });
                                                 }
+                                            }}
+                                            onClick={(e) => {
+                                                // Prevent event bubbling to avoid double-toggling
+                                                e.stopPropagation();
                                             }}
                                         />
                                         <div className="flex-1">
