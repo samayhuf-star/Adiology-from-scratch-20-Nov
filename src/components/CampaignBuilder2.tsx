@@ -1735,7 +1735,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   };
                   
                   // Process each seed keyword
-                  seedList.forEach((seed, seedIdx) => {
+                  for (let seedIdx = 0; seedIdx < seedList.length; seedIdx++) {
+                    const seed = seedList[seedIdx];
                     const cleanSeed = seed.trim().toLowerCase();
                     let keywordCounter = 0;
                     
@@ -1756,7 +1757,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           });
                         }
                       }
-                      return; // Skip this seed for further generation
+                      continue; // Skip this seed for further generation
                     }
                     
                     // Add the seed keyword itself (if 1-2 words and not in negatives)
@@ -1838,7 +1839,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     if (mockKeywords.length >= 600) {
                       break;
                     }
-                  });
+                  }
                   
                   // Ensure we have 300-600 keywords
                   if (mockKeywords.length < 300) {
@@ -4446,7 +4447,59 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 5: Detailed Review - shows all ad groups with editable content
   const renderStep5 = () => {
     // Use preset ad groups if available (from preset), otherwise use dynamic ad groups
-    const reviewAdGroups = presetAdGroups || getDynamicAdGroups();
+    let reviewAdGroups = presetAdGroups || getDynamicAdGroups();
+    
+    // Fallback: If no groups exist but we have keywords or ads, create a default structure
+    if (reviewAdGroups.length === 0) {
+      const formattedKeywords = applyMatchTypeFormatting(selectedKeywords);
+      
+      // First, try to create groups from unique ad groups in generatedAds
+      const uniqueAdGroups = Array.from(new Set(generatedAds.map(ad => ad.adGroup).filter(Boolean))) as string[];
+      
+      if (uniqueAdGroups.length > 0) {
+        // Use ad groups that already exist in generatedAds
+        reviewAdGroups = uniqueAdGroups.map(adGroupName => {
+          // Distribute keywords evenly across groups
+          const keywordsPerGroup = Math.max(1, Math.ceil(formattedKeywords.length / uniqueAdGroups.length));
+          const groupIndex = uniqueAdGroups.indexOf(adGroupName);
+          const startIdx = groupIndex * keywordsPerGroup;
+          const endIdx = Math.min(startIdx + keywordsPerGroup, formattedKeywords.length);
+          const groupKeywords = formattedKeywords.slice(startIdx, endIdx);
+          
+          return {
+            name: adGroupName,
+            keywords: groupKeywords.length > 0 ? groupKeywords : formattedKeywords.slice(0, 1)
+          };
+        });
+      } else if (generatedAds.length > 0 || formattedKeywords.length > 0) {
+        // Create default groups based on keywords or ads
+        if (formattedKeywords.length > 0) {
+          const groupSize = Math.max(3, Math.ceil(formattedKeywords.length / 5));
+          reviewAdGroups = [];
+          for (let i = 0; i < formattedKeywords.length; i += groupSize) {
+            reviewAdGroups.push({
+              name: `Ad Group ${reviewAdGroups.length + 1}`,
+              keywords: formattedKeywords.slice(i, i + groupSize)
+            });
+          }
+        }
+        
+        // Ensure at least one group exists if we have ads
+        if (reviewAdGroups.length === 0 && generatedAds.length > 0) {
+          reviewAdGroups = [{
+            name: 'Ad Group 1',
+            keywords: formattedKeywords.length > 0 ? formattedKeywords.slice(0, 10) : ['default keyword']
+          }];
+        } else if (reviewAdGroups.length === 0 && formattedKeywords.length > 0) {
+          // Last resort: single group with all keywords
+          reviewAdGroups = [{
+            name: 'Ad Group 1',
+            keywords: formattedKeywords.slice(0, 20)
+          }];
+        }
+      }
+    }
+    
     
     // Calculate stats based on actual data
     const totalAdGroups = reviewAdGroups.length;
@@ -4624,8 +4677,66 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reviewAdGroups.map((group, idx) => {
-                  const groupAds = generatedAds.filter(ad => ad.adGroup === group.name && !ad.extensionType);
+                {reviewAdGroups.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-12">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                          <AlertCircle className="w-8 h-8 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">No ad groups found</p>
+                          <p className="text-sm text-slate-600 mt-1">
+                            {selectedKeywords.length === 0 
+                              ? 'Please go back to Step 2 and generate/select keywords first.'
+                              : generatedAds.length === 0
+                              ? 'Please go back to Step 3 and create ads first.'
+                              : 'Unable to organize your campaign data. Please check your settings.'}
+                          </p>
+                          <div className="flex gap-3 justify-center mt-4">
+                            {selectedKeywords.length === 0 && (
+                              <Button onClick={() => setStep(2)} variant="outline">
+                                Go to Keywords Step
+                              </Button>
+                            )}
+                            {selectedKeywords.length > 0 && generatedAds.length === 0 && (
+                              <Button onClick={() => setStep(3)} variant="outline">
+                                Go to Ads Step
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  reviewAdGroups.map((group, idx) => {
+                  // Match ads to group by name, or if no adGroup set, assign to first group or distribute
+                  let groupAds = generatedAds.filter(ad => ad.adGroup === group.name && !ad.extensionType);
+                  
+                  // If no ads found for this group, try to match unassigned ads
+                  if (groupAds.length === 0) {
+                    const unassignedAds = generatedAds.filter(ad => 
+                      (!ad.adGroup || ad.adGroup === 'ALL_AD_GROUPS' || ad.adGroup === '' || !ad.adGroup) && !ad.extensionType
+                    );
+                    if (unassignedAds.length > 0) {
+                      // Distribute unassigned ads across groups
+                      if (reviewAdGroups.length > 0) {
+                        const adsPerGroup = Math.ceil(unassignedAds.length / reviewAdGroups.length);
+                        const startIdx = idx * adsPerGroup;
+                        const endIdx = Math.min(startIdx + adsPerGroup, unassignedAds.length);
+                        groupAds = unassignedAds.slice(startIdx, endIdx);
+                      } else {
+                        // If we're the first/only group, show all unassigned ads
+                        groupAds = unassignedAds;
+                      }
+                    }
+                  }
+                  
+                  // If still no ads, check if there are ANY ads and show them in the first group
+                  if (groupAds.length === 0 && idx === 0 && generatedAds.filter(ad => !ad.extensionType).length > 0) {
+                    groupAds = generatedAds.filter(ad => !ad.extensionType).slice(0, 5); // Show first 5 ads
+                  }
                   // Bug_37: Get negative keywords for this specific group, fallback to global if not set
                   const groupNegatives = groupNegativeKeywords[group.name] || negativeKeywords.split('\n').filter(n => n.trim());
                   const allNegatives = groupNegatives;
@@ -4802,42 +4913,64 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            {(expandedKeywords[group.name] ? group.keywords : group.keywords.slice(0, 10)).map((kw, kidx) => (
-                              <div key={kidx} className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100">
-                                <span className="text-purple-900 font-mono font-medium">
-                                  {formatKeywordDisplay(kw)}
-                                </span>
-                                <Badge variant="outline" className={`ml-2 text-xs ${
-                                  getMatchTypeDisplay(kw) === 'Exact' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
-                                  getMatchTypeDisplay(kw) === 'Phrase' ? 'bg-blue-100 text-blue-700 border-blue-300' :
-                                  'bg-amber-100 text-amber-700 border-amber-300'
-                                }`}>
-                                  {getMatchTypeDisplay(kw)}
-                                </Badge>
-                              </div>
-                            ))}
-                            {group.keywords.length > 10 && !expandedKeywords[group.name] && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setExpandedKeywords(prev => ({ ...prev, [group.name]: true }))}
-                                className="w-full h-7 text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 mt-2"
-                              >
-                                <ChevronRight className="w-3 h-3 mr-1 rotate-90" />
-                                Show More ({group.keywords.length - 10} more keywords)
-                              </Button>
-                            )}
-                            {expandedKeywords[group.name] && group.keywords.length > 10 && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setExpandedKeywords(prev => ({ ...prev, [group.name]: false }))}
-                                className="w-full h-7 text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 mt-2"
-                              >
-                                <ChevronRight className="w-3 h-3 mr-1 -rotate-90" />
-                                Show Less
-                              </Button>
-                            )}
+                            {(() => {
+                              // Ensure we have keywords to display - use group keywords or fallback to all selected keywords
+                              const keywordsToShow = group.keywords && group.keywords.length > 0 
+                                ? group.keywords 
+                                : applyMatchTypeFormatting(selectedKeywords);
+                              const displayKeywords = expandedKeywords[group.name] 
+                                ? keywordsToShow 
+                                : keywordsToShow.slice(0, 10);
+                              
+                              if (displayKeywords.length === 0) {
+                                return (
+                                  <div className="text-xs text-slate-500 italic bg-slate-50 px-2 py-1 rounded border border-slate-200">
+                                    No keywords assigned
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <>
+                                  {displayKeywords.map((kw, kidx) => (
+                                    <div key={kidx} className="flex items-center justify-between text-xs bg-purple-50/50 px-2 py-1.5 rounded-md border border-purple-100">
+                                      <span className="text-purple-900 font-mono font-medium">
+                                        {formatKeywordDisplay(kw)}
+                                      </span>
+                                      <Badge variant="outline" className={`ml-2 text-xs ${
+                                        getMatchTypeDisplay(kw) === 'Exact' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
+                                        getMatchTypeDisplay(kw) === 'Phrase' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                        'bg-amber-100 text-amber-700 border-amber-300'
+                                      }`}>
+                                        {getMatchTypeDisplay(kw)}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                  {keywordsToShow.length > 10 && !expandedKeywords[group.name] && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setExpandedKeywords(prev => ({ ...prev, [group.name]: true }))}
+                                      className="w-full h-7 text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 mt-2"
+                                    >
+                                      <ChevronRight className="w-3 h-3 mr-1 rotate-90" />
+                                      Show More ({keywordsToShow.length - 10} more keywords)
+                                    </Button>
+                                  )}
+                                  {expandedKeywords[group.name] && keywordsToShow.length > 10 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setExpandedKeywords(prev => ({ ...prev, [group.name]: false }))}
+                                      className="w-full h-7 text-xs bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 mt-2"
+                                    >
+                                      <ChevronRight className="w-3 h-3 mr-1 -rotate-90" />
+                                      Show Less
+                                    </Button>
+                                  )}
+                                </>
+                              );
+                            })()}
                             <button 
                               onClick={() => handleEditKeywords(group.name, group.keywords)}
                               className="text-xs text-purple-600 hover:text-purple-700 font-semibold hover:underline mt-2 flex items-center gap-1"
@@ -4910,7 +5043,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       </TableCell>
                     </TableRow>
                   );
-                })}
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
