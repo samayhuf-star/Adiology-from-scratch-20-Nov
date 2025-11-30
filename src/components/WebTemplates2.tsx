@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Layout, Eye, Edit, Download, Globe, 
-  ExternalLink, Loader2, Search, Filter, Star, Code, Smartphone, Monitor
+  Loader2, Search, Filter, Star, Code, Smartphone, Monitor
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -58,6 +58,10 @@ export const WebTemplates2: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [loading, setLoading] = useState(false);
+  const [templateHtml, setTemplateHtml] = useState<string>('');
+  const [templateCode, setTemplateCode] = useState<string>('');
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   // Get unique categories
   const categories = ['All', ...Array.from(new Set(templates.map(t => t.category)))];
@@ -72,15 +76,139 @@ export const WebTemplates2: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const handlePreview = (template: Template) => {
-    setSelectedTemplate(template);
-    setShowPreview(true);
+  // Fetch template HTML from GitHub and process it
+  const fetchTemplateHtml = async (template: Template): Promise<string> => {
+    const baseUrl = `https://raw.githubusercontent.com/samayhuf-star/website-templates/master/${template.id}/`;
+    const possiblePaths = [
+      `${baseUrl}index.html`,
+      `https://raw.githubusercontent.com/samayhuf-star/website-templates/master/${template.id}.html`,
+      `https://raw.githubusercontent.com/samayhuf-star/website-templates/main/${template.id}/index.html`,
+    ];
+    
+    let html = '';
+    let lastError: Error | null = null;
+    
+    // Try each possible path
+    for (const url of possiblePaths) {
+      try {
+        const response = await fetch(url, {
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        
+        if (response.ok) {
+          html = await response.text();
+          break;
+        }
+      } catch (error: any) {
+        lastError = error;
+        continue;
+      }
+    }
+    
+    if (!html) {
+      throw lastError || new Error('Template not found. Please check the template ID.');
+    }
+    
+    // Fix relative paths to point to GitHub raw content
+    // Replace CSS links
+    html = html.replace(/href=["']([^"']+\.css[^"']*)["']/gi, (match, path) => {
+        if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
+        const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+        return `href="${baseUrl}${cleanPath}"`;
+    });
+    
+    // Replace JS, images, fonts
+    html = html.replace(/src=["']([^"']+\.(js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)[^"']*)["']/gi, (match, path) => {
+        if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
+        const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+        return `src="${baseUrl}${cleanPath}"`;
+    });
+    
+    // Fix background images in style attributes
+    html = html.replace(/background-image:\s*url\(["']?([^"')]+)["']?\)/gi, (match, path) => {
+        if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
+        const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+        return `background-image: url("${baseUrl}${cleanPath}")`;
+    });
+    
+    // Fix link tags with href
+    html = html.replace(/<link[^>]*href=["']([^"']+)["'][^>]*>/gi, (match, path) => {
+        if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
+        const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+        return match.replace(`href="${path}"`, `href="${baseUrl}${cleanPath}"`);
+    });
+    
+    // Remove or disable external links that might redirect
+    html = html.replace(/<a([^>]*)\s+href=["']https?:\/\/[^"']+["']([^>]*)>/gi, (match, before, after) => {
+        return `<a${before} href="#" onclick="return false;"${after}>`;
+    });
+    
+    // Add base tag to help with relative paths
+    if (!html.includes('<base')) {
+        html = html.replace(/<head[^>]*>/i, `$&<base href="${baseUrl}">`);
+    }
+    
+    return html;
   };
 
-  const handleEdit = (template: Template) => {
+  const handlePreview = async (template: Template) => {
     setSelectedTemplate(template);
-    setShowEditor(true);
+    setLoadingTemplate(true);
+    setShowPreview(true);
+    
+    try {
+      const html = await fetchTemplateHtml(template);
+      setTemplateHtml(html);
+      
+      // Create blob URL for iframe
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+    } catch (error: any) {
+      console.error('Preview error:', error);
+      notifications.error('Failed to load template preview', {
+        title: 'Load Error',
+        description: error.message || 'Could not fetch template from GitHub'
+      });
+    } finally {
+      setLoadingTemplate(false);
+    }
   };
+
+  const handleEdit = async (template: Template) => {
+    setSelectedTemplate(template);
+    setLoadingTemplate(true);
+    setShowEditor(true);
+    
+    try {
+      const html = await fetchTemplateHtml(template);
+      setTemplateHtml(html);
+      setTemplateCode(html);
+      
+      // Create blob URL for iframe
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+    } catch (error: any) {
+      console.error('Edit error:', error);
+      notifications.error('Failed to load template for editing', {
+        title: 'Load Error',
+        description: error.message || 'Could not fetch template from GitHub'
+      });
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
+  
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleDownload = async (template: Template) => {
     try {
@@ -258,25 +386,33 @@ export const WebTemplates2: React.FC = () => {
                     <Smartphone className="w-4 h-4" />
                   </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => selectedTemplate && window.open(selectedTemplate.preview, '_blank')}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Full
-                </Button>
               </div>
             </div>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
-            <iframe
-              src={selectedTemplate?.preview}
-              className={`w-full h-full border-0 ${
-                previewMode === 'mobile' ? 'max-w-[375px] mx-auto' : ''
-              }`}
-              title={selectedTemplate?.name}
-            />
+          <div className="flex-1 overflow-hidden relative">
+            {loadingTemplate ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
+                  <p className="text-slate-600">Loading template...</p>
+                </div>
+              </div>
+            ) : previewUrl ? (
+              <iframe
+                src={previewUrl}
+                className={`w-full h-full border-0 ${
+                  previewMode === 'mobile' ? 'max-w-[375px] mx-auto block' : ''
+                }`}
+                title={selectedTemplate?.name}
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-slate-500">
+                  <p>Template preview unavailable</p>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -307,14 +443,6 @@ export const WebTemplates2: React.FC = () => {
                     <Smartphone className="w-4 h-4" />
                   </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => selectedTemplate && window.open(selectedTemplate.preview, '_blank')}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View Source
-                </Button>
               </div>
             </div>
           </DialogHeader>
@@ -325,38 +453,56 @@ export const WebTemplates2: React.FC = () => {
             </TabsList>
             <TabsContent value="preview" className="flex-1 overflow-hidden mt-4">
               <div className="h-full overflow-auto px-6 pb-6">
-                <div className={`bg-white shadow-xl rounded-lg overflow-hidden mx-auto ${
-                  previewMode === 'mobile' ? 'max-w-[375px]' : 'w-full'
-                }`}>
-                  <iframe
-                    src={selectedTemplate?.preview}
-                    className="w-full border-0"
-                    style={{ minHeight: '600px' }}
-                    title={`Edit ${selectedTemplate?.name}`}
-                  />
-                </div>
+                {loadingTemplate ? (
+                  <div className="flex items-center justify-center h-full min-h-[600px]">
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
+                      <p className="text-slate-600">Loading template...</p>
+                    </div>
+                  </div>
+                ) : previewUrl ? (
+                  <div className={`bg-white shadow-xl rounded-lg overflow-hidden mx-auto ${
+                    previewMode === 'mobile' ? 'max-w-[375px]' : 'w-full'
+                  }`}>
+                    <iframe
+                      src={previewUrl}
+                      className="w-full border-0"
+                      style={{ minHeight: '600px' }}
+                      title={`Edit ${selectedTemplate?.name}`}
+                      sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full min-h-[600px]">
+                    <div className="text-center text-slate-500">
+                      <p>Template preview unavailable</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="code" className="flex-1 overflow-hidden mt-4">
               <ScrollArea className="h-full px-6 pb-6">
-                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                  <div className="mb-4 text-slate-400 text-xs">
-                    Loading source code from GitHub...
+                {loadingTemplate ? (
+                  <div className="flex items-center justify-center h-full min-h-[400px]">
+                    <div className="text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
+                      <p className="text-slate-600">Loading source code...</p>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (selectedTemplate) {
-                        const repoUrl = `https://github.com/samayhuf-star/website-templates/tree/master/${selectedTemplate.id}`;
-                        window.open(repoUrl, '_blank');
-                      }
-                    }}
-                  >
-                    <Code className="w-4 h-4 mr-2" />
-                    View on GitHub
-                  </Button>
-                </div>
+                ) : templateCode ? (
+                  <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                    <pre className="whitespace-pre-wrap break-words text-xs">
+                      {templateCode}
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm">
+                    <div className="text-slate-400 text-xs">
+                      Source code not available
+                    </div>
+                  </div>
+                )}
               </ScrollArea>
             </TabsContent>
           </Tabs>
