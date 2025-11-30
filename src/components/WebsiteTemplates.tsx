@@ -2295,7 +2295,7 @@ const renderSectionPreview = (
     case 'hero':
       return (
         <section 
-          className="relative min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center text-white"
+          className="relative min-h-[450px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[700px] flex items-center justify-center text-white"
           style={{
             backgroundImage: `url(${section.content.backgroundImage || ''})`,
             backgroundSize: 'cover',
@@ -2328,14 +2328,14 @@ const renderSectionPreview = (
           )}
           
           {/* Hero Content - matches template.html structure */}
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-5 md:px-6 py-6 sm:py-8 md:py-10 text-center">
+          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-5 md:px-6 py-8 sm:py-10 md:py-12 text-center">
             {editMode ? (
               <>
                 <h1 
                   contentEditable
                   suppressContentEditableWarning
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-3 sm:mb-4 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text leading-tight"
-                  style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-3 sm:mb-4 md:mb-5 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text leading-tight break-words"
+                  style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
                   onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -2349,8 +2349,8 @@ const renderSectionPreview = (
                 <p 
                   contentEditable
                   suppressContentEditableWarning
-                  className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text leading-relaxed"
-                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                  className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-6 sm:mb-7 md:mb-8 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text leading-relaxed break-words max-w-3xl mx-auto"
+                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
                   onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -2361,12 +2361,12 @@ const renderSectionPreview = (
                 >
                   {section.content.subheading}
                 </p>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-stretch sm:items-center">
                   <a 
                     href="#contact"
                     contentEditable
                     suppressContentEditableWarning
-                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text min-h-[44px] flex items-center justify-center"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text min-h-[48px] sm:min-h-[44px] flex items-center justify-center w-full sm:w-auto break-words"
                     onBlur={(e) => handleTextEdit('ctaText', e.currentTarget.textContent || '')}
                   >
                 {section.content.ctaText}
@@ -2375,7 +2375,7 @@ const renderSectionPreview = (
                     href={`tel:${section.content.ctaPhoneNumber || section.content.ctaPhone || ''}`}
                     contentEditable
                     suppressContentEditableWarning
-                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text min-h-[44px] flex items-center justify-center"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text min-h-[48px] sm:min-h-[44px] flex items-center justify-center w-full sm:w-auto break-words"
                     onBlur={(e) => {
                       const text = e.currentTarget.textContent || '';
                       const phone = text.replace('📞', '').trim();
@@ -2389,27 +2389,27 @@ const renderSectionPreview = (
             ) : (
               <>
                 <h1 
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-3 sm:mb-4 text-white leading-tight"
-                  style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-3 sm:mb-4 md:mb-5 text-white leading-tight break-words px-2"
+                  style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}
                 >
                   {section.content.heading}
                 </h1>
                 <p 
-                  className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-white leading-relaxed"
-                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                  className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-6 sm:mb-7 md:mb-8 text-white leading-relaxed break-words max-w-3xl mx-auto px-2"
+                  style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}
                 >
                   {section.content.subheading}
                 </p>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-2">
                   <a 
                     href="#contact"
-                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 min-h-[44px] flex items-center justify-center"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 min-h-[48px] sm:min-h-[44px] flex items-center justify-center w-full sm:w-auto break-words"
                   >
                     {section.content.ctaText}
                   </a>
                   <a 
                     href={`tel:${section.content.ctaPhoneNumber || section.content.ctaPhone || ''}`}
-                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 min-h-[44px] flex items-center justify-center"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 min-h-[48px] sm:min-h-[44px] flex items-center justify-center w-full sm:w-auto break-words"
                   >
                     📞 {section.content.ctaPhoneDisplay || section.content.ctaPhone || ''}
                   </a>
@@ -2575,16 +2575,16 @@ const renderSectionPreview = (
                     <img 
                       src={service.image} 
                       alt={service.title}
-                      className="w-full h-64 md:h-80 object-cover"
+                      className="w-full h-48 sm:h-56 md:h-64 lg:h-80 object-cover"
                       onError={(e) => {
                         // Fallback if image fails to load
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
-                        target.parentElement!.innerHTML = '<div class="w-full h-64 md:h-80 bg-slate-200 flex items-center justify-center"><span class="text-4xl">📷</span></div>';
+                        target.parentElement!.innerHTML = '<div class="w-full h-48 sm:h-56 md:h-64 lg:h-80 bg-slate-200 flex items-center justify-center"><span class="text-4xl">📷</span></div>';
                       }}
                     />
                   ) : editMode ? (
-                    <label className="w-full h-64 md:h-80 flex items-center justify-center bg-slate-100 hover:bg-slate-200 cursor-pointer">
+                    <label className="w-full h-48 sm:h-56 md:h-64 lg:h-80 flex items-center justify-center bg-slate-100 hover:bg-slate-200 cursor-pointer">
                       <span className="text-slate-600 flex items-center gap-2">
                         <ImageIcon className="w-5 h-5" />
                         Add Image
@@ -2608,17 +2608,18 @@ const renderSectionPreview = (
                       />
                     </label>
                   ) : (
-                    <div className="w-full h-64 md:h-80 bg-slate-200 flex items-center justify-center">
+                    <div className="w-full h-48 sm:h-56 md:h-64 lg:h-80 bg-slate-200 flex items-center justify-center">
                       <span className="text-6xl opacity-50">📷</span>
                     </div>
                   )}
-                  <div className="p-6">
+                  <div className="p-4 sm:p-5 md:p-6">
                     {editMode ? (
                       <>
                         <h3 
                           contentEditable
                           suppressContentEditableWarning
-                          className="text-xl font-semibold mb-2 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                          className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text line-clamp-2 break-words"
+                          title={service.title}
                           onBlur={(e) => {
                             if (onUpdate) {
                               const newServices = [...(section.content.services || [])];
@@ -2632,7 +2633,8 @@ const renderSectionPreview = (
                         <p 
                           contentEditable
                           suppressContentEditableWarning
-                          className="text-slate-600 mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                          className="text-sm sm:text-base text-slate-600 mb-3 sm:mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text line-clamp-3 break-words leading-relaxed"
+                          title={service.description}
                           onBlur={(e) => {
                             if (onUpdate) {
                               const newServices = [...(section.content.services || [])];
@@ -2647,7 +2649,8 @@ const renderSectionPreview = (
                           <p 
                             contentEditable
                             suppressContentEditableWarning
-                            className="text-indigo-600 font-bold text-lg outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                            className="text-indigo-600 font-bold text-base sm:text-lg outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text break-words"
+                            title={service.price}
                             onBlur={(e) => {
                               if (onUpdate) {
                                 const newServices = [...(section.content.services || [])];
@@ -2662,10 +2665,16 @@ const renderSectionPreview = (
                       </>
                     ) : (
                       <>
-                    <h3 className="text-xl font-semibold mb-2 text-slate-900">{service.title}</h3>
-                    <p className="text-slate-600 mb-4">{service.description}</p>
+                    <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-slate-900 line-clamp-2 break-words" title={service.title}>
+                      {service.title}
+                    </h3>
+                    <p className="text-sm sm:text-base text-slate-600 mb-3 sm:mb-4 line-clamp-3 break-words leading-relaxed" title={service.description}>
+                      {service.description}
+                    </p>
                     {service.price && (
-                          <p className="text-indigo-600 font-bold text-lg">{service.price}</p>
+                          <p className="text-indigo-600 font-bold text-base sm:text-lg break-words" title={service.price}>
+                            {service.price}
+                          </p>
                         )}
                       </>
                     )}
@@ -2679,27 +2688,27 @@ const renderSectionPreview = (
     
     case 'testimonials':
       return (
-        <section className="py-20 px-5 bg-slate-50" id="testimonials">
+        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-5 md:px-6 bg-slate-50" id="testimonials">
           <div className="max-w-6xl mx-auto">
             {editMode ? (
               <h2 
                 contentEditable
                 suppressContentEditableWarning
-                  className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-3 hover:outline-indigo-500 hover:outline-dashed rounded px-2 py-1 cursor-text hover:bg-indigo-50/50 transition-all"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-8 sm:mb-10 md:mb-12 text-slate-900 outline-none hover:outline-3 hover:outline-indigo-500 hover:outline-dashed rounded px-2 py-1 cursor-text hover:bg-indigo-50/50 transition-all break-words"
                 onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
               >
                 {section.content.heading}
               </h2>
             ) : (
-              <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-8 sm:mb-10 md:mb-12 text-slate-900 break-words px-2">
                 {section.content.heading}
               </h2>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {section.content.testimonials?.map((testimonial: any, idx: number) => (
                 <div 
                   key={idx} 
-                  className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all"
+                  className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-md hover:shadow-xl transition-all"
                 >
                   <div className="flex items-center mb-4">
                     {testimonial.avatar ? (
@@ -2811,7 +2820,7 @@ const renderSectionPreview = (
     case 'cta':
       return (
         <section 
-          className="py-20 px-5 text-white text-center"
+          className="py-12 sm:py-16 md:py-20 px-4 sm:px-5 md:px-6 text-white text-center"
           id="contact"
           style={{
             background: 'linear-gradient(135deg, #4f46e5, #7c3aed)'
@@ -2823,7 +2832,7 @@ const renderSectionPreview = (
                 <h2 
                   contentEditable
                   suppressContentEditableWarning
-                  className="text-4xl md:text-5xl font-bold mb-4 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text break-words"
                   onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
                 >
                   {section.content.heading}
@@ -2832,19 +2841,19 @@ const renderSectionPreview = (
                   <p 
                     contentEditable
                     suppressContentEditableWarning
-                    className="text-xl md:text-2xl mb-8 opacity-90 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                    className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 opacity-90 outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text break-words"
                     onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
                   >
                     {section.content.subheading}
                   </p>
                 )}
-                <div className="flex flex-wrap gap-4 justify-center items-center mb-8">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-stretch sm:items-center mb-6 sm:mb-8">
               {(section.content.phoneNumber || section.content.phone) && (
                 <a 
                   href={`tel:${section.content.phoneNumber || section.content.phone || ''}`}
                       contentEditable
                       suppressContentEditableWarning
-                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text"
+                      className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text min-h-[48px] sm:min-h-[44px] w-full sm:w-auto break-words"
                       onBlur={(e) => {
                         const text = e.currentTarget.textContent || '';
                         const phone = text.replace('📞', '').replace(section.content.ctaText || 'Call Now', '').trim();
@@ -2859,7 +2868,7 @@ const renderSectionPreview = (
                   href={`mailto:${section.content.email}`}
                       contentEditable
                       suppressContentEditableWarning
-                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-700 text-white hover:bg-indigo-800 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text"
+                      className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg bg-indigo-700 text-white hover:bg-indigo-800 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text min-h-[48px] sm:min-h-[44px] w-full sm:w-auto break-words"
                       onBlur={(e) => {
                         const text = e.currentTarget.textContent || '';
                         const email = text.replace('✉️ Email Us', '').trim();
@@ -2886,19 +2895,19 @@ const renderSectionPreview = (
               </>
             ) : (
               <>
-                <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 break-words px-2">
                   {section.content.heading}
                 </h2>
                 {section.content.subheading && (
-                  <p className="text-xl md:text-2xl mb-8 opacity-90">
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 opacity-90 break-words px-2">
                     {section.content.subheading}
                   </p>
                 )}
-                <div className="flex flex-wrap gap-4 justify-center items-center mb-8">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-stretch sm:items-center mb-6 sm:mb-8">
                   {(section.content.phoneNumber || section.content.phone) && (
                     <a 
                       href={`tel:${section.content.phoneNumber || section.content.phone || ''}`}
-                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+                      className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[44px] w-full sm:w-auto break-words"
                     >
                       📞 {section.content.ctaText || 'Call Now'} {section.content.phoneDisplay || section.content.phone || ''}
                     </a>
@@ -2906,7 +2915,7 @@ const renderSectionPreview = (
                   {section.content.email && (
                     <a 
                       href={`mailto:${section.content.email}`}
-                      className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-700 text-white hover:bg-indigo-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                      className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-lg bg-indigo-700 text-white hover:bg-indigo-800 transition-all hover:shadow-lg hover:-translate-y-0.5 min-h-[48px] sm:min-h-[44px] w-full sm:w-auto break-words"
                     >
                       ✉️ Email Us
                     </a>
@@ -2926,9 +2935,9 @@ const renderSectionPreview = (
     
     case 'about':
       return (
-        <section className="py-20 px-5 bg-gradient-to-b from-white via-slate-50 to-white" id="about">
+        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-5 md:px-6 bg-gradient-to-b from-white via-slate-50 to-white" id="about">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12 items-center">
               {/* Left side - Content */}
               <div>
                 {editMode ? (

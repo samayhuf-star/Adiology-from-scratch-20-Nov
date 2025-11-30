@@ -82,11 +82,17 @@ export const WebTemplates2: React.FC = () => {
     
     try {
       const localResponse = await fetch(localUrl, {
-        cache: 'no-cache'
+        cache: 'no-cache',
+        method: 'GET'
       });
       
       if (localResponse.ok) {
         let html = await localResponse.text();
+        
+        // Check if we got actual HTML content
+        if (!html || html.trim().length === 0) {
+          throw new Error('Template file is empty');
+        }
         
         // Fix paths to be relative to local server
         const localBase = `/web-templates-2/${template.id}/`;
@@ -163,8 +169,8 @@ export const WebTemplates2: React.FC = () => {
       }
     }
     
-    if (!html) {
-      throw lastError || new Error('Template not found locally or on GitHub.');
+    if (!html || html.trim().length === 0) {
+      throw lastError || new Error(`Template "${template.name}" not found. Please ensure the template files exist in the public/web-templates-2 directory.`);
     }
     
     // Fix paths for GitHub content
@@ -207,22 +213,37 @@ export const WebTemplates2: React.FC = () => {
     setSelectedTemplate(template);
     setLoadingTemplate(true);
     setShowPreview(true);
+    setPreviewUrl(''); // Clear previous URL
     
     try {
-      const html = await fetchTemplateHtml(template);
-      setTemplateHtml(html);
+      // Use direct local URL for iframe - this works better than blob URLs
+      const localUrl = `/web-templates-2/${template.id}/index.html`;
       
-      // Create blob URL for iframe
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
+      // Check if template exists locally
+      const checkResponse = await fetch(localUrl, { method: 'HEAD' });
+      
+      if (checkResponse.ok) {
+        // Template exists locally - use direct URL
+        setPreviewUrl(localUrl);
+        setLoadingTemplate(false);
+      } else {
+        // Try to fetch and create blob as fallback
+        const html = await fetchTemplateHtml(template);
+        setTemplateHtml(html);
+        
+        // Create blob URL for iframe
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        setLoadingTemplate(false);
+      }
     } catch (error: any) {
       console.error('Preview error:', error);
+      setPreviewUrl('');
       notifications.error('Failed to load template preview', {
         title: 'Load Error',
-        description: error.message || 'Could not fetch template from GitHub'
+        description: error.message || 'Template not found. Please ensure the template files are available.'
       });
-    } finally {
       setLoadingTemplate(false);
     }
   };
@@ -231,68 +252,128 @@ export const WebTemplates2: React.FC = () => {
     setSelectedTemplate(template);
     setLoadingTemplate(true);
     setShowEditor(true);
+    setPreviewUrl(''); // Clear previous URL
+    setTemplateCode('');
     
     try {
+      // Use direct local URL first - this works better than blob URLs for relative paths
+      const localUrl = `/web-templates-2/${template.id}/index.html`;
+      
+      // Check if template exists locally
+      try {
+        const checkResponse = await fetch(localUrl, { method: 'HEAD' });
+        
+        if (checkResponse.ok) {
+          // Template exists locally - use direct URL for preview
+          setPreviewUrl(localUrl);
+          
+          // Also fetch HTML for code view
+          try {
+            const html = await fetchTemplateHtml(template);
+            setTemplateHtml(html);
+            setTemplateCode(html);
+          } catch (htmlError) {
+            console.warn('Could not fetch HTML for code view, but preview should work:', htmlError);
+            // Preview will still work with direct URL
+          }
+          
+          setLoadingTemplate(false);
+          return;
+        }
+      } catch (checkError) {
+        console.log('Local template check failed, fetching HTML...', checkError);
+      }
+      
+      // Fallback: Fetch HTML and create blob URL
       const html = await fetchTemplateHtml(template);
       setTemplateHtml(html);
       setTemplateCode(html);
       
-      // Create blob URL for iframe
+      // Create blob URL for iframe (for templates not available locally)
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
+      setLoadingTemplate(false);
     } catch (error: any) {
       console.error('Edit error:', error);
+      setPreviewUrl('');
+      setTemplateCode('');
       notifications.error('Failed to load template for editing', {
         title: 'Load Error',
-        description: error.message || 'Could not fetch template from GitHub'
+        description: error.message || 'Template not found. Please ensure the template files are available.'
       });
-    } finally {
       setLoadingTemplate(false);
     }
   };
   
-  // Cleanup blob URLs on unmount
+  // Cleanup blob URLs when dialog closes or component unmounts
   useEffect(() => {
     return () => {
-      if (previewUrl) {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
       }
     };
   }, [previewUrl]);
 
+  // Cleanup blob URLs when dialogs close
+  useEffect(() => {
+    if (!showPreview && !showEditor && previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+  }, [showPreview, showEditor, previewUrl]);
+
   const handleDownload = async (template: Template) => {
     try {
       setLoading(true);
-      // Fetch template from GitHub repo
-      const repoUrl = `https://raw.githubusercontent.com/samayhuf-star/website-templates/master/${template.id}/index.html`;
       
-      const response = await fetch(repoUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch template');
+      // Try to fetch from local first
+      const localUrl = `/web-templates-2/${template.id}/index.html`;
+      let html = '';
+      let downloadError: Error | null = null;
+      
+      try {
+        const localResponse = await fetch(localUrl);
+        if (localResponse.ok) {
+          html = await localResponse.text();
+        } else {
+          throw new Error('Local template not found');
+        }
+      } catch (localError) {
+        // Fallback to fetching template HTML (which will try local then GitHub)
+        try {
+          html = await fetchTemplateHtml(template);
+        } catch (fetchError: any) {
+          downloadError = fetchError;
+          throw fetchError;
+        }
       }
       
-      const html = await response.text();
+      if (!html) {
+        throw new Error('Template content is empty');
+      }
       
       // Create blob and download
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${template.id}.html`;
+      a.download = `${template.id || template.name.replace(/\s+/g, '-').toLowerCase()}.html`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
       notifications.success('Template downloaded successfully', {
-        title: 'Download Complete'
+        title: 'Download Complete',
+        description: `"${template.name}" has been downloaded.`
       });
     } catch (error: any) {
       console.error('Download error:', error);
-      notifications.error('Failed to download template. You can view it online instead.', {
-        title: 'Download Failed'
+      notifications.error('Failed to download template', {
+        title: 'Download Failed',
+        description: error.message || 'Could not fetch template. Please try again or contact support.'
       });
-      // Open preview in new tab as fallback
-      window.open(template.preview, '_blank');
     } finally {
       setLoading(false);
     }
@@ -455,12 +536,25 @@ export const WebTemplates2: React.FC = () => {
                   previewMode === 'mobile' ? 'max-w-[375px] mx-auto block' : ''
                 }`}
                 title={selectedTemplate?.name}
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+                onError={() => {
+                  console.error('Iframe load error');
+                  setPreviewUrl('');
+                  notifications.error('Failed to load template in preview', {
+                    title: 'Load Error',
+                    description: 'The template could not be displayed. Please try again.'
+                  });
+                }}
+                onLoad={() => {
+                  console.log('Template loaded successfully');
+                }}
               />
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center text-slate-500">
-                  <p>Template preview unavailable</p>
+                  <Globe className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                  <p className="text-lg font-medium mb-2">Template preview unavailable</p>
+                  <p className="text-sm">The template could not be loaded. Please ensure the template files are available.</p>
                 </div>
               </div>
             )}
@@ -520,13 +614,26 @@ export const WebTemplates2: React.FC = () => {
                       className="w-full border-0"
                       style={{ minHeight: '600px' }}
                       title={`Edit ${selectedTemplate?.name}`}
-                      sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+                      onError={() => {
+                        console.error('Iframe load error in editor');
+                        setPreviewUrl('');
+                        notifications.error('Failed to load template in editor', {
+                          title: 'Load Error',
+                          description: 'The template could not be displayed. Please try again.'
+                        });
+                      }}
+                      onLoad={() => {
+                        console.log('Template loaded successfully in editor');
+                      }}
                     />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full min-h-[600px]">
                     <div className="text-center text-slate-500">
-                      <p>Template preview unavailable</p>
+                      <Globe className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                      <p className="text-lg font-medium mb-2">Template preview unavailable</p>
+                      <p className="text-sm">The template could not be loaded. Please ensure the template files are available.</p>
                     </div>
                   </div>
                 )}
