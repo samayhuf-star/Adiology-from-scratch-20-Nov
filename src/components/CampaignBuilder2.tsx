@@ -1428,7 +1428,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   id="broad"
                   checked={matchTypes.broad}
                   onCheckedChange={(checked) => {
-                    setMatchTypes({ ...matchTypes, broad: !!checked });
+                    setMatchTypes(prev => ({ ...prev, broad: !!checked }));
                   }}
                   className="border-amber-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600 data-[state=checked]:border-amber-600"
                 />
@@ -1454,7 +1454,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   id="phrase"
                   checked={matchTypes.phrase}
                   onCheckedChange={(checked) => {
-                    setMatchTypes({ ...matchTypes, phrase: !!checked });
+                    setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
                   }}
                   className="border-blue-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-500 data-[state=checked]:to-cyan-600 data-[state=checked]:border-blue-600"
                 />
@@ -1480,7 +1480,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   id="exact"
                   checked={matchTypes.exact}
                   onCheckedChange={(checked) => {
-                    setMatchTypes({ ...matchTypes, exact: !!checked });
+                    setMatchTypes(prev => ({ ...prev, exact: !!checked }));
                   }}
                   className="border-emerald-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-600 data-[state=checked]:border-emerald-600"
                 />

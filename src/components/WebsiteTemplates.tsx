@@ -1684,9 +1684,9 @@ const TemplateEditor: React.FC<{
         {/* Preview Area */}
         <div className="flex-1 overflow-auto bg-slate-50 p-8">
           <div className={`mx-auto bg-white shadow-xl transition-all duration-300 ${
-            previewMode === 'mobile' ? 'max-w-sm w-full' : 'max-w-6xl w-full'
-          }`}>
-            <div className={previewMode === 'mobile' ? 'transform scale-100' : ''}>
+            previewMode === 'mobile' ? 'max-w-[375px] w-full' : 'max-w-6xl w-full'
+          }`} style={previewMode === 'mobile' ? { width: '375px', maxWidth: '100%' } : {}}>
+            <div className={previewMode === 'mobile' ? 'w-full' : 'w-full'}>
               <TemplatePreview 
                 template={template} 
                 editMode={editMode === 'visual'}
@@ -2450,10 +2450,16 @@ const renderSectionPreview = (
                     <img 
                       src={service.image} 
                       alt={service.title}
-                      className="w-full h-48 object-cover"
+                      className="w-full h-64 md:h-80 object-cover"
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement!.innerHTML = '<div class="w-full h-64 md:h-80 bg-slate-200 flex items-center justify-center"><span class="text-4xl">📷</span></div>';
+                      }}
                     />
                   ) : editMode ? (
-                    <label className="w-full h-48 flex items-center justify-center bg-slate-100 hover:bg-slate-200 cursor-pointer">
+                    <label className="w-full h-64 md:h-80 flex items-center justify-center bg-slate-100 hover:bg-slate-200 cursor-pointer">
                       <span className="text-slate-600 flex items-center gap-2">
                         <ImageIcon className="w-5 h-5" />
                         Add Image
@@ -2477,7 +2483,9 @@ const renderSectionPreview = (
                       />
                     </label>
                   ) : (
-                    <div className="w-full h-48 bg-slate-100" />
+                    <div className="w-full h-64 md:h-80 bg-slate-200 flex items-center justify-center">
+                      <span className="text-6xl opacity-50">📷</span>
+                    </div>
                   )}
                   <div className="p-6">
                     {editMode ? (
@@ -2801,7 +2809,7 @@ const renderSectionPreview = (
       return (
         <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-300 py-20 px-5 border-t-4 border-indigo-600">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-12" style={{ alignItems: 'start' }}>
               {/* Company Info Column */}
               <div className="space-y-4">
                 {editMode ? (
@@ -2963,7 +2971,18 @@ const renderSectionPreview = (
             {/* Footer Bottom */}
             {section.content.copyright && (
               <div className="pt-8 mt-8 border-t-2 border-slate-700/50 text-center text-slate-400 text-sm font-medium">
-                {section.content.copyright}
+                {editMode ? (
+                  <p
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                    onBlur={(e) => handleTextEdit('copyright', e.currentTarget.textContent || '')}
+                  >
+                    {section.content.copyright}
+                  </p>
+                ) : (
+                  section.content.copyright
+                )}
               </div>
             )}
           </div>
