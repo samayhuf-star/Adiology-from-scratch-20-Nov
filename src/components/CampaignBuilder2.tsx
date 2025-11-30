@@ -1632,8 +1632,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 let loadingToastId: number | string | undefined;
                 
                 try {
-                  loadingToastId = notifications.loading('Generating keywords with AI...', {
-                    title: 'AI Keyword Generation',
+                  loadingToastId = notifications.loading('Generating keywords...', {
+                    title: 'Keyword Generation',
                     description: 'This may take a few moments. Please wait...',
                   });
                 } catch (e) {
@@ -1649,7 +1649,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     .map(n => n.trim().toLowerCase())
                     .filter(Boolean);
                   
-                  // Always try fallback first due to CORS issues
+                  // Skip Google Ads API (always fails due to CORS) and use enhanced mock keywords directly
                   // Generate enhanced mock keywords based on seed keywords (300-600 keywords)
                   const seedList = seedKeywords.split('\n').filter(k => k.trim());
                   const mockKeywords: any[] = [];
@@ -1675,7 +1675,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     'trusted', 'reliable', 'local', 'nearby', 'fast', 'quick', 'easy',
                     'affordable', 'quality', 'premium', 'experienced', 'free consultation',
                     'get quote', 'request quote', 'schedule', 'book now', 'call now'
-                  ];
+                  ].slice(0, 30); // Limit to prevent too many iterations
                   
                   // Call/Lead focused suffixes - include vertical modifiers
                   const suffixes = [
@@ -1685,18 +1685,18 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     'service', 'company', 'provider', 'expert', 'professional',
                     'get started', 'sign up', 'apply now', 'request info', 'learn more',
                     'pricing', 'quotes', 'rates', 'cost', 'price', 'options', 'solutions'
-                  ];
+                  ].slice(0, 30); // Limit to prevent too many iterations
                   
                   // Call/Lead Intent Keywords - Optimized for conversions
                   const callLeadIntents = [
                     'call', 'contact', 'reach', 'phone', 'call now', 'contact us', 'get quote',
                     'request quote', 'free consultation', 'schedule', 'book', 'appointment',
                     'speak with', 'talk to', 'connect with', 'reach out', 'get in touch',
-                    'call today', 'call now', 'phone number', 'contact number', 'call us',
+                    'call today', 'phone number', 'contact number', 'call us',
                     'hire', 'book now', 'schedule now', 'get started', 'sign up', 'register',
                     'apply', 'apply now', 'get quote now', 'request info', 'get info',
                     'learn more', 'find out more', 'get help', 'need help', 'want to know'
-                  ];
+                  ].slice(0, 20); // Limit to prevent too many iterations
                   
                   // Use intent-based keywords if intent is classified
                   let intents = callLeadIntents; // Default
@@ -1735,6 +1735,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     return text.trim().split(/\s+/).length;
                   };
                   
+                  // Process each seed keyword
                   seedList.forEach((seed, seedIdx) => {
                     const cleanSeed = seed.trim().toLowerCase();
                     let keywordCounter = 0;
@@ -1770,8 +1771,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       });
                     }
                     
-                    // Generate prefix + seed combinations (only if result is 2-4 words)
-                    prefixes.forEach((prefix, pIdx) => {
+                    // Generate prefix + seed combinations (limit iterations and stop at 600)
+                    for (let pIdx = 0; pIdx < Math.min(prefixes.length, 20) && mockKeywords.length < 600; pIdx++) {
+                      const prefix = prefixes[pIdx];
                       const keyword = `${prefix} ${cleanSeed}`;
                       const wordCount = getWordCount(keyword);
                       if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
@@ -1783,10 +1785,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           type: ['Exact', 'Phrase', 'Broad'][pIdx % 3]
                         });
                       }
-                    });
+                    }
                     
-                    // Generate seed + suffix combinations (only if result is 2-4 words)
-                    suffixes.forEach((suffix, sIdx) => {
+                    // Generate seed + suffix combinations (limit iterations and stop at 600)
+                    for (let sIdx = 0; sIdx < Math.min(suffixes.length, 20) && mockKeywords.length < 600; sIdx++) {
+                      const suffix = suffixes[sIdx];
                       const keyword = `${cleanSeed} ${suffix}`;
                       const wordCount = getWordCount(keyword);
                       if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
@@ -1798,10 +1801,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           type: ['Exact', 'Phrase', 'Broad'][sIdx % 3]
                         });
                       }
-                    });
+                    }
                     
-                    // Generate intent + seed combinations (only if result is 2-4 words)
-                    intents.forEach((intent, iIdx) => {
+                    // Generate intent + seed combinations (limit iterations and stop at 600)
+                    for (let iIdx = 0; iIdx < Math.min(intents.length, 15) && mockKeywords.length < 600; iIdx++) {
+                      const intent = intents[iIdx];
                       const keyword = `${intent} ${cleanSeed}`;
                       const wordCount = getWordCount(keyword);
                       if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
@@ -1813,31 +1817,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           type: 'Exact'
                         });
                       }
-                    });
-                    
-                    // REMOVED: prefix + seed + suffix combinations (creates too long keywords)
-                    // Only add if seed is 1 word and we can make 3-word phrases
-                    if (seedWordCount === 1) {
-                      for (let i = 0; i < 50; i++) {
-                        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-                        const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-                        const keyword = `${prefix} ${cleanSeed} ${suffix}`;
-                        const wordCount = getWordCount(keyword);
-                        // Only add if total is 3-4 words
-                        if (wordCount >= 3 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-                          mockKeywords.push({
-                            id: `kw-${seedIdx}-${keywordCounter++}`,
-                            text: keyword,
-                            volume: ['High', 'Medium', 'Low'][i % 3],
-                            cpc: ['$2.50', '$1.80', '$1.20'][i % 3],
-                            type: ['Exact', 'Phrase', 'Broad'][i % 3]
-                          });
-                        }
-                      }
                     }
                     
-                    // Generate seed + location combinations (only if result is 2-4 words)
-                    locations.forEach((loc, lIdx) => {
+                    // Generate seed + location combinations (limit iterations and stop at 600)
+                    for (let lIdx = 0; lIdx < Math.min(locations.length, 6) && mockKeywords.length < 600; lIdx++) {
+                      const loc = locations[lIdx];
                       const keyword = `${cleanSeed} ${loc}`;
                       const wordCount = getWordCount(keyword);
                       if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
@@ -1849,7 +1833,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           type: 'Local'
                         });
                       }
-                    });
+                    }
+                    
+                    // Stop processing if we have enough keywords
+                    if (mockKeywords.length >= 600) {
+                      break;
+                    }
                   });
                   
                   // Ensure we have 300-600 keywords
@@ -1875,34 +1864,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     mockKeywords.splice(600);
                   }
                   
-                  // Try Google Ads API first, then fallback to AI, then mock
-                  try {
-                    console.log("Attempting Google Ads API keyword generation...");
-                    const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
-                    const data = await generateKeywordsFromGoogleAds({
-                      seedKeywords: seedKeywordsArray,
-                      negativeKeywords: negativeList,
-                      maxResults: 500 // Request 300-600 keywords
-                    });
-
-                    if (data.keywords && Array.isArray(data.keywords) && data.keywords.length > 0) {                                                          
-                      console.log("Google Ads API generation successful:", data.keywords.length, "keywords");                                                             
-                      // Filter out keywords containing negative keywords AND ensure 2-4 words max
-                      const filteredKeywords = data.keywords.filter((k: any) => {                                                                             
-                        const keywordText = (k.text || k.keyword || k.id || '').toLowerCase();
-                        const wordCount = keywordText.trim().split(/\s+/).length;
-                        return wordCount >= 2 && wordCount <= 4 && !negativeList.some(neg => keywordText.includes(neg.toLowerCase()));                                                                          
-                      });
-                      keywords = filteredKeywords.length > 0 ? filteredKeywords : mockKeywords;                                                               
-                    } else {
-                      console.log("No keywords from Google Ads API, using mock generation");                                                                             
-                      keywords = mockKeywords;
-                    }
-                  } catch (apiError: any) {
-                    console.log('ℹ️ Google Ads API unavailable - using enhanced local generation', apiError);                                     
-                    // Use mock keywords as fallback
-                    keywords = mockKeywords;
-                  }
+                  // Skip Google Ads API (always fails due to CORS) - use mock keywords directly
+                  console.log("Using enhanced local keyword generation");
+                  keywords = mockKeywords;
 
                   // Final filter: Remove any keywords containing negative keywords
                   const finalKeywords = keywords.filter((k: any) => {
@@ -2085,12 +2049,30 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     }
                   }
                   
-                  notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
-                    title: 'Keywords Generated (Offline Mode)',
-                    description: 'Using local generation. Some features may be limited.',
-                  });
+                  const errorMessage = error instanceof Error ? error.message : String(error);
+                  if (errorMessage.includes('timeout')) {
+                    notifications.warning(`Generated ${mockKeywords.length} keywords using local generation (API timed out)`, {
+                      title: 'Keywords Generated (Timeout)',
+                      description: 'API call timed out. Using local generation.',
+                    });
+                  } else {
+                    notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
+                      title: 'Keywords Generated (Offline Mode)',
+                      description: 'Using local generation. Some features may be limited.',
+                    });
+                  }
                 } finally {
+                  // Always clear loading state
                   setIsGeneratingKeywords(false);
+                  
+                  // Ensure loading toast is dismissed
+                  if (loadingToastId) {
+                    try {
+                      notifications.dismiss(loadingToastId);
+                    } catch (e) {
+                      console.log('Could not dismiss loading toast in finally:', e);
+                    }
+                  }
                 }
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
