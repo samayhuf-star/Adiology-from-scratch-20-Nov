@@ -5194,10 +5194,47 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         // Generate campaign structure
         const structure = generateCampaignStructure(selectedKeywords, settings);
         
-        // Validate CSV before export using V3 validator (primary validation)
+        // Validate CSV before export using comprehensive validators
         const validation = validateCSVBeforeExport(structure);
-        if (!validation.isValid) {
-          const errorMessage = validation.errors.join('\n');
+        const detailedValidation = validateCampaignForExport(structure);
+        
+        // Combine validation results - prioritize detailed validation errors
+        const allErrors: string[] = [];
+        const allWarnings: string[] = [];
+        
+        // Add errors from detailed validation (more comprehensive)
+        if (detailedValidation.errors.length > 0) {
+          detailedValidation.errors.forEach(err => {
+            allErrors.push(err.message);
+          });
+        }
+        
+        // Add errors from V3 validation (if not already included)
+        if (validation.errors.length > 0) {
+          validation.errors.forEach(err => {
+            if (!allErrors.some(e => e === err)) {
+              allErrors.push(err);
+            }
+          });
+        }
+        
+        // Add warnings from both validators
+        if (detailedValidation.warnings.length > 0) {
+          detailedValidation.warnings.forEach(warn => {
+            allWarnings.push(warn.message);
+          });
+        }
+        if (validation.warnings.length > 0) {
+          validation.warnings.forEach(warn => {
+            if (!allWarnings.some(w => w === warn)) {
+              allWarnings.push(warn);
+            }
+          });
+        }
+        
+        // If any errors exist, block export
+        if (allErrors.length > 0) {
+          const errorMessage = allErrors.map((err, idx) => `${idx + 1}. ${err}`).join('\n');
           notifications.error(
             <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
               {errorMessage}
@@ -5212,8 +5249,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         }
         
         // Show warnings if any (but still allow export)
-        if (validation.warnings.length > 0) {
-          const warningMessage = validation.warnings.join('\n');
+        if (allWarnings.length > 0) {
+          const warningMessage = allWarnings.map((warn, idx) => `${idx + 1}. ${warn}`).join('\n');
           notifications.warning(
             <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
               {warningMessage}
@@ -5419,27 +5456,23 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             </CardContent>
           </Card>
 
-          {/* Export Actions - Fixed at bottom */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-slate-200 shadow-2xl z-50">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-              <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3">
-                <Button 
-                  onClick={handleExportCSV}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all"
-                >
-                  <Download className="w-5 h-5 flex-shrink-0" />
-                  <span>Download CSV for Google Ads Editor</span>
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setActiveTab('saved')}
-                  className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-700 shadow-md hover:shadow-lg py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all"
-                >
-                  <FolderOpen className="w-5 h-5 flex-shrink-0" />
-                  <span>View Saved Campaigns</span>
-                </Button>
-              </div>
-            </div>
+          {/* Export Actions - Centered */}
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 py-8">
+            <Button 
+              onClick={handleExportCSV}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all"
+            >
+              <Download className="w-5 h-5 flex-shrink-0" />
+              <span>Download CSV for Google Ads Editor</span>
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setActiveTab('saved')}
+              className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-700 shadow-md hover:shadow-lg py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all"
+            >
+              <FolderOpen className="w-5 h-5 flex-shrink-0" />
+              <span>View Saved Campaigns</span>
+            </Button>
           </div>
 
           {/* Navigation Actions */}
