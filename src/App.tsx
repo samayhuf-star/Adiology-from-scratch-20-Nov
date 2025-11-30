@@ -38,7 +38,6 @@ import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
-import { LogicalFlowTesting } from './components/LogicalFlowTesting';
 import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
@@ -120,7 +119,6 @@ const App = () => {
     'billing',
     'support',
     'support-help',
-    'logical-flow-testing'
   ]);
 
   // Safe setActiveTab wrapper that validates and redirects to dashboard if invalid
@@ -702,7 +700,7 @@ const App = () => {
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
-    { id: 'website-templates', label: 'Websites', icon: Layout },
+    { id: 'website-templates', label: 'Web Templates', icon: Layout },
     { 
       id: 'keyword-planner', 
       label: 'Keywords', 
@@ -716,14 +714,6 @@ const App = () => {
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'csv-validator-3', label: 'CSV Validator', icon: FileCheck },
-    { 
-      id: 'testing', 
-      label: 'Testing', 
-      icon: TestTube,
-      submenu: [
-        { id: 'logical-flow-testing', label: 'Logical Flow Testing', icon: Code },
-      ]
-    },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -1107,8 +1097,6 @@ const App = () => {
         return <KeywordSavedLists />;
       case 'ads-builder':
         return <AdsBuilder />;
-      case 'logical-flow-testing':
-        return <LogicalFlowTesting />;
       case 'support-help':
         return <SupportHelpCombined />;
       case 'support':
@@ -1240,10 +1228,10 @@ const App = () => {
                 }`}
                 style={{ minWidth: 0 }}
               >
-                  <div className={`flex items-center ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center flex-shrink-0' : 'gap-2 flex-1 min-w-0 overflow-hidden'}`}>
+                  <div className={`flex items-center ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center flex-shrink-0' : 'gap-2 flex-1 min-w-0 overflow-hidden justify-start'}`}>
                     <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : !(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'text-slate-700 group-hover:text-indigo-600' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
                 {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
-                  <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
+                  <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 text-left" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
                     {item.label}
                   </span>
                 )}
@@ -1267,12 +1255,12 @@ const App = () => {
                             isSubActive
                               ? `bg-indigo-100 text-indigo-700 shadow-sm border border-indigo-200`
                               : `text-slate-600 hover:bg-indigo-50/50`
-                          } ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center px-2' : ''}`}
+                          } ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center px-2' : 'justify-start'}`}
                           style={{ minWidth: 0 }}
                         >
                           <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-indigo-600' : !(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'text-slate-600 group-hover:text-indigo-600' : 'text-slate-400'}`} />
                           {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
-                            <span className={`font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`} style={{ fontSize: 'clamp(0.75rem, 2.2vw, 0.8125rem)' }}>
+                            <span className={`font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 text-left ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`} style={{ fontSize: 'clamp(0.75rem, 2.2vw, 0.8125rem)' }}>
                               {subItem.label}
                             </span>
                           )}

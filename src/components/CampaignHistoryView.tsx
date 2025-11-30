@@ -55,18 +55,35 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
       
       const allHistory = await historyService.getAll();
       
-      // Filter only campaign types
-      const campaigns = allHistory.filter(item => 
-        item.type === 'builder-2-campaign' || 
-        item.type === 'campaign' ||
-        item.type?.includes('campaign')
-      ).map(item => ({
+      // Debug: Log all history items to see what we have
+      console.log('📋 All history items:', allHistory);
+      console.log('📋 History items count:', allHistory.length);
+      
+      // Filter only campaign types - check multiple possible type names
+      const campaigns = allHistory.filter(item => {
+        const type = (item.type || '').toLowerCase();
+        const matches = type === 'builder-2-campaign' || 
+               type === 'campaign' ||
+               type === 'builder-2' ||
+               type.includes('campaign') ||
+               type.includes('builder');
+        
+        // Debug: Log filtering results
+        if (allHistory.length > 0) {
+          console.log(`🔍 Filtering item: type="${item.type}" (normalized: "${type}"), matches=${matches}`);
+        }
+        
+        return matches;
+      }).map(item => ({
         id: item.id,
         name: item.name,
         timestamp: item.timestamp,
         data: item.data,
         status: item.status || 'completed'
       }));
+
+      console.log('✅ Filtered campaigns:', campaigns);
+      console.log('✅ Campaign count:', campaigns.length);
 
       // Sort by timestamp (newest first)
       campaigns.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Checkbox } from './ui/checkbox';
 import { notifications } from '../utils/notifications';
 import { submitFeedback } from '../utils/feedbackService';
 
@@ -69,24 +69,29 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     return (
       <>
         {/* Sidebar Menu Item Button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={() => setIsOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer text-slate-700 hover:bg-indigo-50"
-            aria-label="Provide Feedback"
-          >
-            <MessageSquare className="w-5 h-5 shrink-0 text-slate-500 group-hover:text-indigo-600" />
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`w-full flex items-center gap-2 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer text-slate-700 hover:bg-indigo-50 ${
+            !(sidebarOpen || sidebarHovered) 
+              ? 'justify-center px-2' 
+              : 'justify-start px-3'
+          }`}
+          aria-label="Provide Feedback"
+          style={{ minWidth: 0 }}
+        >
+          <div className={`flex items-center ${!(sidebarOpen || sidebarHovered) ? 'justify-center flex-shrink-0' : 'gap-2 flex-1 min-w-0 overflow-hidden justify-start'}`}>
+            <MessageSquare className={`w-5 h-5 shrink-0 ${!(sidebarOpen || sidebarHovered) ? 'text-slate-700 group-hover:text-indigo-600' : 'text-slate-500 group-hover:text-indigo-600'}`} />
             {(sidebarOpen || sidebarHovered) && (
-              <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
+              <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 text-left" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
                 Feedback
               </span>
             )}
-          </button>
-        </div>
+          </div>
+        </button>
         
         {/* Feedback Dialog */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-[300px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[147px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-indigo-600" />
@@ -116,28 +121,53 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
               {feedbackType === 'feedback' && (
                 <div className="space-y-3">
                   <Label>How would you rate your experience?</Label>
-                  <RadioGroup value={rating} onValueChange={setRating} className="flex gap-4">
+                  <div className="flex gap-4">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="1" id="rating-1" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                      <Checkbox 
+                        id="rating-1" 
+                        checked={rating === '1'} 
+                        onCheckedChange={(checked) => setRating(checked ? '1' : '')}
+                        className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                      />
                       <Label htmlFor="rating-1" className="cursor-pointer">1 - Poor</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="2" id="rating-2" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                      <Checkbox 
+                        id="rating-2" 
+                        checked={rating === '2'} 
+                        onCheckedChange={(checked) => setRating(checked ? '2' : '')}
+                        className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                      />
                       <Label htmlFor="rating-2" className="cursor-pointer">2 - Fair</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="3" id="rating-3" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                      <Checkbox 
+                        id="rating-3" 
+                        checked={rating === '3'} 
+                        onCheckedChange={(checked) => setRating(checked ? '3' : '')}
+                        className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                      />
                       <Label htmlFor="rating-3" className="cursor-pointer">3 - Good</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="4" id="rating-4" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                      <Checkbox 
+                        id="rating-4" 
+                        checked={rating === '4'} 
+                        onCheckedChange={(checked) => setRating(checked ? '4' : '')}
+                        className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                      />
                       <Label htmlFor="rating-4" className="cursor-pointer">4 - Very Good</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="5" id="rating-5" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                      <Checkbox 
+                        id="rating-5" 
+                        checked={rating === '5'} 
+                        onCheckedChange={(checked) => setRating(checked ? '5' : '')}
+                        className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                      />
                       <Label htmlFor="rating-5" className="cursor-pointer">5 - Excellent</Label>
                     </div>
-                  </RadioGroup>
+                  </div>
                 </div>
               )}
 
@@ -207,7 +237,7 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
       {/* Feedback Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[300px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[210px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-indigo-600" />
@@ -237,28 +267,53 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
             {feedbackType === 'feedback' && (
               <div className="space-y-3">
                 <Label>How would you rate your experience?</Label>
-                <RadioGroup value={rating} onValueChange={setRating} className="flex gap-4">
+                <div className="flex gap-4">
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="1" id="rating-1" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                    <Checkbox 
+                      id="rating-1" 
+                      checked={rating === '1'} 
+                      onCheckedChange={(checked) => setRating(checked ? '1' : '')}
+                      className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                    />
                     <Label htmlFor="rating-1" className="cursor-pointer">1 - Poor</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="2" id="rating-2" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                    <Checkbox 
+                      id="rating-2" 
+                      checked={rating === '2'} 
+                      onCheckedChange={(checked) => setRating(checked ? '2' : '')}
+                      className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                    />
                     <Label htmlFor="rating-2" className="cursor-pointer">2 - Fair</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="3" id="rating-3" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                    <Checkbox 
+                      id="rating-3" 
+                      checked={rating === '3'} 
+                      onCheckedChange={(checked) => setRating(checked ? '3' : '')}
+                      className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                    />
                     <Label htmlFor="rating-3" className="cursor-pointer">3 - Good</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="4" id="rating-4" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                    <Checkbox 
+                      id="rating-4" 
+                      checked={rating === '4'} 
+                      onCheckedChange={(checked) => setRating(checked ? '4' : '')}
+                      className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                    />
                     <Label htmlFor="rating-4" className="cursor-pointer">4 - Very Good</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="5" id="rating-5" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
+                    <Checkbox 
+                      id="rating-5" 
+                      checked={rating === '5'} 
+                      onCheckedChange={(checked) => setRating(checked ? '5' : '')}
+                      className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" 
+                    />
                     <Label htmlFor="rating-5" className="cursor-pointer">5 - Excellent</Label>
                   </div>
-                </RadioGroup>
+                </div>
               </div>
             )}
 
