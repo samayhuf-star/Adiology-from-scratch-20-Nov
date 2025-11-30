@@ -31,7 +31,6 @@ import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGene
 import { validateCampaignForExport, formatValidationErrors } from '../utils/csvValidator';
 import { DEFAULT_SEED_KEYWORDS, DEFAULT_URL, DEFAULT_CAMPAIGN_NAME, DEFAULT_NEGATIVE_KEYWORDS } from '../utils/defaultExamples';
 import { api } from '../utils/api';
-import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { projectId } from '../utils/supabase/info';
 import { historyService } from '../utils/historyService';
 import { useAutoSave } from '../hooks/useAutoSave';
