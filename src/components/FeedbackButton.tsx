@@ -86,7 +86,7 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
         
         {/* Feedback Dialog */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-[300px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[210px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-indigo-600" />
