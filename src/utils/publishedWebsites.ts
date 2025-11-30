@@ -139,6 +139,47 @@ export async function updatePublishedWebsiteStatus(
 }
 
 /**
+ * Update published website with all fields
+ */
+export async function updatePublishedWebsite(
+  websiteId: string,
+  updates: {
+    name?: string;
+    template_id?: string;
+    vercel_url?: string;
+    status?: 'deploying' | 'ready' | 'error';
+    template_data?: any;
+    vercel_deployment_id?: string;
+    vercel_project_id?: string;
+  }
+): Promise<PublishedWebsite> {
+  const updateData: any = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.template_id !== undefined) updateData.template_id = updates.template_id;
+  if (updates.vercel_url !== undefined) updateData.vercel_url = updates.vercel_url;
+  if (updates.status !== undefined) updateData.status = updates.status;
+  if (updates.template_data !== undefined) updateData.template_data = updates.template_data;
+  if (updates.vercel_deployment_id !== undefined) updateData.vercel_deployment_id = updates.vercel_deployment_id;
+  if (updates.vercel_project_id !== undefined) updateData.vercel_project_id = updates.vercel_project_id;
+
+  const { data, error } = await supabase
+    .from('published_websites')
+    .update(updateData)
+    .eq('id', websiteId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update website: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
  * Delete published website
  */
 export async function deletePublishedWebsite(

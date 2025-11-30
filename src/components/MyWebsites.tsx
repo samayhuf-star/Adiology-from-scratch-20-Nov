@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { getUserPublishedWebsites, deletePublishedWebsite, updatePublishedWebsiteStatus, PublishedWebsite, savePublishedWebsite } from '../utils/publishedWebsites';
+import { getUserPublishedWebsites, deletePublishedWebsite, updatePublishedWebsiteStatus, updatePublishedWebsite, PublishedWebsite, savePublishedWebsite } from '../utils/publishedWebsites';
 import { getDeploymentStatus } from '../utils/vercel';
 import { supabase } from '../utils/supabase/client';
 import { notifications } from '../utils/notifications';
@@ -220,20 +220,30 @@ export const MyWebsites: React.FC = () => {
       return;
     }
 
+    if (!editingWebsite.id) {
+      notifications.error('Website ID is missing. Cannot update website.', {
+        title: 'Update Error'
+      });
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       try {
-        await updatePublishedWebsiteStatus(
-          editingWebsite.id!,
-          editingWebsite.status || 'ready',
-          editingWebsite.vercel_url
-        );
+        // Use the comprehensive update function to update all fields
+        await updatePublishedWebsite(editingWebsite.id, {
+          name: editingWebsite.name,
+          template_id: editingWebsite.template_id,
+          vercel_url: editingWebsite.vercel_url,
+          status: editingWebsite.status || 'ready'
+        });
         await loadWebsites();
         setShowEditDialog(null);
         setEditingWebsite({});
         notifications.success('Website updated successfully!', { title: 'Success' });
       } catch (dbError: any) {
+        console.error('Database update error:', dbError);
         // Fallback to local storage
         const localWebsites = localStorage.getItem('my_websites') || '[]';
         const websites: PublishedWebsite[] = JSON.parse(localWebsites);
@@ -241,19 +251,27 @@ export const MyWebsites: React.FC = () => {
         if (index !== -1) {
           websites[index] = {
             ...websites[index],
-            ...editingWebsite,
+            name: editingWebsite.name || websites[index].name,
+            template_id: editingWebsite.template_id || websites[index].template_id,
+            vercel_url: editingWebsite.vercel_url || websites[index].vercel_url,
+            status: editingWebsite.status || websites[index].status || 'ready',
             updated_at: new Date().toISOString()
           };
           localStorage.setItem('my_websites', JSON.stringify(websites));
           setWebsites(websites);
           setShowEditDialog(null);
           setEditingWebsite({});
-          notifications.success('Website updated successfully!', { title: 'Success' });
+          notifications.success('Website updated successfully (saved locally)!', { title: 'Success' });
+        } else {
+          notifications.error('Website not found in local storage', { title: 'Update Error' });
         }
       }
     } catch (error: any) {
       console.error('Failed to update website:', error);
-      notifications.error('Failed to update website', { title: 'Error' });
+      notifications.error(
+        error?.message || 'Failed to update website. Please try again.',
+        { title: 'Update Error' }
+      );
     }
   };
 
