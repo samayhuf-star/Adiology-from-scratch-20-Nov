@@ -1650,7 +1650,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   }
 
                   try {
-                  try {
                     // Use shared keyword generation utility
                     console.log("Using shared keyword generation utility");
                     const keywordsWithBids = generateKeywordsUtil({
@@ -1663,106 +1662,106 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       minKeywords: 300
                     });
 
-                  // Keywords already have bid suggestions from the shared utility
-                  setGeneratedKeywords(keywordsWithBids);
-                  
-                  // Auto-select all generated keywords by default
-                  const allKeywordIds = keywordsWithBids.map(k => k.text || k.id);
-                  setSelectedKeywords(allKeywordIds);
-                  
-                  // Extract keyword texts for structure-specific grouping
-                  const keywordTexts = keywordsWithBids.map(k => k.text || k.id);
-                  
-                  // Populate structure-specific groups
-                  if (structureType === 'intent') {
-                    // Classify keywords by intent using AI-generated keywords
-                    const highIntent = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return lower.includes('call') || lower.includes('buy') || lower.includes('get') || 
-                             lower.includes('purchase') || lower.includes('order') || lower.includes('now');
-                    });
-                    const research = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return lower.includes('info') || lower.includes('compare') || lower.includes('best') ||
-                             lower.includes('review') || lower.includes('guide') || lower.includes('how');
-                    });
-                    const brand = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return lower.includes('your') || lower.includes('company') || lower.includes('brand') ||
-                             lower.includes('official');
-                    });
-                    const competitor = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor', 'alternative'].some(c => lower.includes(c));
-                    });
-                    setIntentGroups({ 
-                      high_intent: highIntent, 
-                      research, 
-                      brand, 
-                      competitor 
-                    });
-                    // Auto-select all intent groups that have keywords
-                    const groupsWithKeywords = [];
-                    if (highIntent.length > 0) groupsWithKeywords.push('high_intent');
-                    if (research.length > 0) groupsWithKeywords.push('research');
-                    if (brand.length > 0) groupsWithKeywords.push('brand');
-                    if (competitor.length > 0) groupsWithKeywords.push('competitor');
-                    if (groupsWithKeywords.length > 0) {
-                      setSelectedIntents(groupsWithKeywords);
-                    }
-                  } else if (structureType === 'alpha_beta') {
-                    // Split into beta (all keywords initially)
-                    setBetaKeywords(keywordTexts);
-                    setAlphaKeywords([]);
-                  } else if (structureType === 'funnel') {
-                    // Classify by funnel stage
-                    const tof = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return lower.includes('what') || lower.includes('how') || lower.includes('info') ||
-                             lower.includes('guide') || lower.includes('learn');
-                    });
-                    const mof = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return lower.includes('compare') || lower.includes('best') || lower.includes('review') ||
-                             lower.includes('vs') || lower.includes('alternative');
-                    });
-                    const bof = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return lower.includes('buy') || lower.includes('call') || lower.includes('get') ||
-                             lower.includes('purchase') || lower.includes('order');
-                    });
-                    setFunnelGroups({ tof, mof, bof });
-                  } else if (structureType === 'brand_split') {
-                    // Detect brand keywords
-                    const brand = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return lower.includes('your') || lower.includes('company') || lower.includes('brand') ||
-                             lower.includes('official');
-                    });
-                    const nonBrand = keywordTexts.filter(k => !brand.includes(k));
-                    setBrandKeywords(brand);
-                    setNonBrandKeywords(nonBrand);
-                  } else if (structureType === 'competitor') {
-                    // Detect competitor keywords
-                    const competitors = keywordTexts.filter(k => {
-                      const lower = k.toLowerCase();
-                      return ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor', 'alternative'].some(c => lower.includes(c));
-                    });
-                    setCompetitorKeywords(competitors);
-                  } else if (structureType === 'stag_plus' || structureType === 'ngram') {
-                    // Smart clustering - group by common words
-                    const clusters: { [key: string]: string[] } = {};
-                    keywordTexts.forEach(kw => {
-                      const words = kw.toLowerCase().split(' ');
-                      const clusterKey = words[0] || 'other';
-                      if (!clusters[clusterKey]) {
-                        clusters[clusterKey] = [];
+                    // Keywords already have bid suggestions from the shared utility
+                    setGeneratedKeywords(keywordsWithBids);
+                    
+                    // Auto-select all generated keywords by default
+                    const allKeywordIds = keywordsWithBids.map(k => k.text || k.id);
+                    setSelectedKeywords(allKeywordIds);
+                    
+                    // Extract keyword texts for structure-specific grouping
+                    const keywordTexts = keywordsWithBids.map(k => k.text || k.id);
+                    
+                    // Populate structure-specific groups
+                    if (structureType === 'intent') {
+                      // Classify keywords by intent using AI-generated keywords
+                      const highIntent = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return lower.includes('call') || lower.includes('buy') || lower.includes('get') || 
+                               lower.includes('purchase') || lower.includes('order') || lower.includes('now');
+                      });
+                      const research = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return lower.includes('info') || lower.includes('compare') || lower.includes('best') ||
+                               lower.includes('review') || lower.includes('guide') || lower.includes('how');
+                      });
+                      const brand = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return lower.includes('your') || lower.includes('company') || lower.includes('brand') ||
+                               lower.includes('official');
+                      });
+                      const competitor = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor', 'alternative'].some(c => lower.includes(c));
+                      });
+                      setIntentGroups({ 
+                        high_intent: highIntent, 
+                        research, 
+                        brand, 
+                        competitor 
+                      });
+                      // Auto-select all intent groups that have keywords
+                      const groupsWithKeywords = [];
+                      if (highIntent.length > 0) groupsWithKeywords.push('high_intent');
+                      if (research.length > 0) groupsWithKeywords.push('research');
+                      if (brand.length > 0) groupsWithKeywords.push('brand');
+                      if (competitor.length > 0) groupsWithKeywords.push('competitor');
+                      if (groupsWithKeywords.length > 0) {
+                        setSelectedIntents(groupsWithKeywords);
                       }
-                      clusters[clusterKey].push(kw);
-                    });
-                    setSmartClusters(clusters);
-                  }
-                  
+                    } else if (structureType === 'alpha_beta') {
+                      // Split into beta (all keywords initially)
+                      setBetaKeywords(keywordTexts);
+                      setAlphaKeywords([]);
+                    } else if (structureType === 'funnel') {
+                      // Classify by funnel stage
+                      const tof = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return lower.includes('what') || lower.includes('how') || lower.includes('info') ||
+                               lower.includes('guide') || lower.includes('learn');
+                      });
+                      const mof = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return lower.includes('compare') || lower.includes('best') || lower.includes('review') ||
+                               lower.includes('vs') || lower.includes('alternative');
+                      });
+                      const bof = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return lower.includes('buy') || lower.includes('call') || lower.includes('get') ||
+                               lower.includes('purchase') || lower.includes('order');
+                      });
+                      setFunnelGroups({ tof, mof, bof });
+                    } else if (structureType === 'brand_split') {
+                      // Detect brand keywords
+                      const brand = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return lower.includes('your') || lower.includes('company') || lower.includes('brand') ||
+                               lower.includes('official');
+                      });
+                      const nonBrand = keywordTexts.filter(k => !brand.includes(k));
+                      setBrandKeywords(brand);
+                      setNonBrandKeywords(nonBrand);
+                    } else if (structureType === 'competitor') {
+                      // Detect competitor keywords
+                      const competitors = keywordTexts.filter(k => {
+                        const lower = k.toLowerCase();
+                        return ['nextiva', 'hubspot', 'clickcease', 'semrush', 'competitor', 'alternative'].some(c => lower.includes(c));
+                      });
+                      setCompetitorKeywords(competitors);
+                    } else if (structureType === 'stag_plus' || structureType === 'ngram') {
+                      // Smart clustering - group by common words
+                      const clusters: { [key: string]: string[] } = {};
+                      keywordTexts.forEach(kw => {
+                        const words = kw.toLowerCase().split(' ');
+                        const clusterKey = words[0] || 'other';
+                        if (!clusters[clusterKey]) {
+                          clusters[clusterKey] = [];
+                        }
+                        clusters[clusterKey].push(kw);
+                      });
+                      setSmartClusters(clusters);
+                    }
+                    
                     // Dismiss loading toast and wait a bit before showing success
                     if (loadingToastId) {
                       try {
