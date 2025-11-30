@@ -792,7 +792,31 @@ export const AdsBuilder = () => {
         };
         
         // Generate ad using new logic
-        const generatedAd = generateAds(input) as ResponsiveSearchAd;
+        const generatedAd = generateAdsUtility(input) as ResponsiveSearchAd;
+        
+        // Validate the generated ad before converting
+        if (!generatedAd || !generatedAd.headlines || !Array.isArray(generatedAd.headlines)) {
+            console.error('Generated ad has invalid structure for DKI, using safe fallback');
+            const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
+            return {
+                id: crypto.randomUUID(),
+                groupName,
+                adType: 'DKI',
+                type: 'dki',
+                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+                headline2: `Buy {KeyWord:${mainKeyword}} Online`,
+                headline3: `Trusted {KeyWord:${mainKeyword}} Service`,
+                headline4: '',
+                headline5: '',
+                description1: `Find the best {KeyWord:${mainKeyword}}. Fast & reliable support.`,
+                description2: 'Contact our experts for 24/7 assistance.',
+                path1: '',
+                path2: '',
+                finalUrl: baseUrl || 'https://www.example.com',
+                selected: false,
+                extensions: []
+            };
+        }
         
         // Convert RSA to DKI format
         return convertRSAToDKI(generatedAd, groupName, baseUrl, selectedKeyword);
