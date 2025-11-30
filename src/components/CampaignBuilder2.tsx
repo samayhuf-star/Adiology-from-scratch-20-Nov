@@ -5111,7 +5111,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     return (
       <div className="w-full flex flex-col items-center px-4 sm:px-6 lg:px-8 pb-32">
-        <div className="max-w-6xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-6xl w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col items-center">
           {/* Success Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 mb-6 shadow-lg">
@@ -5202,7 +5202,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </Card>
 
           {/* Export Actions - Centered */}
-          <div className="w-full flex flex-col sm:flex-row justify-center items-center gap-4 py-8 mt-8">
+          <div className="w-full flex flex-col sm:flex-row justify-center items-center gap-4 py-12 mt-12 border-t border-slate-200 pt-12">
             <Button 
               onClick={handleExportCSV}
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all min-w-[280px]"
