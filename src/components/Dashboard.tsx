@@ -125,31 +125,39 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       setShowColorPicker(true);
       setShowColorThemeMenu(false);
     } else {
-      setPreferences({ ...preferences, colorTheme: theme, customColor: undefined, colorCombination: undefined });
+      const updatedPrefs = { ...preferences, colorTheme: theme, customColor: undefined, colorCombination: undefined };
+      setPreferences(updatedPrefs);
+      saveUserPreferences(updatedPrefs);
       setShowColorThemeMenu(false);
       setShowColorPicker(false);
     }
   };
 
   const handleColorCombinationChange = (combinationId: string) => {
-    setPreferences({ 
+    const updatedPrefs = { 
       ...preferences, 
       colorTheme: combinationId as any, 
       colorCombination: combinationId,
       customColor: undefined 
-    });
+    };
+    setPreferences(updatedPrefs);
+    saveUserPreferences(updatedPrefs);
     setShowColorThemeMenu(false);
     setShowColorPicker(false);
   };
 
   const handleCustomColorChange = (color: string) => {
-    setPreferences({ ...preferences, colorTheme: 'custom', customColor: color, colorCombination: undefined });
+    const updatedPrefs = { ...preferences, colorTheme: 'custom', customColor: color, colorCombination: undefined };
+    setPreferences(updatedPrefs);
+    saveUserPreferences(updatedPrefs);
     setShowColorPicker(false);
     setShowColorThemeMenu(false);
   };
 
   const handleSidebarAutoCloseToggle = () => {
-    setPreferences({ ...preferences, sidebarAutoClose: !preferences.sidebarAutoClose });
+    const updatedPrefs = { ...preferences, sidebarAutoClose: !preferences.sidebarAutoClose };
+    setPreferences(updatedPrefs);
+    saveUserPreferences(updatedPrefs);
   };
 
   const fetchDashboardData = async () => {
@@ -499,16 +507,89 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
               <Palette className="w-4 h-4" />
               <span className="capitalize text-xs">
                 {preferences.colorCombination 
-                  ? COLOR_COMBINATIONS.find(c => c.id === preferences.colorCombination)?.name || 'Custom'
-                  : preferences.colorTheme === 'custom' 
-                    ? 'Custom'
-                    : preferences.colorTheme}
+                  ? COLOR_COMBINATIONS.find(c => c.id === preferences.colorCombination)?.name || 
+                    (COLOR_COMBINATIONS.find(c => c.id === preferences.colorTheme)?.name) ||
+                    'Custom'
+                  : COLOR_COMBINATIONS.find(c => c.id === preferences.colorTheme)?.name ||
+                    (preferences.colorTheme === 'custom' ? 'Custom' : 
+                     preferences.colorTheme === 'default' ? 'Default' :
+                     preferences.colorTheme.charAt(0).toUpperCase() + preferences.colorTheme.slice(1))}
               </span>
             </Button>
             {showColorThemeMenu && (
               <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[320px] max-w-[400px] p-3">
+                <div className="text-xs font-semibold text-slate-500 uppercase mb-3 px-2">Preset Themes</div>
+                <div className="grid grid-cols-1 gap-2 mb-3">
+                  <button
+                    onClick={() => handleColorThemeChange('default')}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-all flex items-center gap-3 border-2 ${
+                      preferences.colorTheme === 'default' && !preferences.colorCombination
+                        ? 'bg-indigo-50 border-indigo-300 shadow-sm' 
+                        : 'border-transparent hover:border-slate-200'
+                    }`}
+                  >
+                    <div className="flex gap-1 shrink-0">
+                      <div className="w-6 h-6 rounded border border-slate-300" style={{ backgroundColor: '#4f46e5' }}></div>
+                      <div className="w-6 h-6 rounded border border-slate-300" style={{ backgroundColor: '#9333ea' }}></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-medium text-sm ${preferences.colorTheme === 'default' && !preferences.colorCombination ? 'text-slate-900' : 'text-slate-700'}`}>
+                        Default (Indigo/Purple)
+                      </div>
+                      <div className="text-xs text-slate-500">Classic indigo and purple theme</div>
+                    </div>
+                    {preferences.colorTheme === 'default' && !preferences.colorCombination && (
+                      <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleColorThemeChange('blue')}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-all flex items-center gap-3 border-2 ${
+                      preferences.colorTheme === 'blue' && !preferences.colorCombination
+                        ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                        : 'border-transparent hover:border-slate-200'
+                    }`}
+                  >
+                    <div className="flex gap-1 shrink-0">
+                      <div className="w-6 h-6 rounded border border-slate-300" style={{ backgroundColor: '#2563eb' }}></div>
+                      <div className="w-6 h-6 rounded border border-slate-300" style={{ backgroundColor: '#0ea5e9' }}></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-medium text-sm ${preferences.colorTheme === 'blue' && !preferences.colorCombination ? 'text-slate-900' : 'text-slate-700'}`}>
+                        Blue Theme
+                      </div>
+                      <div className="text-xs text-slate-500">Fresh and trustworthy blue tones</div>
+                    </div>
+                    {preferences.colorTheme === 'blue' && !preferences.colorCombination && (
+                      <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleColorThemeChange('green')}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-all flex items-center gap-3 border-2 ${
+                      preferences.colorTheme === 'green' && !preferences.colorCombination
+                        ? 'bg-emerald-50 border-emerald-300 shadow-sm' 
+                        : 'border-transparent hover:border-slate-200'
+                    }`}
+                  >
+                    <div className="flex gap-1 shrink-0">
+                      <div className="w-6 h-6 rounded border border-slate-300" style={{ backgroundColor: '#059669' }}></div>
+                      <div className="w-6 h-6 rounded border border-slate-300" style={{ backgroundColor: '#10b981' }}></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-medium text-sm ${preferences.colorTheme === 'green' && !preferences.colorCombination ? 'text-slate-900' : 'text-slate-700'}`}>
+                        Green Theme
+                      </div>
+                      <div className="text-xs text-slate-500">Natural and refreshing green tones</div>
+                    </div>
+                    {preferences.colorTheme === 'green' && !preferences.colorCombination && (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    )}
+                  </button>
+                </div>
+                <div className="border-t border-slate-200 my-2"></div>
                 <div className="text-xs font-semibold text-slate-500 uppercase mb-3 px-2">Color Combinations</div>
-                <div className="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto">
+                <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto">
                   {COLOR_COMBINATIONS.map((combo) => {
                     const isSelected = preferences.colorCombination === combo.id || 
                                      (preferences.colorTheme === combo.id);
@@ -545,7 +626,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                           <div className="text-xs text-slate-500 truncate">{combo.description}</div>
                         </div>
                         {isSelected && (
-                          <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: combo.primary }} />
                         )}
                       </button>
                     );
@@ -583,7 +664,9 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                       value={preferences.customColor || '#6366f1'}
                       onChange={(e) => {
                         const newColor = e.target.value;
-                        setPreferences({ ...preferences, colorTheme: 'custom', customColor: newColor });
+                        const updatedPrefs = { ...preferences, colorTheme: 'custom', customColor: newColor, colorCombination: undefined };
+                        setPreferences(updatedPrefs);
+                        saveUserPreferences(updatedPrefs);
                       }}
                       className="w-16 h-10 rounded border-2 border-slate-300 cursor-pointer"
                     />
@@ -593,7 +676,9 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                       onChange={(e) => {
                         const newColor = e.target.value;
                         if (/^#[0-9A-Fa-f]{6}$/.test(newColor)) {
-                          setPreferences({ ...preferences, colorTheme: 'custom', customColor: newColor });
+                          const updatedPrefs = { ...preferences, colorTheme: 'custom', customColor: newColor, colorCombination: undefined };
+                          setPreferences(updatedPrefs);
+                          saveUserPreferences(updatedPrefs);
                         }
                       }}
                       placeholder="#6366f1"
@@ -614,7 +699,9 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
                     </Button>
                     <Button
                       onClick={() => {
-                        setPreferences({ ...preferences, colorTheme: 'default', customColor: undefined });
+                        const updatedPrefs = { ...preferences, colorTheme: 'default', customColor: undefined, colorCombination: undefined };
+                        setPreferences(updatedPrefs);
+                        saveUserPreferences(updatedPrefs);
                         setShowColorPicker(false);
                         setShowColorThemeMenu(false);
                       }}

@@ -1639,28 +1639,42 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   } catch (e) {
                     console.log('Could not dismiss existing toasts:', e);
                   }
-                  
-                  try {
-                    loadingToastId = notifications.loading('Generating keywords...', {
-                      title: 'Keyword Generation',
-                      description: 'This may take a few moments. Please wait...',
-                    });
-                  } catch (e) {
-                    console.log('Could not show loading toast:', e);
-                  }
+                })();
+                
+                try {
+                  loadingToastId = notifications.loading('Generating keywords...', {
+                    title: 'Keyword Generation',
+                    description: 'This may take a few moments. Please wait...',
+                  });
+                } catch (e) {
+                  console.log('Could not show loading toast:', e);
+                }
 
+                // Use setTimeout to make generation async and allow UI updates
+                setTimeout(async () => {
                   try {
                     // Use shared keyword generation utility
                     console.log("Using shared keyword generation utility");
+                    
+                    // Validate seed keywords
+                    if (!seedKeywords || !seedKeywords.trim()) {
+                      throw new Error('Seed keywords are required');
+                    }
+                    
                     const keywordsWithBids = generateKeywordsUtil({
-                      seedKeywords,
-                      negativeKeywords,
-                      vertical: selectedVertical,
+                      seedKeywords: seedKeywords.trim(),
+                      negativeKeywords: negativeKeywords || '',
+                      vertical: selectedVertical || 'default',
                       intentResult,
                       landingPageData,
                       maxKeywords: 600,
                       minKeywords: 300
                     });
+                    
+                    // Validate that keywords were generated
+                    if (!keywordsWithBids || !Array.isArray(keywordsWithBids) || keywordsWithBids.length === 0) {
+                      throw new Error('No keywords generated');
+                    }
 
                     // Keywords already have bid suggestions from the shared utility
                     setGeneratedKeywords(keywordsWithBids);
@@ -1838,7 +1852,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       }
                     }
                   }
-                })();
+                }, 0);
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 py-6 text-base font-semibold"

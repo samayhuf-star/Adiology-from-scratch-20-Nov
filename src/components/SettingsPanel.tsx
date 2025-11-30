@@ -24,6 +24,7 @@ interface SettingsPanelProps {
 
 export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) => {
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -39,11 +40,13 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
 
   useEffect(() => {
     // Load user data from Supabase
     const loadUserData = async () => {
       try {
+        setLoading(true);
         const userProfile = await getCurrentUserProfile();
         if (userProfile) {
           setUser(userProfile);
@@ -52,6 +55,8 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         }
       } catch (e) {
         console.error('Failed to load user data', e);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -69,6 +74,11 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
       }
     }
   }, []);
+
+  // Update active tab when defaultTab prop changes
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
@@ -211,10 +221,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     const userData = {
       profile: user,
       settings: {
-        emailNotifications,
-        campaignAlerts,
-        exportAlerts,
-        weeklyReports,
         dataSharing,
         analytics
       },
@@ -231,19 +237,30 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   };
 
 
+  if (loading) {
+    return (
+      <div className="p-8 lg:p-10 max-w-7xl mx-auto w-full flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+          <p className="text-slate-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="dashboard-modern-theme p-8 lg:p-10 max-w-7xl mx-auto">
+    <div className="p-8 lg:p-10 max-w-7xl mx-auto w-full">
       <div className="mb-10">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+        <h1 className="text-4xl font-bold text-slate-900 mb-3">
           Settings
         </h1>
         <p className="text-slate-600 text-lg">Manage your account settings, billing, and preferences</p>
       </div>
 
-      <Tabs key={defaultTab} defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-10 p-2">
-          <TabsTrigger value="settings" className="text-base py-3">Settings</TabsTrigger>
-          <TabsTrigger value="billing" className="text-base py-3">Billing</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-10 p-2 bg-slate-100 rounded-lg">
+          <TabsTrigger value="settings" className="text-base py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Settings</TabsTrigger>
+          <TabsTrigger value="billing" className="text-base py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Billing</TabsTrigger>
         </TabsList>
         
         <TabsContent value="settings" className="space-y-10 mt-0">
@@ -445,7 +462,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
 
         </TabsContent>
         
-        <TabsContent value="billing" className="mt-0">
+        <TabsContent value="billing" className="mt-0 w-full">
           <BillingPanel />
         </TabsContent>
       </Tabs>

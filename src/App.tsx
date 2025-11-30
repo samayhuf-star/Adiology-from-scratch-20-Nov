@@ -36,6 +36,7 @@ import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
+import { WebTemplates2 } from './components/WebTemplates2';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
@@ -110,6 +111,7 @@ const App = () => {
     'builder-2',
     'campaign-history',
     'website-templates',
+    'web-templates-2',
     'keyword-planner',
     'keyword-mixer',
     'ads-builder',
@@ -701,6 +703,7 @@ const App = () => {
       ]
     },
     { id: 'website-templates', label: 'Web Templates', icon: Layout },
+    { id: 'web-templates-2', label: 'Web Templates 2.0', icon: Globe },
     { 
       id: 'keyword-planner', 
       label: 'Keywords', 
@@ -1085,6 +1088,8 @@ const App = () => {
         }} />;
       case 'website-templates':
         return <WebsiteTemplates />;
+      case 'web-templates-2':
+        return <WebTemplates2 />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
       case 'keyword-planner':
