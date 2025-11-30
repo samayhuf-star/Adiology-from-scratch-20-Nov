@@ -14,7 +14,7 @@ import { LiveAdPreview } from './LiveAdPreview';
 import { api } from '../utils/api';
 import { notifications } from '../utils/notifications';
 import { 
-    generateAds, 
+    generateAds as generateAdsUtility, 
     detectUserIntent,
     type AdGenerationInput,
     type ResponsiveSearchAd,
@@ -451,24 +451,35 @@ export const AdsBuilder = () => {
                             systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
-                        if (response.ads) {
+                        if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
                             response.ads.forEach((ad: any) => {
-                                allGeneratedAds.push({
-                                    id: crypto.randomUUID(),
-                                    groupName: group.name,
-                                    adType: 'RSA',
-                                    type: 'rsa',
-                                    ...ad,
-                                    selected: false,
-                                    extensions: []
-                                });
+                                // Validate ad structure before adding
+                                if (ad && (ad.headline1 || ad.headlines)) {
+                                    allGeneratedAds.push({
+                                        id: crypto.randomUUID(),
+                                        groupName: group.name,
+                                        adType: 'RSA',
+                                        type: 'rsa',
+                                        ...ad,
+                                        selected: false,
+                                        extensions: []
+                                    });
+                                }
                             });
+                        } else {
+                            // If response doesn't have valid ads, use fallback
+                            throw new Error('Invalid response structure');
                         }
                     } catch (error) {
-                        console.log('API unavailable, using fallback for RSA');
+                        console.log('API unavailable or invalid response, using fallback for RSA');
                         // Fallback RSA generation (3 ads per group)
-                        for (let i = 0; i < rsaPerGroup; i++) {
-                            allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i, baseUrl));
+                        try {
+                            for (let i = 0; i < rsaPerGroup; i++) {
+                                allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i, baseUrl));
+                            }
+                        } catch (fallbackError) {
+                            console.error('Fallback generation failed:', fallbackError);
+                            // Continue to next ad type instead of breaking the entire generation
                         }
                     }
                 }
@@ -485,24 +496,35 @@ export const AdsBuilder = () => {
                             systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
-                        if (response.ads) {
+                        if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
                             response.ads.forEach((ad: any) => {
-                                allGeneratedAds.push({
-                                    id: crypto.randomUUID(),
-                                    groupName: group.name,
-                                    adType: 'DKI',
-                                    type: 'dki',
-                                    ...ad,
-                                    selected: false,
-                                    extensions: []
-                                });
+                                // Validate ad structure before adding
+                                if (ad && (ad.headline1 || ad.headlines)) {
+                                    allGeneratedAds.push({
+                                        id: crypto.randomUUID(),
+                                        groupName: group.name,
+                                        adType: 'DKI',
+                                        type: 'dki',
+                                        ...ad,
+                                        selected: false,
+                                        extensions: []
+                                    });
+                                }
                             });
+                        } else {
+                            // If response doesn't have valid ads, use fallback
+                            throw new Error('Invalid response structure');
                         }
                     } catch (error) {
-                        console.log('API unavailable, using fallback for DKI');
+                        console.log('API unavailable or invalid response, using fallback for DKI');
                         // Fallback DKI generation (3 ads per group)
-                        for (let i = 0; i < dkiPerGroup; i++) {
-                            allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i, baseUrl));
+                        try {
+                            for (let i = 0; i < dkiPerGroup; i++) {
+                                allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i, baseUrl));
+                            }
+                        } catch (fallbackError) {
+                            console.error('Fallback generation failed:', fallbackError);
+                            // Continue to next ad type instead of breaking the entire generation
                         }
                     }
                 }
@@ -519,38 +541,65 @@ export const AdsBuilder = () => {
                             systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
                         });
 
-                        if (response.ads) {
+                        if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
                             response.ads.forEach((ad: any) => {
-                                allGeneratedAds.push({
-                                    id: crypto.randomUUID(),
-                                    groupName: group.name,
-                                    adType: 'CallOnly',
-                                    type: 'callonly',
-                                    phone: ad.phoneNumber || ad.phone,
-                                    businessName: ad.businessName,
-                                    ...ad,
-                                    selected: false,
-                                    extensions: []
-                                });
+                                // Validate ad structure before adding
+                                if (ad && (ad.phoneNumber || ad.phone || ad.businessName)) {
+                                    allGeneratedAds.push({
+                                        id: crypto.randomUUID(),
+                                        groupName: group.name,
+                                        adType: 'CallOnly',
+                                        type: 'callonly',
+                                        phone: ad.phoneNumber || ad.phone || '',
+                                        businessName: ad.businessName || '',
+                                        ...ad,
+                                        selected: false,
+                                        extensions: []
+                                    });
+                                }
                             });
+                        } else {
+                            // If response doesn't have valid ads, use fallback
+                            throw new Error('Invalid response structure');
                         }
                     } catch (error) {
-                        console.log('API unavailable, using fallback for Call Only');
+                        console.log('API unavailable or invalid response, using fallback for Call Only');
                         // Fallback Call Only generation
-                        for (let i = 0; i < callOnlyPerGroup; i++) {
-                            allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i, baseUrl));
+                        try {
+                            for (let i = 0; i < callOnlyPerGroup; i++) {
+                                allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i, baseUrl));
+                            }
+                        } catch (fallbackError) {
+                            console.error('Fallback generation failed:', fallbackError);
+                            // Continue to next ad type instead of breaking the entire generation
                         }
                     }
                 }
             }
 
-            setGeneratedAds(allGeneratedAds);
-            setSelectedAds([]);
+            // Only set ads if we have at least one generated ad
+            if (allGeneratedAds.length > 0) {
+                setGeneratedAds(allGeneratedAds);
+                setSelectedAds([]);
+                notifications.success(`Successfully generated ${allGeneratedAds.length} ad(s)`, {
+                    title: 'Ads Generated'
+                });
+            } else {
+                // If no ads were generated, show an error
+                notifications.error('Failed to generate ads. Please check your inputs and try again.', {
+                    title: 'Generation Failed',
+                    description: 'No ads could be generated. Please verify your keywords and URL are valid.'
+                });
+            }
         } catch (error) {
             console.error('Generation error:', error);
-            notifications.error('Failed to generate ads. Please try again.', {
-                title: 'Generation Failed'
-            });
+            // Only show error notification once, prevent loops
+            if (!isGenerating) {
+                // This check prevents duplicate notifications if error occurs after setIsGenerating(false)
+                notifications.error('Failed to generate ads. Please try again.', {
+                    title: 'Generation Failed'
+                });
+            }
         } finally {
             setIsGenerating(false);
         }
@@ -558,6 +607,30 @@ export const AdsBuilder = () => {
 
     // Helper function to convert new ad generator output to GeneratedAd format
     const convertRSAToGeneratedAd = (rsa: ResponsiveSearchAd, groupName: string, baseUrl: string): GeneratedAd => {
+        // Validate that rsa has the required structure
+        if (!rsa || !rsa.headlines || !Array.isArray(rsa.headlines)) {
+            console.error('Invalid RSA structure:', rsa);
+            // Return a safe fallback ad
+            return {
+                id: crypto.randomUUID(),
+                groupName,
+                adType: 'RSA',
+                type: 'rsa',
+                headline1: 'Get Started Today',
+                headline2: 'Quality Service',
+                headline3: 'Trusted Provider',
+                headline4: '',
+                headline5: '',
+                description1: 'Experience the best service with our trusted team.',
+                description2: 'Contact us now for more information.',
+                path1: '',
+                path2: '',
+                finalUrl: baseUrl || 'https://www.example.com',
+                selected: false,
+                extensions: []
+            };
+        }
+        
         return {
             id: crypto.randomUUID(),
             groupName,
@@ -568,51 +641,89 @@ export const AdsBuilder = () => {
             headline3: rsa.headlines[2] || '',
             headline4: rsa.headlines[3] || '',
             headline5: rsa.headlines[4] || '',
-            description1: rsa.descriptions[0] || '',
-            description2: rsa.descriptions[1] || '',
-            path1: rsa.displayPath[0] || '',
-            path2: rsa.displayPath[1] || '',
-            finalUrl: rsa.finalUrl || baseUrl,
+            description1: (rsa.descriptions && rsa.descriptions[0]) || '',
+            description2: (rsa.descriptions && rsa.descriptions[1]) || '',
+            path1: (rsa.displayPath && rsa.displayPath[0]) || '',
+            path2: (rsa.displayPath && rsa.displayPath[1]) || '',
+            finalUrl: rsa.finalUrl || baseUrl || 'https://www.example.com',
             selected: false,
             extensions: []
         };
     };
 
     const generateFallbackRSA = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
-        // Use the new comprehensive ad generation logic
-        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        
-        // Extract industry from keyword or use default
-        // Try to detect industry from keyword, default to 'Services'
-        const intent = detectUserIntent([selectedKeyword], 'Services');
-        const industry = intent === 'product' ? 'Products' : 'Services';
-        
-        // Create input for ad generator
-        const input: AdGenerationInput = {
-            keywords: [selectedKeyword],
-            industry: industry,
-            businessName: 'Your Business', // Default, can be enhanced later
-            baseUrl: baseUrl,
-            adType: 'RSA',
-            filters: {
-                matchType: 'phrase', // Default match type
-                campaignStructure: 'STAG', // Default structure
+        try {
+            // Use the new comprehensive ad generation logic
+            const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+            
+            // Extract industry from keyword or use default
+            // Try to detect industry from keyword, default to 'Services'
+            const intent = detectUserIntent([selectedKeyword], 'Services');
+            const industry = intent === 'product' ? 'Products' : 'Services';
+            
+            // Create input for ad generator
+            const input: AdGenerationInput = {
+                keywords: [selectedKeyword],
+                industry: industry,
+                businessName: 'Your Business', // Default, can be enhanced later
+                baseUrl: baseUrl,
+                adType: 'RSA',
+                filters: {
+                    matchType: 'phrase', // Default match type
+                    campaignStructure: 'STAG', // Default structure
+                }
+            };
+            
+            // Generate ad using new logic
+            const generatedAd = generateAdsUtility(input) as ResponsiveSearchAd;
+            
+            // Validate the generated ad before converting
+            if (!generatedAd || !generatedAd.headlines || !Array.isArray(generatedAd.headlines)) {
+                console.error('Generated ad has invalid structure, using safe fallback');
+                return convertRSAToGeneratedAd({ headlines: [], descriptions: [], displayPath: [], finalUrl: baseUrl }, groupName, baseUrl);
             }
-        };
-        
-        // Generate ad using new logic
-        const generatedAd = generateAds(input) as ResponsiveSearchAd;
-        
-        // Convert to GeneratedAd format
-        return convertRSAToGeneratedAd(generatedAd, groupName, baseUrl);
+            
+            // Convert to GeneratedAd format
+            return convertRSAToGeneratedAd(generatedAd, groupName, baseUrl);
+        } catch (error) {
+            console.error('Error in generateFallbackRSA:', error);
+            // Return a safe fallback ad
+            return convertRSAToGeneratedAd({ headlines: [], descriptions: [], displayPath: [], finalUrl: baseUrl }, groupName, baseUrl);
+        }
     };
 
     // Helper to convert RSA to DKI format (DKI uses same structure but with {KeyWord:} syntax)
     const convertRSAToDKI = (rsa: ResponsiveSearchAd, groupName: string, baseUrl: string, keyword: string): GeneratedAd => {
+        // Validate that rsa has the required structure
+        if (!rsa || !rsa.headlines || !Array.isArray(rsa.headlines)) {
+            console.error('Invalid RSA structure in convertRSAToDKI:', rsa);
+            const mainKeyword = cleanAndTitleCaseKeyword(keyword);
+            // Return a safe fallback DKI ad
+            return {
+                id: crypto.randomUUID(),
+                groupName,
+                adType: 'DKI',
+                type: 'dki',
+                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
+                headline2: `Buy {KeyWord:${mainKeyword}} Online`,
+                headline3: `Trusted {KeyWord:${mainKeyword}} Service`,
+                headline4: '',
+                headline5: '',
+                description1: `Find the best {KeyWord:${mainKeyword}}. Fast & reliable support.`,
+                description2: 'Contact our experts for 24/7 assistance.',
+                path1: '',
+                path2: '',
+                finalUrl: baseUrl || 'https://www.example.com',
+                selected: false,
+                extensions: []
+            };
+        }
+        
         const mainKeyword = cleanAndTitleCaseKeyword(keyword);
         
         // Convert headlines to DKI format
-        const dkiHeadlines = rsa.headlines.slice(0, 5).map(h => {
+        const dkiHeadlines = (rsa.headlines || []).slice(0, 5).map(h => {
+            if (!h) return '';
             // Replace keyword with DKI syntax
             const keywordLower = keyword.toLowerCase();
             const headlineLower = h.toLowerCase();
@@ -628,7 +739,8 @@ export const AdsBuilder = () => {
         });
         
         // Convert descriptions to DKI format
-        const dkiDescriptions = rsa.descriptions.slice(0, 2).map(d => {
+        const dkiDescriptions = (rsa.descriptions || []).slice(0, 2).map(d => {
+            if (!d) return '';
             const keywordLower = keyword.toLowerCase();
             const descLower = d.toLowerCase();
             
@@ -652,9 +764,9 @@ export const AdsBuilder = () => {
             headline5: dkiHeadlines[4] || '',
             description1: dkiDescriptions[0] || '',
             description2: dkiDescriptions[1] || '',
-            path1: rsa.displayPath[0] || '',
-            path2: rsa.displayPath[1] || '',
-            finalUrl: rsa.finalUrl || baseUrl,
+            path1: (rsa.displayPath && rsa.displayPath[0]) || '',
+            path2: (rsa.displayPath && rsa.displayPath[1]) || '',
+            finalUrl: rsa.finalUrl || baseUrl || 'https://www.example.com',
             selected: false,
             extensions: []
         };
@@ -731,7 +843,7 @@ export const AdsBuilder = () => {
         };
         
         // Generate ad using new logic
-        const generatedAd = generateAds(input) as CallOnlyAd;
+        const generatedAd = generateAdsUtility(input) as CallOnlyAd;
         
         // Set phone number if not provided
         if (!generatedAd.phoneNumber) {
