@@ -3,6 +3,8 @@
  * Stores user-specific preferences in localStorage
  */
 
+import { getColorCombination } from './colorCombinations';
+
 export interface UserPreferences {
   spacing: number; // Spacing multiplier (0.75, 1.0, 1.25, 1.5, 1.75, 2.0)
   fontSize: number; // Font size multiplier (0.875, 1.0, 1.125, 1.25, 1.375, 1.5)
@@ -86,7 +88,6 @@ export function applyUserPreferences(prefs: UserPreferences): void {
   } else if (combinationId && (isColorCombination || prefs.colorCombination)) {
     // Apply color combination
     try {
-      const { getColorCombination } = require('./colorCombinations');
       const combo = getColorCombination(combinationId);
       if (combo) {
         root.style.setProperty('--custom-primary-color', combo.primary);
