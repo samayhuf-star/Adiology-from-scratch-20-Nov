@@ -118,23 +118,23 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                   <Label>How would you rate your experience?</Label>
                   <RadioGroup value={rating} onValueChange={setRating} className="flex gap-4">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="1" id="rating-1" />
+                      <RadioGroupItem value="1" id="rating-1" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                       <Label htmlFor="rating-1" className="cursor-pointer">1 - Poor</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="2" id="rating-2" />
+                      <RadioGroupItem value="2" id="rating-2" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                       <Label htmlFor="rating-2" className="cursor-pointer">2 - Fair</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="3" id="rating-3" />
+                      <RadioGroupItem value="3" id="rating-3" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                       <Label htmlFor="rating-3" className="cursor-pointer">3 - Good</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="4" id="rating-4" />
+                      <RadioGroupItem value="4" id="rating-4" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                       <Label htmlFor="rating-4" className="cursor-pointer">4 - Very Good</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="5" id="rating-5" />
+                      <RadioGroupItem value="5" id="rating-5" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                       <Label htmlFor="rating-5" className="cursor-pointer">5 - Excellent</Label>
                     </div>
                   </RadioGroup>
@@ -239,23 +239,23 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                 <Label>How would you rate your experience?</Label>
                 <RadioGroup value={rating} onValueChange={setRating} className="flex gap-4">
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="1" id="rating-1" />
+                    <RadioGroupItem value="1" id="rating-1" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                     <Label htmlFor="rating-1" className="cursor-pointer">1 - Poor</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="2" id="rating-2" />
+                    <RadioGroupItem value="2" id="rating-2" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                     <Label htmlFor="rating-2" className="cursor-pointer">2 - Fair</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="3" id="rating-3" />
+                    <RadioGroupItem value="3" id="rating-3" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                     <Label htmlFor="rating-3" className="cursor-pointer">3 - Good</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="4" id="rating-4" />
+                    <RadioGroupItem value="4" id="rating-4" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                     <Label htmlFor="rating-4" className="cursor-pointer">4 - Very Good</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="5" id="rating-5" />
+                    <RadioGroupItem value="5" id="rating-5" className="size-5 border-2 border-slate-400 hover:border-indigo-600 data-[state=checked]:border-indigo-600" />
                     <Label htmlFor="rating-5" className="cursor-pointer">5 - Excellent</Label>
                   </div>
                 </RadioGroup>
