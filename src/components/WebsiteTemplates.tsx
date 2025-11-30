@@ -267,10 +267,41 @@ export const WebsiteTemplates: React.FC = () => {
     }
     
     const requiredSections: { [key: string]: TemplateSection } = {};
+    const allSections: TemplateSection[] = [];
     
-    // Map existing sections
+    // First, preserve ALL existing sections (including any custom/additional sections)
     sections.forEach(section => {
       if (section && section.type) {
+        // If services section exists, ensure all services have images
+        if (section.type === 'services' && section.content?.services) {
+          section.content.services = section.content.services.map((service: any, idx: number) => {
+            if (!service.image && idx < 3) {
+              // Add default images if missing
+              const defaultImages = [
+                'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=300&fit=crop',
+                'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
+                'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop'
+              ];
+              return { ...service, image: defaultImages[idx] || defaultImages[0] };
+            }
+            return service;
+          });
+          // Ensure we have at least 3 services
+          while (section.content.services.length < 3) {
+            const defaultImages = [
+              'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=300&fit=crop',
+              'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
+              'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop'
+            ];
+            const idx = section.content.services.length;
+            section.content.services.push({
+              image: defaultImages[idx] || defaultImages[0],
+              title: `Service ${idx + 1}`,
+              description: 'Professional service description',
+              price: 'Starting at $99'
+            });
+          }
+        }
         requiredSections[section.type] = section;
       }
     });
@@ -517,8 +548,17 @@ export const WebsiteTemplates: React.FC = () => {
       }
     });
     
-    // Return sections in the correct order
-    return sectionTypes.map(type => requiredSections[type]);
+    // Return sections in the correct order, preserving any additional sections
+    const orderedSections = sectionTypes.map(type => requiredSections[type]);
+    
+    // Add any additional sections that weren't in the standard list
+    sections.forEach(section => {
+      if (section && section.type && !sectionTypes.includes(section.type as any)) {
+        orderedSections.push(section);
+      }
+    });
+    
+    return orderedSections;
   };
 
   const handleViewTemplate = (template: Template | SavedTemplate) => {
