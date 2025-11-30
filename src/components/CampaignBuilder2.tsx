@@ -1631,27 +1631,37 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 setIsGeneratingKeywords(true);
                 let loadingToastId: number | string | undefined;
                 
-                try {
-                  loadingToastId = notifications.loading('Generating keywords...', {
-                    title: 'Keyword Generation',
-                    description: 'This may take a few moments. Please wait...',
-                  });
-                } catch (e) {
-                  console.log('Could not show loading toast:', e);
-                }
+                // Dismiss any existing toasts first to prevent stacking
+                (async () => {
+                  try {
+                    const { toast } = await import("sonner");
+                    toast.dismiss();
+                  } catch (e) {
+                    console.log('Could not dismiss existing toasts:', e);
+                  }
+                  
+                  try {
+                    loadingToastId = notifications.loading('Generating keywords...', {
+                      title: 'Keyword Generation',
+                      description: 'This may take a few moments. Please wait...',
+                    });
+                  } catch (e) {
+                    console.log('Could not show loading toast:', e);
+                  }
 
-                try {
-                  // Use shared keyword generation utility
-                  console.log("Using shared keyword generation utility");
-                  const keywordsWithBids = generateKeywordsUtil({
-                    seedKeywords,
-                    negativeKeywords,
-                    vertical: selectedVertical,
-                    intentResult,
-                    landingPageData,
-                    maxKeywords: 600,
-                    minKeywords: 300
-                  });
+                  try {
+                  try {
+                    // Use shared keyword generation utility
+                    console.log("Using shared keyword generation utility");
+                    const keywordsWithBids = generateKeywordsUtil({
+                      seedKeywords,
+                      negativeKeywords,
+                      vertical: selectedVertical,
+                      intentResult,
+                      landingPageData,
+                      maxKeywords: 600,
+                      minKeywords: 300
+                    });
 
                   // Keywords already have bid suggestions from the shared utility
                   setGeneratedKeywords(keywordsWithBids);
@@ -1753,72 +1763,83 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     setSmartClusters(clusters);
                   }
                   
-                  // Dismiss loading toast
-                  if (loadingToastId) {
-                    try {
-                      notifications.dismiss(loadingToastId);
-                    } catch (e) {
-                      console.log('Could not dismiss loading toast:', e);
+                    // Dismiss loading toast and wait a bit before showing success
+                    if (loadingToastId) {
+                      try {
+                        notifications.dismiss(loadingToastId);
+                        // Small delay to ensure loading toast is fully dismissed
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                      } catch (e) {
+                        console.log('Could not dismiss loading toast:', e);
+                      }
                     }
-                  }
-                  
-                  notifications.success(`Generated ${keywordsWithBids.length} keywords successfully`, {
-                    title: 'Keywords Generated',
-                    description: `Found ${keywordsWithBids.length} keyword suggestions. Review and select the ones you want to use.`,
-                  });
-                } catch (error) {
-                  console.log('ℹ️ Error during keyword generation - using fallback', error);
-                  
-                  // Final fallback: Basic mock keywords
-                  const seedList = seedKeywords.split('\n').filter(k => k.trim());
-                  const mockKeywords = seedList.map((k, i) => ({
-                    id: `kw-${i}`,
-                    text: k.trim(),
-                    volume: 'High',
-                    cpc: '$2.50',
-                    type: 'Seed'
-                  }));
-                  
-                  setGeneratedKeywords(mockKeywords);
-                  
-                  // Auto-select all generated keywords by default
-                  const allMockKeywordIds = mockKeywords.map(k => k.text || k.id);
-                  setSelectedKeywords(allMockKeywordIds);
-                  
-                  // Dismiss loading toast
-                  if (loadingToastId) {
-                    try {
-                      notifications.dismiss(loadingToastId);
-                    } catch (e) {
-                      console.log('Could not dismiss loading toast:', e);
-                    }
-                  }
-                  
-                  const errorMessage = error instanceof Error ? error.message : String(error);
-                  if (errorMessage.includes('timeout')) {
-                    notifications.warning(`Generated ${mockKeywords.length} keywords using local generation (API timed out)`, {
-                      title: 'Keywords Generated (Timeout)',
-                      description: 'API call timed out. Using local generation.',
+                    
+                    // Clear loading state before showing success
+                    setIsGeneratingKeywords(false);
+                    
+                    notifications.success(`Generated ${keywordsWithBids.length} keywords successfully`, {
+                      title: 'Keywords Generated',
+                      description: `Found ${keywordsWithBids.length} keyword suggestions. Review and select the ones you want to use.`,
                     });
-                  } else {
-                    notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
-                      title: 'Keywords Generated (Offline Mode)',
-                      description: 'Using local generation. Some features may be limited.',
-                    });
-                  }
-                } finally {
-                  // Always clear loading state
-                  setIsGeneratingKeywords(false);
-                  
-                  // Ensure loading toast is dismissed
-                  if (loadingToastId) {
-                    try {
-                      notifications.dismiss(loadingToastId);
-                    } catch (e) {
-                      console.log('Could not dismiss loading toast in finally:', e);
+                  } catch (error) {
+                    console.log('ℹ️ Error during keyword generation - using fallback', error);
+                    
+                    // Final fallback: Basic mock keywords
+                    const seedList = seedKeywords.split('\n').filter(k => k.trim());
+                    const mockKeywords = seedList.map((k, i) => ({
+                      id: `kw-${i}`,
+                      text: k.trim(),
+                      volume: 'High',
+                      cpc: '$2.50',
+                      type: 'Seed'
+                    }));
+                    
+                    setGeneratedKeywords(mockKeywords);
+                    
+                    // Auto-select all generated keywords by default
+                    const allMockKeywordIds = mockKeywords.map(k => k.text || k.id);
+                    setSelectedKeywords(allMockKeywordIds);
+                    
+                    // Dismiss loading toast and wait a bit before showing error notification
+                    if (loadingToastId) {
+                      try {
+                        notifications.dismiss(loadingToastId);
+                        // Small delay to ensure loading toast is fully dismissed
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                      } catch (e) {
+                        console.log('Could not dismiss loading toast:', e);
+                      }
+                    }
+                    
+                    // Clear loading state before showing error notification
+                    setIsGeneratingKeywords(false);
+                    
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    if (errorMessage.includes('timeout')) {
+                      notifications.warning(`Generated ${mockKeywords.length} keywords using local generation (API timed out)`, {
+                        title: 'Keywords Generated (Timeout)',
+                        description: 'API call timed out. Using local generation.',
+                      });
+                    } else {
+                      notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
+                        title: 'Keywords Generated (Offline Mode)',
+                        description: 'Using local generation. Some features may be limited.',
+                      });
+                    }
+                  } finally {
+                    // Always clear loading state as a safety net
+                    setIsGeneratingKeywords(false);
+                    
+                    // Ensure loading toast is dismissed
+                    if (loadingToastId) {
+                      try {
+                        notifications.dismiss(loadingToastId);
+                      } catch (e) {
+                        console.log('Could not dismiss loading toast in finally:', e);
+                      }
                     }
                   }
-                }
+                })();
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 py-6 text-base font-semibold"
@@ -5248,17 +5269,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <div className="w-full flex flex-col sm:flex-row justify-center items-center gap-4 py-12 mt-12 border-t border-slate-200 pt-12">
             <Button 
               onClick={handleExportCSV}
-              className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all min-w-[280px]"
+              className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl py-1.5 px-4 w-full sm:w-auto text-sm font-semibold flex items-center justify-center gap-2 transition-all min-w-[140px]"
             >
-              <Download className="w-5 h-5 flex-shrink-0" />
+              <Download className="w-3 h-3 flex-shrink-0" />
               <span>Download CSV for Google Ads Editor</span>
             </Button>
             <Button 
               variant="outline"
               onClick={() => setActiveTab('saved')}
-              className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-700 shadow-md hover:shadow-lg py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all min-w-[280px]"
+              className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-700 shadow-md hover:shadow-lg py-1.5 px-4 w-full sm:w-auto text-sm font-semibold flex items-center justify-center gap-2 transition-all min-w-[140px]"
             >
-              <FolderOpen className="w-5 h-5 flex-shrink-0" />
+              <FolderOpen className="w-3 h-3 flex-shrink-0" />
               <span>View Saved Campaigns</span>
             </Button>
           </div>

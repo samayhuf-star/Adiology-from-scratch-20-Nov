@@ -79,7 +79,7 @@ if (!validateEnvironment()) {
         <Suspense fallback={<LoadingScreen />}>
           <App />
         </Suspense>
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="top-right" richColors closeButton maxVisibleToasts={1} />
       </ThemeProvider>
     </ErrorBoundary>
   );

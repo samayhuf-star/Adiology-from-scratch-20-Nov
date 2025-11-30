@@ -199,6 +199,12 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
       </div>
 
       <div className="relative z-10 w-full max-w-md">
+        {/* ADIOLOGY Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-6xl font-bold text-white mb-2 tracking-tight">ADIOLOGY</h1>
+          <p className="text-2xl text-indigo-200 font-medium">coming soon</p>
+        </div>
+        
         <Card className="border border-slate-200 shadow-2xl bg-white backdrop-blur-xl relative overflow-visible p-8">
           <CardHeader className="space-y-1 pb-6 px-0">
             <div className="flex items-center justify-between mb-4">

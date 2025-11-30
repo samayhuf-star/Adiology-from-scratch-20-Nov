@@ -593,13 +593,10 @@ export const AdsBuilder = () => {
             }
         } catch (error) {
             console.error('Generation error:', error);
-            // Only show error notification once, prevent loops
-            if (!isGenerating) {
-                // This check prevents duplicate notifications if error occurs after setIsGenerating(false)
-                notifications.error('Failed to generate ads. Please try again.', {
-                    title: 'Generation Failed'
-                });
-            }
+            // Show error notification (only once per generation attempt)
+            notifications.error('Failed to generate ads. Please try again.', {
+                title: 'Generation Failed'
+            });
         } finally {
             setIsGenerating(false);
         }
