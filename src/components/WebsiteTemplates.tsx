@@ -211,17 +211,41 @@ export const WebsiteTemplates: React.FC = () => {
   const loadSavedTemplates = async () => {
     try {
       const saved = await historyService.getByType('website-template');
-      const converted = saved.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        originalTemplateId: item.data?.originalTemplateId || 'unknown',
-        customizedSections: item.data?.sections || [],
-        createdAt: item.timestamp,
-        updatedAt: item.timestamp
-      }));
+      const converted = saved.map((item: any) => {
+        // Handle different data structures
+        let sections: TemplateSection[] = [];
+        let originalTemplateId = 'unknown';
+        
+        if (item.data) {
+          // Check for nested template structure
+          if (item.data.template && item.data.template.customizedSections) {
+            sections = item.data.template.customizedSections;
+            originalTemplateId = item.data.template.originalTemplateId || 'unknown';
+          } 
+          // Check for direct sections structure
+          else if (item.data.sections) {
+            sections = item.data.sections;
+            originalTemplateId = item.data.originalTemplateId || 'unknown';
+          }
+          // Fallback to originalTemplateId if available
+          else if (item.data.originalTemplateId) {
+            originalTemplateId = item.data.originalTemplateId;
+          }
+        }
+        
+        return {
+          id: item.id,
+          name: item.name,
+          originalTemplateId: originalTemplateId,
+          customizedSections: Array.isArray(sections) ? sections : [],
+          createdAt: item.timestamp || new Date().toISOString(),
+          updatedAt: item.timestamp || new Date().toISOString()
+        };
+      });
       setSavedTemplates(converted);
     } catch (error) {
       console.error('Failed to load saved templates', error);
+      notifications.error('Failed to load saved templates', { title: 'Load Error' });
     }
   };
 
@@ -237,11 +261,18 @@ export const WebsiteTemplates: React.FC = () => {
 
   // Function to ensure template has all required sections
   const completeTemplateSections = (sections: TemplateSection[]): TemplateSection[] => {
+    // Handle edge cases
+    if (!sections || !Array.isArray(sections)) {
+      sections = [];
+    }
+    
     const requiredSections: { [key: string]: TemplateSection } = {};
     
     // Map existing sections
     sections.forEach(section => {
-      requiredSections[section.type] = section;
+      if (section && section.type) {
+        requiredSections[section.type] = section;
+      }
     });
     
     // Add missing sections with default content (privacy and terms are now only in footer as links)
@@ -541,43 +572,71 @@ export const WebsiteTemplates: React.FC = () => {
   };
 
   const handleEditTemplate = async (template?: SavedTemplate | Template, isBase: boolean = false) => {
-    if (template && 'customizedSections' in template) {
-      // It's a saved template - ensure it has all sections
-      const completedTemplate = {
-        ...template,
-        customizedSections: completeTemplateSections(template.customizedSections)
-      };
-      setEditingTemplate(completedTemplate);
-    } else if (template && isBase) {
-      // Create new template from base template
-      const baseTemplate = template as Template;
-      const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(baseTemplate.sections)));
-      const newTemplate: SavedTemplate = {
-        id: `template-${Date.now()}`,
-        name: `${baseTemplate.name} (Custom)`,
-        originalTemplateId: baseTemplate.id,
-        customizedSections: completedSections,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      setEditingTemplate(newTemplate);
-      setTemplateName(newTemplate.name);
-    } else {
-      // Create new template from first base template
-      const firstTemplate = baseTemplates[0];
-      const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(firstTemplate.sections)));
-      const newTemplate: SavedTemplate = {
-        id: `template-${Date.now()}`,
-        name: 'Untitled Template',
-        originalTemplateId: firstTemplate.id,
-        customizedSections: completedSections,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setEditingTemplate(newTemplate);
+    try {
+      if (template && 'customizedSections' in template) {
+        // It's a saved template - ensure it has all sections
+        const savedTemplate = template as SavedTemplate;
+        const sections = savedTemplate.customizedSections || [];
+        
+        // Validate sections is an array
+        if (!Array.isArray(sections)) {
+          throw new Error('Invalid template structure: customizedSections must be an array');
+        }
+        
+        const completedTemplate = {
+          ...savedTemplate,
+          customizedSections: completeTemplateSections(sections)
+        };
+        setEditingTemplate(completedTemplate);
+      } else if (template && isBase) {
+        // Create new template from base template
+        const baseTemplate = template as Template;
+        if (!baseTemplate.sections || !Array.isArray(baseTemplate.sections)) {
+          throw new Error('Invalid base template structure: sections must be an array');
+        }
+        
+        const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(baseTemplate.sections)));
+        const newTemplate: SavedTemplate = {
+          id: `template-${Date.now()}`,
+          name: `${baseTemplate.name} (Custom)`,
+          originalTemplateId: baseTemplate.id,
+          customizedSections: completedSections,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        setEditingTemplate(newTemplate);
+        setTemplateName(newTemplate.name);
+      } else {
+        // Create new template from first base template
+        if (!baseTemplates || baseTemplates.length === 0) {
+          throw new Error('No base templates available');
+        }
+        
+        const firstTemplate = baseTemplates[0];
+        if (!firstTemplate.sections || !Array.isArray(firstTemplate.sections)) {
+          throw new Error('Invalid base template structure: sections must be an array');
+        }
+        
+        const completedSections = completeTemplateSections(JSON.parse(JSON.stringify(firstTemplate.sections)));
+        const newTemplate: SavedTemplate = {
+          id: `template-${Date.now()}`,
+          name: 'Untitled Template',
+          originalTemplateId: firstTemplate.id,
+          customizedSections: completedSections,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        setEditingTemplate(newTemplate);
+      }
+      setShowEditor(true);
+    } catch (error) {
+      console.error('Failed to edit template:', error);
+      notifications.error(
+        error instanceof Error ? error.message : 'Failed to open template editor. Please try again.',
+        { title: 'Edit Error' }
+      );
     }
-    setShowEditor(true);
   };
 
   const handleSaveTemplate = async () => {
@@ -1325,7 +1384,14 @@ export const WebsiteTemplates: React.FC = () => {
                       size="sm" 
                       variant="outline" 
                       className="flex-1"
-                      onClick={() => handleEditTemplate(template)}
+                      onClick={async () => {
+                        try {
+                          await handleEditTemplate(template);
+                        } catch (error) {
+                          console.error('Error editing template:', error);
+                          notifications.error('Failed to edit template. Please try again.', { title: 'Error' });
+                        }
+                      }}
                     >
                       <Edit className="w-3 h-3 mr-1" />
                       Edit

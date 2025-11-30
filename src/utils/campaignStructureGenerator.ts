@@ -131,8 +131,8 @@ function buildLocationTarget(settings: StructureSettings): string | undefined {
     locations.push(...settings.selectedCities);
   } else if (settings.geoType === 'ZIP' && settings.selectedZips && settings.selectedZips.length > 0) {
     locations.push(...settings.selectedZips);
-  } else if (settings.targetCountry && settings.geoType !== 'GEO') {
-    // Default to country if no specific locations selected (but not for GEO-segmented)
+  } else if (settings.targetCountry && (settings.geoType === 'COUNTRY' || !settings.geoType || settings.geoType === '')) {
+    // Include country when COUNTRY is selected or no specific geo type
     locations.push(settings.targetCountry);
   }
   

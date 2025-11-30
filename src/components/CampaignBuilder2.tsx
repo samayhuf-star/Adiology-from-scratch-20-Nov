@@ -2725,6 +2725,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         break;
       case 'call':
         extension.phone = '(555) 123-4567';
+        extension.phoneNumber = '(555) 123-4567';
+        extension.countryCode = 'US';
+        extension.country = 'US';
         extension.callTrackingEnabled = false;
         extension.callOnly = false;
         break;
@@ -4174,8 +4177,21 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <Button variant="ghost" onClick={() => setStep(3)}>Back</Button>
           <Button 
             size="lg" 
-            onClick={() => setStep(5)}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+            onClick={() => {
+              // Parse manualGeoInput into appropriate arrays before moving to next step
+              if (targetType === 'STATE' && manualGeoInput) {
+                const states = manualGeoInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                setSelectedStates(states);
+              } else if (targetType === 'CITY' && manualGeoInput) {
+                const cities = manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+                setSelectedCities(cities);
+              } else if (targetType === 'ZIP' && manualGeoInput) {
+                const zips = manualGeoInput.split(',').map(z => z.trim()).filter(z => z.length > 0);
+                setSelectedZips(zips);
+              }
+              setStep(5);
+            }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
           >
             Review Campaign <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
@@ -4911,6 +4927,33 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           final_url: validUrl
         }];
 
+        // Map targetType to geoType for structure generation
+        const finalGeoType = targetType === 'COUNTRY' ? 'COUNTRY' : 
+                             targetType === 'STATE' ? 'STATE' :
+                             targetType === 'CITY' ? 'CITY' :
+                             targetType === 'ZIP' ? 'ZIP' : geoType;
+        
+        // Parse location data from manualGeoInput if arrays are empty
+        let finalSelectedStates = selectedStates;
+        let finalSelectedCities = selectedCities;
+        let finalSelectedZips = selectedZips;
+        
+        // If arrays are empty but manualGeoInput has data, parse it
+        if (targetType === 'STATE' && finalSelectedStates.length === 0 && manualGeoInput) {
+          finalSelectedStates = manualGeoInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        } else if (targetType === 'CITY' && finalSelectedCities.length === 0 && manualGeoInput) {
+          finalSelectedCities = manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        } else if (targetType === 'ZIP' && finalSelectedZips.length === 0 && manualGeoInput) {
+          finalSelectedZips = manualGeoInput.split(',').map(z => z.trim()).filter(z => z.length > 0);
+        }
+        
+        // Also check preset values if manual input is empty
+        if (targetType === 'STATE' && finalSelectedStates.length === 0 && statePreset !== null) {
+          finalSelectedStates = getTopStatesByPopulation(targetCountry, statePreset === '0' ? 0 : parseInt(statePreset));
+        } else if (targetType === 'CITY' && finalSelectedCities.length === 0 && cityPreset !== null) {
+          finalSelectedCities = getTopCitiesByIncome(targetCountry, cityPreset === '0' ? 0 : parseInt(cityPreset));
+        }
+
         // Prepare settings for structure generation
         const settings: StructureSettings = {
           structureType,
@@ -4919,10 +4962,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           matchTypes,
           url: validUrl,
           negativeKeywords: negativeKeywords.split('\n').filter(k => k.trim()),
-          geoType,
-          selectedStates,
-          selectedCities,
-          selectedZips,
+          geoType: finalGeoType,
+          selectedStates: finalSelectedStates,
+          selectedCities: finalSelectedCities,
+          selectedZips: finalSelectedZips,
           targetCountry,
           ads: adsToUse,
           intentGroups,
