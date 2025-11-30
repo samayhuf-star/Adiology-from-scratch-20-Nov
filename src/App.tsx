@@ -1405,6 +1405,13 @@ const App = () => {
           })}
         </nav>
 
+        {/* Feedback Button - Below Support & Help */}
+        <FeedbackButton 
+          variant="sidebar" 
+          sidebarOpen={sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)}
+          sidebarHovered={userPrefs.sidebarAutoClose && sidebarHovered}
+        />
+
       </aside>
 
       {/* Main Content */}
@@ -1627,10 +1634,6 @@ const App = () => {
         </main>
       </div>
       
-      {/* Floating Feedback Button - Show on all pages except admin */}
-      {appView !== 'admin-panel' && appView !== 'admin-login' && appView !== 'admin-landing' && (
-        <FeedbackButton />
-      )}
     </div>
   );
 };

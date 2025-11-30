@@ -9,7 +9,17 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { notifications } from '../utils/notifications';
 import { submitFeedback } from '../utils/feedbackService';
 
-export const FeedbackButton: React.FC = () => {
+interface FeedbackButtonProps {
+  variant?: 'floating' | 'sidebar';
+  sidebarOpen?: boolean;
+  sidebarHovered?: boolean;
+}
+
+export const FeedbackButton: React.FC<FeedbackButtonProps> = ({ 
+  variant = 'floating',
+  sidebarOpen = true,
+  sidebarHovered = false
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'feedback' | 'feature_request'>('feedback');
   const [rating, setRating] = useState<string>('');
@@ -54,6 +64,135 @@ export const FeedbackButton: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (variant === 'sidebar') {
+    return (
+      <>
+        {/* Sidebar Menu Item Button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer text-slate-700 hover:bg-indigo-50"
+            aria-label="Provide Feedback"
+          >
+            <MessageSquare className="w-5 h-5 shrink-0 text-slate-500 group-hover:text-indigo-600" />
+            {(sidebarOpen || sidebarHovered) && (
+              <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
+                Feedback
+              </span>
+            )}
+          </button>
+        </div>
+        
+        {/* Feedback Dialog */}
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-indigo-600" />
+                Share Your Feedback
+              </DialogTitle>
+              <DialogDescription>
+                Help us improve Adiology by sharing your thoughts, feedback, or feature requests.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6 py-4">
+              {/* Feedback Type Selection */}
+              <div className="space-y-2">
+                <Label>What would you like to share?</Label>
+                <Select value={feedbackType} onValueChange={(value: 'feedback' | 'feature_request') => setFeedbackType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="feedback">General Feedback</SelectItem>
+                    <SelectItem value="feature_request">Feature Request</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Rating (only for feedback) */}
+              {feedbackType === 'feedback' && (
+                <div className="space-y-3">
+                  <Label>How would you rate your experience?</Label>
+                  <RadioGroup value={rating} onValueChange={setRating} className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="1" id="rating-1" />
+                      <Label htmlFor="rating-1" className="cursor-pointer">1 - Poor</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="2" id="rating-2" />
+                      <Label htmlFor="rating-2" className="cursor-pointer">2 - Fair</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="3" id="rating-3" />
+                      <Label htmlFor="rating-3" className="cursor-pointer">3 - Good</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="4" id="rating-4" />
+                      <Label htmlFor="rating-4" className="cursor-pointer">4 - Very Good</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="5" id="rating-5" />
+                      <Label htmlFor="rating-5" className="cursor-pointer">5 - Excellent</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Message */}
+              <div className="space-y-2">
+                <Label htmlFor="feedback-message">
+                  {feedbackType === 'feedback' ? 'Your Feedback' : 'Feature Request Details'}
+                </Label>
+                <Textarea
+                  id="feedback-message"
+                  placeholder={
+                    feedbackType === 'feedback'
+                      ? 'Tell us what you think about Adiology...'
+                      : 'Describe the feature you would like to see...'
+                  }
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={6}
+                  className="resize-none"
+                />
+                <p className="text-xs text-slate-500">
+                  {feedbackType === 'feature_request' && (
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      Be as detailed as possible to help us understand your needs
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+                <X className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit} disabled={isSubmitting || !message.trim()}>
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Submit {feedbackType === 'feature_request' ? 'Request' : 'Feedback'}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
 
   return (
     <>
