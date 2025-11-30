@@ -1338,8 +1338,8 @@ const App = () => {
                 }`}
                 style={{ minWidth: 0 }}
               >
-                  <div className={`flex items-center flex-1 min-w-0 overflow-hidden ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center' : 'gap-2'}`}>
-                    <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
+                  <div className={`flex items-center ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center flex-shrink-0' : 'gap-2 flex-1 min-w-0 overflow-hidden'}`}>
+                    <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : !(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'text-slate-700 group-hover:text-indigo-600' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
                 {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
                   <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
                     {item.label}
@@ -1365,10 +1365,10 @@ const App = () => {
                             isSubActive
                               ? `bg-indigo-100 text-indigo-700 shadow-sm border border-indigo-200`
                               : `text-slate-600 hover:bg-indigo-50/50`
-                          } ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center' : ''}`}
+                          } ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center px-2' : ''}`}
                           style={{ minWidth: 0 }}
                         >
-                          <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                          <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-indigo-600' : !(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'text-slate-600 group-hover:text-indigo-600' : 'text-slate-400'}`} />
                           {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
                             <span className={`font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`} style={{ fontSize: 'clamp(0.75rem, 2.2vw, 0.8125rem)' }}>
                               {subItem.label}
