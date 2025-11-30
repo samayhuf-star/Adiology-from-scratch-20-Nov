@@ -74,17 +74,29 @@
   background: linear-gradient(to bottom right, #ecfdf5, #f0fdf4, #f7fee7);
 }
 
-/* Theme-aware button gradients */
+/* Theme-aware button solid colors */
 [data-theme="purple"] .theme-button-primary {
-  background: linear-gradient(to right, #4f46e5, #9333ea);
+  background: #4f46e5;
+}
+
+[data-theme="purple"] .theme-button-primary:hover {
+  background: #4338ca;
 }
 
 [data-theme="ocean"] .theme-button-primary {
-  background: linear-gradient(to right, #2563eb, #0891b2);
+  background: #2563eb;
+}
+
+[data-theme="ocean"] .theme-button-primary:hover {
+  background: #1d4ed8;
 }
 
 [data-theme="forest"] .theme-button-primary {
-  background: linear-gradient(to right, #059669, #16a34a);
+  background: #059669;
+}
+
+[data-theme="forest"] .theme-button-primary:hover {
+  background: #047857;
 }
 
 /* Theme-aware text colors */

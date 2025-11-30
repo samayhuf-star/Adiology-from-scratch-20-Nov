@@ -506,7 +506,7 @@ export const CrazyKeywordsBuilder = () => {
                 <Button
                   onClick={() => handleGenerate()}
                   disabled={loading || !seedInput.trim()}
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   {loading ? (
                     <>
@@ -665,7 +665,7 @@ export const CrazyKeywordsBuilder = () => {
               <div className="space-y-2">
                 <Button
                   onClick={exportSelectedGoogleAds}
-                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                   disabled={selected.size === 0}
                 >
                   <Download className="w-4 h-4 mr-2" />

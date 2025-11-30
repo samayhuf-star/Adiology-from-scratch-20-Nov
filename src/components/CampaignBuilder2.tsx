@@ -1821,7 +1821,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 }
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
-              className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 py-6 text-base font-semibold"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 py-6 text-base font-semibold"
             >
               {isGeneratingKeywords ? (
                 <><RefreshCw className="w-5 h-5 mr-2 animate-spin"/> Generating Keywords...</>
@@ -2317,7 +2317,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               setStep(3);
             }}
             disabled={selectedKeywords.length === 0}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next: Ads & Extensions <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
@@ -3306,7 +3306,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <Button 
                     onClick={handleGenerateAIExtensions}
                     disabled={selectedKeywords.length === 0 || !hasRegularAds}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Sparkles className="mr-2 w-5 h-5" /> GENERATE AI EXTENSIONS
                   </Button>
@@ -3671,7 +3671,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             <Button 
               size="lg" 
               onClick={() => setStep(4)}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
             >
               Next Step <ChevronRight className="ml-2 w-5 h-5" />
             </Button>
@@ -3768,7 +3768,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               }}>
                 Cancel
               </Button>
-              <Button onClick={handleConfirmAIExtensions} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+              <Button onClick={handleConfirmAIExtensions} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 Generate {selectedExtensions.length > 0 ? `${selectedExtensions.length} ` : ''}Extensions
               </Button>
             </DialogFooter>
@@ -5205,7 +5205,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <div className="w-full flex flex-col sm:flex-row justify-center items-center gap-4 py-12 mt-12 border-t border-slate-200 pt-12">
             <Button 
               onClick={handleExportCSV}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all min-w-[280px]"
+              className="bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl py-3 px-8 w-full sm:w-auto text-base font-semibold flex items-center justify-center gap-2 transition-all min-w-[280px]"
             >
               <Download className="w-5 h-5 flex-shrink-0" />
               <span>Download CSV for Google Ads Editor</span>

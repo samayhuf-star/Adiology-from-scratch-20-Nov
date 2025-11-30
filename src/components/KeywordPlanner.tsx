@@ -620,7 +620,7 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                 <Button
                                     onClick={() => handleGenerate(false)}
                                     disabled={isGenerating || !seedKeywords.trim()}
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-sm py-2.5"
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-2.5"
                                 >
                                     {isGenerating ? (
                                         <>

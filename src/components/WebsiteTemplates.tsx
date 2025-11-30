@@ -1241,7 +1241,7 @@ export const WebsiteTemplates: React.FC = () => {
                         }}
                         variant="default"
                         size="sm"
-                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl"
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl"
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         Use / Edit
@@ -1568,7 +1568,7 @@ const TemplateEditor: React.FC<{
                   onExport(template);
                 }
               }}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               <Download className="w-4 h-4 mr-2" />
               Download Template

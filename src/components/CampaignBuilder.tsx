@@ -1904,7 +1904,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     size="lg"
                     onClick={handleNextStep}
                     disabled={!url}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 shadow-lg shadow-indigo-200"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg shadow-indigo-200"
                 >
                     Next Step <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
@@ -2001,7 +2001,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         </Card>
 
                         <Button 
-                            className="w-full h-12 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5" 
+                            className="w-full h-12 text-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5" 
                             onClick={handleGenerateKeywords}
                             disabled={isGeneratingKeywords || !seedKeywords.trim()}
                         >
@@ -3679,7 +3679,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         }}>
                             Cancel
                         </Button>
-                        <Button onClick={handleConfirmAIExtensions} className="bg-gradient-to-r from-indigo-600 to-purple-600">
+                        <Button onClick={handleConfirmAIExtensions} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                             Generate {selectedExtensions.length > 0 ? `${selectedExtensions.length} ` : ''}Extensions
                         </Button>
                     </DialogFooter>

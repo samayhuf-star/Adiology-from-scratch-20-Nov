@@ -5159,14 +5159,14 @@ main,
   -webkit-text-fill-color: transparent;
 }
 
-/* Button styles with unified colors */
+/* Button styles with solid colors */
 .theme-button-primary {
-  background: linear-gradient(to right, rgb(79, 70, 229), rgb(147, 51, 234)) !important;
+  background: #4f46e5 !important;
   color: white !important;
 }
 
 .theme-button-primary:hover {
-  background: linear-gradient(to right, rgb(67, 56, 202), rgb(126, 34, 206)) !important;
+  background: #4338ca !important;
 }
 
 /* Card backgrounds with unified colors */

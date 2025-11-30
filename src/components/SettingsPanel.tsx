@@ -304,7 +304,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             </div>
           </div>
           <div className="flex justify-start pt-4">
-            <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 h-12 text-base">
+            <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 h-12 text-base">
               <Save className="w-5 h-5 mr-2" />
               Save Profile Changes
             </Button>
@@ -391,7 +391,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
             </div>
           </div>
           <div className="flex justify-start pt-4">
-            <Button onClick={handleChangePassword} disabled={isSaving} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 h-12 text-base">
+            <Button onClick={handleChangePassword} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 h-12 text-base">
               <Lock className="w-5 h-5 mr-2" />
               Change Password
             </Button>
@@ -435,7 +435,7 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
               </Button>
               <p className="text-sm text-slate-500">Downloads your account data in JSON format</p>
             </div>
-            <Button onClick={handleSaveSettings} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 h-12 text-base">
+            <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 h-12 text-base">
               <Save className="w-5 h-5 mr-2" />
               Save Privacy Settings
             </Button>

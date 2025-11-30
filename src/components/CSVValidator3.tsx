@@ -708,7 +708,7 @@ export const CSVValidator3 = () => {
                         <Button
                             onClick={handleValidate}
                             disabled={loading || rows.length === 0}
-                            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white"
                         >
                             {loading ? (
                                 <>
@@ -725,7 +725,7 @@ export const CSVValidator3 = () => {
                         <Button
                             onClick={handleFixSheet}
                             disabled={fixing || rows.length === 0}
-                            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                            className="bg-green-600 hover:bg-green-700 text-white"
                         >
                             {fixing ? (
                                 <>
