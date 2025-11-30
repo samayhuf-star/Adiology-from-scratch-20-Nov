@@ -27,8 +27,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Signup is enabled for production
-  const SIGNUP_DISABLED = false;
+  // Signup is disabled temporarily
+  const SIGNUP_DISABLED = true;
 
   // Sync isLogin state when initialMode prop changes
   React.useEffect(() => {
@@ -112,7 +112,13 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
           setIsLoading(false);
         }
       } else {
-        // Signup logic
+        // Signup logic - disabled
+        if (SIGNUP_DISABLED) {
+          setError('New signups are currently disabled. Please contact support for access.');
+          setIsLoading(false);
+          return;
+        }
+        
         // Bug_72: Validate that name is not empty or only blank spaces
         const trimmedName = name.trim();
         if (!trimmedName || trimmedName.length === 0) {
@@ -419,6 +425,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                             setIsForgotPassword(false);
                       }}
                       className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      disabled={SIGNUP_DISABLED}
                     >
                       Sign up
                     </button>

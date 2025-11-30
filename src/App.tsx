@@ -565,7 +565,7 @@ const App = () => {
         if (user) {
           setView('payment');
         } else {
-          setAuthMode('signup');
+          setAuthMode('login'); // Changed from 'signup' to 'login' - signups disabled
           setView('auth');
         }
         return;
@@ -668,9 +668,9 @@ const App = () => {
     // Check if user is logged in
     const authenticated = await isAuthenticated();
     if (!authenticated || !user) {
-      // User not logged in, redirect to signup and store plan selection
+      // User not logged in, redirect to login and store plan selection (signups disabled)
       setSelectedPlan({ name: planName, priceId, amount, isSubscription });
-      setAuthMode('signup');
+      setAuthMode('login'); // Changed from 'signup' to 'login' - signups disabled
       setAppView('auth');
       return;
     }
