@@ -45,6 +45,7 @@ import { runPolicyChecks } from '../utils/campaignIntelligence/policyChecks';
 import { getDeviceConfig, formatDeviceBidModifiersForCSV } from '../utils/campaignIntelligence/deviceDefaults';
 import { buildTrackingParams, generateUTMParams } from '../utils/campaignIntelligence/tracking';
 import type { LandingExtraction } from '../utils/campaignIntelligence/schemas';
+import { generateKeywords as generateKeywordsUtil } from '../utils/keywordGenerator';
 
 // Geo Targeting Constants
 const COUNTRIES = [
@@ -1640,283 +1641,27 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 }
 
                 try {
-                  let keywords: any[] = [];
-
-                  // Parse negative keywords (comma or newline separated)
-                  const negativeList = negativeKeywords
-                    .split(/[,\n]/)
-                    .map(n => n.trim().toLowerCase())
-                    .filter(Boolean);
-                  
-                  // Skip Google Ads API (always fails due to CORS) and use enhanced mock keywords directly
-                  // Generate enhanced mock keywords based on seed keywords (300-600 keywords)
-                  const seedList = seedKeywords.split('\n').filter(k => k.trim());
-                  const mockKeywords: any[] = [];
-                  
-                  // Use vertical templates for keyword expansion
-                  const verticalConfig = getVerticalConfig(selectedVertical);
-                  const serviceTokens = verticalConfig.serviceTokens;
-                  const keywordModifiers = getKeywordModifiers(selectedVertical);
-                  const emergencyModifiers = verticalConfig.emergencyModifiers;
-                  
-                  // Add services from landing page if available
-                  const allServiceTokens = [
-                    ...serviceTokens,
-                    ...(landingPageData?.services || [])
-                  ];
-                  
-                  // Expanded variation lists - use vertical-specific modifiers
-                  const prefixes = [
-                    ...keywordModifiers.filter(m => !m.includes('near me')), // Location modifiers go to suffixes
-                    ...emergencyModifiers,
-                    'call', 'contact', 'phone', 'reach', 'get', 'find', 'hire', 'book',
-                    'best', 'top', 'professional', 'expert', 'certified', 'licensed', 
-                    'trusted', 'reliable', 'local', 'nearby', 'fast', 'quick', 'easy',
-                    'affordable', 'quality', 'premium', 'experienced', 'free consultation',
-                    'get quote', 'request quote', 'schedule', 'book now', 'call now'
-                  ].slice(0, 30); // Limit to prevent too many iterations
-                  
-                  // Call/Lead focused suffixes - include vertical modifiers
-                  const suffixes = [
-                    ...keywordModifiers.filter(m => m.includes('near me') || m.includes('services')),
-                    'call', 'contact', 'phone', 'call now', 'contact us', 'get quote',
-                    'free consultation', 'schedule', 'book', 'appointment', 'near me',
-                    'service', 'company', 'provider', 'expert', 'professional',
-                    'get started', 'sign up', 'apply now', 'request info', 'learn more',
-                    'pricing', 'quotes', 'rates', 'cost', 'price', 'options', 'solutions'
-                  ].slice(0, 30); // Limit to prevent too many iterations
-                  
-                  // Call/Lead Intent Keywords - Optimized for conversions
-                  const callLeadIntents = [
-                    'call', 'contact', 'reach', 'phone', 'call now', 'contact us', 'get quote',
-                    'request quote', 'free consultation', 'schedule', 'book', 'appointment',
-                    'speak with', 'talk to', 'connect with', 'reach out', 'get in touch',
-                    'call today', 'phone number', 'contact number', 'call us',
-                    'hire', 'book now', 'schedule now', 'get started', 'sign up', 'register',
-                    'apply', 'apply now', 'get quote now', 'request info', 'get info',
-                    'learn more', 'find out more', 'get help', 'need help', 'want to know'
-                  ].slice(0, 20); // Limit to prevent too many iterations
-                  
-                  // Use intent-based keywords if intent is classified
-                  let intents = callLeadIntents; // Default
-                  if (intentResult) {
-                    if (intentResult.intentId === IntentId.CALL) {
-                      intents = ['call', 'contact', 'phone', 'call now', 'contact us', 'reach', 'speak with', 'talk to'];
-                    } else if (intentResult.intentId === IntentId.LEAD) {
-                      intents = ['get quote', 'request quote', 'free consultation', 'schedule', 'book', 'appointment'];
-                    } else if (intentResult.intentId === IntentId.TRAFFIC) {
-                      intents = ['learn more', 'find out more', 'get info', 'visit', 'browse', 'explore'];
-                    }
-                  }
-                  
-                  // Add service tokens as additional seeds if landing page has services
-                  if (allServiceTokens.length > 0 && seedList.length < 10) {
-                    allServiceTokens.slice(0, 5).forEach(service => {
-                      if (!seedList.some(s => s.toLowerCase().includes(service.toLowerCase()))) {
-                        seedList.push(service);
-                      }
-                    });
-                  }
-                  
-                  const locations = [
-                    'near me', 'local', 'nearby', 'in my area', 'close to me', 'nearby me',
-                    'in city', 'in town', 'in state', 'in region', 'in area', 'in location'
-                  ];
-                  
-                  // Helper function to validate keyword length (2-4 words max)
-                  const isValidKeywordLength = (keyword: string): boolean => {
-                    const wordCount = keyword.trim().split(/\s+/).length;
-                    return wordCount >= 2 && wordCount <= 4;
-                  };
-                  
-                  // Helper function to get word count
-                  const getWordCount = (text: string): number => {
-                    return text.trim().split(/\s+/).length;
-                  };
-                  
-                  // Process each seed keyword
-                  for (let seedIdx = 0; seedIdx < seedList.length; seedIdx++) {
-                    const seed = seedList[seedIdx];
-                    const cleanSeed = seed.trim().toLowerCase();
-                    let keywordCounter = 0;
-                    
-                    // Only use seeds that are 1-2 words
-                    const seedWordCount = getWordCount(cleanSeed);
-                    if (seedWordCount > 2) {
-                      // If seed is too long, split it into 2-word phrases
-                      const words = cleanSeed.split(/\s+/);
-                      for (let i = 0; i < words.length - 1; i++) {
-                        const shortSeed = `${words[i]} ${words[i + 1]}`;
-                        if (!negativeList.some(n => shortSeed.includes(n))) {
-                          mockKeywords.push({
-                            id: `kw-${seedIdx}-${keywordCounter++}`,
-                            text: shortSeed,
-                            volume: 'High',
-                            cpc: '$2.50',
-                            type: 'Seed'
-                          });
-                        }
-                      }
-                      continue; // Skip this seed for further generation
-                    }
-                    
-                    // Add the seed keyword itself (if 1-2 words and not in negatives)
-                    if (!negativeList.some(n => cleanSeed.includes(n))) {
-                      mockKeywords.push({
-                        id: `kw-${seedIdx}-${keywordCounter++}`,
-                        text: seed.trim(),
-                        volume: 'High',
-                        cpc: '$2.50',
-                        type: 'Seed'
-                      });
-                    }
-                    
-                    // Generate prefix + seed combinations (limit iterations and stop at 600)
-                    for (let pIdx = 0; pIdx < Math.min(prefixes.length, 20) && mockKeywords.length < 600; pIdx++) {
-                      const prefix = prefixes[pIdx];
-                      const keyword = `${prefix} ${cleanSeed}`;
-                      const wordCount = getWordCount(keyword);
-                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-                        mockKeywords.push({
-                          id: `kw-${seedIdx}-${keywordCounter++}`,
-                          text: keyword,
-                          volume: ['High', 'Medium', 'Low'][pIdx % 3],
-                          cpc: ['$2.50', '$1.80', '$1.20'][pIdx % 3],
-                          type: ['Exact', 'Phrase', 'Broad'][pIdx % 3]
-                        });
-                      }
-                    }
-                    
-                    // Generate seed + suffix combinations (limit iterations and stop at 600)
-                    for (let sIdx = 0; sIdx < Math.min(suffixes.length, 20) && mockKeywords.length < 600; sIdx++) {
-                      const suffix = suffixes[sIdx];
-                      const keyword = `${cleanSeed} ${suffix}`;
-                      const wordCount = getWordCount(keyword);
-                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-                        mockKeywords.push({
-                          id: `kw-${seedIdx}-${keywordCounter++}`,
-                          text: keyword,
-                          volume: ['High', 'Medium', 'Low'][sIdx % 3],
-                          cpc: ['$2.50', '$1.80', '$1.20'][sIdx % 3],
-                          type: ['Exact', 'Phrase', 'Broad'][sIdx % 3]
-                        });
-                      }
-                    }
-                    
-                    // Generate intent + seed combinations (limit iterations and stop at 600)
-                    for (let iIdx = 0; iIdx < Math.min(intents.length, 15) && mockKeywords.length < 600; iIdx++) {
-                      const intent = intents[iIdx];
-                      const keyword = `${intent} ${cleanSeed}`;
-                      const wordCount = getWordCount(keyword);
-                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-                        mockKeywords.push({
-                          id: `kw-${seedIdx}-${keywordCounter++}`,
-                          text: keyword,
-                          volume: 'High',
-                          cpc: '$3.50',
-                          type: 'Exact'
-                        });
-                      }
-                    }
-                    
-                    // Generate seed + location combinations (limit iterations and stop at 600)
-                    for (let lIdx = 0; lIdx < Math.min(locations.length, 6) && mockKeywords.length < 600; lIdx++) {
-                      const loc = locations[lIdx];
-                      const keyword = `${cleanSeed} ${loc}`;
-                      const wordCount = getWordCount(keyword);
-                      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-                        mockKeywords.push({
-                          id: `kw-${seedIdx}-${keywordCounter++}`,
-                          text: keyword,
-                          volume: 'Medium',
-                          cpc: '$4.20',
-                          type: 'Local'
-                        });
-                      }
-                    }
-                    
-                    // Stop processing if we have enough keywords
-                    if (mockKeywords.length >= 600) {
-                      break;
-                    }
-                  }
-                  
-                  // Ensure we have 300-600 keywords
-                  if (mockKeywords.length < 300) {
-                    const needed = 300 - mockKeywords.length;
-                    for (let i = 0; i < needed; i++) {
-                      const base = mockKeywords[i % mockKeywords.length];
-                      const variation = `${base.text} ${i}`;
-                      if (!negativeList.some(n => variation.includes(n))) {
-                        mockKeywords.push({
-                          id: `kw-extra-${i}`,
-                          text: variation,
-                          volume: base.volume,
-                          cpc: base.cpc,
-                          type: base.type
-                        });
-                      }
-                    }
-                  }
-                  
-                  // Limit to 600 max
-                  if (mockKeywords.length > 600) {
-                    mockKeywords.splice(600);
-                  }
-                  
-                  // Skip Google Ads API (always fails due to CORS) - use mock keywords directly
-                  console.log("Using enhanced local keyword generation");
-                  keywords = mockKeywords;
-
-                  // Final filter: Remove any keywords containing negative keywords
-                  const finalKeywords = keywords.filter((k: any) => {
-                    const keywordText = (k.text || k.id || '').toLowerCase();
-                    return !negativeList.some(neg => keywordText.includes(neg));
+                  // Use shared keyword generation utility
+                  console.log("Using shared keyword generation utility");
+                  const keywordsWithBids = generateKeywordsUtil({
+                    seedKeywords,
+                    negativeKeywords,
+                    vertical: selectedVertical,
+                    intentResult,
+                    landingPageData,
+                    maxKeywords: 600,
+                    minKeywords: 300
                   });
 
-                  // Apply bid suggestions to keywords if intent is classified
-                  let keywordsWithBids = finalKeywords;
-                  if (intentResult) {
-                    const baseCPCCents = 2000; // Default $20.00 in cents (adjust based on vertical/geo)
-                    const emergencyMods = getEmergencyModifiers(selectedVertical);
-                    
-                    keywordsWithBids = finalKeywords.map((kw: any) => {
-                      const keywordText = (kw.text || kw.id || '').trim();
-                      const matchType: MatchType = 
-                        kw.type === 'Exact' || keywordText.startsWith('[') ? 'EXACT' :
-                        kw.type === 'Phrase' || keywordText.startsWith('"') ? 'PHRASE' :
-                        'BROAD';
-                      
-                      // Check for emergency modifiers
-                      const hasEmergency = emergencyMods.some(m => 
-                        keywordText.toLowerCase().includes(m.toLowerCase())
-                      );
-                      
-                      const bidResult = suggestBidCents(
-                        baseCPCCents,
-                        intentResult.intentId,
-                        matchType,
-                        hasEmergency ? ['emergency'] : []
-                      );
-                      
-                      return {
-                        ...kw,
-                        suggestedBidCents: bidResult.bid,
-                        suggestedBid: `$${(bidResult.bid / 100).toFixed(2)}`,
-                        bidReason: bidResult.reason,
-                        matchType: matchType,
-                      };
-                    });
-                  }
-
+                  // Keywords already have bid suggestions from the shared utility
                   setGeneratedKeywords(keywordsWithBids);
                   
                   // Auto-select all generated keywords by default
-                  const allKeywordIds = finalKeywords.map(k => k.text || k.id);
+                  const allKeywordIds = keywordsWithBids.map(k => k.text || k.id);
                   setSelectedKeywords(allKeywordIds);
                   
                   // Extract keyword texts for structure-specific grouping
-                  const keywordTexts = keywords.map(k => k.text || k.id);
+                  const keywordTexts = keywordsWithBids.map(k => k.text || k.id);
                   
                   // Populate structure-specific groups
                   if (structureType === 'intent') {
@@ -2017,9 +1762,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     }
                   }
                   
-                  notifications.success(`Generated ${keywords.length} keywords successfully`, {
+                  notifications.success(`Generated ${keywordsWithBids.length} keywords successfully`, {
                     title: 'Keywords Generated',
-                    description: `Found ${keywords.length} keyword suggestions. Review and select the ones you want to use.`,
+                    description: `Found ${keywordsWithBids.length} keyword suggestions. Review and select the ones you want to use.`,
                   });
                 } catch (error) {
                   console.log('ℹ️ Error during keyword generation - using fallback', error);
