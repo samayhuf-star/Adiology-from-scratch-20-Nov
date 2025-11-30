@@ -1416,16 +1416,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardHeader>
           <CardContent className="pt-8">
             <div className="flex flex-wrap gap-5">
-              <div 
-                className="flex items-center space-x-3 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 px-6 py-4 rounded-xl border-2 border-amber-300 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
-                onClick={(e) => {
-                  // Only toggle if click didn't come from checkbox or label
-                  const target = e.target as HTMLElement;
-                  if (target.closest('[role="checkbox"]') || target.closest('label')) {
-                    return;
-                  }
-                  setMatchTypes({ ...matchTypes, broad: !matchTypes.broad });
-                }}
+              <label
+                htmlFor="broad"
+                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
+                  matchTypes.broad
+                    ? 'bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 border-amber-500 shadow-lg scale-105'
+                    : 'bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border-amber-300 hover:border-amber-400 hover:shadow-lg hover:scale-105'
+                }`}
               >
                 <Checkbox
                   id="broad"
@@ -1433,25 +1430,25 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes({ ...matchTypes, broad: !!checked });
                   }}
-                  className="border-amber-500 w-5 h-5"
+                  className="border-amber-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600 data-[state=checked]:border-amber-600"
                 />
-                <Label 
-                  htmlFor="broad" 
-                  className="font-bold text-base text-amber-900 group-hover:text-amber-950 transition-colors cursor-pointer"
+                <span 
+                  className={`font-bold text-base transition-colors cursor-pointer ${
+                    matchTypes.broad 
+                      ? 'text-amber-950' 
+                      : 'text-amber-900 group-hover:text-amber-950'
+                  }`}
                 >
                   Broad Match
-                </Label>
-              </div>
-              <div 
-                className="flex items-center space-x-3 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 px-6 py-4 rounded-xl border-2 border-blue-300 cursor-pointer hover:border-blue-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
-                onClick={(e) => {
-                  // Only toggle if click didn't come from checkbox or label
-                  const target = e.target as HTMLElement;
-                  if (target.closest('[role="checkbox"]') || target.closest('label')) {
-                    return;
-                  }
-                  setMatchTypes({ ...matchTypes, phrase: !matchTypes.phrase });
-                }}
+                </span>
+              </label>
+              <label
+                htmlFor="phrase"
+                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
+                  matchTypes.phrase
+                    ? 'bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-blue-500 shadow-lg scale-105'
+                    : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 border-blue-300 hover:border-blue-400 hover:shadow-lg hover:scale-105'
+                }`}
               >
                 <Checkbox
                   id="phrase"
@@ -1459,25 +1456,25 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes({ ...matchTypes, phrase: !!checked });
                   }}
-                  className="border-blue-500 w-5 h-5"
+                  className="border-blue-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-500 data-[state=checked]:to-cyan-600 data-[state=checked]:border-blue-600"
                 />
-                <Label 
-                  htmlFor="phrase" 
-                  className="font-bold text-base text-blue-900 group-hover:text-blue-950 transition-colors cursor-pointer"
+                <span 
+                  className={`font-bold text-base transition-colors cursor-pointer ${
+                    matchTypes.phrase 
+                      ? 'text-blue-950' 
+                      : 'text-blue-900 group-hover:text-blue-950'
+                  }`}
                 >
                   Phrase Match
-                </Label>
-              </div>
-              <div 
-                className="flex items-center space-x-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 px-6 py-4 rounded-xl border-2 border-emerald-300 cursor-pointer hover:border-emerald-400 hover:shadow-lg hover:scale-105 transition-all duration-300 group flex-1 min-w-[180px]"
-                onClick={(e) => {
-                  // Only toggle if click didn't come from checkbox or label
-                  const target = e.target as HTMLElement;
-                  if (target.closest('[role="checkbox"]') || target.closest('label')) {
-                    return;
-                  }
-                  setMatchTypes({ ...matchTypes, exact: !matchTypes.exact });
-                }}
+                </span>
+              </label>
+              <label
+                htmlFor="exact"
+                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
+                  matchTypes.exact
+                    ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 shadow-lg scale-105'
+                    : 'bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 border-emerald-300 hover:border-emerald-400 hover:shadow-lg hover:scale-105'
+                }`}
               >
                 <Checkbox
                   id="exact"
@@ -1485,15 +1482,18 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes({ ...matchTypes, exact: !!checked });
                   }}
-                  className="border-emerald-500 w-5 h-5"
+                  className="border-emerald-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-600 data-[state=checked]:border-emerald-600"
                 />
-                <Label 
-                  htmlFor="exact" 
-                  className="font-bold text-base text-emerald-900 group-hover:text-emerald-950 transition-colors cursor-pointer"
+                <span 
+                  className={`font-bold text-base transition-colors cursor-pointer ${
+                    matchTypes.exact 
+                      ? 'text-emerald-950' 
+                      : 'text-emerald-900 group-hover:text-emerald-950'
+                  }`}
                 >
                   Exact Match
-                </Label>
-              </div>
+                </span>
+              </label>
             </div>
           </CardContent>
         </Card>
