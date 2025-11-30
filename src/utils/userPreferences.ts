@@ -69,24 +69,42 @@ export function applyUserPreferences(prefs: UserPreferences): void {
   // Apply color theme
   root.setAttribute('data-color-theme', prefs.colorTheme);
   
+  // List of color combination IDs
+  const colorCombinationIds = ['ocean-breeze', 'sunset-glow', 'forest-canopy', 'royal-purple', 'rose-gold', 'midnight-blue', 'tropical-paradise'];
+  
+  // Check if current theme is a color combination
+  const isColorCombination = colorCombinationIds.includes(prefs.colorTheme);
+  const combinationId = prefs.colorCombination || (isColorCombination ? prefs.colorTheme : null);
+  
   // Apply custom color if set
   if (prefs.colorTheme === 'custom' && prefs.customColor) {
     root.style.setProperty('--custom-primary-color', prefs.customColor);
     // Generate complementary colors for gradients
     const complementaryColor = generateComplementaryColor(prefs.customColor);
     root.style.setProperty('--custom-secondary-color', complementaryColor);
-  } else if (prefs.colorCombination) {
+    root.style.removeProperty('--custom-tertiary-color');
+  } else if (combinationId && (isColorCombination || prefs.colorCombination)) {
     // Apply color combination
-    const { getColorCombination } = require('./colorCombinations');
-    const combo = getColorCombination(prefs.colorCombination);
-    if (combo) {
-      root.style.setProperty('--custom-primary-color', combo.primary);
-      root.style.setProperty('--custom-secondary-color', combo.secondary);
-      if (combo.tertiary) {
-        root.style.setProperty('--custom-tertiary-color', combo.tertiary);
+    try {
+      const { getColorCombination } = require('./colorCombinations');
+      const combo = getColorCombination(combinationId);
+      if (combo) {
+        root.style.setProperty('--custom-primary-color', combo.primary);
+        root.style.setProperty('--custom-secondary-color', combo.secondary);
+        if (combo.tertiary) {
+          root.style.setProperty('--custom-tertiary-color', combo.tertiary);
+        } else {
+          root.style.removeProperty('--custom-tertiary-color');
+        }
       }
+    } catch (e) {
+      console.error('Failed to load color combination:', e);
+      root.style.removeProperty('--custom-primary-color');
+      root.style.removeProperty('--custom-secondary-color');
+      root.style.removeProperty('--custom-tertiary-color');
     }
   } else {
+    // Default theme - remove custom colors
     root.style.removeProperty('--custom-primary-color');
     root.style.removeProperty('--custom-secondary-color');
     root.style.removeProperty('--custom-tertiary-color');
