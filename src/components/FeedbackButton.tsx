@@ -77,7 +77,7 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
           >
             <MessageSquare className="w-5 h-5 shrink-0 text-slate-500 group-hover:text-indigo-600" />
             {(sidebarOpen || sidebarHovered) && (
-              <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
+              <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 text-left" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
                 Feedback
               </span>
             )}
@@ -86,7 +86,7 @@ export const FeedbackButton: React.FC<FeedbackButtonProps> = ({
         
         {/* Feedback Dialog */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-[210px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[147px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-indigo-600" />

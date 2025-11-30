@@ -55,12 +55,15 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
       
       const allHistory = await historyService.getAll();
       
-      // Filter only campaign types
-      const campaigns = allHistory.filter(item => 
-        item.type === 'builder-2-campaign' || 
-        item.type === 'campaign' ||
-        item.type?.includes('campaign')
-      ).map(item => ({
+      // Filter only campaign types - check multiple possible type names
+      const campaigns = allHistory.filter(item => {
+        const type = item.type?.toLowerCase() || '';
+        return type === 'builder-2-campaign' || 
+               type === 'campaign' ||
+               type === 'builder-2' ||
+               type.includes('campaign') ||
+               type.includes('builder');
+      }).map(item => ({
         id: item.id,
         name: item.name,
         timestamp: item.timestamp,

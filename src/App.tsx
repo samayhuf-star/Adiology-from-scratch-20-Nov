@@ -702,7 +702,7 @@ const App = () => {
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
-    { id: 'website-templates', label: 'Websites', icon: Layout },
+    { id: 'website-templates', label: 'Web Templates', icon: Layout },
     { 
       id: 'keyword-planner', 
       label: 'Keywords', 
