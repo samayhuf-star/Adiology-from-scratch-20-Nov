@@ -112,7 +112,13 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
           setIsLoading(false);
         }
       } else {
-        // Signup logic
+        // Signup logic - disabled
+        if (SIGNUP_DISABLED) {
+          setError('New signups are currently disabled. Please contact support for access.');
+          setIsLoading(false);
+          return;
+        }
+        
         // Bug_72: Validate that name is not empty or only blank spaces
         const trimmedName = name.trim();
         if (!trimmedName || trimmedName.length === 0) {
