@@ -27,8 +27,8 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Signup is enabled for production
-  const SIGNUP_DISABLED = false;
+  // Signup is disabled temporarily
+  const SIGNUP_DISABLED = true;
 
   // Sync isLogin state when initialMode prop changes
   React.useEffect(() => {
@@ -419,6 +419,7 @@ export const Auth: React.FC<AuthProps> = ({ onLoginSuccess, onBackToHome, initia
                             setIsForgotPassword(false);
                       }}
                       className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                      disabled={SIGNUP_DISABLED}
                     >
                       Sign up
                     </button>
