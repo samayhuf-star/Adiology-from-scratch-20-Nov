@@ -31,7 +31,7 @@ interface Template {
 
 interface TemplateSection {
   id: string;
-  type: 'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer' | 'privacy' | 'terms';
+  type: 'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer' | 'privacy' | 'terms' | 'about';
   title: string;
   content: any;
   styles?: any;
@@ -307,8 +307,8 @@ export const WebsiteTemplates: React.FC = () => {
     });
     
     // Add missing sections with default content (privacy and terms are now only in footer as links)
-    const sectionTypes: Array<'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer'> = 
-      ['hero', 'features', 'services', 'testimonials', 'cta', 'footer'];
+    const sectionTypes: Array<'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer' | 'about'> = 
+      ['hero', 'features', 'services', 'testimonials', 'cta', 'about', 'footer'];
     
     sectionTypes.forEach(type => {
       if (!requiredSections[type]) {
@@ -813,111 +813,183 @@ export const WebsiteTemplates: React.FC = () => {
     
     switch (section.type) {
       case 'hero':
-        return `<section id="${section.id}" class="section" style="position: relative; min-height: 600px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${content.backgroundImage || ''}'); background-size: cover; background-position: center;">
+        return `<section id="${section.id}" class="section" style="position: relative; min-height: 400px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${content.backgroundImage || ''}'); background-size: cover; background-position: center;">
             <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3));"></div>
-            <div style="position: relative; z-index: 10; max-width: 64rem; margin: 0 auto; padding: 2.5rem 1.25rem;">
-                <h1 style="font-size: 3rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">${escapeHtml(content.heading || '')}</h1>
-                <p style="font-size: 1.5rem; margin-bottom: 2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${escapeHtml(content.subheading || '')}</p>
-                <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
-                    <a href="#contact" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s;">${escapeHtml(content.ctaText || 'Get Started')}</a>
-                    <a href="tel:${content.ctaPhoneNumber || content.ctaPhone || ''}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
+            <div style="position: relative; z-index: 10; max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem;">
+                <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); line-height: 1.2;">${escapeHtml(content.heading || '')}</h1>
+                <p style="font-size: 1rem; margin-bottom: 1.5rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); line-height: 1.5;">${escapeHtml(content.subheading || '')}</p>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; width: 100%; max-width: 500px; margin: 0 auto;">
+                    <a href="#contact" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center;">${escapeHtml(content.ctaText || 'Get Started')}</a>
+                    <a href="tel:${content.ctaPhoneNumber || content.ctaPhone || ''}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center;">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
                 </div>
             </div>
+            <style>
+                @media (min-width: 640px) {
+                    #${section.id} { min-height: 500px; }
+                    #${section.id} h1 { font-size: 2.5rem; }
+                    #${section.id} p { font-size: 1.25rem; }
+                    #${section.id} .cta-buttons { flex-direction: row; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} { min-height: 600px; }
+                    #${section.id} h1 { font-size: 3.5rem; }
+                    #${section.id} p { font-size: 1.5rem; }
+                    #${section.id} .cta-buttons { gap: 1rem; }
+                }
+            </style>
     </section>`;
 
       case 'features':
         const features = content.features || [];
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: #f8fafc;">
+        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; background: #f8fafc;">
             <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 3rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style="gap: 2rem;">
+                <h2 style="font-size: 1.75rem; font-weight: 700; text-align: center; margin-bottom: 2rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style="gap: 1.5rem;">
                     ${features.map((feature: any) => `
-                        <div style="background: white; padding: 2rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <div style="font-size: 3.75rem; margin-bottom: 1rem;">${escapeHtml(feature.icon || '')}</div>
-                            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem; color: #4f46e5;">${escapeHtml(feature.title || '')}</h3>
-                            <p style="color: #64748b;">${escapeHtml(feature.description || '')}</p>
+                        <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div style="font-size: 3rem; margin-bottom: 0.75rem;">${escapeHtml(feature.icon || '')}</div>
+                            <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #4f46e5;">${escapeHtml(feature.title || '')}</h3>
+                            <p style="color: #64748b; font-size: 0.875rem;">${escapeHtml(feature.description || '')}</p>
                         </div>
                     `).join('')}
                 </div>
             </div>
+            <style>
+                @media (min-width: 640px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
+                    #${section.id} .feature-card { padding: 2rem; }
+                    #${section.id} .feature-icon { font-size: 3.5rem; }
+                    #${section.id} .feature-title { font-size: 1.25rem; }
+                    #${section.id} .feature-desc { font-size: 1rem; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                    #${section.id} h2 { font-size: 3rem; margin-bottom: 3rem; }
+                    #${section.id} .feature-icon { font-size: 3.75rem; }
+                }
+            </style>
         </section>`;
 
       case 'services':
         const services = content.services || [];
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: white;">
+        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; background: white;">
             <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                ${content.subheading ? `<p style="text-align: center; color: #64748b; margin-bottom: 3rem; font-size: 1.25rem;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style="gap: 2rem;">
+                <h2 style="font-size: 1.75rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1rem;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem;">
                     ${services.map((service: any) => `
                         <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
-                            ${service.image ? `<img src="${service.image}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 12rem; object-fit: cover;">` : '<div style="width: 100%; height: 12rem; background: #f1f5f9;"></div>'}
-                            <div style="padding: 1.5rem;">
-                                <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a;">${escapeHtml(service.title || '')}</h3>
-                                <p style="color: #64748b; margin-bottom: 1rem;">${escapeHtml(service.description || '')}</p>
-                                ${service.price ? `<p style="color: #4f46e5; font-weight: 700; font-size: 1.125rem;">${escapeHtml(service.price)}</p>` : ''}
+                            ${service.image ? `<img src="${service.image}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 10rem; object-fit: cover;">` : '<div style="width: 100%; height: 10rem; background: #f1f5f9;"></div>'}
+                            <div style="padding: 1.25rem;">
+                                <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a;">${escapeHtml(service.title || '')}</h3>
+                                <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.875rem;">${escapeHtml(service.description || '')}</p>
+                                ${service.price ? `<p style="color: #4f46e5; font-weight: 700; font-size: 1rem;">${escapeHtml(service.price)}</p>` : ''}
                             </div>
                         </div>
                     `).join('')}
                 </div>
             </div>
+            <style>
+                @media (min-width: 640px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} h2 { font-size: 2.25rem; }
+                    #${section.id} .subheading { font-size: 1.125rem; margin-bottom: 2.5rem; }
+                    #${section.id} .service-image { height: 12rem; }
+                    #${section.id} .service-content { padding: 1.5rem; }
+                    #${section.id} .service-title { font-size: 1.25rem; }
+                    #${section.id} .service-desc { font-size: 1rem; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                    #${section.id} h2 { font-size: 3rem; }
+                    #${section.id} .subheading { font-size: 1.25rem; margin-bottom: 3rem; }
+                }
+            </style>
         </section>`;
 
       case 'testimonials':
         const testimonials = content.testimonials || [];
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: #f8fafc;">
+        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; background: #f8fafc;">
             <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 3rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style="gap: 2rem;">
+                <h2 style="font-size: 1.75rem; font-weight: 700; text-align: center; margin-bottom: 2rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem;">
                     ${testimonials.map((testimonial: any) => `
-                        <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                                ${testimonial.avatar ? `<img src="${testimonial.avatar}" alt="${escapeHtml(testimonial.name || '')}" style="width: 3rem; height: 3rem; border-radius: 50%; margin-right: 1rem; object-fit: cover;">` : '<div style="width: 3rem; height: 3rem; border-radius: 50%; margin-right: 1rem; background: #e2e8f0;"></div>'}
+                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
+                                ${testimonial.avatar ? `<img src="${testimonial.avatar}" alt="${escapeHtml(testimonial.name || '')}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; object-fit: cover;">` : '<div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; background: #e2e8f0;"></div>'}
                                 <div>
-                                    <h4 style="font-weight: 600; color: #0f172a;">${escapeHtml(testimonial.name || '')}</h4>
-                                    ${testimonial.company ? `<p style="font-size: 0.875rem; color: #64748b;">${escapeHtml(testimonial.company)}</p>` : ''}
+                                    <h4 style="font-weight: 600; color: #0f172a; font-size: 0.9375rem;">${escapeHtml(testimonial.name || '')}</h4>
+                                    ${testimonial.company ? `<p style="font-size: 0.75rem; color: #64748b;">${escapeHtml(testimonial.company)}</p>` : ''}
                                 </div>
                             </div>
-                            ${testimonial.rating ? `<div style="display: flex; margin-bottom: 0.75rem; color: #fbbf24; font-size: 1.125rem;">${'★'.repeat(testimonial.rating)}${'☆'.repeat(5 - testimonial.rating)}</div>` : ''}
-                            <p style="color: #334155; font-style: italic;">"${escapeHtml(testimonial.text || '')}"</p>
+                            ${testimonial.rating ? `<div style="display: flex; margin-bottom: 0.5rem; color: #fbbf24; font-size: 1rem;">${'★'.repeat(testimonial.rating)}${'☆'.repeat(5 - testimonial.rating)}</div>` : ''}
+                            <p style="color: #334155; font-style: italic; font-size: 0.875rem; line-height: 1.5;">"${escapeHtml(testimonial.text || '')}"</p>
                         </div>
                     `).join('')}
                 </div>
             </div>
+            <style>
+                @media (min-width: 640px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
+                    #${section.id} .testimonial-card { padding: 1.5rem; }
+                    #${section.id} .testimonial-avatar { width: 3rem; height: 3rem; }
+                    #${section.id} .testimonial-text { font-size: 1rem; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                    #${section.id} h2 { font-size: 3rem; margin-bottom: 3rem; }
+                }
+            </style>
         </section>`;
 
       case 'cta':
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; text-align: center; color: white; background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; text-align: center; color: white; background: linear-gradient(135deg, #4f46e5, #7c3aed);">
             <div style="max-width: 64rem; margin: 0 auto;">
-                <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem;">${escapeHtml(content.heading || '')}</h2>
-                ${content.subheading ? `<p style="font-size: 1.5rem; margin-bottom: 2rem; opacity: 0.9;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; align-items: center; margin-bottom: 2rem;">
-                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${content.phoneNumber || content.phone}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s;">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
-                    ${content.email ? `<a href="mailto:${content.email}" style="padding: 1rem 2rem; font-size: 1.125rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s;">✉️ Email Us</a>` : ''}
+                <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="font-size: 1rem; margin-bottom: 1.5rem; opacity: 0.9;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; align-items: center; margin-bottom: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${content.phoneNumber || content.phone}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center;">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
+                    ${content.email ? `<a href="mailto:${content.email}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center;">✉️ Email Us</a>` : ''}
                 </div>
-                ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1.5rem;"><span>🕐</span><p style="opacity: 0.9;">${escapeHtml(content.hours)}</p></div>` : ''}
+                ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.875rem;"><span>🕐</span><p style="opacity: 0.9;">${escapeHtml(content.hours)}</p></div>` : ''}
             </div>
+            <style>
+                @media (min-width: 640px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} h2 { font-size: 2.25rem; }
+                    #${section.id} .subheading { font-size: 1.25rem; margin-bottom: 2rem; }
+                    #${section.id} .cta-buttons { flex-direction: row; gap: 1rem; }
+                    #${section.id} .cta-buttons a { width: auto; min-width: 200px; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                    #${section.id} h2 { font-size: 3rem; }
+                    #${section.id} .subheading { font-size: 1.5rem; }
+                }
+            </style>
         </section>`;
 
       case 'footer':
-        return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 4rem 1.25rem 2rem;">
+        return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 3rem 1rem 1.5rem;">
             <div style="max-width: 72rem; margin: 0 auto;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2rem;">
                     <div>
-                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem; line-height: 1.5;">${escapeHtml(content.companyName || 'Company Name')}</h4>
-                        ${content.tagline ? `<p style="color: #94a3b8; margin-bottom: 1rem; line-height: 1.6;">${escapeHtml(content.tagline)}</p>` : ''}
-                        ${content.address ? `<p style="color: #94a3b8; line-height: 1.6; margin: 0;">${escapeHtml(content.address)}</p>` : ''}
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.75rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.companyName || 'Company Name')}</h4>
+                        ${content.tagline ? `<p style="color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.6; font-size: 0.875rem;">${escapeHtml(content.tagline)}</p>` : ''}
+                        ${content.address ? `<p style="color: #94a3b8; line-height: 1.6; margin: 0; font-size: 0.875rem;">${escapeHtml(content.address)}</p>` : ''}
                     </div>
                     <div>
-                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem; line-height: 1.5;">Contact</h4>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.75rem; font-size: 1rem; line-height: 1.5;">Contact</h4>
                         <ul style="list-style: none; padding: 0; margin: 0; color: #94a3b8;">
-                            ${(content.phoneNumber || content.phone) ? `<li style="margin-bottom: 0.5rem;"><a href="tel:${content.phoneNumber || content.phone}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></li>` : ''}
-                            ${content.email ? `<li style="margin-bottom: 0.5rem;"><a href="mailto:${content.email}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.email)}</a></li>` : ''}
+                            ${(content.phoneNumber || content.phone) ? `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="tel:${content.phoneNumber || content.phone}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></li>` : ''}
+                            ${content.email ? `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="mailto:${content.email}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.email)}</a></li>` : ''}
                         </ul>
                     </div>
                     ${(content.links || []).length > 0 ? `
                         <div>
-                            <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1.125rem; line-height: 1.5;">Quick Links</h4>
+                            <h4 style="color: white; font-weight: 600; margin-bottom: 0.75rem; font-size: 1rem; line-height: 1.5;">Quick Links</h4>
                             <ul style="list-style: none; padding: 0; margin: 0; color: #94a3b8;">
                                 ${content.links.map((link: any) => {
                                   const isPrivacyLink = link.text === 'Privacy Policy';
@@ -925,16 +997,28 @@ export const WebsiteTemplates: React.FC = () => {
                                   if (isPrivacyLink || isTermsLink) {
                                     // For HTML export, link to the section ID
                                     const sectionId = isPrivacyLink ? 'privacy-1' : 'terms-1';
-                                    return `<li style="margin-bottom: 0.5rem;"><a href="#${sectionId}" style="color: #94a3b8; text-decoration: underline; cursor: pointer; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
+                                    return `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="#${sectionId}" style="color: #94a3b8; text-decoration: underline; cursor: pointer; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
                                   }
-                                  return `<li style="margin-bottom: 0.5rem;"><a href="${link.href || '#'}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
+                                  return `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="${link.href || '#'}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
                                 }).join('')}
                             </ul>
                         </div>
                     ` : ''}
                 </div>
-                ${content.copyright ? `<div style="padding-top: 2rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.875rem; margin-top: 2rem;">${escapeHtml(content.copyright)}</div>` : ''}
+                ${content.copyright ? `<div style="padding-top: 1.5rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 1.5rem;">${escapeHtml(content.copyright)}</div>` : ''}
             </div>
+            <style>
+                @media (min-width: 640px) {
+                    #${section.id} { padding: 4rem 1.5rem 2rem; }
+                    #${section.id} .footer-content { grid-template-columns: repeat(2, 1fr); }
+                    #${section.id} h4 { font-size: 1.125rem; }
+                    #${section.id} p, #${section.id} li { font-size: 1rem; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} .footer-content { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                    #${section.id} .copyright { font-size: 0.875rem; }
+                }
+            </style>
         </footer>`;
 
       case 'privacy':
@@ -2211,7 +2295,7 @@ const renderSectionPreview = (
     case 'hero':
       return (
         <section 
-          className="relative min-h-[600px] flex items-center justify-center text-white"
+          className="relative min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center text-white"
           style={{
             backgroundImage: `url(${section.content.backgroundImage || ''})`,
             backgroundSize: 'cover',
@@ -2228,10 +2312,11 @@ const renderSectionPreview = (
           
           {/* Background Image Editor */}
           {editMode && (
-            <div className="absolute top-4 right-4 z-20">
-              <label className="bg-white/90 text-slate-700 px-3 py-2 rounded-lg cursor-pointer hover:bg-white text-sm flex items-center gap-2 shadow-lg">
-                <ImageIcon className="w-4 h-4" />
-                Change Image
+            <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20">
+              <label className="bg-white/90 text-slate-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg cursor-pointer hover:bg-white text-xs sm:text-sm flex items-center gap-1 sm:gap-2 shadow-lg">
+                <ImageIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Change Image</span>
+                <span className="sm:hidden">Image</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -2243,13 +2328,13 @@ const renderSectionPreview = (
           )}
           
           {/* Hero Content - matches template.html structure */}
-          <div className="relative z-10 max-w-4xl mx-auto px-5 py-10 text-center">
+          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-5 md:px-6 py-6 sm:py-8 md:py-10 text-center">
             {editMode ? (
               <>
                 <h1 
                   contentEditable
                   suppressContentEditableWarning
-                  className="text-5xl md:text-6xl font-extrabold mb-4 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-3 sm:mb-4 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text leading-tight"
                   style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
                   onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
                   onKeyDown={(e) => {
@@ -2264,7 +2349,7 @@ const renderSectionPreview = (
                 <p 
                   contentEditable
                   suppressContentEditableWarning
-                  className="text-xl md:text-2xl mb-8 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-white outline-none hover:outline-2 hover:outline-white hover:outline-dashed rounded px-2 py-1 cursor-text leading-relaxed"
                   style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
                   onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
                   onKeyDown={(e) => {
@@ -2276,12 +2361,12 @@ const renderSectionPreview = (
                 >
                   {section.content.subheading}
                 </p>
-                <div className="flex flex-wrap gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
                   <a 
                     href="#contact"
                     contentEditable
                     suppressContentEditableWarning
-                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-white hover:outline-dashed cursor-text min-h-[44px] flex items-center justify-center"
                     onBlur={(e) => handleTextEdit('ctaText', e.currentTarget.textContent || '')}
                   >
                 {section.content.ctaText}
@@ -2290,7 +2375,7 @@ const renderSectionPreview = (
                     href={`tel:${section.content.ctaPhoneNumber || section.content.ctaPhone || ''}`}
                     contentEditable
                     suppressContentEditableWarning
-                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed cursor-text min-h-[44px] flex items-center justify-center"
                     onBlur={(e) => {
                       const text = e.currentTarget.textContent || '';
                       const phone = text.replace('📞', '').trim();
@@ -2304,27 +2389,27 @@ const renderSectionPreview = (
             ) : (
               <>
                 <h1 
-                  className="text-5xl md:text-6xl font-extrabold mb-4 text-white"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold mb-3 sm:mb-4 text-white leading-tight"
                   style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
                 >
                   {section.content.heading}
                 </h1>
                 <p 
-                  className="text-xl md:text-2xl mb-8 text-white"
+                  className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-white leading-relaxed"
                   style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
                 >
                   {section.content.subheading}
                 </p>
-                <div className="flex flex-wrap gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
                   <a 
                     href="#contact"
-                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all hover:shadow-lg hover:-translate-y-0.5 min-h-[44px] flex items-center justify-center"
                   >
                     {section.content.ctaText}
                   </a>
                   <a 
                     href={`tel:${section.content.ctaPhoneNumber || section.content.ctaPhone || ''}`}
-                    className="px-8 py-4 text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5"
+                    className="px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 text-sm sm:text-base md:text-lg font-semibold rounded-lg bg-white hover:bg-slate-100 text-indigo-600 transition-all hover:shadow-lg hover:-translate-y-0.5 min-h-[44px] flex items-center justify-center"
                   >
                     📞 {section.content.ctaPhoneDisplay || section.content.ctaPhone || ''}
                   </a>
@@ -2337,34 +2422,34 @@ const renderSectionPreview = (
     
     case 'features':
       return (
-        <section className="py-20 px-5 bg-slate-50" id="features">
+        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-5 md:px-6 bg-slate-50" id="features">
           <div className="max-w-6xl mx-auto">
             {editMode ? (
               <h2 
                 contentEditable
                 suppressContentEditableWarning
-                  className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900 outline-none hover:outline-3 hover:outline-indigo-500 hover:outline-dashed rounded px-2 py-1 cursor-text hover:bg-indigo-50/50 transition-all"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-8 sm:mb-10 md:mb-12 text-slate-900 outline-none hover:outline-3 hover:outline-indigo-500 hover:outline-dashed rounded px-2 py-1 cursor-text hover:bg-indigo-50/50 transition-all"
                 onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
               >
                 {section.content.heading}
               </h2>
             ) : (
-              <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 text-slate-900">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-8 sm:mb-10 md:mb-12 text-slate-900">
                 {section.content.heading}
               </h2>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
               {section.content.features?.map((feature: any, idx: number) => (
                 <div 
                   key={idx} 
-                  className="bg-white p-8 rounded-xl text-center shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                  className="bg-white p-4 sm:p-6 md:p-8 rounded-xl text-center shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
                 >
                   {editMode ? (
                     <>
                       <div 
                         contentEditable
                         suppressContentEditableWarning
-                        className="text-6xl mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded cursor-text"
+                        className="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded cursor-text"
                         onBlur={(e) => {
                           if (onUpdate) {
                             const newFeatures = [...(section.content.features || [])];
@@ -2378,7 +2463,7 @@ const renderSectionPreview = (
                       <h3 
                         contentEditable
                         suppressContentEditableWarning
-                        className="text-xl font-semibold mb-3 text-indigo-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                        className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-indigo-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
                         onBlur={(e) => {
                           if (onUpdate) {
                             const newFeatures = [...(section.content.features || [])];
@@ -2392,7 +2477,7 @@ const renderSectionPreview = (
                       <p 
                         contentEditable
                         suppressContentEditableWarning
-                        className="text-slate-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                        className="text-sm sm:text-base text-slate-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
                         onBlur={(e) => {
                           if (onUpdate) {
                             const newFeatures = [...(section.content.features || [])];
@@ -2406,9 +2491,9 @@ const renderSectionPreview = (
                     </>
                   ) : (
                     <>
-                      <div className="text-6xl mb-4">{feature.icon}</div>
-                      <h3 className="text-xl font-semibold mb-3 text-indigo-600">{feature.title}</h3>
-                  <p className="text-slate-600">{feature.description}</p>
+                      <div className="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">{feature.icon}</div>
+                      <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-indigo-600">{feature.title}</h3>
+                  <p className="text-sm sm:text-base text-slate-600">{feature.description}</p>
                     </>
                   )}
                 </div>
@@ -2420,14 +2505,14 @@ const renderSectionPreview = (
     
     case 'services':
       return (
-        <section className="py-20 px-5 bg-white" id="services">
+        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-5 md:px-6 bg-white" id="services">
           <div className="max-w-6xl mx-auto">
             {editMode ? (
               <>
                 <h2 
                   contentEditable
                   suppressContentEditableWarning
-                  className="text-4xl md:text-5xl font-bold text-center mb-4 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-3 sm:mb-4 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
                   onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
                 >
                   {section.content.heading}
@@ -2436,7 +2521,7 @@ const renderSectionPreview = (
                   <p 
                     contentEditable
                     suppressContentEditableWarning
-                    className="text-center text-slate-600 mb-12 text-xl outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                    className="text-center text-slate-600 mb-8 sm:mb-10 md:mb-12 text-base sm:text-lg md:text-xl outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
                     onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
                   >
                     {section.content.subheading}
@@ -2445,17 +2530,17 @@ const renderSectionPreview = (
               </>
             ) : (
               <>
-                <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-slate-900">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-3 sm:mb-4 text-slate-900">
                   {section.content.heading}
                 </h2>
                 {section.content.subheading && (
-                  <p className="text-center text-slate-600 mb-12 text-xl">
+                  <p className="text-center text-slate-600 mb-8 sm:mb-10 md:mb-12 text-base sm:text-lg md:text-xl">
                     {section.content.subheading}
                   </p>
                 )}
               </>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {section.content.services?.map((service: any, idx: number) => (
                 <div 
                   key={idx} 
@@ -2839,192 +2924,345 @@ const renderSectionPreview = (
         </section>
       );
     
-    case 'footer':
-      // Find privacy and terms sections from the template
-      const getPolicySection = (type: 'privacy' | 'terms'): TemplateSection | null => {
-        // This will be passed from parent component
-        return null;
-      };
-
+    case 'about':
       return (
-        <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-300 py-20 px-5 border-t-4 border-indigo-600">
+        <section className="py-20 px-5 bg-gradient-to-b from-white via-slate-50 to-white" id="about">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-12" style={{ alignItems: 'start' }}>
-              {/* Company Info Column */}
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              {/* Left side - Content */}
+              <div>
                 {editMode ? (
-                  <h4 
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="text-white font-bold mb-4 text-xl outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text bg-indigo-500/20"
-                    onBlur={(e) => handleTextEdit('companyName', e.currentTarget.textContent || '')}
-                  >
-                    {section.content.companyName || 'Company Name'}
-                  </h4>
-                ) : (
-                  <h4 className="text-white font-bold mb-4 text-xl leading-tight">
-                    {section.content.companyName || 'Company Name'}
-                  </h4>
-                )}
-                {editMode ? (
-                  <p 
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="text-indigo-300 mb-4 font-medium outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text leading-relaxed bg-indigo-500/10"
-                    onBlur={(e) => handleTextEdit('tagline', e.currentTarget.textContent || '')}
-                  >
-                    {section.content.tagline || ''}
-                  </p>
-                ) : (
-                  <p className="text-indigo-300 mb-4 font-medium leading-relaxed">{section.content.tagline || ''}</p>
-                )}
-                {section.content.address && (
-                  editMode ? (
-                    <p 
+                  <>
+                    <h2 
                       contentEditable
                       suppressContentEditableWarning
-                      className="text-slate-400 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text leading-relaxed bg-indigo-500/10"
-                      onBlur={(e) => handleTextEdit('address', e.currentTarget.textContent || '')}
+                      className="text-4xl md:text-5xl font-bold mb-4 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                      onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
                     >
-                      📍 {section.content.address}
-                    </p>
-                  ) : (
-                    <p className="text-slate-400 leading-relaxed flex items-start gap-2">
-                      <span>📍</span>
-                      <span>{section.content.address}</span>
-                    </p>
-                  )
+                      {section.content.heading || 'About Our Company'}
+                    </h2>
+                    {section.content.subheading && (
+                      <p 
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-xl text-indigo-600 font-semibold mb-6 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
+                      >
+                        {section.content.subheading}
+                      </p>
+                    )}
+                    {section.content.description && (
+                      <p 
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-lg text-slate-600 mb-8 leading-relaxed outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        onBlur={(e) => handleTextEdit('description', e.currentTarget.textContent || '')}
+                      >
+                        {section.content.description}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
+                      {section.content.heading || 'About Our Company'}
+                    </h2>
+                    {section.content.subheading && (
+                      <p className="text-xl text-indigo-600 font-semibold mb-6">
+                        {section.content.subheading}
+                      </p>
+                    )}
+                    {section.content.description && (
+                      <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                        {section.content.description}
+                      </p>
+                    )}
+                  </>
+                )}
+                
+                {/* Stats */}
+                {section.content.stats && section.content.stats.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                    {section.content.stats.map((stat: any, idx: number) => (
+                      <div key={idx} className="text-center">
+                        {editMode ? (
+                          <>
+                            <div
+                              contentEditable
+                              suppressContentEditableWarning
+                              className="text-3xl font-bold text-indigo-600 mb-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                              onBlur={(e) => {
+                                if (onUpdate) {
+                                  const newStats = [...(section.content.stats || [])];
+                                  newStats[idx] = { ...newStats[idx], number: e.currentTarget.textContent || '' };
+                                  onUpdate(section.id, 'stats', newStats);
+                                }
+                              }}
+                            >
+                              {stat.number}
+                            </div>
+                            <div
+                              contentEditable
+                              suppressContentEditableWarning
+                              className="text-sm text-slate-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                              onBlur={(e) => {
+                                if (onUpdate) {
+                                  const newStats = [...(section.content.stats || [])];
+                                  newStats[idx] = { ...newStats[idx], label: e.currentTarget.textContent || '' };
+                                  onUpdate(section.id, 'stats', newStats);
+                                }
+                              }}
+                            >
+                              {stat.label}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-3xl font-bold text-indigo-600 mb-2">{stat.number}</div>
+                            <div className="text-sm text-slate-600">{stat.label}</div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Values */}
+                {section.content.values && section.content.values.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {section.content.values.map((value: any, idx: number) => (
+                      <div key={idx} className="flex items-start gap-4">
+                        <span className="text-3xl flex-shrink-0">{value.icon || '✓'}</span>
+                        <div>
+                          {editMode ? (
+                            <>
+                              <h3
+                                contentEditable
+                                suppressContentEditableWarning
+                                className="font-semibold text-slate-900 mb-1 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                                onBlur={(e) => {
+                                  if (onUpdate) {
+                                    const newValues = [...(section.content.values || [])];
+                                    newValues[idx] = { ...newValues[idx], title: e.currentTarget.textContent || '' };
+                                    onUpdate(section.id, 'values', newValues);
+                                  }
+                                }}
+                              >
+                                {value.title}
+                              </h3>
+                              <p
+                                contentEditable
+                                suppressContentEditableWarning
+                                className="text-sm text-slate-600 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                                onBlur={(e) => {
+                                  if (onUpdate) {
+                                    const newValues = [...(section.content.values || [])];
+                                    newValues[idx] = { ...newValues[idx], description: e.currentTarget.textContent || '' };
+                                    onUpdate(section.id, 'values', newValues);
+                                  }
+                                }}
+                              >
+                                {value.description}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <h3 className="font-semibold text-slate-900 mb-1">{value.title}</h3>
+                              <p className="text-sm text-slate-600">{value.description}</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Right side - Image */}
+              <div>
+                {section.content.image ? (
+                  <img 
+                    src={section.content.image} 
+                    alt="About us"
+                    className="w-full rounded-xl shadow-2xl object-cover"
+                    style={{ minHeight: '400px' }}
+                  />
+                ) : editMode ? (
+                  <div className="w-full bg-slate-200 rounded-xl flex items-center justify-center" style={{ minHeight: '400px' }}>
+                    <span className="text-slate-400 text-lg">Add an image</span>
+                  </div>
+                ) : (
+                  <div className="w-full bg-slate-200 rounded-xl flex items-center justify-center" style={{ minHeight: '400px' }}>
+                    <span className="text-6xl opacity-50">📷</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    
+    case 'footer':
+      return (
+        <footer className="bg-slate-900 text-white py-12 px-5">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
+              {/* Company Info Column */}
+              <div>
+                {editMode ? (
+                  <>
+                    <h4 
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="text-white font-bold mb-3 text-lg outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                      onBlur={(e) => handleTextEdit('companyName', e.currentTarget.textContent || '')}
+                    >
+                      {section.content.companyName || section.content.columns?.[0]?.title || 'Company Name'}
+                    </h4>
+                    {section.content.tagline && (
+                      <p 
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-slate-300 mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        onBlur={(e) => handleTextEdit('tagline', e.currentTarget.textContent || '')}
+                      >
+                        {section.content.tagline}
+                      </p>
+                    )}
+                    {section.content.address && (
+                      <p 
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-slate-400 flex items-start gap-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        onBlur={(e) => {
+                          const text = e.currentTarget.textContent || '';
+                          const address = text.replace('📍', '').trim();
+                          handleTextEdit('address', address);
+                        }}
+                      >
+                        <span>📍</span>
+                        <span>{section.content.address}</span>
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h4 className="text-white font-bold mb-3 text-lg">
+                      {section.content.companyName || section.content.columns?.[0]?.title || 'Company Name'}
+                    </h4>
+                    {section.content.tagline && (
+                      <p className="text-slate-300 mb-4">{section.content.tagline}</p>
+                    )}
+                    {section.content.address && (
+                      <p className="text-slate-400 flex items-start gap-2">
+                        <span>📍</span>
+                        <span>{section.content.address}</span>
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
               
               {/* Contact Column */}
-              <div className="space-y-3">
-                <h4 className="text-white font-bold mb-4 text-xl leading-tight">Contact</h4>
-                <ul className="space-y-3 text-slate-300 list-none p-0 m-0">
-                  {section.content.phone && (
-                    <li className="mb-2">
-                      {editMode ? (
-                        <a 
-                          href={`tel:${section.content.phone}`} 
-                          contentEditable
-                          suppressContentEditableWarning
-                          className="hover:text-indigo-300 transition-colors outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text no-underline flex items-center gap-2 bg-indigo-500/10"
-                          onBlur={(e) => {
-                            const text = e.currentTarget.textContent || '';
-                            const phone = text.replace('📞', '').trim();
-                            handleTextEdit('phone', phone);
-                          }}
-                        >
-                          <span>📞</span>
-                          <span>{section.content.phone}</span>
-                        </a>
-                      ) : (
-                        <a href={`tel:${section.content.phone}`} className="hover:text-indigo-300 transition-colors no-underline flex items-center gap-2">
-                          <span>📞</span>
-                          <span>{section.content.phone}</span>
-                        </a>
-                      )}
-                    </li>
-                  )}
-                  {section.content.email && (
-                    <li className="mb-2">
-                      {editMode ? (
-                        <a 
-                          href={`mailto:${section.content.email}`} 
-                          contentEditable
-                          suppressContentEditableWarning
-                          className="hover:text-indigo-300 transition-colors outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text no-underline flex items-center gap-2 bg-indigo-500/10"
-                          onBlur={(e) => {
-                            const text = e.currentTarget.textContent || '';
-                            const email = text.replace('✉️', '').trim();
-                            handleTextEdit('email', email);
-                          }}
-                        >
-                          <span>✉️</span>
-                          <span>{section.content.email}</span>
-                        </a>
-                      ) : (
-                        <a href={`mailto:${section.content.email}`} className="hover:text-indigo-300 transition-colors no-underline flex items-center gap-2">
-                          <span>✉️</span>
-                          <span>{section.content.email}</span>
-                        </a>
-                      )}
-                    </li>
-                  )}
-                </ul>
+              <div>
+                <h4 className="text-white font-bold mb-3 text-lg">Contact</h4>
+                {section.content.phone && (
+                  <p className="text-slate-300 mb-2 flex items-center gap-2">
+                    <span>📞</span>
+                    {editMode ? (
+                      <span
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        onBlur={(e) => {
+                          const text = e.currentTarget.textContent || '';
+                          handleTextEdit('phone', text);
+                        }}
+                      >
+                        {section.content.phone}
+                      </span>
+                    ) : (
+                      <a href={`tel:${section.content.phone}`} className="hover:text-indigo-300 transition-colors">
+                        {section.content.phone}
+                      </a>
+                    )}
+                  </p>
+                )}
+                {section.content.email && (
+                  <p className="text-slate-300 flex items-center gap-2">
+                    <span>✉️</span>
+                    {editMode ? (
+                      <span
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        onBlur={(e) => {
+                          const text = e.currentTarget.textContent || '';
+                          handleTextEdit('email', text);
+                        }}
+                      >
+                        {section.content.email}
+                      </span>
+                    ) : (
+                      <a href={`mailto:${section.content.email}`} className="hover:text-indigo-300 transition-colors">
+                        {section.content.email}
+                      </a>
+                    )}
+                  </p>
+                )}
               </div>
               
               {/* Quick Links Column */}
-              {section.content.links && section.content.links.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-white font-bold mb-4 text-xl leading-tight">Quick Links</h4>
-                  <ul className="space-y-3 text-slate-300 list-none p-0 m-0">
-                    {section.content.links.map((link: any, linkIdx: number) => {
-                      const isPrivacyLink = link.text === 'Privacy Policy';
-                      const isTermsLink = link.text === 'Terms of Service';
-                      return (
-                        <li key={linkIdx} className="mb-2">
-                          {isPrivacyLink || isTermsLink ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (onPolicyLinkClick) {
-                                  onPolicyLinkClick(isPrivacyLink ? 'privacy' : 'terms');
-                                }
-                              }}
-                              className="hover:text-indigo-300 transition-colors text-left cursor-pointer underline bg-transparent border-0 p-0 text-slate-300 hover:bg-indigo-500/10 rounded px-2 py-1"
-                            >
-                              {link.text}
-                            </button>
-                          ) : (
-                            <a href={link.href || '#'} className="hover:text-indigo-300 transition-colors no-underline hover:bg-indigo-500/10 rounded px-2 py-1 block">
-                              {link.text}
-                            </a>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-              
-              {/* Additional Columns from content.columns */}
-              {section.content.columns?.map((column: any, idx: number) => (
-                <div key={idx}>
-                  {column.title && (
-                    <h4 className="text-white font-semibold mb-4 text-lg leading-tight">{column.title}</h4>
-                  )}
-                  <ul className="space-y-2 text-slate-400 list-none p-0 m-0">
-                    {column.links?.map((link: any, linkIdx: number) => (
-                      <li key={linkIdx} className="mb-2">
-                        <a href={link.url || '#'} className="hover:text-white transition-colors no-underline">
-                          {link.text}
-                        </a>
+              <div>
+                <h4 className="text-white font-bold mb-3 text-lg">Quick Links</h4>
+                <ul className="space-y-2 text-slate-300 list-none p-0 m-0">
+                  {(section.content.links || section.content.columns?.[2]?.links || []).map((link: any, linkIdx: number) => {
+                    const isPrivacyLink = link.text === 'Privacy Policy';
+                    const isTermsLink = link.text === 'Terms of Service';
+                    return (
+                      <li key={linkIdx}>
+                        {isPrivacyLink || isTermsLink ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (onPolicyLinkClick) {
+                                onPolicyLinkClick(isPrivacyLink ? 'privacy' : 'terms');
+                              }
+                            }}
+                            className="hover:text-indigo-300 transition-colors text-left cursor-pointer underline bg-transparent border-0 p-0 text-slate-300"
+                          >
+                            {link.text}
+                          </button>
+                        ) : (
+                          <a href={link.href || link.url || '#'} className="hover:text-indigo-300 transition-colors no-underline block">
+                            {link.text}
+                          </a>
+                        )}
                       </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
             
-            {/* Footer Bottom */}
-            {section.content.copyright && (
-              <div className="pt-8 mt-8 border-t-2 border-slate-700/50 text-center text-slate-400 text-sm font-medium">
-                {editMode ? (
-                  <p
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
-                    onBlur={(e) => handleTextEdit('copyright', e.currentTarget.textContent || '')}
-                  >
-                    {section.content.copyright}
-                  </p>
-                ) : (
-                  section.content.copyright
-                )}
-              </div>
-            )}
+            {/* Footer Bottom - Copyright */}
+            <div className="pt-8 mt-8 border-t border-slate-700 text-center">
+              {editMode ? (
+                <p
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="text-slate-400 text-sm outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                  onBlur={(e) => handleTextEdit('copyright', e.currentTarget.textContent || '')}
+                >
+                  {section.content.copyright || `© ${new Date().getFullYear()} All rights reserved.`}
+                </p>
+              ) : (
+                <p className="text-slate-400 text-sm">
+                  {section.content.copyright || `© ${new Date().getFullYear()} All rights reserved.`}
+                </p>
+              )}
+            </div>
           </div>
         </footer>
       );
