@@ -26,7 +26,6 @@ import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
-import HomePageComplete from './components/HomePageComplete';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
 import { PaymentPage } from './components/PaymentPage';
@@ -49,7 +48,7 @@ type AppView = 'home' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'adm
 
 const App = () => {
   const { theme } = useTheme();
-  const [appView, setAppView] = useState<AppView>('home');
+  const [appView, setAppView] = useState<AppView>('auth');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -577,26 +576,20 @@ const App = () => {
         return;
       }
 
-      // Preserve home page when on root path - don't auto-redirect logged-in users
-      // This prevents the home page from disappearing when a user is logged in
+      // Show auth screen on root path instead of home page
       if (path === '/' || path === '') {
-        // If already on home view, preserve it (even if user is logged in)
-        if (appView === 'home') {
+        // If user is logged in, go to user dashboard
+        if (user) {
+          setView('user');
           return;
         }
-        // If not on home and no user, go to home
-        if (!user) {
-          setView('home');
-          return;
-        }
-        // If user exists but we're on root, default to home (not user view)
-        // Users can manually navigate to dashboard via login/signup buttons
-        setView('home');
+        // If no user, show auth/login screen
+        setView('auth');
         return;
       }
 
       // For non-root paths, use normal logic
-      setView(user ? 'user' : 'home');
+      setView(user ? 'user' : 'auth');
     };
 
     handleRoute();
@@ -642,7 +635,7 @@ const App = () => {
               setAppView('user');
           }
         } else {
-          setAppView('home');
+          setAppView('auth');
         }
       }
     };
@@ -954,26 +947,6 @@ const App = () => {
     }
   };
 
-  // Homepage view - Using HomePageComplete (new homepage)
-  if (appView === 'home') {
-    // Debug: Log which homepage component is being used
-    if (typeof window !== 'undefined' && !(window as any).__homepage_logged) {
-      console.log('✅ Using HomePageComplete component (new homepage)');
-      (window as any).__homepage_logged = true;
-    }
-    return (
-      <HomePageComplete
-        onGetStarted={() => {
-          setAuthMode('signup');
-          setAppView('auth');
-        }}
-        onLogin={() => {
-          setAuthMode('login');
-          setAppView('auth');
-        }}
-      />
-    );
-  }
 
   if (appView === 'payment' && selectedPlan) {
     return (
@@ -1352,7 +1325,11 @@ const App = () => {
                   setActiveTabSafe(item.id);
                     }
                 }}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer ${
+                  className={`w-full flex items-center gap-2 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer ${
+                    !(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) 
+                      ? 'justify-center px-2' 
+                      : 'justify-between px-3'
+                  } ${
                   isActive
                       ? `bg-gradient-to-r ${COLOR_CLASSES.primaryGradient} text-white shadow-lg shadow-indigo-300/40`
                       : hasActiveSubmenu
@@ -1361,7 +1338,7 @@ const App = () => {
                 }`}
                 style={{ minWidth: 0 }}
               >
-                  <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+                  <div className={`flex items-center flex-1 min-w-0 overflow-hidden ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center' : 'gap-2'}`}>
                     <Icon className={`w-5 h-5 shrink-0 ${isActive || hasActiveSubmenu ? 'text-white' : `text-slate-500 ${COLOR_CLASSES.primaryTextHover}`}`} />
                 {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
                   <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1" style={{ fontSize: 'clamp(0.8125rem, 2.5vw, 0.9375rem)' }}>
@@ -1373,8 +1350,8 @@ const App = () => {
                     <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${isActive || hasActiveSubmenu ? 'text-white' : 'text-slate-400'}`} />
                   )}
                 </button>
-                {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && hasSubmenu && isExpanded && (
-                  <div className="ml-4 mt-1 space-y-1 border-l-2 border-slate-200 pl-2">
+                {hasSubmenu && isExpanded && (
+                  <div className={`mt-1 space-y-1 ${(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'ml-4 border-l-2 border-slate-200 pl-2' : ''}`}>
                     {item.submenu?.map((subItem) => {
                       const SubIcon = subItem.icon;
                       const isSubActive = activeTab === subItem.id;
@@ -1388,13 +1365,15 @@ const App = () => {
                             isSubActive
                               ? `bg-indigo-100 text-indigo-700 shadow-sm border border-indigo-200`
                               : `text-slate-600 hover:bg-indigo-50/50`
-                          }`}
+                          } ${!(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'justify-center' : ''}`}
                           style={{ minWidth: 0 }}
                         >
                           <SubIcon className={`w-4 h-4 shrink-0 ${isSubActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                          <span className={`font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`} style={{ fontSize: 'clamp(0.75rem, 2.2vw, 0.8125rem)' }}>
-                            {subItem.label}
-                          </span>
+                          {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) && (
+                            <span className={`font-medium whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${isSubActive ? 'text-indigo-700' : 'text-slate-600'}`} style={{ fontSize: 'clamp(0.75rem, 2.2vw, 0.8125rem)' }}>
+                              {subItem.label}
+                            </span>
+                          )}
               </button>
                       );
                     })}
