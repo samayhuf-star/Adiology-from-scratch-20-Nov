@@ -43,12 +43,13 @@ import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
+import HomePage from './components/HomePage';
 
-type AppView = 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
+type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
 const App = () => {
   const { theme } = useTheme();
-  const [appView, setAppView] = useState<AppView>('auth');
+  const [appView, setAppView] = useState<AppView>('homepage');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -576,15 +577,15 @@ const App = () => {
         return;
       }
 
-      // Show auth screen on root path instead of home page
+      // Show homepage on root path
       if (path === '/' || path === '') {
         // If user is logged in, go to user dashboard
         if (user) {
           setView('user');
           return;
         }
-        // If no user, show auth/login screen
-        setView('auth');
+        // If no user, show homepage
+        setView('homepage');
         return;
       }
 
@@ -635,7 +636,12 @@ const App = () => {
               setAppView('user');
           }
         } else {
-          setAppView('auth');
+          // Show homepage on root path, auth for other paths
+          if (path === '/' || path === '') {
+            setAppView('homepage');
+          } else {
+            setAppView('auth');
+          }
         }
       }
     };
@@ -910,7 +916,7 @@ const App = () => {
           setAppView('auth');
         }}
         onBackToHome={() => {
-          setAppView('auth');
+          setAppView('homepage');
           setAuthMode('login');
         }}
       />
@@ -927,8 +933,23 @@ const App = () => {
           setAppView('auth');
         }}
         onBackToHome={() => {
-          setAppView('auth');
+          setAppView('homepage');
           setAuthMode('login');
+        }}
+      />
+    );
+  }
+
+  if (appView === 'homepage') {
+    return (
+      <HomePage
+        onGetStarted={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
         }}
       />
     );
@@ -986,7 +1007,7 @@ const App = () => {
           }
         }}
         onBackToHome={() => {
-          setAppView('auth');
+          setAppView('homepage');
           setAuthMode('login');
         }}
       />
