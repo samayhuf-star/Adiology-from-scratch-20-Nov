@@ -190,8 +190,33 @@ const defaultTemplate: Template = {
   ]
 };
 
+// Function to reorder sections so "about" comes right after "hero"
+const reorderSections = (sections: TemplateSection[]): TemplateSection[] => {
+  if (!sections || sections.length === 0) return sections;
+  
+  const heroIndex = sections.findIndex(s => s.type === 'hero');
+  const aboutIndex = sections.findIndex(s => s.type === 'about');
+  
+  // If both hero and about exist, reorder them
+  if (heroIndex !== -1 && aboutIndex !== -1 && aboutIndex !== heroIndex + 1) {
+    const newSections = [...sections];
+    const aboutSection = newSections.splice(aboutIndex, 1)[0];
+    // Insert about section right after hero
+    newSections.splice(heroIndex + 1, 0, aboutSection);
+    return newSections;
+  }
+  
+  return sections;
+};
+
 export const WebsiteTemplates: React.FC = () => {
-  const [baseTemplates] = useState<Template[]>(importedTemplates as Template[]);
+  // Reorder sections in all imported templates so "about" comes after "hero"
+  const reorderedTemplates = (importedTemplates as Template[]).map(template => ({
+    ...template,
+    sections: reorderSections(template.sections)
+  }));
+  
+  const [baseTemplates] = useState<Template[]>(reorderedTemplates);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<SavedTemplate | null>(null);
@@ -307,8 +332,9 @@ export const WebsiteTemplates: React.FC = () => {
     });
     
     // Add missing sections with default content (privacy and terms are now only in footer as links)
+    // Order: hero, about, features, services, testimonials, cta, footer
     const sectionTypes: Array<'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer' | 'about'> = 
-      ['hero', 'features', 'services', 'testimonials', 'cta', 'about', 'footer'];
+      ['hero', 'about', 'features', 'services', 'testimonials', 'cta', 'footer'];
     
     sectionTypes.forEach(type => {
       if (!requiredSections[type]) {
@@ -549,7 +575,7 @@ export const WebsiteTemplates: React.FC = () => {
     });
     
     // Return sections in the correct order, preserving any additional sections
-    const orderedSections = sectionTypes.map(type => requiredSections[type]);
+    const orderedSections = sectionTypes.map(type => requiredSections[type]).filter(Boolean);
     
     // Add any additional sections that weren't in the standard list
     sections.forEach(section => {
@@ -558,7 +584,8 @@ export const WebsiteTemplates: React.FC = () => {
       }
     });
     
-    return orderedSections;
+    // Reorder to ensure about comes right after hero
+    return reorderSections(orderedSections);
   };
 
   const handleViewTemplate = (template: Template | SavedTemplate) => {
