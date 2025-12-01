@@ -174,17 +174,28 @@ const defaultTemplate: Template = {
       type: 'footer',
       title: 'Footer',
       content: {
-        companyName: 'Professional Services',
-        tagline: 'Your trusted partner for excellence',
-        address: '123 Business Street, City, State 12345',
-        phone: '1-800-123-4567',
-        email: 'info@yourcompany.com',
-        links: [
-          { text: 'Privacy Policy', href: '#privacy' },
-          { text: 'Terms of Service', href: '#terms' },
-          { text: 'Cookie Policy', href: '#cookies' }
+        contactTitle: 'Contact us',
+        address: '1th Avenue, New York - United States',
+        phone: '+22 342 2345 345 | Fax: +22 724 2342 343',
+        email: 'info@example.com',
+        skype: 'my-company',
+        mailingListTitle: 'Mailing list',
+        mailingListDescription: 'Lorem ipsum dolor sit amet, ea eum labitur scsstie percipitoleat.',
+        followUsTitle: 'Follow us',
+        socialIcons: [
+          { name: 'Facebook', icon: 'f', href: '#' },
+          { name: 'Google+', icon: 'g+', href: '#' },
+          { name: 'YouTube', icon: '▶', href: '#' },
+          { name: 'Dribbble', icon: 'b', href: '#' },
+          { name: 'LinkedIn', icon: 'in', href: '#' },
+          { name: 'Twitter', icon: '🐦', href: '#' },
+          { name: 'RSS', icon: 'S', href: '#' },
+          { name: 'Pinterest', icon: 'P', href: '#' }
         ],
-        copyright: `© ${new Date().getFullYear()} Professional Services. All rights reserved.`
+        latestNewsTitle: 'Latest News',
+        latestNewsDescription: 'Lorem ipsum dolor labitur scsstie per sit amet, ea eum labitur scsstie percipitoleat.',
+        latestNewsButtonText: 'Get Mores!',
+        copyright: `© ${new Date().getFullYear()} All rights reserved.`
       }
     }
   ]
@@ -547,24 +558,28 @@ export const WebsiteTemplates: React.FC = () => {
               type: 'footer',
               title: 'Footer',
               content: {
-                columns: [
-                  {
-                    title: 'Company',
-                    links: [
-                      { text: 'About Us', url: '#about' },
-                      { text: 'Services', url: '#services' },
-                      { text: 'Contact', url: '#contact' }
-                    ]
-                  },
-                  {
-                    title: 'Legal',
-                    links: [
-                      { text: 'Privacy Policy', url: '#privacy' },
-                      { text: 'Terms of Service', url: '#terms' }
-                    ]
-                  }
+                contactTitle: 'Contact us',
+                address: '1th Avenue, New York - United States',
+                phone: '+22 342 2345 345 | Fax: +22 724 2342 343',
+                email: 'info@example.com',
+                skype: 'my-company',
+                mailingListTitle: 'Mailing list',
+                mailingListDescription: 'Lorem ipsum dolor sit amet, ea eum labitur scsstie percipitoleat.',
+                followUsTitle: 'Follow us',
+                socialIcons: [
+                  { name: 'Facebook', icon: 'f', href: '#' },
+                  { name: 'Google+', icon: 'g+', href: '#' },
+                  { name: 'YouTube', icon: '▶', href: '#' },
+                  { name: 'Dribbble', icon: 'b', href: '#' },
+                  { name: 'LinkedIn', icon: 'in', href: '#' },
+                  { name: 'Twitter', icon: '🐦', href: '#' },
+                  { name: 'RSS', icon: 'S', href: '#' },
+                  { name: 'Pinterest', icon: 'P', href: '#' }
                 ],
-                copyright: `© ${new Date().getFullYear()} Your Company. All rights reserved.`
+                latestNewsTitle: 'Latest News',
+                latestNewsDescription: 'Lorem ipsum dolor labitur scsstie per sit amet, ea eum labitur scsstie percipitoleat.',
+                latestNewsButtonText: 'Get Mores!',
+                copyright: `© ${new Date().getFullYear()} All rights reserved.`
               }
             };
             break;
@@ -800,17 +815,78 @@ export const WebsiteTemplates: React.FC = () => {
     <title>${escapeHtml(template.name)}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-        .section { padding: 80px 0; }
-        a { text-decoration: none; color: inherit; }
-        img { max-width: 100%; height: auto; }
-        .grid { display: grid; gap: 2rem; }
-        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        html { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            overflow-x: hidden;
+            width: 100%;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 1rem; 
+            width: 100%;
+        }
+        .section { 
+            padding: 3rem 1rem; 
+            width: 100%;
+            overflow-x: hidden;
+        }
+        a { 
+            text-decoration: none; 
+            color: inherit; 
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        }
+        img { 
+            max-width: 100%; 
+            height: auto; 
+            display: block;
+        }
+        button, a[href^="tel:"], a[href^="mailto:"] {
+            min-height: 44px;
+            min-width: 44px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        }
+        .grid { 
+            display: grid; 
+            gap: 1.5rem; 
+            width: 100%;
+        }
+        .grid-cols-1 { 
+            grid-template-columns: repeat(1, minmax(0, 1fr)); 
+        }
+        h1, h2, h3, h4, h5, h6 {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        p, span, div {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        @media (max-width: 639px) {
+            .section { padding: 2rem 1rem; }
+            h1 { font-size: 1.75rem !important; line-height: 1.2; }
+            h2 { font-size: 1.5rem !important; line-height: 1.3; }
+            h3 { font-size: 1.25rem !important; line-height: 1.4; }
+            p { font-size: 0.9375rem; }
+            button, a[href^="tel:"], a[href^="mailto:"] {
+                font-size: 1rem;
+                padding: 0.875rem 1.25rem;
+            }
+        }
         @media (min-width: 640px) {
+            .container { padding: 0 1.5rem; }
+            .section { padding: 4rem 1.5rem; }
             .sm\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (min-width: 768px) {
+            .container { padding: 0 2rem; }
+            .section { padding: 5rem 2rem; }
             .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .md\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .md\\:text-2xl { font-size: 1.5rem; }
@@ -840,22 +916,28 @@ export const WebsiteTemplates: React.FC = () => {
     
     switch (section.type) {
       case 'hero':
-        return `<section id="${section.id}" class="section" style="position: relative; min-height: 400px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${content.backgroundImage || ''}'); background-size: cover; background-position: center;">
+        return `<section id="${section.id}" class="section" style="position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${content.backgroundImage || ''}'); background-size: cover; background-position: center; width: 100%; overflow-x: hidden;">
             <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3));"></div>
-            <div style="position: relative; z-index: 10; max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem;">
-                <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); line-height: 1.2;">${escapeHtml(content.heading || '')}</h1>
-                <p style="font-size: 1rem; margin-bottom: 1.5rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); line-height: 1.5;">${escapeHtml(content.subheading || '')}</p>
+            <div style="position: relative; z-index: 10; max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem; width: 100%;">
+                <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); line-height: 1.2; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h1>
+                <p style="font-size: 0.9375rem; margin-bottom: 1.5rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading || '')}</p>
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; width: 100%; max-width: 500px; margin: 0 auto;">
-                    <a href="#contact" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center;">${escapeHtml(content.ctaText || 'Get Started')}</a>
-                    <a href="tel:${content.ctaPhoneNumber || content.ctaPhone || ''}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center;">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
+                    <a href="#contact" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.2);">${escapeHtml(content.ctaText || 'Get Started')}</a>
+                    <a href="tel:${content.ctaPhoneNumber || content.ctaPhone || ''}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
                 </div>
             </div>
             <style>
+                @media (max-width: 639px) {
+                    #${section.id} { min-height: 300px; padding: 2rem 1rem; }
+                    #${section.id} h1 { font-size: 1.75rem !important; }
+                    #${section.id} p { font-size: 0.9375rem !important; }
+                }
                 @media (min-width: 640px) {
                     #${section.id} { min-height: 500px; }
                     #${section.id} h1 { font-size: 2.5rem; }
                     #${section.id} p { font-size: 1.25rem; }
                     #${section.id} .cta-buttons { flex-direction: row; }
+                    #${section.id} .cta-buttons a { width: auto; min-width: 200px; }
                 }
                 @media (min-width: 768px) {
                     #${section.id} { min-height: 600px; }
@@ -868,20 +950,24 @@ export const WebsiteTemplates: React.FC = () => {
 
       case 'features':
         const features = content.features || [];
-        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; background: #f8fafc;">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 1.75rem; font-weight: 700; text-align: center; margin-bottom: 2rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style="gap: 1.5rem;">
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: #f8fafc; width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style="gap: 1.5rem; width: 100%;">
                     ${features.map((feature: any) => `
-                        <div style="background: white; padding: 1.5rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            <div style="font-size: 3rem; margin-bottom: 0.75rem;">${escapeHtml(feature.icon || '')}</div>
-                            <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #4f46e5;">${escapeHtml(feature.title || '')}</h3>
-                            <p style="color: #64748b; font-size: 0.875rem;">${escapeHtml(feature.description || '')}</p>
+                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%;">
+                            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">${escapeHtml(feature.icon || '')}</div>
+                            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #4f46e5; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(feature.title || '')}</h3>
+                            <p style="color: #64748b; font-size: 0.875rem; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.5;">${escapeHtml(feature.description || '')}</p>
                         </div>
                     `).join('')}
                 </div>
             </div>
             <style>
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem; }
+                    #${section.id} h2 { font-size: 1.5rem !important; margin-bottom: 1.5rem; }
+                }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
                     #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
@@ -900,17 +986,17 @@ export const WebsiteTemplates: React.FC = () => {
 
       case 'services':
         const services = content.services || [];
-        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; background: white;">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 1.75rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                ${content.subheading ? `<p style="text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1rem;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem;">
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: white; width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="text-align: center; color: #64748b; margin-bottom: 1.5rem; font-size: 0.9375rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem; width: 100%;">
                     ${services.map((service: any) => `
-                        <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
-                            ${service.image ? `<img src="${service.image}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 10rem; object-fit: cover;">` : '<div style="width: 100%; height: 10rem; background: #f1f5f9;"></div>'}
+                        <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; width: 100%;">
+                            ${service.image ? `<img src="${service.image}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 10rem; object-fit: cover; display: block;">` : '<div style="width: 100%; height: 10rem; background: #f1f5f9;"></div>'}
                             <div style="padding: 1.25rem;">
-                                <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a;">${escapeHtml(service.title || '')}</h3>
-                                <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.875rem;">${escapeHtml(service.description || '')}</p>
+                                <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(service.title || '')}</h3>
+                                <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.875rem; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.5;">${escapeHtml(service.description || '')}</p>
                                 ${service.price ? `<p style="color: #4f46e5; font-weight: 700; font-size: 1rem;">${escapeHtml(service.price)}</p>` : ''}
                             </div>
                         </div>
@@ -918,6 +1004,10 @@ export const WebsiteTemplates: React.FC = () => {
                 </div>
             </div>
             <style>
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem; }
+                    #${section.id} h2 { font-size: 1.5rem !important; }
+                }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
                     #${section.id} h2 { font-size: 2.25rem; }
@@ -937,26 +1027,30 @@ export const WebsiteTemplates: React.FC = () => {
 
       case 'testimonials':
         const testimonials = content.testimonials || [];
-        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; background: #f8fafc;">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 1.75rem; font-weight: 700; text-align: center; margin-bottom: 2rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem;">
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: #f8fafc; width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem; width: 100%;">
                     ${testimonials.map((testimonial: any) => `
-                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%;">
                             <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
-                                ${testimonial.avatar ? `<img src="${testimonial.avatar}" alt="${escapeHtml(testimonial.name || '')}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; object-fit: cover;">` : '<div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; background: #e2e8f0;"></div>'}
-                                <div>
-                                    <h4 style="font-weight: 600; color: #0f172a; font-size: 0.9375rem;">${escapeHtml(testimonial.name || '')}</h4>
-                                    ${testimonial.company ? `<p style="font-size: 0.75rem; color: #64748b;">${escapeHtml(testimonial.company)}</p>` : ''}
+                                ${testimonial.avatar ? `<img src="${testimonial.avatar}" alt="${escapeHtml(testimonial.name || '')}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; object-fit: cover; flex-shrink: 0;">` : '<div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; background: #e2e8f0; flex-shrink: 0;"></div>'}
+                                <div style="min-width: 0; flex: 1;">
+                                    <h4 style="font-weight: 600; color: #0f172a; font-size: 0.9375rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(testimonial.name || '')}</h4>
+                                    ${testimonial.company ? `<p style="font-size: 0.75rem; color: #64748b; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(testimonial.company)}</p>` : ''}
                                 </div>
                             </div>
-                            ${testimonial.rating ? `<div style="display: flex; margin-bottom: 0.5rem; color: #fbbf24; font-size: 1rem;">${'★'.repeat(testimonial.rating)}${'☆'.repeat(5 - testimonial.rating)}</div>` : ''}
-                            <p style="color: #334155; font-style: italic; font-size: 0.875rem; line-height: 1.5;">"${escapeHtml(testimonial.text || '')}"</p>
+                            ${testimonial.rating ? `<div style="display: flex; margin-bottom: 0.5rem; color: #fbbf24; font-size: 1rem; flex-wrap: wrap;">${'★'.repeat(testimonial.rating)}${'☆'.repeat(5 - testimonial.rating)}</div>` : ''}
+                            <p style="color: #334155; font-style: italic; font-size: 0.875rem; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word;">"${escapeHtml(testimonial.text || '')}"</p>
                         </div>
                     `).join('')}
                 </div>
             </div>
             <style>
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem; }
+                    #${section.id} h2 { font-size: 1.5rem !important; margin-bottom: 1.5rem; }
+                }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
                     #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
@@ -972,17 +1066,21 @@ export const WebsiteTemplates: React.FC = () => {
         </section>`;
 
       case 'cta':
-        return `<section id="${section.id}" class="section" style="padding: 3rem 1rem; text-align: center; color: white; background: linear-gradient(135deg, #4f46e5, #7c3aed);">
-            <div style="max-width: 64rem; margin: 0 auto;">
-                <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem;">${escapeHtml(content.heading || '')}</h2>
-                ${content.subheading ? `<p style="font-size: 1rem; margin-bottom: 1.5rem; opacity: 0.9;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; align-items: center; margin-bottom: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto;">
-                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${content.phoneNumber || content.phone}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center;">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
-                    ${content.email ? `<a href="mailto:${content.email}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center;">✉️ Email Us</a>` : ''}
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; text-align: center; color: white; background: linear-gradient(135deg, #4f46e5, #7c3aed); width: 100%; overflow-x: hidden;">
+            <div style="max-width: 64rem; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="font-size: 0.9375rem; margin-bottom: 1.5rem; opacity: 0.9; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; align-items: center; margin-bottom: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto; width: 100%;">
+                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${content.phoneNumber || content.phone}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
+                    ${content.email ? `<a href="mailto:${content.email}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.1);">✉️ Email Us</a>` : ''}
                 </div>
-                ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.875rem;"><span>🕐</span><p style="opacity: 0.9;">${escapeHtml(content.hours)}</p></div>` : ''}
+                ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.875rem; flex-wrap: wrap;"><span>🕐</span><p style="opacity: 0.9; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.hours)}</p></div>` : ''}
             </div>
             <style>
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem; }
+                    #${section.id} h2 { font-size: 1.5rem !important; }
+                }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
                     #${section.id} h2 { font-size: 2.25rem; }
@@ -999,38 +1097,57 @@ export const WebsiteTemplates: React.FC = () => {
         </section>`;
 
       case 'footer':
-        return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 3rem 1rem 1.5rem;">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <div style="display: grid; grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2rem;">
+        const socialIconsHtml = (content.socialIcons || [
+          { name: 'Facebook', icon: 'f', href: '#' },
+          { name: 'Google+', icon: 'g+', href: '#' },
+          { name: 'YouTube', icon: '▶', href: '#' },
+          { name: 'Dribbble', icon: 'b', href: '#' },
+          { name: 'LinkedIn', icon: 'in', href: '#' },
+          { name: 'Twitter', icon: '🐦', href: '#' },
+          { name: 'RSS', icon: 'S', href: '#' },
+          { name: 'Pinterest', icon: 'P', href: '#' }
+        ]).map((icon: any) => 
+          `<a href="${icon.href || '#'}" style="width: 2.5rem; height: 2.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; transition: all 0.2s; font-size: 0.875rem; font-weight: 600;">${escapeHtml(icon.icon || icon.name?.[0] || '?')}</a>`
+        ).join('');
+        
+        return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 2rem 1rem 1.5rem; width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 2rem; margin-bottom: 2rem; width: 100%;" class="footer-content">
+                    <!-- Contact us Column -->
                     <div>
-                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.75rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.companyName || 'Company Name')}</h4>
-                        ${content.tagline ? `<p style="color: #94a3b8; margin-bottom: 0.75rem; line-height: 1.6; font-size: 0.875rem;">${escapeHtml(content.tagline)}</p>` : ''}
-                        ${content.address ? `<p style="color: #94a3b8; line-height: 1.6; margin: 0; font-size: 0.875rem;">${escapeHtml(content.address)}</p>` : ''}
-                    </div>
-                    <div>
-                        <h4 style="color: white; font-weight: 600; margin-bottom: 0.75rem; font-size: 1rem; line-height: 1.5;">Contact</h4>
-                        <ul style="list-style: none; padding: 0; margin: 0; color: #94a3b8;">
-                            ${(content.phoneNumber || content.phone) ? `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="tel:${content.phoneNumber || content.phone}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></li>` : ''}
-                            ${content.email ? `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="mailto:${content.email}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.email)}</a></li>` : ''}
-                        </ul>
-                    </div>
-                    ${(content.links || []).length > 0 ? `
-                        <div>
-                            <h4 style="color: white; font-weight: 600; margin-bottom: 0.75rem; font-size: 1rem; line-height: 1.5;">Quick Links</h4>
-                            <ul style="list-style: none; padding: 0; margin: 0; color: #94a3b8;">
-                                ${content.links.map((link: any) => {
-                                  const isPrivacyLink = link.text === 'Privacy Policy';
-                                  const isTermsLink = link.text === 'Terms of Service';
-                                  if (isPrivacyLink || isTermsLink) {
-                                    // For HTML export, link to the section ID
-                                    const sectionId = isPrivacyLink ? 'privacy-1' : 'terms-1';
-                                    return `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="#${sectionId}" style="color: #94a3b8; text-decoration: underline; cursor: pointer; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
-                                  }
-                                  return `<li style="margin-bottom: 0.5rem; font-size: 0.875rem;"><a href="${link.href || '#'}" style="color: #94a3b8; text-decoration: none; transition: color 0.2s;">${escapeHtml(link.text || '')}</a></li>`;
-                                }).join('')}
-                            </ul>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.contactTitle || 'Contact us')}</h4>
+                        <div style="color: #94a3b8; font-size: 0.875rem; line-height: 1.8;">
+                            ${content.address ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: start; gap: 0.5rem;"><span>📍</span><span>${escapeHtml(content.address)}</span></p>` : ''}
+                            ${(content.phoneNumber || content.phone) ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>📞</span><a href="tel:${content.phoneNumber || content.phone}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></p>` : ''}
+                            ${content.email ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>✉️</span><a href="mailto:${content.email}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.email)}</a></p>` : ''}
+                            ${content.skype ? `<p style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span>💬</span><a href="skype:${content.skype}?chat" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.skype)}</a></p>` : ''}
                         </div>
-                    ` : ''}
+                    </div>
+                    
+                    <!-- Mailing list Column -->
+                    <div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.mailingListTitle || 'Mailing list')}</h4>
+                        ${content.mailingListDescription ? `<p style="color: #94a3b8; font-size: 0.875rem; line-height: 1.6; margin-bottom: 1rem;">${escapeHtml(content.mailingListDescription)}</p>` : ''}
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="email" placeholder="Your email address..." style="flex: 1; padding: 0.5rem 0.75rem; background: #1e293b; border: 1px solid #334155; border-radius: 0.25rem; color: white; font-size: 0.875rem;" />
+                            <button style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">Go!</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Follow us Column -->
+                    <div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.followUsTitle || 'Follow us')}</h4>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; max-width: 12rem;">
+                            ${socialIconsHtml}
+                        </div>
+                    </div>
+                    
+                    <!-- Latest News Column -->
+                    <div>
+                        <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.latestNewsTitle || 'Latest News')}</h4>
+                        ${content.latestNewsDescription ? `<p style="color: #94a3b8; font-size: 0.875rem; line-height: 1.6; margin-bottom: 1rem;">${escapeHtml(content.latestNewsDescription)}</p>` : ''}
+                        <button style="width: 100%; padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">${escapeHtml(content.latestNewsButtonText || 'Get Mores!')}</button>
+                    </div>
                 </div>
                 ${content.copyright ? `<div style="padding-top: 1.5rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 1.5rem;">${escapeHtml(content.copyright)}</div>` : ''}
             </div>
@@ -1042,7 +1159,7 @@ export const WebsiteTemplates: React.FC = () => {
                     #${section.id} p, #${section.id} li { font-size: 1rem; }
                 }
                 @media (min-width: 768px) {
-                    #${section.id} .footer-content { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+                    #${section.id} .footer-content { grid-template-columns: repeat(4, 1fr); }
                     #${section.id} .copyright { font-size: 0.875rem; }
                 }
             </style>
@@ -2175,57 +2292,148 @@ const SectionEditor: React.FC<{
       case 'footer':
         return (
           <div className="space-y-4">
+            {/* Contact us Section */}
+            <div className="border-b pb-4">
+              <Label className="text-base font-semibold mb-3 block">Contact us</Label>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    value={section.content.contactTitle || 'Contact us'}
+                    onChange={(e) => onUpdate('contactTitle', e.target.value)}
+                    className="mt-1"
+                    placeholder="Contact us"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Address</Label>
+                  <Input
+                    value={section.content.address || ''}
+                    onChange={(e) => onUpdate('address', e.target.value)}
+                    className="mt-1"
+                    placeholder="1th Avenue, New York - United States"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Phone</Label>
+                  <Input
+                    value={section.content.phone || ''}
+                    onChange={(e) => onUpdate('phone', e.target.value)}
+                    className="mt-1"
+                    placeholder="+22 342 2345 345"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Email</Label>
+                  <Input
+                    type="email"
+                    value={section.content.email || ''}
+                    onChange={(e) => onUpdate('email', e.target.value)}
+                    className="mt-1"
+                    placeholder="info@example.com"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Skype</Label>
+                  <Input
+                    value={section.content.skype || ''}
+                    onChange={(e) => onUpdate('skype', e.target.value)}
+                    className="mt-1"
+                    placeholder="my-company"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Mailing list Section */}
+            <div className="border-b pb-4">
+              <Label className="text-base font-semibold mb-3 block">Mailing list</Label>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    value={section.content.mailingListTitle || 'Mailing list'}
+                    onChange={(e) => onUpdate('mailingListTitle', e.target.value)}
+                    className="mt-1"
+                    placeholder="Mailing list"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    value={section.content.mailingListDescription || ''}
+                    onChange={(e) => onUpdate('mailingListDescription', e.target.value)}
+                    className="mt-1"
+                    placeholder="Lorem ipsum dolor sit amet, ea eum labitur scsstie percipitoleat."
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Follow us Section */}
+            <div className="border-b pb-4">
+              <Label className="text-base font-semibold mb-3 block">Follow us</Label>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    value={section.content.followUsTitle || 'Follow us'}
+                    onChange={(e) => onUpdate('followUsTitle', e.target.value)}
+                    className="mt-1"
+                    placeholder="Follow us"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500">Social media icons are automatically displayed</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* Latest News Section */}
+            <div className="border-b pb-4">
+              <Label className="text-base font-semibold mb-3 block">Latest News</Label>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    value={section.content.latestNewsTitle || 'Latest News'}
+                    onChange={(e) => onUpdate('latestNewsTitle', e.target.value)}
+                    className="mt-1"
+                    placeholder="Latest News"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    value={section.content.latestNewsDescription || ''}
+                    onChange={(e) => onUpdate('latestNewsDescription', e.target.value)}
+                    className="mt-1"
+                    placeholder="Lorem ipsum dolor labitur scsstie per sit amet, ea eum labitur scsstie percipitoleat."
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Button Text</Label>
+                  <Input
+                    value={section.content.latestNewsButtonText || 'Get Mores!'}
+                    onChange={(e) => onUpdate('latestNewsButtonText', e.target.value)}
+                    className="mt-1"
+                    placeholder="Get Mores!"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Copyright */}
             <div>
               <Label>Copyright Text</Label>
               <Input
                 value={section.content.copyright || ''}
                 onChange={(e) => onUpdate('copyright', e.target.value)}
                 className="mt-2"
+                placeholder={`© ${new Date().getFullYear()} All rights reserved.`}
               />
-            </div>
-            <div>
-              <Label className="mb-2 block">Footer Columns</Label>
-              <ScrollArea className="h-64 border rounded-md p-4">
-                <div className="space-y-4">
-                  {(section.content.columns || []).map((column: any, idx: number) => (
-                    <div key={idx} className="border-b pb-4 space-y-2">
-                      <Input
-                        placeholder="Column Title"
-                        value={column.title || ''}
-                        onChange={(e) => updateArrayItem('columns', idx, 'title', e.target.value)}
-                        className="mb-2"
-                      />
-                      <Label className="text-xs">Links</Label>
-                      {(column.links || []).map((link: any, linkIdx: number) => (
-                        <div key={linkIdx} className="flex gap-2 mb-2">
-                          <Input
-                            placeholder="Link Text"
-                            value={link.text || ''}
-                            onChange={(e) => {
-                              const newColumns = [...(section.content.columns || [])];
-                              if (!newColumns[idx].links) newColumns[idx].links = [];
-                              newColumns[idx].links[linkIdx] = { ...newColumns[idx].links[linkIdx], text: e.target.value };
-                              onUpdate('columns', newColumns);
-                            }}
-                            className="flex-1"
-                          />
-                          <Input
-                            placeholder="URL"
-                            value={link.url || ''}
-                            onChange={(e) => {
-                              const newColumns = [...(section.content.columns || [])];
-                              if (!newColumns[idx].links) newColumns[idx].links = [];
-                              newColumns[idx].links[linkIdx] = { ...newColumns[idx].links[linkIdx], url: e.target.value };
-                              onUpdate('columns', newColumns);
-                            }}
-                            className="flex-1"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
             </div>
           </div>
         );
@@ -3130,146 +3338,257 @@ const renderSectionPreview = (
       );
     
     case 'footer':
+      const socialIcons = [
+        { name: 'Facebook', icon: 'f', href: '#' },
+        { name: 'Google+', icon: 'g+', href: '#' },
+        { name: 'YouTube', icon: '▶', href: '#' },
+        { name: 'Dribbble', icon: 'b', href: '#' },
+        { name: 'LinkedIn', icon: 'in', href: '#' },
+        { name: 'Twitter', icon: '🐦', href: '#' },
+        { name: 'RSS', icon: 'S', href: '#' },
+        { name: 'Pinterest', icon: 'P', href: '#' }
+      ];
+      
       return (
         <footer className="bg-slate-900 text-white py-8 sm:py-10 md:py-12 px-4 sm:px-5 md:px-6">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
-              {/* Company Info Column */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
+              {/* Contact us Column */}
               <div>
-                {editMode ? (
-                  <>
-                    <h4 
+                <h4 className="text-white font-bold mb-4 text-lg">
+                  {editMode ? (
+                    <span
                       contentEditable
                       suppressContentEditableWarning
-                      className="text-white font-bold mb-3 text-lg outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
-                      onBlur={(e) => handleTextEdit('companyName', e.currentTarget.textContent || '')}
+                      className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text block"
+                      onBlur={(e) => handleTextEdit('contactTitle', e.currentTarget.textContent || 'Contact us')}
                     >
-                      {section.content.companyName || section.content.columns?.[0]?.title || 'Company Name'}
-                    </h4>
-                    {section.content.tagline && (
-                      <p 
-                        contentEditable
-                        suppressContentEditableWarning
-                        className="text-slate-300 mb-4 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
-                        onBlur={(e) => handleTextEdit('tagline', e.currentTarget.textContent || '')}
-                      >
-                        {section.content.tagline}
-                      </p>
-                    )}
-                    {section.content.address && (
-                      <p 
-                        contentEditable
-                        suppressContentEditableWarning
-                        className="text-slate-400 flex items-start gap-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
-                        onBlur={(e) => {
-                          const text = e.currentTarget.textContent || '';
-                          const address = text.replace('📍', '').trim();
-                          handleTextEdit('address', address);
-                        }}
-                      >
-                        <span>📍</span>
+                      {section.content.contactTitle || 'Contact us'}
+                    </span>
+                  ) : (
+                    section.content.contactTitle || 'Contact us'
+                  )}
+                </h4>
+                <div className="space-y-2 text-slate-300 text-sm">
+                  {section.content.address && (
+                    <p className="flex items-start gap-2">
+                      <span>📍</span>
+                      {editMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text flex-1"
+                          onBlur={(e) => {
+                            const text = e.currentTarget.textContent || '';
+                            const address = text.replace('📍', '').trim();
+                            handleTextEdit('address', address);
+                          }}
+                        >
+                          {section.content.address}
+                        </span>
+                      ) : (
                         <span>{section.content.address}</span>
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <h4 className="text-white font-bold mb-3 text-lg">
-                      {section.content.companyName || section.content.columns?.[0]?.title || 'Company Name'}
-                    </h4>
-                    {section.content.tagline && (
-                      <p className="text-slate-300 mb-4">{section.content.tagline}</p>
-                    )}
-                    {section.content.address && (
-                      <p className="text-slate-400 flex items-start gap-2">
-                        <span>📍</span>
-                        <span>{section.content.address}</span>
-                      </p>
-                    )}
-                  </>
-                )}
+                      )}
+                    </p>
+                  )}
+                  {section.content.phone && (
+                    <p className="flex items-center gap-2">
+                      <span>📞</span>
+                      {editMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                          onBlur={(e) => {
+                            const text = e.currentTarget.textContent || '';
+                            handleTextEdit('phone', text);
+                          }}
+                        >
+                          {section.content.phone}
+                        </span>
+                      ) : (
+                        <a href={`tel:${section.content.phone}`} className="hover:text-indigo-300 transition-colors">
+                          {section.content.phone}
+                        </a>
+                      )}
+                    </p>
+                  )}
+                  {section.content.email && (
+                    <p className="flex items-center gap-2">
+                      <span>✉️</span>
+                      {editMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                          onBlur={(e) => {
+                            const text = e.currentTarget.textContent || '';
+                            handleTextEdit('email', text);
+                          }}
+                        >
+                          {section.content.email}
+                        </span>
+                      ) : (
+                        <a href={`mailto:${section.content.email}`} className="hover:text-indigo-300 transition-colors">
+                          {section.content.email}
+                        </a>
+                      )}
+                    </p>
+                  )}
+                  {section.content.skype && (
+                    <p className="flex items-center gap-2">
+                      <span>💬</span>
+                      {editMode ? (
+                        <span
+                          contentEditable
+                          suppressContentEditableWarning
+                          className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                          onBlur={(e) => {
+                            const text = e.currentTarget.textContent || '';
+                            handleTextEdit('skype', text);
+                          }}
+                        >
+                          {section.content.skype}
+                        </span>
+                      ) : (
+                        <a href={`skype:${section.content.skype}?chat`} className="hover:text-indigo-300 transition-colors">
+                          {section.content.skype}
+                        </a>
+                      )}
+                    </p>
+                  )}
+                </div>
               </div>
               
-              {/* Contact Column */}
+              {/* Mailing list Column */}
               <div>
-                <h4 className="text-white font-bold mb-3 text-lg">Contact</h4>
-                {section.content.phone && (
-                  <p className="text-slate-300 mb-2 flex items-center gap-2">
-                    <span>📞</span>
+                <h4 className="text-white font-bold mb-4 text-lg">
+                  {editMode ? (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text block"
+                      onBlur={(e) => handleTextEdit('mailingListTitle', e.currentTarget.textContent || 'Mailing list')}
+                    >
+                      {section.content.mailingListTitle || 'Mailing list'}
+                    </span>
+                  ) : (
+                    section.content.mailingListTitle || 'Mailing list'
+                  )}
+                </h4>
+                {section.content.mailingListDescription && (
+                  <p className="text-slate-300 text-sm mb-4">
                     {editMode ? (
                       <span
                         contentEditable
                         suppressContentEditableWarning
-                        className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
-                        onBlur={(e) => {
-                          const text = e.currentTarget.textContent || '';
-                          handleTextEdit('phone', text);
-                        }}
+                        className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text block"
+                        onBlur={(e) => handleTextEdit('mailingListDescription', e.currentTarget.textContent || '')}
                       >
-                        {section.content.phone}
+                        {section.content.mailingListDescription}
                       </span>
                     ) : (
-                      <a href={`tel:${section.content.phone}`} className="hover:text-indigo-300 transition-colors">
-                        {section.content.phone}
-                      </a>
+                      section.content.mailingListDescription
                     )}
                   </p>
                 )}
-                {section.content.email && (
-                  <p className="text-slate-300 flex items-center gap-2">
-                    <span>✉️</span>
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="Your email address..."
+                    className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 flex-1"
+                    value={section.content.mailingListEmail || ''}
+                    onChange={(e) => handleTextEdit('mailingListEmail', e.target.value)}
+                    disabled={!editMode}
+                  />
+                  <Button
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4"
+                    onClick={() => {
+                      if (!editMode && section.content.mailingListEmail) {
+                        // Handle mailing list subscription
+                        console.log('Subscribe:', section.content.mailingListEmail);
+                      }
+                    }}
+                  >
+                    Go!
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Follow us Column */}
+              <div>
+                <h4 className="text-white font-bold mb-4 text-lg">
+                  {editMode ? (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text block"
+                      onBlur={(e) => handleTextEdit('followUsTitle', e.currentTarget.textContent || 'Follow us')}
+                    >
+                      {section.content.followUsTitle || 'Follow us'}
+                    </span>
+                  ) : (
+                    section.content.followUsTitle || 'Follow us'
+                  )}
+                </h4>
+                <div className="grid grid-cols-4 gap-2">
+                  {(section.content.socialIcons || socialIcons).map((icon: any, idx: number) => (
+                    <a
+                      key={idx}
+                      href={icon.href || '#'}
+                      className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-white hover:bg-indigo-600 hover:border-indigo-500 transition-colors text-sm font-semibold"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {icon.icon || icon.name?.[0] || '?'}
+                    </a>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Latest News Column */}
+              <div>
+                <h4 className="text-white font-bold mb-4 text-lg">
+                  {editMode ? (
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text block"
+                      onBlur={(e) => handleTextEdit('latestNewsTitle', e.currentTarget.textContent || 'Latest News')}
+                    >
+                      {section.content.latestNewsTitle || 'Latest News'}
+                    </span>
+                  ) : (
+                    section.content.latestNewsTitle || 'Latest News'
+                  )}
+                </h4>
+                {section.content.latestNewsDescription && (
+                  <p className="text-slate-300 text-sm mb-4">
                     {editMode ? (
                       <span
                         contentEditable
                         suppressContentEditableWarning
-                        className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
-                        onBlur={(e) => {
-                          const text = e.currentTarget.textContent || '';
-                          handleTextEdit('email', text);
-                        }}
+                        className="outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text block"
+                        onBlur={(e) => handleTextEdit('latestNewsDescription', e.currentTarget.textContent || '')}
                       >
-                        {section.content.email}
+                        {section.content.latestNewsDescription}
                       </span>
                     ) : (
-                      <a href={`mailto:${section.content.email}`} className="hover:text-indigo-300 transition-colors">
-                        {section.content.email}
-                      </a>
+                      section.content.latestNewsDescription
                     )}
                   </p>
                 )}
-              </div>
-              
-              {/* Quick Links Column */}
-              <div>
-                <h4 className="text-white font-bold mb-3 text-lg">Quick Links</h4>
-                <ul className="space-y-2 text-slate-300 list-none p-0 m-0">
-                  {(section.content.links || section.content.columns?.[2]?.links || []).map((link: any, linkIdx: number) => {
-                    const isPrivacyLink = link.text === 'Privacy Policy';
-                    const isTermsLink = link.text === 'Terms of Service';
-                    return (
-                      <li key={linkIdx}>
-                        {isPrivacyLink || isTermsLink ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (onPolicyLinkClick) {
-                                onPolicyLinkClick(isPrivacyLink ? 'privacy' : 'terms');
-                              }
-                            }}
-                            className="hover:text-indigo-300 transition-colors text-left cursor-pointer underline bg-transparent border-0 p-0 text-slate-300"
-                          >
-                            {link.text}
-                          </button>
-                        ) : (
-                          <a href={link.href || link.url || '#'} className="hover:text-indigo-300 transition-colors no-underline block">
-                            {link.text}
-                          </a>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                <Button
+                  className="bg-blue-500 hover:bg-blue-600 text-white w-full"
+                  onClick={() => {
+                    if (!editMode) {
+                      // Handle latest news action
+                      console.log('Get more news');
+                    }
+                  }}
+                >
+                  {section.content.latestNewsButtonText || 'Get Mores!'}
+                </Button>
               </div>
             </div>
             
