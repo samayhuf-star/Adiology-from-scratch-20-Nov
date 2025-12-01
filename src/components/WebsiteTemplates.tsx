@@ -1807,10 +1807,10 @@ const TemplateEditor: React.FC<{
 
         {/* Preview Area */}
         <div className="flex-1 overflow-auto bg-slate-50 p-8">
-          <div className={`mx-auto bg-white shadow-xl transition-all duration-300 ${
+          <div className={`mx-auto bg-white shadow-xl transition-all duration-300 overflow-x-hidden ${
             previewMode === 'mobile' ? 'max-w-[375px] w-full' : 'max-w-6xl w-full'
           }`} style={previewMode === 'mobile' ? { width: '375px', maxWidth: '100%' } : {}}>
-            <div className={previewMode === 'mobile' ? 'w-full' : 'w-full'}>
+            <div className={`${previewMode === 'mobile' ? 'w-full overflow-x-hidden' : 'w-full'}`}>
               <TemplatePreview 
                 template={template} 
                 editMode={editMode === 'visual'}
@@ -2249,7 +2249,7 @@ const TemplatePreview: React.FC<{
   setEditingElement?: (id: string | null) => void;
 }> = ({ template, editMode = false, onUpdate, editingElement, setEditingElement }) => {
   return (
-    <div className="template-preview">
+    <div className="template-preview overflow-x-hidden w-full">
       {template.customizedSections
         .filter(section => section.type !== 'privacy' && section.type !== 'terms') // Don't render privacy/terms as full sections - only accessible via footer links
         .map(section => (
@@ -2295,7 +2295,7 @@ const renderSectionPreview = (
     case 'hero':
       return (
         <section 
-          className="relative min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center text-white"
+          className="relative min-h-[450px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[700px] flex items-center justify-center text-white overflow-x-hidden"
           style={{
             backgroundImage: `url(${section.content.backgroundImage || ''})`,
             backgroundSize: 'cover',
