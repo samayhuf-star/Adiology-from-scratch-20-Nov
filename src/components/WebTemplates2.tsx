@@ -12,33 +12,33 @@ import { ScrollArea } from './ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { notifications } from '../utils/notifications';
 
-// Top 25 templates from the GitHub repo
+// Top 25 templates from the GitHub repo (using templates that actually exist)
 const TOP_TEMPLATES = [
-  { id: '3-col-portfolio', name: '3 Column Portfolio', category: 'Portfolio', description: 'Clean three-column portfolio layout', preview: 'https://learning-zone.github.io/website-templates/3-col-portfolio/' },
-  { id: 'above-educational-bootstrap-responsive-template', name: 'Above Educational', category: 'Education', description: 'Bootstrap responsive educational template', preview: 'https://learning-zone.github.io/website-templates/above-educational-bootstrap-responsive-template/' },
-  { id: 'ace-responsive-coming-soon-template', name: 'Ace Coming Soon', category: 'Coming Soon', description: 'Responsive coming soon page template', preview: 'https://learning-zone.github.io/website-templates/ace-responsive-coming-soon-template/' },
-  { id: 'add-life-health-fitness-free-bootstrap-html5-template', name: 'Add Life Health', category: 'Health & Fitness', description: 'Health and fitness bootstrap template', preview: 'https://learning-zone.github.io/website-templates/add-life-health-fitness-free-bootstrap-html5-template/' },
-  { id: 'aerosky-real-estate-html-responsive-website-template', name: 'Aerosky Real Estate', category: 'Real Estate', description: 'Real estate responsive website template', preview: 'https://learning-zone.github.io/website-templates/aerosky-real-estate-html-responsive-website-template/' },
-  { id: 'agile-agency-free-bootstrap-web-template', name: 'Agile Agency', category: 'Agency', description: 'Free bootstrap agency web template', preview: 'https://learning-zone.github.io/website-templates/agile-agency-free-bootstrap-web-template/' },
-  { id: 'alive-responsive-coming-soon-template', name: 'Alive Coming Soon', category: 'Coming Soon', description: 'Responsive coming soon template', preview: 'https://learning-zone.github.io/website-templates/alive-responsive-coming-soon-template/' },
-  { id: 'amaze-photography-bootstrap-html5-template', name: 'Amaze Photography', category: 'Photography', description: 'Photography bootstrap HTML5 template', preview: 'https://learning-zone.github.io/website-templates/amaze-photography-bootstrap-html5-template/' },
-  { id: 'aroma-beauty-and-spa-responsive-bootstrap-template', name: 'Aroma Beauty & Spa', category: 'Beauty', description: 'Beauty and spa responsive template', preview: 'https://learning-zone.github.io/website-templates/aroma-beauty-and-spa-responsive-bootstrap-template/' },
-  { id: 'atlanta-free-business-bootstrap-template', name: 'Atlanta Business', category: 'Business', description: 'Free business bootstrap template', preview: 'https://learning-zone.github.io/website-templates/atlanta-free-business-bootstrap-template/' },
-  { id: 'bizpro-business-html5-responsive-web-template', name: 'BizPro Business', category: 'Business', description: 'Business HTML5 responsive template', preview: 'https://learning-zone.github.io/website-templates/bizpro-business-html5-responsive-web-template/' },
-  { id: 'boots-business-free-bootstrap-responsive-web-template', name: 'Boots Business', category: 'Business', description: 'Business bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/boots-business-free-bootstrap-responsive-web-template/' },
-  { id: 'bootstrap-agency-free-responsive-web-template', name: 'Bootstrap Agency', category: 'Agency', description: 'Agency free responsive template', preview: 'https://learning-zone.github.io/website-templates/bootstrap-agency-free-responsive-web-template/' },
-  { id: 'bootstrap-business-corporate-free-responsive-web-template', name: 'Bootstrap Corporate', category: 'Corporate', description: 'Corporate free responsive template', preview: 'https://learning-zone.github.io/website-templates/bootstrap-business-corporate-free-responsive-web-template/' },
-  { id: 'bootstrap-restaurant-free-responsive-web-template', name: 'Bootstrap Restaurant', category: 'Restaurant', description: 'Restaurant free responsive template', preview: 'https://learning-zone.github.io/website-templates/bootstrap-restaurant-free-responsive-web-template/' },
-  { id: 'business-corporate-free-bootstrap-responsive-web-template', name: 'Business Corporate', category: 'Corporate', description: 'Corporate bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/business-corporate-free-bootstrap-responsive-web-template/' },
-  { id: 'clean-blog-free-bootstrap-responsive-web-template', name: 'Clean Blog', category: 'Blog', description: 'Clean blog bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/clean-blog-free-bootstrap-responsive-web-template/' },
-  { id: 'corporate-business-free-bootstrap-responsive-web-template', name: 'Corporate Business', category: 'Business', description: 'Corporate business bootstrap template', preview: 'https://learning-zone.github.io/website-templates/corporate-business-free-bootstrap-responsive-web-template/' },
-  { id: 'creative-agency-free-bootstrap-responsive-web-template', name: 'Creative Agency', category: 'Agency', description: 'Creative agency bootstrap template', preview: 'https://learning-zone.github.io/website-templates/creative-agency-free-bootstrap-responsive-web-template/' },
-  { id: 'ecommerce-free-bootstrap-responsive-web-template', name: 'Ecommerce', category: 'Ecommerce', description: 'Ecommerce bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/ecommerce-free-bootstrap-responsive-web-template/' },
-  { id: 'education-free-bootstrap-responsive-web-template', name: 'Education', category: 'Education', description: 'Education bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/education-free-bootstrap-responsive-web-template/' },
-  { id: 'fitness-free-bootstrap-responsive-web-template', name: 'Fitness', category: 'Health & Fitness', description: 'Fitness bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/fitness-free-bootstrap-responsive-web-template/' },
-  { id: 'freelancer-free-bootstrap-responsive-web-template', name: 'Freelancer', category: 'Portfolio', description: 'Freelancer bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/freelancer-free-bootstrap-responsive-web-template/' },
-  { id: 'hotel-free-bootstrap-responsive-web-template', name: 'Hotel', category: 'Hospitality', description: 'Hotel bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/hotel-free-bootstrap-responsive-web-template/' },
-  { id: 'medical-free-bootstrap-responsive-web-template', name: 'Medical', category: 'Medical', description: 'Medical bootstrap responsive template', preview: 'https://learning-zone.github.io/website-templates/medical-free-bootstrap-responsive-web-template/' },
+  { id: '3-col-portfolio', name: '3 Column Portfolio', category: 'Portfolio', description: 'Clean three-column portfolio layout' },
+  { id: 'above-educational-bootstrap-responsive-template', name: 'Above Educational', category: 'Education', description: 'Bootstrap responsive educational template' },
+  { id: 'ace-responsive-coming-soon-template', name: 'Ace Coming Soon', category: 'Coming Soon', description: 'Responsive coming soon page template' },
+  { id: 'add-life-health-fitness-free-bootstrap-html5-template', name: 'Add Life Health', category: 'Health & Fitness', description: 'Health and fitness bootstrap template' },
+  { id: 'aerosky-real-estate-html-responsive-website-template', name: 'Aerosky Real Estate', category: 'Real Estate', description: 'Real estate responsive website template' },
+  { id: 'agile-agency-free-bootstrap-web-template', name: 'Agile Agency', category: 'Agency', description: 'Free bootstrap agency web template' },
+  { id: 'alive-responsive-coming-soon-template', name: 'Alive Coming Soon', category: 'Coming Soon', description: 'Responsive coming soon template' },
+  { id: 'amaze-photography-bootstrap-html5-template', name: 'Amaze Photography', category: 'Photography', description: 'Photography bootstrap HTML5 template' },
+  { id: 'aroma-beauty-and-spa-responsive-bootstrap-template', name: 'Aroma Beauty & Spa', category: 'Beauty', description: 'Beauty and spa responsive template' },
+  { id: 'atlanta-free-business-bootstrap-template', name: 'Atlanta Business', category: 'Business', description: 'Free business bootstrap template' },
+  { id: 'avenger-multi-purpose-responsive-html5-bootstrap-template', name: 'Avenger Multi-Purpose', category: 'Multi-Purpose', description: 'Multi-purpose responsive HTML5 bootstrap template' },
+  { id: 'b-school-free-education-html5-website-template', name: 'B School Education', category: 'Education', description: 'Free education HTML5 website template' },
+  { id: 'basic-free-html5-template-for-multi-purpose', name: 'Basic Multi-Purpose', category: 'Multi-Purpose', description: 'Basic free HTML5 template for multi-purpose' },
+  { id: 'beauty-salon-bootstrap-html5-template', name: 'Beauty Salon', category: 'Beauty', description: 'Beauty salon bootstrap HTML5 template' },
+  { id: 'bestro-restaurant-bootstrap-html5-template', name: 'Bestro Restaurant', category: 'Restaurant', description: 'Restaurant bootstrap HTML5 template' },
+  { id: 'blazer-responsive-html5-coming-soon-template', name: 'Blazer Coming Soon', category: 'Coming Soon', description: 'Responsive HTML5 coming soon template' },
+  { id: 'brand-html5-app-landing-page-responsive-web-template', name: 'Brand App Landing', category: 'App Landing', description: 'HTML5 app landing page responsive template' },
+  { id: 'businessline-corporate-portfolio-bootstrap-responsive-web-template', name: 'Businessline Corporate', category: 'Corporate', description: 'Corporate portfolio bootstrap responsive template' },
+  { id: 'businessr-corporate-bootstrap-responsive-web-template', name: 'Businessr Corporate', category: 'Corporate', description: 'Corporate bootstrap responsive template' },
+  { id: 'car-care-auto-mobile-html5-bootstrap-web-template', name: 'Car Care Auto', category: 'Automotive', description: 'Car care auto mobile HTML5 bootstrap template' },
+  { id: 'car-repair-html5-bootstrap-template', name: 'Car Repair', category: 'Automotive', description: 'Car repair HTML5 bootstrap template' },
+  { id: 'car-zone-automobile-bootstrap-responsive-web-template', name: 'Car Zone', category: 'Automotive', description: 'Automobile bootstrap responsive template' },
+  { id: 'city-square-bootstrap-responsive-web-template', name: 'City Square', category: 'Business', description: 'City square bootstrap responsive template' },
+  { id: 'cloud-hosting-free-bootstrap-responsive-website-template', name: 'Cloud Hosting', category: 'Hosting', description: 'Cloud hosting free bootstrap responsive template' },
+  { id: 'clouds-html5-multipurpose-landing-page-template', name: 'Clouds Multipurpose', category: 'Landing Page', description: 'HTML5 multipurpose landing page template' },
 ];
 
 interface Template {
@@ -46,7 +46,6 @@ interface Template {
   name: string;
   category: string;
   description: string;
-  preview: string;
 }
 
 export const WebTemplates2: React.FC = () => {
@@ -76,8 +75,67 @@ export const WebTemplates2: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  // Fetch template HTML from GitHub and process it
+  // Fetch template HTML from local server first, then fallback to GitHub
   const fetchTemplateHtml = async (template: Template): Promise<string> => {
+    // Try local server first
+    const localUrl = `/web-templates-2/${template.id}/index.html`;
+    
+    try {
+      const localResponse = await fetch(localUrl, {
+        cache: 'no-cache'
+      });
+      
+      if (localResponse.ok) {
+        let html = await localResponse.text();
+        
+        // Fix paths to be relative to local server
+        const localBase = `/web-templates-2/${template.id}/`;
+        
+        // Replace CSS links
+        html = html.replace(/href=["']([^"']+\.css[^"']*)["']/gi, (match, path) => {
+            if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:') || path.startsWith('/web-templates-2')) return match;
+            const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+            return `href="${localBase}${cleanPath}"`;
+        });
+        
+        // Replace JS, images, fonts
+        html = html.replace(/src=["']([^"']+\.(js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)[^"']*)["']/gi, (match, path) => {
+            if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:') || path.startsWith('/web-templates-2')) return match;
+            const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+            return `src="${localBase}${cleanPath}"`;
+        });
+        
+        // Fix background images
+        html = html.replace(/background-image:\s*url\(["']?([^"')]+)["']?\)/gi, (match, path) => {
+            if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:') || path.startsWith('/web-templates-2')) return match;
+            const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+            return `background-image: url("${localBase}${cleanPath}")`;
+        });
+        
+        // Fix link tags
+        html = html.replace(/<link[^>]*href=["']([^"']+)["'][^>]*>/gi, (match, path) => {
+            if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:') || path.startsWith('/web-templates-2')) return match;
+            const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+            return match.replace(`href="${path}"`, `href="${localBase}${cleanPath}"`);
+        });
+        
+        // Remove external links
+        html = html.replace(/<a([^>]*)\s+href=["']https?:\/\/[^"']+["']([^>]*)>/gi, (match, before, after) => {
+            return `<a${before} href="#" onclick="return false;"${after}>`;
+        });
+        
+        // Add base tag
+        if (!html.includes('<base')) {
+            html = html.replace(/<head[^>]*>/i, `$&<base href="${localBase}">`);
+        }
+        
+        return html;
+      }
+    } catch (error) {
+      console.log('Local template not found, trying GitHub...');
+    }
+    
+    // Fallback to GitHub
     const baseUrl = `https://raw.githubusercontent.com/samayhuf-star/website-templates/master/${template.id}/`;
     const possiblePaths = [
       `${baseUrl}index.html`,
@@ -88,7 +146,6 @@ export const WebTemplates2: React.FC = () => {
     let html = '';
     let lastError: Error | null = null;
     
-    // Try each possible path
     for (const url of possiblePaths) {
       try {
         const response = await fetch(url, {
@@ -107,44 +164,38 @@ export const WebTemplates2: React.FC = () => {
     }
     
     if (!html) {
-      throw lastError || new Error('Template not found. Please check the template ID.');
+      throw lastError || new Error('Template not found locally or on GitHub.');
     }
     
-    // Fix relative paths to point to GitHub raw content
-    // Replace CSS links
+    // Fix paths for GitHub content
     html = html.replace(/href=["']([^"']+\.css[^"']*)["']/gi, (match, path) => {
         if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
         const cleanPath = path.startsWith('/') ? path.slice(1) : path;
         return `href="${baseUrl}${cleanPath}"`;
     });
     
-    // Replace JS, images, fonts
     html = html.replace(/src=["']([^"']+\.(js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)[^"']*)["']/gi, (match, path) => {
         if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
         const cleanPath = path.startsWith('/') ? path.slice(1) : path;
         return `src="${baseUrl}${cleanPath}"`;
     });
     
-    // Fix background images in style attributes
     html = html.replace(/background-image:\s*url\(["']?([^"')]+)["']?\)/gi, (match, path) => {
         if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
         const cleanPath = path.startsWith('/') ? path.slice(1) : path;
         return `background-image: url("${baseUrl}${cleanPath}")`;
     });
     
-    // Fix link tags with href
     html = html.replace(/<link[^>]*href=["']([^"']+)["'][^>]*>/gi, (match, path) => {
         if (path.startsWith('http') || path.startsWith('//') || path.startsWith('data:')) return match;
         const cleanPath = path.startsWith('/') ? path.slice(1) : path;
         return match.replace(`href="${path}"`, `href="${baseUrl}${cleanPath}"`);
     });
     
-    // Remove or disable external links that might redirect
     html = html.replace(/<a([^>]*)\s+href=["']https?:\/\/[^"']+["']([^>]*)>/gi, (match, before, after) => {
         return `<a${before} href="#" onclick="return false;"${after}>`;
     });
     
-    // Add base tag to help with relative paths
     if (!html.includes('<base')) {
         html = html.replace(/<head[^>]*>/i, `$&<base href="${baseUrl}">`);
     }

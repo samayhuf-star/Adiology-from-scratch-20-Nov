@@ -140,7 +140,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
             Campaign History
           </h1>
           <p className="text-slate-600">
@@ -204,7 +204,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                     window.location.hash = '#builder-2';
                     window.location.reload();
                   }}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create New Campaign
@@ -219,64 +219,83 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
               const status = campaign.status || data.status || 'completed';
               const stepNum = data.step || 1;
               const timestamp = new Date(campaign.timestamp || data.timestamp);
+              const campaignName = campaign.name || data.campaignName || 'Unnamed Campaign';
+              
+              // Extract base name and remove "(Draft - DATE)" or "(Completed - DATE)" from title
+              const baseName = campaignName.replace(/\s*\(Draft\s*-\s*[^)]+\)/gi, '').replace(/\s*\(Completed\s*-\s*[^)]+\)/gi, '');
+              const isDraft = /\(Draft\s*-/i.test(campaignName);
               
               return (
                 <Card 
                   key={campaign.id} 
-                  className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all"
+                  className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all flex flex-col overflow-hidden"
                 >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg mb-2 truncate" title={campaign.name || data.campaignName || 'Unnamed Campaign'}>
-                          {campaign.name || data.campaignName || 'Unnamed Campaign'}
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <CardTitle 
+                          className="text-base sm:text-lg font-semibold leading-tight line-clamp-2 mb-2 break-words" 
+                          title={campaignName}
+                        >
+                          {baseName}
                         </CardTitle>
-                        <CardDescription className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">{timestamp.toLocaleString()}</span>
-                        </CardDescription>
                       </div>
-                      {getStatusBadge(status)}
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getStatusBadge(status)}
+                      </div>
                     </div>
+                    <CardDescription className="flex items-center gap-1.5 text-xs sm:text-sm">
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                      <span className="truncate text-slate-500">{timestamp.toLocaleString('en-GB', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</span>
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">Structure:</span>
-                        <span className="font-medium text-slate-700">
+                  <CardContent className="space-y-3 flex-1 flex flex-col">
+                    <div className="space-y-2.5 flex-1">
+                      <div className="flex items-center justify-between text-sm gap-2">
+                        <span className="text-slate-500 flex-shrink-0">Structure:</span>
+                        <span className="font-medium text-slate-700 truncate text-right" title={STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}>
                           {STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">Current Step:</span>
-                        <span className="font-medium text-slate-700">{getStepLabel(stepNum)}</span>
+                      <div className="flex items-center justify-between text-sm gap-2">
+                        <span className="text-slate-500 flex-shrink-0">Current Step:</span>
+                        <span className="font-medium text-slate-700 truncate text-right" title={getStepLabel(stepNum)}>
+                          {getStepLabel(stepNum)}
+                        </span>
                       </div>
                       {data.selectedKeywords && data.selectedKeywords.length > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Keywords:</span>
+                        <div className="flex items-center justify-between text-sm gap-2">
+                          <span className="text-slate-500 flex-shrink-0">Keywords:</span>
                           <span className="font-medium text-slate-700">{data.selectedKeywords.length}</span>
                         </div>
                       )}
                       {data.generatedAds && data.generatedAds.length > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Ads:</span>
+                        <div className="flex items-center justify-between text-sm gap-2">
+                          <span className="text-slate-500 flex-shrink-0">Ads:</span>
                           <span className="font-medium text-slate-700">{data.generatedAds.length}</span>
                         </div>
                       )}
                     </div>
-                    <Separator />
-                    <div className="flex gap-2">
+                    <Separator className="my-3" />
+                    <div className="flex gap-2 pt-1">
                       <Button 
                         onClick={() => onLoadCampaign(data)}
-                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600"
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white min-w-0"
                       >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Continue
+                        <Eye className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">Continue</span>
                       </Button>
                       <Button 
                         variant="outline"
                         onClick={() => deleteCampaign(campaign.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0 px-3"
+                        title="Delete campaign"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

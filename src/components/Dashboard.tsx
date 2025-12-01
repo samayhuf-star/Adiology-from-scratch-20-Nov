@@ -92,6 +92,21 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
     }
   }, [showColorThemeMenu]);
 
+  // Close color picker when clicking outside
+  useEffect(() => {
+    const handleColorPickerClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showColorPicker && !target.closest('[data-color-picker]') && !target.closest('[data-color-theme-menu]')) {
+        setShowColorPicker(false);
+      }
+    };
+
+    if (showColorPicker) {
+      document.addEventListener('mousedown', handleColorPickerClickOutside);
+      return () => document.removeEventListener('mousedown', handleColorPickerClickOutside);
+    }
+  }, [showColorPicker]);
+
   const handleSpacingChange = (increase: boolean) => {
     const spacingOptions = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     const currentIndex = spacingOptions.indexOf(preferences.spacing);
@@ -496,7 +511,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
 
           <div className="h-6 w-px bg-slate-300"></div>
 
-          <div className="flex items-center gap-2 relative" data-color-theme-menu>
+          <div className="flex items-center gap-2 relative" data-color-theme-menu data-color-picker>
             <span className="text-sm font-medium text-slate-700">Color Theme:</span>
             <Button
               variant="outline"
@@ -517,7 +532,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
               </span>
             </Button>
             {showColorThemeMenu && (
-              <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 min-w-[320px] max-w-[400px] p-3">
+              <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-[100] min-w-[320px] max-w-[400px] p-3">
                 <div className="text-xs font-semibold text-slate-500 uppercase mb-3 px-2">Preset Themes</div>
                 <div className="grid grid-cols-1 gap-2 mb-3">
                   <button
@@ -655,7 +670,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
               </div>
             )}
             {showColorPicker && (
-              <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-4 min-w-[250px]">
+              <div className="absolute top-full right-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-[110] p-4 min-w-[250px]">
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-slate-700 block">Choose Custom Color</label>
                   <div className="flex items-center gap-3">

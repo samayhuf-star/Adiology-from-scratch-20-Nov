@@ -3,8 +3,8 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 
-// Top 25 templates to download
-const TEMPLATES = [
+// Templates already downloaded (10 successful)
+const ALREADY_DOWNLOADED = [
   '3-col-portfolio',
   'above-educational-bootstrap-responsive-template',
   'ace-responsive-coming-soon-template',
@@ -15,21 +15,25 @@ const TEMPLATES = [
   'amaze-photography-bootstrap-html5-template',
   'aroma-beauty-and-spa-responsive-bootstrap-template',
   'atlanta-free-business-bootstrap-template',
-  'bizpro-business-html5-responsive-web-template',
-  'boots-business-free-bootstrap-responsive-web-template',
-  'bootstrap-agency-free-responsive-web-template',
-  'bootstrap-business-corporate-free-responsive-web-template',
-  'bootstrap-restaurant-free-responsive-web-template',
-  'business-corporate-free-bootstrap-responsive-web-template',
-  'clean-blog-free-bootstrap-responsive-web-template',
-  'corporate-business-free-bootstrap-responsive-web-template',
-  'creative-agency-free-bootstrap-responsive-web-template',
-  'ecommerce-free-bootstrap-responsive-web-template',
-  'education-free-bootstrap-responsive-web-template',
-  'fitness-free-bootstrap-responsive-web-template',
-  'freelancer-free-bootstrap-responsive-web-template',
-  'hotel-free-bootstrap-responsive-web-template',
-  'medical-free-bootstrap-responsive-web-template',
+];
+
+// 15 additional templates to download (from available templates in repo)
+const TEMPLATES = [
+  'avenger-multi-purpose-responsive-html5-bootstrap-template',
+  'b-school-free-education-html5-website-template',
+  'basic-free-html5-template-for-multi-purpose',
+  'beauty-salon-bootstrap-html5-template',
+  'bestro-restaurant-bootstrap-html5-template',
+  'blazer-responsive-html5-coming-soon-template',
+  'brand-html5-app-landing-page-responsive-web-template',
+  'businessline-corporate-portfolio-bootstrap-responsive-web-template',
+  'businessr-corporate-bootstrap-responsive-web-template',
+  'car-care-auto-mobile-html5-bootstrap-web-template',
+  'car-repair-html5-bootstrap-template',
+  'car-zone-automobile-bootstrap-responsive-web-template',
+  'city-square-bootstrap-responsive-web-template',
+  'cloud-hosting-free-bootstrap-responsive-website-template',
+  'clouds-html5-multipurpose-landing-page-template',
 ];
 
 const BASE_URL = 'https://raw.githubusercontent.com/samayhuf-star/website-templates/master';
