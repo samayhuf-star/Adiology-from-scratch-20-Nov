@@ -163,8 +163,8 @@ export const WebTemplates2: React.FC = () => {
       }
     }
     
-    if (!html) {
-      throw lastError || new Error('Template not found locally or on GitHub.');
+    if (!html || html.trim().length === 0) {
+      throw lastError || new Error(`Template "${template.name}" not found. The template may not be available in the repository.`);
     }
     
     // Fix paths for GitHub content
@@ -208,8 +208,18 @@ export const WebTemplates2: React.FC = () => {
     setLoadingTemplate(true);
     setShowPreview(true);
     
+    // Clean up previous preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+    
     try {
       const html = await fetchTemplateHtml(template);
+      if (!html || html.trim().length === 0) {
+        throw new Error('Template content is empty');
+      }
+      
       setTemplateHtml(html);
       
       // Create blob URL for iframe
@@ -218,9 +228,10 @@ export const WebTemplates2: React.FC = () => {
       setPreviewUrl(url);
     } catch (error: any) {
       console.error('Preview error:', error);
-      notifications.error('Failed to load template preview', {
-        title: 'Load Error',
-        description: error.message || 'Could not fetch template from GitHub'
+      setShowPreview(false);
+      notifications.error(error.message || 'Failed to load template preview', {
+        title: 'Preview Error',
+        description: 'The template may not be available. Please try a different template or check your internet connection.'
       });
     } finally {
       setLoadingTemplate(false);
@@ -232,8 +243,18 @@ export const WebTemplates2: React.FC = () => {
     setLoadingTemplate(true);
     setShowEditor(true);
     
+    // Clean up previous preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+    
     try {
       const html = await fetchTemplateHtml(template);
+      if (!html || html.trim().length === 0) {
+        throw new Error('Template content is empty');
+      }
+      
       setTemplateHtml(html);
       setTemplateCode(html);
       
@@ -243,16 +264,17 @@ export const WebTemplates2: React.FC = () => {
       setPreviewUrl(url);
     } catch (error: any) {
       console.error('Edit error:', error);
-      notifications.error('Failed to load template for editing', {
-        title: 'Load Error',
-        description: error.message || 'Could not fetch template from GitHub'
+      setShowEditor(false);
+      notifications.error(error.message || 'Failed to load template for editing', {
+        title: 'Edit Error',
+        description: 'The template may not be available. Please try a different template or check your internet connection.'
       });
     } finally {
       setLoadingTemplate(false);
     }
   };
   
-  // Cleanup blob URLs on unmount
+  // Cleanup blob URLs on unmount and when dialogs close
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -260,19 +282,37 @@ export const WebTemplates2: React.FC = () => {
       }
     };
   }, [previewUrl]);
+  
+  // Cleanup when dialogs close
+  useEffect(() => {
+    if (!showPreview && !showEditor && previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+    }
+  }, [showPreview, showEditor, previewUrl]);
 
   const handleDownload = async (template: Template) => {
     try {
       setLoading(true);
-      // Fetch template from GitHub repo
-      const repoUrl = `https://raw.githubusercontent.com/samayhuf-star/website-templates/master/${template.id}/index.html`;
       
-      const response = await fetch(repoUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch template');
+      // Try to fetch template HTML
+      let html = '';
+      try {
+        html = await fetchTemplateHtml(template);
+      } catch (fetchError) {
+        // If fetch fails, try direct GitHub URL
+        const repoUrl = `https://raw.githubusercontent.com/samayhuf-star/website-templates/master/${template.id}/index.html`;
+        const response = await fetch(repoUrl);
+        if (response.ok) {
+          html = await response.text();
+        } else {
+          throw new Error('Template not found. Please try previewing it first.');
+        }
       }
       
-      const html = await response.text();
+      if (!html) {
+        throw new Error('Template content is empty');
+      }
       
       // Create blob and download
       const blob = new Blob([html], { type: 'text/html' });
@@ -280,19 +320,21 @@ export const WebTemplates2: React.FC = () => {
       const a = document.createElement('a');
       a.href = url;
       a.download = `${template.id}.html`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
       notifications.success('Template downloaded successfully', {
-        title: 'Download Complete'
+        title: 'Download Complete',
+        description: `Downloaded ${template.name} as ${template.id}.html`
       });
     } catch (error: any) {
       console.error('Download error:', error);
-      notifications.error('Failed to download template. You can view it online instead.', {
-        title: 'Download Failed'
+      notifications.error(error.message || 'Failed to download template. Please try previewing it first.', {
+        title: 'Download Failed',
+        description: 'The template may not be available. Try using the Preview button first.'
       });
-      // Open preview in new tab as fallback
-      window.open(template.preview, '_blank');
     } finally {
       setLoading(false);
     }
@@ -372,17 +414,33 @@ export const WebTemplates2: React.FC = () => {
                   size="sm"
                   variant="outline"
                   className="flex-1 min-w-[100px] text-xs"
-                  onClick={() => handlePreview(template)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePreview(template);
+                  }}
+                  disabled={loadingTemplate}
                 >
-                  <Eye className="w-3 h-3 mr-1" />
+                  {loadingTemplate && selectedTemplate?.id === template.id ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <Eye className="w-3 h-3 mr-1" />
+                  )}
                   Preview
                 </Button>
                 <Button
                   size="sm"
                   className="flex-1 min-w-[100px] text-xs theme-button-primary"
-                  onClick={() => handleEdit(template)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(template);
+                  }}
+                  disabled={loadingTemplate}
                 >
-                  <Edit className="w-3 h-3 mr-1" />
+                  {loadingTemplate && selectedTemplate?.id === template.id ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <Edit className="w-3 h-3 mr-1" />
+                  )}
                   Edit
                 </Button>
               </div>
@@ -390,7 +448,10 @@ export const WebTemplates2: React.FC = () => {
                 size="sm"
                 variant="ghost"
                 className="w-full mt-2 text-xs"
-                onClick={() => handleDownload(template)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(template);
+                }}
                 disabled={loading}
               >
                 {loading ? (

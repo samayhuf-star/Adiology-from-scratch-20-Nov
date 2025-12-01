@@ -108,11 +108,17 @@ class NotificationService {
     });
   }
 
-  dismiss(toastId: number | string) {
+  dismiss(toastId?: number | string | 'all') {
     if (!this.toast || !this.toast.dismiss) {
       return;
     }
-    this.toast.dismiss(toastId);
+    if (toastId === 'all' || toastId === undefined) {
+      // Dismiss all toasts
+      this.toast.dismiss();
+    } else {
+      // Dismiss specific toast
+      this.toast.dismiss(toastId);
+    }
   }
 }
 

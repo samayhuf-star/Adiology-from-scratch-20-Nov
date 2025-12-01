@@ -42,6 +42,17 @@ import {
     type ExpandedTextAd,
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
+import {
+    validateCSVRows,
+    generateCSVContent,
+    createCSVBlob,
+    normalizeMatchType,
+    extractKeywordText,
+    validateURL,
+    CANONICAL_HEADERS,
+    type CSVRow,
+    type CSVValidationResult,
+} from '../utils/csvGeneratorV4';
 
 // --- Constants & Mock Data ---
 
@@ -1332,129 +1343,207 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         });
     };
 
-    // Validate CSV for Google Ads Editor compatibility
-    const validateCSV = (): { valid: boolean; errors: string[]; warnings: string[] } => {
-        const errors: string[] = [];
-        const warnings: string[] = [];
+    // Convert campaign data to CSV rows for validation and export
+    const convertToCSVRows = (): CSVRow[] => {
+        const rows: CSVRow[] = [];
         const adGroups = getDynamicAdGroups();
-        
-        // Check if we have ad groups
-        if (adGroups.length === 0) {
-            errors.push('No ad groups found. Please create at least one ad group.');
-        }
-        
-        // Check if we have keywords
-        if (selectedKeywords.length === 0) {
-            errors.push('No keywords found. Please add keywords to your campaign.');
-        }
-        
-        // Check if we have ads
+        const campaignNameValue = campaignName || 'Campaign 1';
+        const baseUrl = formatURL(url || 'www.example.com');
         const validAds = generatedAds.filter(ad => 
             ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
         );
         
-        if (validAds.length === 0) {
-            errors.push('No ads found. Please create at least one ad.');
-        }
+        // Convert keywords
+        adGroups.forEach(group => {
+            group.keywords.forEach(keyword => {
+                const matchType = normalizeMatchType(getMatchType(keyword)) || 'Broad';
+                const keywordText = extractKeywordText(keyword);
+                
+                rows.push({
+                    [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                    [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                    [CANONICAL_HEADERS.ROW_TYPE]: 'keyword',
+                    [CANONICAL_HEADERS.STATUS]: 'Active',
+                    [CANONICAL_HEADERS.KEYWORD]: keywordText,
+                    [CANONICAL_HEADERS.MATCH_TYPE]: matchType,
+                });
+            });
+        });
         
-        // Check if all ad groups have ads (considering ALL AD GROUPS mode)
+        // Convert ads
         adGroups.forEach(group => {
             const groupAds = validAds.filter(ad => 
-                ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE
+                (ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE) && 
+                (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
             );
-            if (groupAds.length === 0) {
-                warnings.push(`Ad group "${group.name}" has no ads.`);
-            }
-        });
-        
-        // Check required ad fields and auto-fix URLs
-        const adsToFix: Array<{ adId: string | number; finalUrl: string }> = [];
-        const adsByGroup: { [key: string]: any[] } = {};
-        
-        // Group ads by ad group for better error reporting
-        validAds.forEach((ad, idx) => {
-            const groupName = ad.adGroup || 'Unknown';
-            if (!adsByGroup[groupName]) {
-                adsByGroup[groupName] = [];
-            }
-            adsByGroup[groupName].push({ ...ad, _index: idx });
-        });
-        
-        validAds.forEach((ad, idx) => {
-            const groupName = ad.adGroup || 'Unknown Group';
-            const adNumber = adsByGroup[groupName]?.findIndex((a: any) => a.id === ad.id) + 1 || idx + 1;
+            
+            groupAds.forEach(ad => {
+                let finalUrl = formatURL(ad.finalUrl || url || baseUrl);
+                const urlValidation = validateURL(finalUrl);
+                if (urlValidation.fixed) {
+                    finalUrl = urlValidation.fixed;
+                }
             
             if (ad.type === 'rsa' || ad.type === 'dki') {
-                // RSA/DKI requires at least 3 headlines and 2 descriptions
-                const missingHeadlines: string[] = [];
-                if (!ad.headline1 || ad.headline1.trim() === '') missingHeadlines.push('Headline 1');
-                if (!ad.headline2 || ad.headline2.trim() === '') missingHeadlines.push('Headline 2');
-                if (!ad.headline3 || ad.headline3.trim() === '') missingHeadlines.push('Headline 3');
-                
-                if (missingHeadlines.length > 0) {
-                    errors.push(`Ad ${adNumber} in "${groupName}" is missing required headlines: ${missingHeadlines.join(', ')}. RSA/DKI ads require at least 3 headlines.`);
+                    rows.push({
+                        [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                        [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                        [CANONICAL_HEADERS.ROW_TYPE]: 'ad',
+                        [CANONICAL_HEADERS.STATUS]: 'Active',
+                        [CANONICAL_HEADERS.AD_TYPE]: 'Responsive Search Ad',
+                        [CANONICAL_HEADERS.FINAL_URL]: finalUrl,
+                        [CANONICAL_HEADERS.HEADLINE_1]: ad.headline1 || '',
+                        [CANONICAL_HEADERS.HEADLINE_2]: ad.headline2 || '',
+                        [CANONICAL_HEADERS.HEADLINE_3]: ad.headline3 || '',
+                        [CANONICAL_HEADERS.HEADLINE_4]: ad.headline4 || '',
+                        [CANONICAL_HEADERS.HEADLINE_5]: ad.headline5 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_1]: ad.description1 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_2]: ad.description2 || '',
+                        [CANONICAL_HEADERS.PATH_1]: ad.path1 || '',
+                        [CANONICAL_HEADERS.PATH_2]: ad.path2 || '',
+                    });
+                } else if (ad.type === 'callonly') {
+                    rows.push({
+                        [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                        [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                        [CANONICAL_HEADERS.ROW_TYPE]: 'ad',
+                        [CANONICAL_HEADERS.STATUS]: 'Active',
+                        [CANONICAL_HEADERS.AD_TYPE]: 'Call-only Ad',
+                        [CANONICAL_HEADERS.FINAL_URL]: finalUrl,
+                        [CANONICAL_HEADERS.HEADLINE_1]: ad.headline1 || '',
+                        [CANONICAL_HEADERS.HEADLINE_2]: ad.headline2 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_1]: ad.description1 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_2]: ad.description2 || '',
+                        [CANONICAL_HEADERS.PHONE_NUMBER]: ad.phone || '',
+                        [CANONICAL_HEADERS.COUNTRY_CODE]: 'US',
+                    });
                 }
-                
-                const missingDescriptions: string[] = [];
-                if (!ad.description1 || ad.description1.trim() === '') missingDescriptions.push('Description 1');
-                if (!ad.description2 || ad.description2.trim() === '') missingDescriptions.push('Description 2');
-                
-                if (missingDescriptions.length > 0) {
-                    errors.push(`Ad ${adNumber} in "${groupName}" is missing required descriptions: ${missingDescriptions.join(', ')}. RSA/DKI ads require at least 2 descriptions.`);
+            });
+            
+            // Convert extensions
+            const groupExtensions = generatedAds.filter(ad => 
+                (ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE) && 
+                ad.extensionType
+            );
+            
+            groupExtensions.forEach(ext => {
+                if (ext.extensionType === 'sitelink') {
+                    if (Array.isArray(ext.sitelinks)) {
+                        ext.sitelinks.forEach((sitelink: any) => {
+                            if (sitelink && sitelink.text) {
+                                rows.push({
+                                    [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                                    [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                                    [CANONICAL_HEADERS.ROW_TYPE]: 'sitelink',
+                                    [CANONICAL_HEADERS.STATUS]: 'Active',
+                                    [CANONICAL_HEADERS.FINAL_URL]: formatURL(sitelink.url || url || baseUrl),
+                                    [CANONICAL_HEADERS.ASSET_TYPE]: 'Sitelink',
+                                    [CANONICAL_HEADERS.LINK_TEXT]: sitelink.text || '',
+                                    [CANONICAL_HEADERS.DESCRIPTION_LINE_1]: sitelink.description || '',
+                                });
+                            }
+                        });
+                    }
+                } else if (ext.extensionType === 'call') {
+                    rows.push({
+                        [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                        [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                        [CANONICAL_HEADERS.ROW_TYPE]: 'call',
+                        [CANONICAL_HEADERS.STATUS]: 'Active',
+                        [CANONICAL_HEADERS.ASSET_TYPE]: 'Call',
+                        [CANONICAL_HEADERS.PHONE_NUMBER]: ext.phone || '',
+                        [CANONICAL_HEADERS.COUNTRY_CODE]: 'US',
+                    });
+                } else if (ext.extensionType === 'callout') {
+                    if (Array.isArray(ext.callouts)) {
+                        ext.callouts.forEach((callout: any) => {
+                            if (callout && callout.text) {
+                                rows.push({
+                                    [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                                    [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                                    [CANONICAL_HEADERS.ROW_TYPE]: 'callout',
+                                    [CANONICAL_HEADERS.STATUS]: 'Active',
+                                    [CANONICAL_HEADERS.ASSET_TYPE]: 'Callout',
+                                    [CANONICAL_HEADERS.CALLOUT_TEXT]: callout.text || '',
+                                });
+                            }
+                        });
+                    }
+                } else if (ext.extensionType === 'snippet') {
+                    if (ext.header && Array.isArray(ext.values)) {
+                        rows.push({
+                            [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                            [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                            [CANONICAL_HEADERS.ROW_TYPE]: 'structured snippet',
+                            [CANONICAL_HEADERS.STATUS]: 'Active',
+                            [CANONICAL_HEADERS.ASSET_TYPE]: 'Structured Snippet',
+                            [CANONICAL_HEADERS.HEADER]: ext.header || '',
+                            [CANONICAL_HEADERS.VALUES]: ext.values.join(', ') || '',
+                        });
+                    }
                 }
-                
-                if (!ad.finalUrl || ad.finalUrl.trim() === '') {
-                    errors.push(`Ad ${adNumber} in "${groupName}" is missing Final URL.`);
-                } else if (!ad.finalUrl.match(/^https?:\/\//i)) {
-                    // Auto-fix URL format if missing protocol
-                    const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
-                    adsToFix.push({ adId: ad.id, finalUrl: fixedUrl });
-                }
-            }
-            if (ad.type === 'callonly') {
-                const missingHeadlines: string[] = [];
-                if (!ad.headline1 || ad.headline1.trim() === '') missingHeadlines.push('Headline 1');
-                if (!ad.headline2 || ad.headline2.trim() === '') missingHeadlines.push('Headline 2');
-                
-                if (missingHeadlines.length > 0) {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing required headlines: ${missingHeadlines.join(', ')}.`);
-                }
-                
-                const missingDescriptions: string[] = [];
-                if (!ad.description1 || ad.description1.trim() === '') missingDescriptions.push('Description 1');
-                if (!ad.description2 || ad.description2.trim() === '') missingDescriptions.push('Description 2');
-                
-                if (missingDescriptions.length > 0) {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing required descriptions: ${missingDescriptions.join(', ')}.`);
-                }
-                
-                if (!ad.phone || ad.phone.trim() === '') {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing phone number.`);
-                }
-                if (!ad.businessName || ad.businessName.trim() === '') {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing business name.`);
-                }
-                if (ad.finalUrl && !ad.finalUrl.match(/^https?:\/\//i)) {
-                    // Auto-fix URL format if missing protocol
-                    const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
-                    adsToFix.push({ adId: ad.id, finalUrl: fixedUrl });
-                }
-            }
+            });
         });
         
-        // Auto-fix URLs that don't start with http:// or https://
-        if (adsToFix.length > 0) {
-            setGeneratedAds(prev => prev.map((ad) => {
-                const fix = adsToFix.find(f => f.adId === ad.id);
-                if (fix) {
-                    return { ...ad, finalUrl: fix.finalUrl };
-                }
-                return ad;
-            }));
+        return rows;
+    };
+
+    // Validate CSV for Google Ads Editor compatibility using comprehensive validation
+    const validateCSV = (): { valid: boolean; errors: string[]; warnings: string[] } => {
+        const adGroups = getDynamicAdGroups();
+        const validAds = generatedAds.filter(ad => 
+            ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
+        );
+        
+        // Basic structural checks first
+        if (adGroups.length === 0) {
+            return {
+                valid: false,
+                errors: ['No ad groups found. Please create at least one ad group.'],
+                warnings: []
+            };
         }
         
+        if (selectedKeywords.length === 0) {
+            return {
+                valid: false,
+                errors: ['No keywords found. Please add keywords to your campaign.'],
+                warnings: []
+            };
+        }
+        
+        if (validAds.length === 0) {
+            return {
+                valid: false,
+                errors: ['No ads found. Please create at least one ad.'],
+                warnings: []
+            };
+        }
+        
+        // Convert to CSV rows and validate using comprehensive validation
+        const csvRows = convertToCSVRows();
+        const headers = Object.values(CANONICAL_HEADERS);
+        const validation = validateCSVRows(csvRows, headers);
+        
+        // Convert validation errors/warnings to string format for backward compatibility
+        const errors = validation.errors.map(err => 
+            `ROW ${err.row}: ${err.message}`
+        );
+        const warnings = [
+            ...validation.warnings.map(warn => 
+                `ROW ${warn.row}: ${warn.message}${warn.suggestion ? ` — ${warn.suggestion}` : ''}`
+            ),
+            // Add additional warnings
+            ...adGroups.filter(group => {
+                const groupAds = validAds.filter(ad => 
+                    ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE
+                );
+                return groupAds.length === 0;
+            }).map(group => `Ad group "${group.name}" has no ads.`)
+        ];
+        
         return {
-            valid: errors.length === 0,
+            valid: validation.valid,
             errors,
             warnings
         };
@@ -5168,8 +5257,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     });
                                 }
                             } else {
-                                notifications.error(`CSV Validation Failed! Errors: ${validation.errors.join(', ')}. Warnings: ${validation.warnings.join(', ')}. Please fix these issues before exporting.`, {
-                                    title: 'Validation Failed'
+                                const errorList = validation.errors.map((err, i) => `${i + 1}. ${err}`).join('\n');
+                                const warningList = validation.warnings.length > 0 ? `\n\nWarnings:\n${validation.warnings.map((warn, i) => `${i + 1}. ${warn}`).join('\n')}` : '';
+                                notifications.error(`CSV Validation Failed! ${validation.errors.length} Error(s) and ${validation.warnings.length} Warning(s). Please fix these issues before exporting.\n\nErrors:\n${errorList}${warningList}`, {
+                                    title: 'CSV Validation Failed',
+                                    description: 'These errors will prevent Google Ads Editor from importing your campaign.',
+                                    priority: 'high',
+                                    duration: 10000, // Increased duration for readability
                                 });
                             }
                         }}
@@ -5184,10 +5278,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             // Validate first before generating
                             const validation = validateCSV();
                             if (!validation.valid) {
-                                notifications.error(`CSV Validation Failed! Errors: ${validation.errors.join(', ')}. ${validation.warnings.length > 0 ? `Warnings: ${validation.warnings.join(', ')}.` : ''} Please fix these issues before exporting.`, {
+                                const errorList = validation.errors.map((err, i) => `${i + 1}. ${err}`).join('\n');
+                                const warningList = validation.warnings.length > 0 ? `\n\nWarnings:\n${validation.warnings.map((warn, i) => `${i + 1}. ${warn}`).join('\n')}` : '';
+                                notifications.error(`CSV Validation Failed! ${validation.errors.length} Error(s) and ${validation.warnings.length} Warning(s). Please fix these issues before exporting.\n\nErrors:\n${errorList}${warningList}`, {
                                     title: 'CSV Validation Failed',
-                                    description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
+                                    description: 'These errors will prevent Google Ads Editor from importing your campaign.',
                                     priority: 'high',
+                                    duration: 10000, // Increased duration for readability
                                 });
                                 return;
                             }
