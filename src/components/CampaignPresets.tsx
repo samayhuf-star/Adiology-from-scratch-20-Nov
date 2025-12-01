@@ -493,16 +493,16 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
                     {preset.structure}
                   </Badge>
                 </div>
-                <div className="p-6">
+                <div className="p-6 pr-20">
                   <div className="flex items-start gap-6">
                     {/* Left: Title and Description */}
-                    <div className="flex-1 pr-4">
+                    <div className="flex-1 pr-4 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight flex-1">
+                        <h3 className="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight flex-1 pr-16 break-words">
                           {preset.title}
                         </h3>
                       </div>
-                      <p className="text-sm text-slate-500 mb-4 leading-tight">{preset.campaign_name}</p>
+                      <p className="text-sm text-slate-500 mb-4 leading-tight break-words">{preset.campaign_name}</p>
                       
                       {/* Stats Row */}
                       <div className="flex items-center gap-6 mb-4">
