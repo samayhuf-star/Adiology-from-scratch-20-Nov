@@ -901,13 +901,14 @@ export const AdsBuilder = () => {
         const adsToExport = generatedAds.filter(ad => selectedAds.includes(ad.id));
         
         try {
-            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
+            const { exportCSVWithValidation, exportCampaignToCSVV3, adsToCampaignStructure } = await import('../utils/csvGeneratorV3');
             const filename = `google-ads-${new Date().toISOString().split('T')[0]}.csv`;
             
-            // Get default final URL from first ad
-            const defaultUrl = adsToExport[0]?.finalUrl || 'https://www.example.com';
+            // Get default final URL from first ad or base URL
+            const defaultUrl = adsToExport[0]?.finalUrl || baseUrl || 'https://www.example.com';
             
-            const result = await exportCSVWithValidation(
+            // Validate before exporting
+            const validationResult = await exportCSVWithValidation(
                 adsToExport,
                 filename,
                 'ads',
@@ -917,29 +918,62 @@ export const AdsBuilder = () => {
                 }
             );
             
-            if (result.warnings && result.warnings.length > 0) {
+            // Check if validation passed
+            if (!validationResult.isValid) {
+                // Show validation errors - don't export
+                notifications.error(
+                    <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+                        {validationResult.errors?.join('\n') || 'Validation failed'}
+                    </div>,
+                    { 
+                        title: '❌ CSV Validation Failed',
+                        description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
+                        duration: 15000
+                    }
+                );
+                return;
+            }
+            
+            // Export the CSV if validation passed
+            if (validationResult.structure) {
+                exportCampaignToCSVV3(validationResult.structure, filename);
+            } else {
+                // Fallback: generate structure and export
+                const structure = adsToCampaignStructure(adsToExport, 'Ads Campaign', defaultUrl);
+                exportCampaignToCSVV3(structure, filename);
+            }
+            
+            // Show warnings if any (but export was successful)
+            if (validationResult.warnings && validationResult.warnings.length > 0) {
                 notifications.warning(
                     <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
-                        {result.warnings.join('\n')}
+                        {validationResult.warnings.join('\n')}
                     </div>,
                     { 
                         title: '⚠️  CSV Validation Warnings',
-                        description: 'Your ads will export, but consider fixing these warnings.',
+                        description: 'Your ads have been exported, but consider fixing these warnings.',
                         duration: 10000
                     }
                 );
             } else {
+                // Show success message
                 notifications.success(`Exported ${adsToExport.length} ad(s) to CSV`, {
-                    title: 'Export Complete'
+                    title: 'Export Complete',
+                    description: 'Your CSV file has been downloaded successfully.',
+                    duration: 3000
                 });
             }
         } catch (error: any) {
             console.error('Export error:', error);
+            const errorMessage = error?.message || 'An unexpected error occurred during export';
             notifications.error(
-                error?.message || 'An unexpected error occurred during export',
+                <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+                    {errorMessage}
+                </div>,
                 { 
                     title: '❌ Export Failed',
-                    description: 'Please try again or contact support if the issue persists.'
+                    description: 'Please fix the errors and try again.',
+                    duration: 15000
                 }
             );
         }

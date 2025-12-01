@@ -190,8 +190,33 @@ const defaultTemplate: Template = {
   ]
 };
 
+// Function to reorder sections so "about" comes right after "hero"
+const reorderSections = (sections: TemplateSection[]): TemplateSection[] => {
+  if (!sections || sections.length === 0) return sections;
+  
+  const heroIndex = sections.findIndex(s => s.type === 'hero');
+  const aboutIndex = sections.findIndex(s => s.type === 'about');
+  
+  // If both hero and about exist, reorder them
+  if (heroIndex !== -1 && aboutIndex !== -1 && aboutIndex !== heroIndex + 1) {
+    const newSections = [...sections];
+    const aboutSection = newSections.splice(aboutIndex, 1)[0];
+    // Insert about section right after hero
+    newSections.splice(heroIndex + 1, 0, aboutSection);
+    return newSections;
+  }
+  
+  return sections;
+};
+
 export const WebsiteTemplates: React.FC = () => {
-  const [baseTemplates] = useState<Template[]>(importedTemplates as Template[]);
+  // Reorder sections in all imported templates so "about" comes after "hero"
+  const reorderedTemplates = (importedTemplates as Template[]).map(template => ({
+    ...template,
+    sections: reorderSections(template.sections)
+  }));
+  
+  const [baseTemplates] = useState<Template[]>(reorderedTemplates);
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
   const [showEditor, setShowEditor] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<SavedTemplate | null>(null);
@@ -307,8 +332,9 @@ export const WebsiteTemplates: React.FC = () => {
     });
     
     // Add missing sections with default content (privacy and terms are now only in footer as links)
+    // Order: hero, about, features, services, testimonials, cta, footer
     const sectionTypes: Array<'hero' | 'features' | 'services' | 'testimonials' | 'cta' | 'footer' | 'about'> = 
-      ['hero', 'features', 'services', 'testimonials', 'cta', 'about', 'footer'];
+      ['hero', 'about', 'features', 'services', 'testimonials', 'cta', 'footer'];
     
     sectionTypes.forEach(type => {
       if (!requiredSections[type]) {
@@ -549,7 +575,7 @@ export const WebsiteTemplates: React.FC = () => {
     });
     
     // Return sections in the correct order, preserving any additional sections
-    const orderedSections = sectionTypes.map(type => requiredSections[type]);
+    const orderedSections = sectionTypes.map(type => requiredSections[type]).filter(Boolean);
     
     // Add any additional sections that weren't in the standard list
     sections.forEach(section => {
@@ -558,7 +584,8 @@ export const WebsiteTemplates: React.FC = () => {
       }
     });
     
-    return orderedSections;
+    // Reorder to ensure about comes right after hero
+    return reorderSections(orderedSections);
   };
 
   const handleViewTemplate = (template: Template | SavedTemplate) => {
@@ -1807,10 +1834,10 @@ const TemplateEditor: React.FC<{
 
         {/* Preview Area */}
         <div className="flex-1 overflow-auto bg-slate-50 p-8">
-          <div className={`mx-auto bg-white shadow-xl transition-all duration-300 ${
+          <div className={`mx-auto bg-white shadow-xl transition-all duration-300 overflow-x-hidden ${
             previewMode === 'mobile' ? 'max-w-[375px] w-full' : 'max-w-6xl w-full'
           }`} style={previewMode === 'mobile' ? { width: '375px', maxWidth: '100%' } : {}}>
-            <div className={previewMode === 'mobile' ? 'w-full' : 'w-full'}>
+            <div className={`${previewMode === 'mobile' ? 'w-full overflow-x-hidden' : 'w-full'}`}>
               <TemplatePreview 
                 template={template} 
                 editMode={editMode === 'visual'}
@@ -2249,7 +2276,7 @@ const TemplatePreview: React.FC<{
   setEditingElement?: (id: string | null) => void;
 }> = ({ template, editMode = false, onUpdate, editingElement, setEditingElement }) => {
   return (
-    <div className="template-preview">
+    <div className="template-preview overflow-x-hidden w-full">
       {template.customizedSections
         .filter(section => section.type !== 'privacy' && section.type !== 'terms') // Don't render privacy/terms as full sections - only accessible via footer links
         .map(section => (
@@ -2295,7 +2322,7 @@ const renderSectionPreview = (
     case 'hero':
       return (
         <section 
-          className="relative min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center text-white"
+          className="relative min-h-[450px] sm:min-h-[500px] md:min-h-[600px] lg:min-h-[700px] flex items-center justify-center text-white overflow-x-hidden"
           style={{
             backgroundImage: `url(${section.content.backgroundImage || ''})`,
             backgroundSize: 'cover',

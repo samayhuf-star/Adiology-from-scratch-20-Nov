@@ -124,12 +124,20 @@ export function detectUserIntent(keywords: string[], industry: string): UserInte
   }
   
   // Default based on industry
-  const serviceIndustries = ['plumbing', 'electrical', 'hvac', 'legal', 'medical', 'dental', 'cleaning'];
-  if (serviceIndustries.includes(industry.toLowerCase())) {
+  const serviceIndustries = ['plumbing', 'electrical', 'hvac', 'legal', 'medical', 'dental', 'cleaning', 'services', 'service'];
+  const industryLower = industry.toLowerCase();
+  if (serviceIndustries.includes(industryLower) || industryLower.includes('service')) {
     return UserIntent.SERVICE;
   }
   
-  return UserIntent.PRODUCT;
+  // If industry contains product-related terms, return PRODUCT
+  const productIndustries = ['product', 'products', 'shop', 'store', 'retail', 'ecommerce'];
+  if (productIndustries.some(term => industryLower.includes(term))) {
+    return UserIntent.PRODUCT;
+  }
+  
+  // Default to SERVICE if industry is ambiguous (most businesses are service-based)
+  return UserIntent.SERVICE;
 }
 
 // ============================================================================
