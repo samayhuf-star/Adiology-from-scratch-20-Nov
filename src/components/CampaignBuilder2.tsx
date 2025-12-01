@@ -566,7 +566,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const [urlError, setUrlError] = useState<string>('');
   
   // Campaign Intelligence State
-  const [userGoal, setUserGoal] = useState<string>('');
+  const [userGoal, setUserGoal] = useState<string>('leads');
   const [selectedVertical, setSelectedVertical] = useState<string>('general');
   const [intentResult, setIntentResult] = useState<IntentResult | null>(null);
   const [landingPageData, setLandingPageData] = useState<LandingPageExtractionResult | null>(null);
@@ -1632,14 +1632,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 let loadingToastId: number | string | undefined;
                 
                 // Dismiss any existing toasts first to prevent stacking
-                (async () => {
-                  try {
-                    const { toast } = await import("sonner");
-                    toast.dismiss();
-                  } catch (e) {
-                    console.log('Could not dismiss existing toasts:', e);
-                  }
-                })();
+                // Use notifications utility to dismiss all toasts
+                try {
+                  notifications.dismiss('all');
+                } catch (e) {
+                  console.log('Could not dismiss existing toasts:', e);
+                }
                 
                 try {
                   loadingToastId = notifications.loading('Generating keywords...', {
@@ -2342,9 +2340,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             size="lg"
             onClick={() => {
               if (selectedKeywords.length === 0) {
-                notifications.warning('Please generate and select at least one keyword', { 
+                notifications.error('Please generate and select at least one keyword', { 
                   title: 'Keywords Required',
-                  description: 'You need to select keywords before proceeding to the next step.'
+                  description: 'You must select keywords in Step 2 before proceeding to the next step.'
                 });
                 return;
               }
@@ -2829,13 +2827,23 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
     const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
     
+    // Validate keywords are selected
+    if (selectedKeywords.length === 0) {
+      notifications.error('Please select keywords first', {
+        title: 'Keywords Required',
+        description: 'You must select keywords in Step 2 before creating ads or extensions.',
+      });
+      return;
+    }
+    
     // Handle extensions - attach to existing ads
     if (isExtension) {
       if (!hasRegularAds) {
-        notifications.info('Creating a default ad first, then adding your extension', {
-          title: 'Ad Required',
-          description: 'Extensions require at least one ad. A DKI ad will be created automatically.',
+        notifications.error('Please create ads first', {
+          title: 'Ads Required',
+          description: 'You must create at least one ad (RSA, DKI, or Call-Only) before adding extensions. Extensions are attached to ads.',
         });
+        return;
         
         const dynamicAdGroups = getDynamicAdGroups();
         const currentGroup = dynamicAdGroups.length > 0 ? dynamicAdGroups[0] : null;
@@ -3038,11 +3046,19 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
 
   const handleGenerateAIExtensions = async () => {
+    if (selectedKeywords.length === 0) {
+      notifications.error('Please select keywords first', {
+        title: 'Keywords Required',
+        description: 'You must select keywords in Step 2 before generating extensions.',
+      });
+      return;
+    }
+    
     const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
     if (!hasRegularAds) {
-      notifications.warning('Create at least one ad first', {
-        title: 'Ad Required',
-        description: 'You need at least one ad (RSA, DKI, or Call Only) before adding extensions.',
+      notifications.error('Please create ads first', {
+        title: 'Ads Required',
+        description: 'You must create at least one ad (RSA, DKI, or Call-Only) before generating extensions. Extensions are attached to ads.',
       });
       return;
     }
@@ -3067,8 +3083,9 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   const handleConfirmAIExtensions = () => {
     if (selectedExtensions.length === 0) {
-      notifications.warning('Please select at least one extension', {
+      notifications.error('Please select at least one extension', {
         title: 'No Extensions Selected',
+        description: 'You must select at least one extension type to generate.',
       });
       return;
     }
@@ -3261,77 +3278,77 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <p className="text-xs text-black mb-3 font-bold uppercase">EXTENSIONS</p>
                   <Button 
                     onClick={() => createNewAd('snippet')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SNIPPET EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('callout')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALLOUT EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('sitelink')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> SITELINK EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('call')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> CALL EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('price')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('app')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('location')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LOCATION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('message')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> MESSAGE EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('leadform')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> LEAD FORM EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('promotion')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PROMOTION EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('image')}
-                    disabled={selectedKeywords.length === 0}
+                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> IMAGE EXTENSION
@@ -3707,7 +3724,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             </Button>
             <Button 
               size="lg" 
-              onClick={() => setStep(4)}
+              onClick={() => {
+                const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+                if (!hasRegularAds) {
+                  notifications.error('Please create at least one ad first', {
+                    title: 'Ads Required',
+                    description: 'You must create at least one ad (RSA, DKI, or Call-Only) before proceeding to the next step.',
+                  });
+                  return;
+                }
+                setStep(4);
+              }}
               className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
             >
               Next Step <ChevronRight className="ml-2 w-5 h-5" />
@@ -4889,8 +4916,36 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   // Step 6: Final Success Screen
   const renderStep6 = () => {
     const handleExportCSV = async () => {
-      if (!structureType || !campaignName || selectedKeywords.length === 0) {
-        notifications.warning('Please complete all required fields', { title: 'Incomplete Campaign' });
+      if (!structureType) {
+        notifications.error('Please select a campaign structure in Step 1', {
+          title: 'Structure Required',
+          description: 'You must choose a campaign structure (SKAG, STAG, or Mix) before exporting.',
+        });
+        return;
+      }
+      
+      if (!campaignName || campaignName.trim() === '') {
+        notifications.error('Please enter a campaign name in Step 1', {
+          title: 'Campaign Name Required',
+          description: 'A campaign name is required to export your campaign.',
+        });
+        return;
+      }
+      
+      if (selectedKeywords.length === 0) {
+        notifications.error('Please select keywords in Step 2', {
+          title: 'Keywords Required',
+          description: 'You must select at least one keyword before exporting your campaign.',
+        });
+        return;
+      }
+      
+      const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+      if (!hasRegularAds) {
+        notifications.error('Please create at least one ad in Step 3', {
+          title: 'Ads Required',
+          description: 'You must create at least one ad (RSA, DKI, or Call-Only) before exporting your campaign.',
+        });
         return;
       }
 
