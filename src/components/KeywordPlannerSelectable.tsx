@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Save, AlertCircle, CheckSquare, Square, ShieldCheck } from 'lucide-react';
 import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Slider } from './ui/slider';
@@ -132,13 +131,25 @@ export const KeywordPlannerSelectable = ({
             if (response.keywords && Array.isArray(response.keywords)) {
                 console.log('✅ Valid response received with', response.keywords.length, 'keywords');
                 
-                // Extract keyword text and apply match type formatting
-                const keywordTexts = response.keywords.map((k: any) => k.text || k.keyword || k);
-                console.log('Extracted keyword texts:', keywordTexts.slice(0, 5));
+                // Extract keyword text, remove duplicates, and normalize
+                const keywordTexts = response.keywords
+                    .map((k: any) => {
+                        const text = (k.text || k.keyword || k).toString().trim().toLowerCase();
+                        return text;
+                    })
+                    .filter((text: string) => text.length >= 3 && text.length <= 50);
                 
+                // Remove duplicates
+                const uniqueKeywords = Array.from(new Set(keywordTexts));
+                console.log('Unique keywords after deduplication:', uniqueKeywords.length);
+                console.log('Sample keywords:', uniqueKeywords.slice(0, 5));
+                
+                // Shuffle for variety
+                const shuffled = [...uniqueKeywords].sort(() => Math.random() - 0.5);
+                
+                // Apply match type formatting
                 const formattedKeywords: string[] = [];
-                
-                keywordTexts.forEach((keyword: string) => {
+                shuffled.forEach((keyword: string) => {
                     if (matchTypes.broad) {
                         formattedKeywords.push(keyword);
                     }
@@ -149,13 +160,9 @@ export const KeywordPlannerSelectable = ({
                         formattedKeywords.push(`[${keyword}]`);
                     }
                 });
-
-                // Add natural variation: randomly include/exclude some keywords to avoid exact counts
-                // This makes the results look more natural and less like demo data
-                const variationPercent = 0.88 + Math.random() * 0.12; // 88-100% of keywords
-                const finalCount = Math.floor(formattedKeywords.length * variationPercent);
-                const shuffled = [...formattedKeywords].sort(() => Math.random() - 0.5);
-                const variedKeywords = shuffled.slice(0, finalCount);
+                
+                // Final shuffle to mix match types naturally
+                const variedKeywords = [...formattedKeywords].sort(() => Math.random() - 0.5);
 
                 if (isAppend) {
                     setGeneratedKeywords(prev => {
@@ -219,49 +226,134 @@ export const KeywordPlannerSelectable = ({
             });
             
             seeds = [...new Set(processedSeeds)]; // Remove duplicates
-            const negatives = negativeKeywords.split('\n').map(n => n.trim().toLowerCase()).filter(Boolean);
+            const negatives = negativeKeywords.split(/[,\n]/).map(n => n.trim().toLowerCase()).filter(Boolean);
             
             const mockKeywords: string[] = [];
-            const modifiers = [
-                'near me', 'online', 'service', 'support', 'help', 'contact', 
-                'phone number', 'customer service', 'call center', 'hotline',
-                'number', '24/7', 'hours', 'location', 'address', 'chat',
-                'email', 'support team', 'helpline', 'assistance', 'care'
+            const seenKeywords = new Set<string>();
+            
+            // Professional keyword expansion patterns
+            const prefixes = [
+                'best', 'top', 'affordable', 'professional', 'expert', 'certified', 'licensed',
+                'local', 'nearby', 'emergency', '24/7', 'same day', 'fast', 'reliable',
+                'trusted', 'reviews', 'compare', 'find', 'get', 'buy', 'hire', 'contact', 'call'
             ];
             
-            const questions = ['how to', 'what is', 'where is', 'when does', 'why'];
+            const suffixes = [
+                'near me', 'online', 'service', 'services', 'company', 'experts', 'specialists',
+                'phone number', 'customer service', 'support', 'help', 'assistance',
+                'location', 'address', 'hours', 'quote', 'estimate', 'prices', 'cost',
+                'reviews', 'ratings', 'deals', 'offers', 'discount', 'coupon'
+            ];
+            
+            const intentModifiers = [
+                'how to', 'what is', 'where to', 'when to', 'why choose',
+                'get quote', 'book now', 'schedule', 'compare', 'find best',
+                'top rated', 'best price', 'affordable', 'cheap', 'discount'
+            ];
+            
+            const locationModifiers = [
+                'near me', 'local', 'in my area', 'nearby', 'close to me',
+                'same city', 'same state', 'same zip code'
+            ];
+            
+            // Helper to check if keyword should be excluded
+            const shouldExclude = (keyword: string): boolean => {
+                const lowerKeyword = keyword.toLowerCase();
+                return negatives.some(neg => lowerKeyword.includes(neg));
+            };
+            
+            // Helper to add keyword if unique and not excluded
+            const addKeyword = (keyword: string) => {
+                const normalized = keyword.toLowerCase().trim();
+                if (normalized.length >= 3 && normalized.length <= 50 && 
+                    !seenKeywords.has(normalized) && !shouldExclude(keyword)) {
+                    seenKeywords.add(normalized);
+                    mockKeywords.push(keyword);
+                }
+            };
             
             seeds.forEach(seed => {
-                // Add base seed
-                if (!negatives.some(neg => seed.toLowerCase().includes(neg))) {
-                    mockKeywords.push(seed);
-                }
+                const cleanSeed = seed.trim().toLowerCase();
+                if (cleanSeed.length < 3) return;
                 
-                // Only add modifiers if the seed is reasonably short (< 30 chars)
-                if (seed.length < 30) {
-                    // Add modifiers
-                    modifiers.forEach(modifier => {
-                        const combined = `${seed} ${modifier}`;
-                        // Check combined length doesn't exceed 50 chars
-                        if (combined.length <= 50 && !negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                            mockKeywords.push(combined);
-                        }
-                    });
-                    
-                    // Add question variations
-                    questions.forEach(question => {
-                        const combined = `${question} ${seed}`;
-                        // Check combined length doesn't exceed 50 chars
-                        if (combined.length <= 50 && !negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                            mockKeywords.push(combined);
-                        }
-                    });
+                // 1. Add base seed
+                addKeyword(seed);
+                
+                // 2. Add prefix + seed variations (limit to avoid too many)
+                const selectedPrefixes = prefixes.slice(0, Math.min(8, prefixes.length))
+                    .sort(() => Math.random() - 0.5);
+                selectedPrefixes.forEach(prefix => {
+                    addKeyword(`${prefix} ${seed}`);
+                });
+                
+                // 3. Add seed + suffix variations
+                const selectedSuffixes = suffixes.slice(0, Math.min(10, suffixes.length))
+                    .sort(() => Math.random() - 0.5);
+                selectedSuffixes.forEach(suffix => {
+                    addKeyword(`${seed} ${suffix}`);
+                });
+                
+                // 4. Add intent-based variations
+                const selectedIntents = intentModifiers.slice(0, Math.min(5, intentModifiers.length))
+                    .sort(() => Math.random() - 0.5);
+                selectedIntents.forEach(intent => {
+                    addKeyword(`${intent} ${seed}`);
+                });
+                
+                // 5. Add location-based variations
+                locationModifiers.forEach(location => {
+                    addKeyword(`${seed} ${location}`);
+                });
+                
+                // 6. Add question variations
+                const questions = ['how to', 'what is', 'where is', 'when does', 'why'];
+                questions.forEach(question => {
+                    addKeyword(`${question} ${seed}`);
+                });
+                
+                // 7. Create long-tail variations (3-4 words)
+                if (cleanSeed.split(' ').length <= 2) {
+                    const seedWords = cleanSeed.split(' ');
+                    if (seedWords.length === 1) {
+                        // Single word: add professional combinations
+                        addKeyword(`professional ${seed} service`);
+                        addKeyword(`best ${seed} near me`);
+                        addKeyword(`affordable ${seed} company`);
+                    } else if (seedWords.length === 2) {
+                        // Two words: add third word
+                        addKeyword(`${seedWords[0]} ${seedWords[1]} service`);
+                        addKeyword(`best ${seedWords[0]} ${seedWords[1]}`);
+                        addKeyword(`${seedWords[0]} ${seedWords[1]} near me`);
+                    }
                 }
             });
             
+            // 8. Add cross-seed combinations (if multiple seeds)
+            if (seeds.length > 1) {
+                for (let i = 0; i < Math.min(seeds.length, 3); i++) {
+                    for (let j = i + 1; j < Math.min(seeds.length, 3); j++) {
+                        const combined = `${seeds[i]} and ${seeds[j]}`;
+                        if (combined.length <= 50) {
+                            addKeyword(combined);
+                        }
+                    }
+                }
+            }
+            
+            // Remove duplicates and shuffle for variety
+            const uniqueKeywords = Array.from(new Set(mockKeywords.map(k => k.toLowerCase().trim())))
+                .map(k => {
+                    // Find original case version if available
+                    const original = mockKeywords.find(mk => mk.toLowerCase().trim() === k);
+                    return original || k;
+                });
+            
+            // Shuffle for randomness
+            const shuffled = [...uniqueKeywords].sort(() => Math.random() - 0.5);
+            
             // Apply match type formatting
             const formattedKeywords: string[] = [];
-            mockKeywords.forEach((keyword: string) => {
+            shuffled.forEach((keyword: string) => {
                 if (matchTypes.broad) {
                     formattedKeywords.push(keyword);
                 }
@@ -273,12 +365,11 @@ export const KeywordPlannerSelectable = ({
                 }
             });
             
-            // Add natural variation: randomly include/exclude some keywords to avoid exact counts
-            // This makes the results look more natural and less like demo data
-            const variationPercent = 0.85 + Math.random() * 0.15; // 85-100% of keywords
-            const finalCount = Math.floor(formattedKeywords.length * variationPercent);
-            const shuffled = [...formattedKeywords].sort(() => Math.random() - 0.5);
-            const variedKeywords = shuffled.slice(0, finalCount);
+            // Final shuffle to mix match types naturally
+            const finalShuffled = [...formattedKeywords].sort(() => Math.random() - 0.5);
+            
+            // Use all keywords (no artificial limiting) - let the natural generation determine count
+            const variedKeywords = finalShuffled;
             
             if (isAppend) {
                 setGeneratedKeywords(prev => {
@@ -408,42 +499,42 @@ export const KeywordPlannerSelectable = ({
                         </label>
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                                <Checkbox 
+                                <input 
+                                    type="checkbox"
                                     id="broad-planner" 
                                     checked={matchTypes.broad}
-                                    onCheckedChange={(checked) => {
-                                        const newValue = checked === true;
-                                        setMatchTypes(prev => ({...prev, broad: newValue}));
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({...prev, broad: e.target.checked}));
                                     }}
-                                    className="border-amber-400"
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                                 />
                                 <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Broad Match
                                 </label>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Checkbox 
+                                <input 
+                                    type="checkbox"
                                     id="phrase-planner" 
                                     checked={matchTypes.phrase}
-                                    onCheckedChange={(checked) => {
-                                        const newValue = checked === true;
-                                        setMatchTypes(prev => ({...prev, phrase: newValue}));
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({...prev, phrase: e.target.checked}));
                                     }}
-                                    className="border-blue-400"
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                                 />
                                 <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Phrase Match "keyword"
                                 </label>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Checkbox 
+                                <input 
+                                    type="checkbox"
                                     id="exact-planner" 
                                     checked={matchTypes.exact}
-                                    onCheckedChange={(checked) => {
-                                        const newValue = checked === true;
-                                        setMatchTypes(prev => ({...prev, exact: newValue}));
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({...prev, exact: e.target.checked}));
                                     }}
-                                    className="border-emerald-400"
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                                 />
                                 <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Exact Match [keyword]
@@ -672,16 +763,16 @@ export const KeywordPlannerSelectable = ({
                                                     : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
                                             }`}
                                         >
-                                            <Checkbox 
+                                            <input 
+                                                type="checkbox"
                                                 id={`keyword-checkbox-${idx}`}
                                                 checked={isSelected}
-                                                onCheckedChange={(checked) => {
-                                                    const newValue = checked === true;
-                                                    // Only toggle if the value actually changed
-                                                    if (newValue !== isSelected) {
+                                                onChange={(e) => {
+                                                    if (e.target.checked !== isSelected) {
                                                         toggleKeyword(keyword);
                                                     }
                                                 }}
+                                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                                             />
                                             <label 
                                                 htmlFor={`keyword-checkbox-${idx}`}

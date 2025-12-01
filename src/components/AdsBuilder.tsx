@@ -189,7 +189,8 @@ interface AdGroup {
 
 interface Extension {
     id: string;
-    extensionType: 'callout' | 'sitelink' | 'call' | 'snippet' | 'price' | 'location' | 'message' | 'leadform' | 'promotion' | 'image' | 'app';
+    // Google Search Ads compatible extensions only
+    extensionType: 'callout' | 'sitelink' | 'call' | 'snippet' | 'price' | 'location' | 'message' | 'leadform' | 'promotion';
     [key: string]: any;
 }
 
@@ -255,17 +256,16 @@ export const AdsBuilder = () => {
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [showConfigSidebar, setShowConfigSidebar] = useState(true);
     
+    // Google Search Ads compatible extensions only
     const extensionTypes = [
         { id: 'callout', label: 'Callout Extension', icon: Tag, description: 'Highlight key benefits', color: 'purple' },
         { id: 'sitelink', label: 'Sitelink Extension', icon: Link2, description: 'Add links to important pages', color: 'blue' },
         { id: 'call', label: 'Call Extension', icon: Phone, description: 'Add phone number', color: 'green' },
-        { id: 'snippet', label: 'Snippet Extension', icon: FileText, description: 'Show structured information', color: 'indigo' },
+        { id: 'snippet', label: 'Structured Snippet Extension', icon: FileText, description: 'Show structured information', color: 'indigo' },
         { id: 'price', label: 'Price Extension', icon: DollarSign, description: 'Display pricing', color: 'emerald' },
         { id: 'location', label: 'Location Extension', icon: MapPin, description: 'Show business location', color: 'red' },
         { id: 'message', label: 'Message Extension', icon: MessageSquare, description: 'Enable messaging', color: 'purple' },
         { id: 'promotion', label: 'Promotion Extension', icon: Gift, description: 'Show special offers', color: 'orange' },
-        { id: 'image', label: 'Image Extension', icon: ImageIcon, description: 'Add images', color: 'pink' },
-        { id: 'app', label: 'App Extension', icon: Smartphone, description: 'Link to mobile app', color: 'cyan' },
         { id: 'leadform', label: 'Lead Form Extension', icon: Building2, description: 'Add lead form', color: 'blue' },
     ];
 
@@ -1013,10 +1013,10 @@ export const AdsBuilder = () => {
         setShowExtensionDialog(true);
     };
 
-    const handleConfirmExtensions = () => {
+    const handleConfirmExtensions = async () => {
         if (!selectedAdForExtension) return;
 
-            const ad = generatedAds.find(a => a.id === selectedAdForExtension);
+        const ad = generatedAds.find(a => a.id === selectedAdForExtension);
         if (!ad) return;
 
         // Get existing extension types to prevent duplicates
@@ -1032,98 +1032,172 @@ export const AdsBuilder = () => {
             return;
         }
 
-            const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
+        // Extract keywords from ad group
+        const adGroup = adGroups.find(g => g.name === ad.groupName);
+        const keywords = adGroup?.keywords ? adGroup.keywords.split(',').map(k => k.trim()) : [];
+        const adHeadline = ad.headline1 || '';
+        const adDescription = ad.description1 || '';
 
-        const newExtensions: Extension[] = newExtensionTypes.map(extType => {
-            const extId = crypto.randomUUID();
-
-            let extension: Extension = {
-                id: extId,
-                extensionType: extType as any,
-            };
-
-            switch (extType) {
-                case 'callout':
-                    extension.callouts = [
-                        `Free ${mainKeyword} Consultation`,
-                        '24/7 Expert Support',
-                        'Best Price Guarantee',
-                        'Fast & Reliable Service'
-                    ];
-                    break;
-                case 'sitelink':
-                    extension.sitelinks = [
-                        { text: 'Shop Now', description: 'Browse our collection', url: `${baseUrl}/shop` },
-                        { text: 'About Us', description: 'Learn more about us', url: `${baseUrl}/about` },
-                        { text: 'Contact', description: 'Get in touch', url: `${baseUrl}/contact` },
-                        { text: 'Support', description: 'Customer support', url: `${baseUrl}/support` }
-                    ];
-                    break;
-                case 'call':
-                    extension.phone = '(555) 123-4567';
-                    extension.callTrackingEnabled = true;
-                    break;
-                case 'snippet':
-                    extension.header = 'Services';
-                    extension.values = [mainKeyword, 'Expert Service', 'Quality Products', 'Fast Delivery'];
-                    break;
-                case 'price':
-                    extension.priceQualifier = 'From';
-                    extension.price = '$99';
-                    extension.currency = 'USD';
-                    extension.unit = 'per service';
-                    extension.description = 'Competitive pricing';
-                    break;
-                case 'location':
-                    extension.businessName = 'Your Business Name';
-                    extension.addressLine1 = '123 Main St';
-                    extension.city = 'City';
-                    extension.state = 'State';
-                    extension.postalCode = '12345';
-                    extension.phone = '(555) 123-4567';
-                    break;
-                case 'message':
-                    extension.messageText = `Message us about ${mainKeyword}`;
-                    extension.businessName = 'Your Business';
-                    extension.phone = '(555) 123-4567';
-                    break;
-                case 'promotion':
-                    extension.promotionText = 'Special Offer';
-                    extension.promotionDescription = `Get 20% off ${mainKeyword}`;
-                    extension.occasion = 'SALE';
-                    extension.startDate = new Date().toISOString().split('T')[0];
-                    extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                    break;
-                case 'image':
-                    extension.imageUrl = 'https://via.placeholder.com/1200x628';
-                    extension.imageAltText = 'Product Image';
-                    extension.imageName = 'Product Showcase';
-                    break;
-                case 'app':
-                    extension.appStore = 'GOOGLE_PLAY';
-                    extension.appId = 'com.example.app';
-                    extension.appLinkText = 'Download Now';
-                    break;
-                case 'leadform':
-                    extension.formName = 'Get Started';
-                    extension.formDescription = 'Fill out this form to get in touch';
-                    extension.formType = 'CONTACT';
-                    break;
-            }
-
-            return extension;
+        // Show loading notification
+        const loadingToast = notifications.loading('Generating AI extensions...', {
+            title: 'AI Generation',
+            description: 'Creating unique extensions based on your ad content.'
         });
 
-        // Merge new extensions with existing ones
-        setGeneratedAds(generatedAds.map(a => 
-            a.id === selectedAdForExtension 
-                ? { ...a, extensions: [...(a.extensions || []), ...newExtensions] }
-                : a
-        ));
+        try {
+            const response = await api.post('/generate-extensions', {
+                keywords: keywords.slice(0, 10).map((k: string) => k.replace(/^\[|\]$|^"|"$/g, '')),
+                extensionTypes: newExtensionTypes,
+                adHeadline,
+                adDescription,
+                baseUrl: baseUrl || 'www.example.com'
+            });
 
-        setShowExtensionDialog(false);
-        setSelectedAdForExtension(null);
-        setSelectedExtensions([]);
+            if (response.extensions && Array.isArray(response.extensions)) {
+                const newExtensions: Extension[] = response.extensions.map((extData: any) => {
+                    const extId = crypto.randomUUID();
+                    let extension: Extension = {
+                        id: extId,
+                        extensionType: extData.extensionType as any,
+                        ...extData.data
+                    };
+
+                    // Ensure URLs are properly formatted for sitelinks
+                    if (extension.sitelinks && Array.isArray(extension.sitelinks)) {
+                        extension.sitelinks = extension.sitelinks.map((link: any) => ({
+                            ...link,
+                            url: link.url || `${baseUrl || 'www.example.com'}/${link.text?.toLowerCase().replace(/\s+/g, '-') || 'page'}`
+                        }));
+                    }
+
+                    return extension;
+                });
+
+                // Merge new extensions with existing ones
+                setGeneratedAds(generatedAds.map(a => 
+                    a.id === selectedAdForExtension 
+                        ? { ...a, extensions: [...(a.extensions || []), ...newExtensions] }
+                        : a
+                ));
+
+                setShowExtensionDialog(false);
+                setSelectedAdForExtension(null);
+                setSelectedExtensions([]);
+                
+                if (loadingToast) loadingToast();
+                notifications.success(`Generated ${newExtensions.length} unique AI extensions`, {
+                    title: 'Extensions Created',
+                    description: 'Your AI-generated extensions have been added to the ad.',
+                });
+            } else {
+                throw new Error('Invalid response format from server');
+            }
+        } catch (error: any) {
+            console.log('ℹ️ Backend unavailable - using fallback extension generation');
+            
+            if (loadingToast) loadingToast();
+            
+            // Fallback to basic generation with more variety
+            const mainKeyword = ad?.headline1?.split(' ')[0] || 'service';
+            const newExtensions: Extension[] = newExtensionTypes.map((extType, index) => {
+                const extId = crypto.randomUUID();
+
+                let extension: Extension = {
+                    id: extId,
+                    extensionType: extType as any,
+                };
+
+                // Generate varied fallback content
+                const calloutVariations = [
+                    [`Expert ${mainKeyword} Service`, 'Licensed Professionals', '24/7 Available', 'Free Estimate'],
+                    [`Professional ${mainKeyword}`, 'Trusted & Reliable', 'Same Day Service', 'Quality Guaranteed'],
+                    [`Certified ${mainKeyword}`, 'Fast Response Time', 'Satisfaction Guaranteed', 'Emergency Service']
+                ];
+                const sitelinkVariations = [
+                    [
+                        { text: `${mainKeyword} Services`, description: 'Professional service options', url: `${baseUrl}/services` },
+                        { text: 'Get Quote', description: 'Request a free estimate', url: `${baseUrl}/quote` },
+                        { text: 'Contact Us', description: 'Speak with our team', url: `${baseUrl}/contact` },
+                        { text: 'About', description: 'Learn about our company', url: `${baseUrl}/about` }
+                    ],
+                    [
+                        { text: 'Our Services', description: 'View all service offerings', url: `${baseUrl}/services` },
+                        { text: 'Schedule Service', description: 'Book an appointment', url: `${baseUrl}/schedule` },
+                        { text: 'Customer Support', description: 'Get help and support', url: `${baseUrl}/support` },
+                        { text: 'Resources', description: 'Helpful information', url: `${baseUrl}/resources` }
+                    ]
+                ];
+
+                switch (extType) {
+                    case 'callout':
+                        extension.callouts = calloutVariations[index % calloutVariations.length];
+                        break;
+                    case 'sitelink':
+                        extension.sitelinks = sitelinkVariations[index % sitelinkVariations.length];
+                        break;
+                    case 'call':
+                        extension.phone = '(555) 123-4567';
+                        extension.callTrackingEnabled = true;
+                        break;
+                    case 'snippet':
+                        extension.header = 'Services';
+                        extension.values = keywords.length > 0 
+                            ? keywords.slice(0, 4).map((k: string) => k.replace(/^\[|\]$|^"|"$/g, ''))
+                            : [mainKeyword, 'Expert Service', 'Quality Work', 'Fast Response'];
+                        break;
+                    case 'price':
+                        extension.priceQualifier = 'From';
+                        extension.price = '$99';
+                        extension.currency = 'USD';
+                        extension.unit = 'per service';
+                        extension.description = 'Competitive pricing';
+                        break;
+                    case 'location':
+                        extension.businessName = 'Your Business Name';
+                        extension.addressLine1 = '123 Main St';
+                        extension.city = 'City';
+                        extension.state = 'State';
+                        extension.postalCode = '12345';
+                        extension.phone = '(555) 123-4567';
+                        break;
+                    case 'message':
+                        extension.messageText = `Message us about ${mainKeyword}`;
+                        extension.businessName = 'Your Business';
+                        extension.phone = '(555) 123-4567';
+                        break;
+                    case 'promotion':
+                        extension.promotionText = 'Special Offer';
+                        extension.promotionDescription = `Free consultation for ${mainKeyword}`;
+                        extension.occasion = 'PROMOTION';
+                        extension.startDate = new Date().toISOString().split('T')[0];
+                        extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                        break;
+                    case 'leadform':
+                        extension.formName = 'Get Started';
+                        extension.formDescription = 'Fill out this form to get in touch';
+                        extension.formType = 'CONTACT';
+                        break;
+                }
+
+                return extension;
+            });
+
+            // Merge new extensions with existing ones
+            setGeneratedAds(generatedAds.map(a => 
+                a.id === selectedAdForExtension 
+                    ? { ...a, extensions: [...(a.extensions || []), ...newExtensions] }
+                    : a
+            ));
+
+            setShowExtensionDialog(false);
+            setSelectedAdForExtension(null);
+            setSelectedExtensions([]);
+            
+            notifications.info(`Generated ${newExtensions.length} extensions (offline mode)`, {
+                title: 'Extensions Created',
+                description: 'Using fallback generation. Some variety may be limited.',
+            });
+        }
     };
 
     const handleRemoveExtension = (adId: string, extensionId: string) => {
