@@ -226,9 +226,9 @@ const App = () => {
         // Clear any cached data
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
-        // Redirect to auth
+        // Redirect to homepage
         window.history.pushState({}, '', '/');
-      setAppView('auth');
+      setAppView('homepage');
       setAuthMode('login');
       setActiveTab('dashboard');
         // Force page reload to clear all state
@@ -428,12 +428,12 @@ const App = () => {
             }
             return prevUser;
           });
-          // If user signed out and we're on user view, go to auth
+          // If user signed out and we're on user view, go to homepage
           if (event === 'SIGNED_OUT') {
             // Use setTimeout to avoid state update during render
             setTimeout(() => {
               if (isMounted) {
-                setAppView('auth');
+                setAppView('homepage');
                 setAuthMode('login');
               }
             }, 0);
@@ -657,7 +657,7 @@ const App = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
         setTimeout(() => {
-            setAppView('auth');
+            setAppView('homepage');
             setAuthMode('login');
           }, 1000);
         }
