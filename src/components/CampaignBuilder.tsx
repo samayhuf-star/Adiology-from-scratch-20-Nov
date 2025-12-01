@@ -1341,24 +1341,30 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
         
         // Check if we have ads
-        if (generatedAds.length === 0) {
+        const validAds = generatedAds.filter(ad => 
+            ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
+        );
+        
+        if (validAds.length === 0) {
             errors.push('No ads found. Please create at least one ad.');
         }
         
-        // Check if all ad groups have ads
+        // Check if all ad groups have ads (considering ALL AD GROUPS mode)
         adGroups.forEach(group => {
-            const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
+            const groupAds = validAds.filter(ad => 
+                ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE
+            );
             if (groupAds.length === 0) {
                 warnings.push(`Ad group "${group.name}" has no ads.`);
             }
         });
         
         // Check required ad fields and auto-fix URLs
-        const adsToFix: Array<{ index: number; finalUrl: string }> = [];
+        const adsToFix: Array<{ adId: string | number; finalUrl: string }> = [];
         const adsByGroup: { [key: string]: any[] } = {};
         
         // Group ads by ad group for better error reporting
-        generatedAds.forEach((ad, idx) => {
+        validAds.forEach((ad, idx) => {
             const groupName = ad.adGroup || 'Unknown';
             if (!adsByGroup[groupName]) {
                 adsByGroup[groupName] = [];
@@ -1366,7 +1372,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             adsByGroup[groupName].push({ ...ad, _index: idx });
         });
         
-        generatedAds.forEach((ad, idx) => {
+        validAds.forEach((ad, idx) => {
             const groupName = ad.adGroup || 'Unknown Group';
             const adNumber = adsByGroup[groupName]?.findIndex((a: any) => a.id === ad.id) + 1 || idx + 1;
             
@@ -1394,7 +1400,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 } else if (!ad.finalUrl.match(/^https?:\/\//i)) {
                     // Auto-fix URL format if missing protocol
                     const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
-                    adsToFix.push({ index: idx, finalUrl: fixedUrl });
+                    adsToFix.push({ adId: ad.id, finalUrl: fixedUrl });
                 }
             }
             if (ad.type === 'callonly') {
@@ -1423,15 +1429,15 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 if (ad.finalUrl && !ad.finalUrl.match(/^https?:\/\//i)) {
                     // Auto-fix URL format if missing protocol
                     const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
-                    adsToFix.push({ index: idx, finalUrl: fixedUrl });
+                    adsToFix.push({ adId: ad.id, finalUrl: fixedUrl });
                 }
             }
         });
         
         // Auto-fix URLs that don't start with http:// or https://
         if (adsToFix.length > 0) {
-            setGeneratedAds(prev => prev.map((ad, idx) => {
-                const fix = adsToFix.find(f => f.index === idx);
+            setGeneratedAds(prev => prev.map((ad) => {
+                const fix = adsToFix.find(f => f.adId === ad.id);
                 if (fix) {
                     return { ...ad, finalUrl: fix.finalUrl };
                 }
@@ -1490,25 +1496,16 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             return;
         }
 
-        // Validate before generating
+        // Validate before generating (safety check - validation should already be done before calling this)
         const validation = validateCSV();
         
         if (!validation.valid) {
-            notifications.error(`CSV validation failed:\n\n${validation.errors.join('\n')}`, {
-                title: 'Validation Failed',
-                description: 'Please fix these issues before exporting.',
-                priority: 'high',
-            });
+            // Don't show notification here - it should have been shown before calling generateCSV
+            // Just return silently to prevent duplicate error messages
             return;
         }
         
-        if (validation.warnings.length > 0) {
-            notifications.warning(`CSV validation warnings:\n\n${validation.warnings.join('\n')}`, {
-                title: 'Validation Warnings',
-                description: 'Your CSV has some warnings. Review them before exporting.',
-            });
-            // Continue with export despite warnings
-        }
+        // Warnings are handled before calling this function, so we can proceed silently
         
         const adGroups = getDynamicAdGroups();
         const campaignNameValue = campaignName || 'Campaign 1';
@@ -1847,19 +1844,35 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             Match Types
                         </Label>
                         <div className="flex flex-wrap items-center gap-6 p-5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border-2 border-blue-200/50">
-                            {MATCH_TYPES.map(type => (
-                                <div key={type.id} className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all">
-                                    <Checkbox 
-                                        id={type.id} 
-                                        checked={matchTypes[type.id as keyof typeof matchTypes]}
-                                        onCheckedChange={(c) => setMatchTypes(prev => ({ ...prev, [type.id]: !!c }))}
-                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                                    />
-                                    <Label htmlFor={type.id} className="cursor-pointer font-medium text-slate-700">
-                                        {type.label} <span className="text-blue-500 font-mono text-xs ml-1">{type.example}</span>
-                                    </Label>
-                                </div>
-                            ))}
+                            {MATCH_TYPES.map(type => {
+                                const matchTypeKey = type.id as keyof typeof matchTypes;
+                                const isChecked = matchTypes[matchTypeKey];
+                                return (
+                                    <div 
+                                        key={type.id} 
+                                        className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all"
+                                    >
+                                        <Checkbox 
+                                            id={`match-type-${type.id}`}
+                                            checked={isChecked}
+                                            onCheckedChange={(checked) => {
+                                                const newValue = checked === true;
+                                                setMatchTypes(prev => ({
+                                                    ...prev,
+                                                    [matchTypeKey]: newValue
+                                                }));
+                                            }}
+                                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <Label 
+                                            htmlFor={`match-type-${type.id}`}
+                                            className="cursor-pointer font-medium text-slate-700 select-none"
+                                        >
+                                            {type.label} <span className="text-blue-500 font-mono text-xs ml-1">{type.example}</span>
+                                        </Label>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -4455,18 +4468,31 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         
         // Calculate number of locations
         let totalLocations = 0;
-        if (manualGeoInput && manualGeoInput.trim()) {
-            // Count comma-separated locations
-            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
-            totalLocations = locations.length;
-        } else if (zipPreset) {
+        
+        // Check presets first (they take priority over manual input)
+        if (zipPreset) {
             // If ZIP preset is selected, use the preset number
             const presetNumber = parseInt(zipPreset.replace(/\D/g, '')) || 0;
             totalLocations = presetNumber;
         } else if (cityPreset) {
             // If city preset is selected, use the preset number
-            const presetNumber = parseInt(cityPreset.replace(/\D/g, '')) || 0;
+            // If preset is '0', it means "all cities" - count from manualGeoInput
+            if (cityPreset === '0') {
+                // Count actual cities in manualGeoInput
+                const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
+                totalLocations = locations.length;
+            } else {
+                const presetNumber = parseInt(cityPreset.replace(/\D/g, '')) || 0;
+                totalLocations = presetNumber;
+            }
+        } else if (statePreset) {
+            // If state preset is selected, use the preset number
+            const presetNumber = parseInt(statePreset.replace(/\D/g, '')) || 0;
             totalLocations = presetNumber;
+        } else if (manualGeoInput && manualGeoInput.trim()) {
+            // Count comma-separated locations from manual input (only if no preset is selected)
+            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
+            totalLocations = locations.length;
         } else {
             // Default to 1 if only country is selected
             totalLocations = 1;
@@ -4580,7 +4606,32 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     </Button>
                     <Button 
                         size="lg" 
-                        onClick={() => generateCSV()}
+                        onClick={async () => {
+                            // Validate first before generating
+                            const validation = validateCSV();
+                            if (!validation.valid) {
+                                notifications.error(`CSV Validation Failed! Errors: ${validation.errors.join(', ')}. ${validation.warnings.length > 0 ? `Warnings: ${validation.warnings.join(', ')}.` : ''} Please fix these issues before exporting.`, {
+                                    title: 'CSV Validation Failed',
+                                    description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
+                                    priority: 'high',
+                                });
+                                return;
+                            }
+                            
+                            // If validation passes, proceed with CSV generation
+                            if (validation.warnings.length > 0) {
+                                notifications.warning(`CSV has ${validation.warnings.length} warning(s): ${validation.warnings.join(', ')}. Proceeding with export...`, {
+                                    title: 'Validation Warnings',
+                                    duration: 5000,
+                                });
+                            }
+                            
+                            await generateCSV();
+                            notifications.success('CSV file downloaded successfully!', {
+                                title: 'Export Complete',
+                                description: 'Your campaign CSV is ready to import into Google Ads Editor.',
+                            });
+                        }}
                         className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg py-6"
                     >
                         <Download className="mr-2 w-5 h-5" />
