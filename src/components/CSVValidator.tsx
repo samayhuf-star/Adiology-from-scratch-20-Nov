@@ -37,10 +37,19 @@ const COLUMN_RULES = {
     
     // LOCATION TARGETING FIELDS (Row Type: location)
     "Location":         { required: true, types: ['location'], rule: "City, ZIP Code, Region, or Country name." },
+    "Location Target":  { required: true, types: ['location'], rule: "Location name for targeting (City, ZIP, State, Country)." },
+    "Target Type":      { required: false, types: ['location'], rule: "Type of location target (e.g., 'Location of interest', 'City', 'State', 'Postal Code')." },
     "Bid Adjustment":   { required: false, types: ['location'], rule: "Percentage value (e.g., 10% or -50%)." },
     "Is Exclusion":     { required: false, types: ['location'], rule: "Set to Yes to exclude." },
     "Zip Codes":        { required: false, types: ['location'], rule: "List of zip codes (use Location column for core targeting)." },
     "Cities":           { required: false, types: ['location'], rule: "List of cities (use Location column for core targeting)." },
+    
+    // ADDITIONAL ASSET FIELDS
+    "Callout Text":     { required: true, types: ['callout'], rule: "Callout extension text. Max 25 characters." },
+    "Header":           { required: true, types: ['structured snippet'], rule: "Structured snippet header/category." },
+    "Values":           { required: true, types: ['structured snippet'], rule: "Comma-separated values for structured snippet." },
+    "Image URL":        { required: true, types: ['image'], rule: "URL of the image asset." },
+    "Alt Text":         { required: false, types: ['image'], rule: "Alternative text for the image." },
     "Call Extension":   { required: false, types: ['ad', 'sitelink'], rule: "Deprecated, use Call Asset (Call) instead." }
 };
 
@@ -48,6 +57,8 @@ const REQUIRED_HEADERS_FOR_AD = ["Campaign", "Ad Group", "Row Type", "Final URL"
 const REQUIRED_HEADERS_FOR_SITELINK = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Final URL", "Link Text"];
 const REQUIRED_HEADERS_FOR_CALL = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Phone Number", "Country Code"];
 const REQUIRED_HEADERS_FOR_LOCATION = ["Campaign", "Ad Group", "Row Type", "Location"];
+const REQUIRED_HEADERS_FOR_CALLOUT = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Callout Text"];
+const REQUIRED_HEADERS_FOR_SNIPPET = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Header", "Values"];
 
 // --- Utility Functions ---
 function parseCSV(text: string) {
@@ -119,9 +130,14 @@ function validateCell(header: string, value: string, rowType: string) {
             return { status: 'error', message: `Invalid URL format. Must start with http:// or https://.` };
         }
         
-        const validRowTypes = ['ad', 'sitelink', 'call', 'location', 'keyword', 'campaign', 'ad group'];
-        if (header === "Row Type" && !validRowTypes.includes(trimmedValue.toLowerCase())) {
+        const validRowTypes = ['ad', 'sitelink', 'call', 'location', 'location target', 'location targeting', 'keyword', 'campaign', 'ad group', 'callout', 'structured snippet', 'image', 'asset'];
+        if (header === "Row Type" && trimmedValue && !validRowTypes.includes(trimmedValue.toLowerCase())) {
             return { status: 'warning', message: `Unrecognized Row Type: ${trimmedValue}. Should be one of ${validRowTypes.join(', ')}.` };
+        }
+        
+        // Validate callout text length
+        if (header === "Callout Text" && trimmedValue.length > 25) {
+            return { status: 'error', message: `EXCEEDS LIMIT: Max 25 characters. Current: ${trimmedValue.length}.` };
         }
     }
 
@@ -164,7 +180,21 @@ export const CSVValidator = () => {
             if (rowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
             else if (rowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
             else if (rowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
-            else if (rowType === 'location') requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting') {
+                requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+            }
+            else if (rowType === 'callout') requiredHeaders = REQUIRED_HEADERS_FOR_CALLOUT;
+            else if (rowType === 'structured snippet') requiredHeaders = REQUIRED_HEADERS_FOR_SNIPPET;
+            // For rows without Row Type, try to detect by column presence
+            else if (!rowType && (row['Location Target'] || row['Location'])) {
+                requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+            }
+            else if (!rowType && (row['Sitelink Text'] || row['Link Text'])) {
+                requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
+            }
+            else if (!rowType && row['Callout Text']) {
+                requiredHeaders = REQUIRED_HEADERS_FOR_CALLOUT;
+            }
             else if (rowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
 
             requiredHeaders.forEach(reqHeader => {
@@ -453,39 +483,64 @@ export const CSVValidator = () => {
             if (campaign) campaigns.add(campaign);
             if (adGroup) adGroups.add(`${campaign}|${adGroup}`);
 
-            // Count keywords
-            if (rowType === 'keyword') {
+            // Count keywords - check for Keyword column or Row Type
+            if (rowType === 'keyword' || row['Keyword']) {
                 keywords.total++;
-            } else if (rowType === 'negative keyword' || rowType === 'campaign negative keyword' || rowType === 'ad group negative keyword') {
+            } else if (rowType === 'negative keyword' || rowType === 'campaign negative keyword' || rowType === 'ad group negative keyword' || row['Negative Keyword']) {
                 keywords.negative++;
             }
 
-            // Count ads
-            if (rowType === 'ad' || rowType === 'responsive search ad' || rowType === 'expanded text ad') {
+            // Count ads - check for ad indicators
+            const hasHeadlines = row['Headline 1'] || row['Headline 2'] || row['Headline 3'];
+            const hasDescriptions = row['Description 1'] || row['Description 2'];
+            const hasPhone = row['Phone Number'];
+            
+            if (rowType === 'ad' || rowType === 'responsive search ad' || rowType === 'expanded text ad' || hasHeadlines || hasDescriptions) {
                 // Check if it's RSA, DKI, or Call-Only based on available fields
-                if (row['Headline 1'] || row['Description 1']) {
-                    ads.RSA++;
-                } else if (row['Phone Number']) {
+                if (hasHeadlines || hasDescriptions) {
+                    // Check for DKI syntax
+                    const headline1 = (row['Headline 1'] || '').toString();
+                    if (headline1.includes('{KeyWord:') || headline1.includes('{Keyword:')) {
+                        ads.DKI++;
+                    } else {
+                        ads.RSA++;
+                    }
+                } else if (hasPhone) {
                     ads.CallOnly++;
                 } else {
                     ads.other++;
                 }
             }
 
-            // Count assets - more comprehensive tracking
-            if (rowType === 'sitelink' || assetType === 'sitelink') {
+            // Count assets - detect by column presence, not just Row Type
+            // Sitelinks - check for "Sitelink Text" or "Link Text" column
+            if (rowType === 'sitelink' || assetType === 'sitelink' || row['Sitelink Text'] || row['Link Text']) {
                 assets.sitelinks++;
-            } else if (rowType === 'call' || assetType === 'call') {
+            } 
+            // Call assets - check for "Phone Number" and "Country Code" columns
+            else if (rowType === 'call' || assetType === 'call' || (row['Phone Number'] && row['Country Code'] && !hasHeadlines)) {
                 assets.calls++;
-            } else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' || row['Location']) {
+            } 
+            // Locations - check for "Location Target" or "Location" column
+            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' || 
+                     row['Location'] || row['Location Target'] || row['Target Type']) {
                 assets.locations++;
-            } else if (rowType === 'callout' || assetType === 'callout') {
+            } 
+            // Callouts - check for "Callout Text" column
+            else if (rowType === 'callout' || assetType === 'callout' || row['Callout Text']) {
                 assets.callouts++;
-            } else if (rowType === 'structured snippet' || assetType === 'structured snippet') {
+            } 
+            // Structured Snippets - check for "Header" and "Values" columns
+            else if (rowType === 'structured snippet' || assetType === 'structured snippet' || 
+                     (row['Header'] && row['Values'])) {
                 assets.structuredSnippets++;
-            } else if (rowType === 'image' || assetType === 'image') {
+            } 
+            // Images - check for "Image URL" or "Alt Text" columns
+            else if (rowType === 'image' || assetType === 'image' || row['Image URL'] || row['Alt Text']) {
                 assets.images++;
-            } else if (rowType.includes('asset') || assetType) {
+            } 
+            // Other assets - check for Asset Type column or other asset indicators
+            else if (rowType.includes('asset') || assetType || row['Asset Type']) {
                 assets.other++;
             }
         });
@@ -708,25 +763,47 @@ export const CSVValidator = () => {
                             <p className="text-xs text-slate-400">Callout extensions</p>
                         </div>
 
+                        {/* Structured Snippets */}
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                                    <FileText className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Snippets</p>
+                                    <p className="text-2xl font-bold text-slate-800">{summary.assets.structuredSnippets}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400">Structured snippets</p>
+                        </div>
+
+                        {/* Images */}
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center shadow-md">
+                                    <Sparkles className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Images</p>
+                                    <p className="text-2xl font-bold text-slate-800">{summary.assets.images}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400">Image assets</p>
+                        </div>
+
                         {/* Other Assets */}
-                        {(summary.assets.structuredSnippets + summary.assets.images + summary.assets.other) > 0 && (
+                        {summary.assets.other > 0 && (
                             <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center shadow-md">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-slate-600 rounded-lg flex items-center justify-center shadow-md">
                                         <Sparkles className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
                                         <p className="text-sm text-slate-500">Other Assets</p>
-                                        <p className="text-2xl font-bold text-slate-800">
-                                            {summary.assets.structuredSnippets + summary.assets.images + summary.assets.other}
-                                        </p>
+                                        <p className="text-2xl font-bold text-slate-800">{summary.assets.other}</p>
                                     </div>
                                 </div>
-                                <div className="text-xs text-slate-500 space-y-1">
-                                    {summary.assets.structuredSnippets > 0 && <div>• {summary.assets.structuredSnippets} Snippets</div>}
-                                    {summary.assets.images > 0 && <div>• {summary.assets.images} Images</div>}
-                                    {summary.assets.other > 0 && <div>• {summary.assets.other} Other</div>}
-                                </div>
+                                <p className="text-xs text-slate-400">Additional assets</p>
                             </div>
                         )}
                     </div>
@@ -862,4 +939,5 @@ export const CSVValidator = () => {
             )}
         </div>
     );
+};
 };

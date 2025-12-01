@@ -411,10 +411,13 @@ export const KeywordPlannerSelectable = ({
                                 <Checkbox 
                                     id="broad-planner" 
                                     checked={matchTypes.broad}
-                                    onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
+                                    onCheckedChange={(checked) => {
+                                        const newValue = checked === true;
+                                        setMatchTypes(prev => ({...prev, broad: newValue}));
+                                    }}
                                     className="border-amber-400"
                                 />
-                                <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer">
+                                <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Broad Match
                                 </label>
                             </div>
@@ -422,10 +425,13 @@ export const KeywordPlannerSelectable = ({
                                 <Checkbox 
                                     id="phrase-planner" 
                                     checked={matchTypes.phrase}
-                                    onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
+                                    onCheckedChange={(checked) => {
+                                        const newValue = checked === true;
+                                        setMatchTypes(prev => ({...prev, phrase: newValue}));
+                                    }}
                                     className="border-blue-400"
                                 />
-                                <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer">
+                                <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Phrase Match "keyword"
                                 </label>
                             </div>
@@ -433,10 +439,13 @@ export const KeywordPlannerSelectable = ({
                                 <Checkbox 
                                     id="exact-planner" 
                                     checked={matchTypes.exact}
-                                    onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
+                                    onCheckedChange={(checked) => {
+                                        const newValue = checked === true;
+                                        setMatchTypes(prev => ({...prev, exact: newValue}));
+                                    }}
                                     className="border-emerald-400"
                                 />
-                                <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer">
+                                <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Exact Match [keyword]
                                 </label>
                             </div>
@@ -657,7 +666,6 @@ export const KeywordPlannerSelectable = ({
                                     return (
                                         <div
                                             key={idx}
-                                            onClick={() => toggleKeyword(keyword)}
                                             className={`px-3 py-2 rounded border cursor-pointer transition-all text-sm font-mono flex items-center gap-3 ${
                                                 isSelected 
                                                     ? 'bg-indigo-50 border-indigo-300 hover:bg-indigo-100' 
@@ -665,13 +673,22 @@ export const KeywordPlannerSelectable = ({
                                             }`}
                                         >
                                             <Checkbox 
+                                                id={`keyword-checkbox-${idx}`}
                                                 checked={isSelected}
-                                                onCheckedChange={() => toggleKeyword(keyword)}
-                                                className="pointer-events-none"
+                                                onCheckedChange={(checked) => {
+                                                    const newValue = checked === true;
+                                                    // Only toggle if the value actually changed
+                                                    if (newValue !== isSelected) {
+                                                        toggleKeyword(keyword);
+                                                    }
+                                                }}
                                             />
-                                            <span className={isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700'}>
+                                            <label 
+                                                htmlFor={`keyword-checkbox-${idx}`}
+                                                className={`flex-1 cursor-pointer select-none ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                            >
                                                 {keyword}
-                                            </span>
+                                            </label>
                                         </div>
                                     );
                                 })}
