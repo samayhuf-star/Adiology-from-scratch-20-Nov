@@ -2505,7 +2505,7 @@ const renderSectionPreview = (
     
     case 'services':
       return (
-        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-5 md:px-6 bg-white" id="services">
+        <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-5 md:px-6 bg-white overflow-x-hidden" id="services">
           <div className="max-w-6xl mx-auto">
             {editMode ? (
               <>
@@ -2936,7 +2936,7 @@ const renderSectionPreview = (
                     <h2 
                       contentEditable
                       suppressContentEditableWarning
-                      className="text-4xl md:text-5xl font-bold mb-4 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                      className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-slate-900 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text break-words"
                       onBlur={(e) => handleTextEdit('heading', e.currentTarget.textContent || '')}
                     >
                       {section.content.heading || 'About Our Company'}
@@ -2945,7 +2945,7 @@ const renderSectionPreview = (
                       <p 
                         contentEditable
                         suppressContentEditableWarning
-                        className="text-xl text-indigo-600 font-semibold mb-6 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        className="text-lg sm:text-xl text-indigo-600 font-semibold mb-4 sm:mb-6 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text break-words"
                         onBlur={(e) => handleTextEdit('subheading', e.currentTarget.textContent || '')}
                       >
                         {section.content.subheading}
@@ -2955,7 +2955,7 @@ const renderSectionPreview = (
                       <p 
                         contentEditable
                         suppressContentEditableWarning
-                        className="text-lg text-slate-600 mb-8 leading-relaxed outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text"
+                        className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8 leading-relaxed outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-2 py-1 cursor-text break-words"
                         onBlur={(e) => handleTextEdit('description', e.currentTarget.textContent || '')}
                       >
                         {section.content.description}
@@ -2964,16 +2964,16 @@ const renderSectionPreview = (
                   </>
                 ) : (
                   <>
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-slate-900 break-words">
                       {section.content.heading || 'About Our Company'}
                     </h2>
                     {section.content.subheading && (
-                      <p className="text-xl text-indigo-600 font-semibold mb-6">
+                      <p className="text-lg sm:text-xl text-indigo-600 font-semibold mb-4 sm:mb-6 break-words">
                         {section.content.subheading}
                       </p>
                     )}
                     {section.content.description && (
-                      <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+                      <p className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8 leading-relaxed break-words">
                         {section.content.description}
                       </p>
                     )}
@@ -2982,7 +2982,7 @@ const renderSectionPreview = (
                 
                 {/* Stats */}
                 {section.content.stats && section.content.stats.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     {section.content.stats.map((stat: any, idx: number) => (
                       <div key={idx} className="text-center">
                         {editMode ? (
@@ -2990,7 +2990,7 @@ const renderSectionPreview = (
                             <div
                               contentEditable
                               suppressContentEditableWarning
-                              className="text-3xl font-bold text-indigo-600 mb-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text"
+                              className="text-2xl sm:text-3xl font-bold text-indigo-600 mb-1 sm:mb-2 outline-none hover:outline-2 hover:outline-indigo-400 hover:outline-dashed rounded px-1 cursor-text break-words"
                               onBlur={(e) => {
                                 if (onUpdate) {
                                   const newStats = [...(section.content.stats || [])];
@@ -3018,8 +3018,8 @@ const renderSectionPreview = (
                           </>
                         ) : (
                           <>
-                            <div className="text-3xl font-bold text-indigo-600 mb-2">{stat.number}</div>
-                            <div className="text-sm text-slate-600">{stat.label}</div>
+                            <div className="text-2xl sm:text-3xl font-bold text-indigo-600 mb-1 sm:mb-2 break-words">{stat.number}</div>
+                            <div className="text-xs sm:text-sm text-slate-600 break-words">{stat.label}</div>
                           </>
                         )}
                       </div>
@@ -3029,7 +3029,7 @@ const renderSectionPreview = (
                 
                 {/* Values */}
                 {section.content.values && section.content.values.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     {section.content.values.map((value: any, idx: number) => (
                       <div key={idx} className="flex items-start gap-4">
                         <span className="text-3xl flex-shrink-0">{value.icon || '✓'}</span>
@@ -3104,9 +3104,9 @@ const renderSectionPreview = (
     
     case 'footer':
       return (
-        <footer className="bg-slate-900 text-white py-12 px-5">
+        <footer className="bg-slate-900 text-white py-8 sm:py-10 md:py-12 px-4 sm:px-5 md:px-6">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
               {/* Company Info Column */}
               <div>
                 {editMode ? (
