@@ -42,6 +42,17 @@ import {
     type ExpandedTextAd,
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
+import {
+    validateCSVRows,
+    generateCSVContent,
+    createCSVBlob,
+    normalizeMatchType,
+    extractKeywordText,
+    validateURL,
+    CANONICAL_HEADERS,
+    type CSVRow,
+    type CSVValidationResult,
+} from '../utils/csvGeneratorV4';
 
 // --- Constants & Mock Data ---
 
