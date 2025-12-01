@@ -21,6 +21,7 @@ import {
     type ExpandedTextAd,
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
+import { generateRandomUrl, generateRandomSeedKeywords } from '../utils/randomDataGenerator';
 
 // Google Ads Generation System Prompt
 const GOOGLE_ADS_SYSTEM_PROMPT = `🟣 SYSTEM INSTRUCTION: GOOGLE ADS GENERATION RULES
@@ -1152,32 +1153,55 @@ export const AdsBuilder = () => {
 
     return (
         <>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-5">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-3 sm:p-4 md:p-5">
             {/* Header */}
-            <div className="mb-5">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold theme-gradient-text mb-1">
+            <div className="mb-4 sm:mb-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-xl sm:text-2xl font-bold theme-gradient-text mb-1">
                             Ads Builder
                         </h1>
-                        <p className="text-slate-600 text-xs">
+                        <p className="text-slate-600 text-xs sm:text-sm">
                             Generate high-converting Google Ads with AI optimization
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                 {/* Left Column: Single Form */}
                 <div className="space-y-5">
                     <Card className="border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-lg">
                         <CardHeader>
-                            <CardTitle className="text-lg font-bold text-slate-900">
-                                Create Your Ads
-                            </CardTitle>
-                            <CardDescription className="text-sm text-slate-600">
-                                Fill in the details below to generate your Google Ads
-                            </CardDescription>
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-bold text-slate-900">
+                                        Create Your Ads
+                                    </CardTitle>
+                                    <CardDescription className="text-sm text-slate-600">
+                                        Fill in the details below to generate your Google Ads
+                                    </CardDescription>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        const randomUrl = generateRandomUrl();
+                                        const randomKeywords = generateRandomSeedKeywords();
+                                        setBaseUrl(randomUrl);
+                                        setSingleKeywords(randomKeywords);
+                                        // For multiple mode, update first group
+                                        if (adGroups.length > 0) {
+                                            updateAdGroup(adGroups[0].id, 'keywords', randomKeywords);
+                                        }
+                                        setGeneratedAds([]); // Clear previous results
+                                    }}
+                                    className="shrink-0 text-xs"
+                                >
+                                    <Sparkles className="w-3 h-3 mr-1" />
+                                    Fill Info
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-5">
                             {/* URL Input */}

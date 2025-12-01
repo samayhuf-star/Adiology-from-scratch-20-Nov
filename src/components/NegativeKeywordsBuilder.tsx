@@ -27,6 +27,13 @@ import {
     type NegativeKeyword,
     type NegativeKeywordCategory
 } from '../utils/negativeKeywordsGenerator';
+import { 
+    generateRandomUrl, 
+    generateRandomCoreKeywords, 
+    generateRandomUserGoal, 
+    generateRandomLocation, 
+    generateRandomCompetitorBrands 
+} from '../utils/randomDataGenerator';
 
 interface GeneratedKeyword {
     id: number;
@@ -672,11 +679,11 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 </TabsList>
 
                 <TabsContent value="builder">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {/* Left Panel: Inputs */}
                 <Card className="lg:col-span-1 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl h-fit">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
+                    <CardHeader className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <ShieldAlert className="h-5 w-5 text-indigo-600" />
@@ -690,13 +697,14 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                    setUrl('https://example.com/landing-page');
-                                    setCoreKeywords('plumbing services, emergency plumber, drain cleaning, water heater repair, pipe repair');
-                                    setUserGoal('leads');
-                                    setTargetLocation('');
-                                    setCompetitorBrands('');
-                                    setExcludeCompetitors(false);
-                                    setKeywordCount(1000);
+                                    setUrl(generateRandomUrl());
+                                    setCoreKeywords(generateRandomCoreKeywords());
+                                    setUserGoal(generateRandomUserGoal());
+                                    setTargetLocation(generateRandomLocation());
+                                    setCompetitorBrands(generateRandomCompetitorBrands());
+                                    setExcludeCompetitors(Math.random() > 0.5);
+                                    setKeywordCount(500 + Math.floor(Math.random() * 1000)); // 500-1500
+                                    setGeneratedKeywords([]); // Clear previous results
                                 }}
                                 className="flex items-center gap-2"
                             >

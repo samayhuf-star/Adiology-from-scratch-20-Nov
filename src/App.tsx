@@ -36,7 +36,6 @@ import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
-import { WebTemplates2 } from './components/WebTemplates2';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
@@ -57,11 +56,31 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      // On mobile, close sidebar by default
+      if (window.innerWidth < 768 && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Load and apply user preferences on mount
   useEffect(() => {
     const prefs = getUserPreferences();
     applyUserPreferences(prefs);
+    // On mobile, ensure sidebar starts closed
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
     
     // Listen for storage changes to sync preferences across tabs/components
     const handleStorageChange = (e: StorageEvent) => {
@@ -111,7 +130,6 @@ const App = () => {
     'builder-2',
     'campaign-history',
     'website-templates',
-    'web-templates-2',
     'keyword-planner',
     'keyword-mixer',
     'ads-builder',
@@ -703,7 +721,6 @@ const App = () => {
       ]
     },
     { id: 'website-templates', label: 'Web Templates', icon: Layout },
-    { id: 'web-templates-2', label: 'Web Templates 2.0', icon: Globe },
     { 
       id: 'keyword-planner', 
       label: 'Keywords', 
@@ -1088,8 +1105,6 @@ const App = () => {
         }} />;
       case 'website-templates':
         return <WebsiteTemplates />;
-      case 'web-templates-2':
-        return <WebTemplates2 />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
       case 'keyword-planner':
@@ -1152,8 +1167,10 @@ const App = () => {
       {/* Sidebar */}
       <aside 
         className={`${
-          (sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'w-64' : 'w-20'
-        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-indigo-100/60 shadow-2xl relative z-10 flex-shrink-0 overflow-y-auto`}
+          isMobile 
+            ? (sidebarOpen ? 'w-full fixed inset-0 z-50' : 'w-0 hidden')
+            : ((sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'w-64' : 'w-20')
+        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-indigo-100/60 shadow-2xl relative z-10 flex-shrink-0 overflow-y-auto flex flex-col`}
         style={{
           background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(238, 242, 255, 0.95) 100%)'
         }}
@@ -1192,7 +1209,7 @@ const App = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -1286,7 +1303,40 @@ const App = () => {
           sidebarHovered={userPrefs.sidebarAutoClose && sidebarHovered}
         />
 
+        {/* Manual Toggle Button at Bottom */}
+        <div className="p-4 border-t border-indigo-100/60 mt-auto">
+          <button
+            onClick={() => {
+              setSidebarOpen(!sidebarOpen);
+              setSidebarHovered(false);
+            }}
+            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-xl transition-all duration-200 ${
+              (sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered))
+                ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                : 'justify-center bg-slate-50 text-slate-700 hover:bg-slate-100'
+            }`}
+            title={sidebarOpen ? 'Close Menu' : 'Open Menu'}
+          >
+            {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? (
+              <>
+                <X className="w-5 h-5 shrink-0" />
+                <span className="font-medium">Close Menu</span>
+              </>
+            ) : (
+              <Menu className="w-5 h-5 shrink-0" />
+            )}
+          </button>
+        </div>
+
       </aside>
+      
+      {/* Mobile Overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">

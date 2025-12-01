@@ -119,6 +119,48 @@ function validateCell(header: string, value: string, rowType: string) {
             return { status: 'error', message: `Invalid URL format. Must start with http:// or https://.` };
         }
         
+        // Validate Phone Number format
+        if (header === "Phone Number" && trimmedValue) {
+            // Remove common formatting characters for validation
+            const cleanPhone = trimmedValue.replace(/[\s\-\(\)\.]/g, '');
+            if (!/^\d{10,15}$/.test(cleanPhone)) {
+                return { status: 'error', message: `Invalid phone number format. Should be 10-15 digits.` };
+            }
+        }
+        
+        // Validate Country Code format
+        if (header === "Country Code" && trimmedValue) {
+            if (!/^[A-Z]{2}$/i.test(trimmedValue)) {
+                return { status: 'error', message: `Invalid country code format. Must be 2-letter code (e.g., US, GB, IN).` };
+            }
+        }
+        
+        // Validate Asset Type
+        if (header === "Asset Type" && trimmedValue) {
+            const validAssetTypes = ['sitelink', 'call', 'callout', 'structured snippet', 'image'];
+            if (!validAssetTypes.includes(trimmedValue.toLowerCase())) {
+                return { status: 'error', message: `Invalid Asset Type: ${trimmedValue}. Must be one of: ${validAssetTypes.join(', ')}.` };
+            }
+        }
+        
+        // Validate Location field
+        if (header === "Location" && trimmedValue) {
+            // Location should not be empty for location rows
+            if (trimmedValue.length < 2) {
+                return { status: 'error', message: `Location must be at least 2 characters.` };
+            }
+        }
+        
+        // Validate Bid Adjustment format
+        if (header === "Bid Adjustment" && trimmedValue) {
+            // Remove % sign for validation
+            const cleanBid = trimmedValue.replace('%', '').trim();
+            const bidValue = parseFloat(cleanBid);
+            if (isNaN(bidValue) || bidValue < -90 || bidValue > 900) {
+                return { status: 'error', message: `Invalid Bid Adjustment. Must be a percentage between -90% and 900%.` };
+            }
+        }
+        
         const validRowTypes = ['ad', 'sitelink', 'call', 'location', 'keyword', 'campaign', 'ad group'];
         if (header === "Row Type" && !validRowTypes.includes(trimmedValue.toLowerCase())) {
             return { status: 'warning', message: `Unrecognized Row Type: ${trimmedValue}. Should be one of ${validRowTypes.join(', ')}.` };
@@ -160,26 +202,51 @@ export const CSVValidator = () => {
             results[rowIdx] = {};
             const rowType = (row["Row Type"] || "").trim().toLowerCase();
             
+            // Auto-detect row type if not explicitly set
+            let detectedRowType = rowType;
+            if (!detectedRowType) {
+                // Try to detect from other fields
+                if (row["Location"]) detectedRowType = 'location';
+                else if (row["Asset Type"]) {
+                    const assetType = (row["Asset Type"] || "").trim().toLowerCase();
+                    if (assetType === 'sitelink') detectedRowType = 'sitelink';
+                    else if (assetType === 'call') detectedRowType = 'call';
+                } else if (row["Link Text"]) detectedRowType = 'sitelink';
+                else if (row["Phone Number"]) detectedRowType = 'call';
+                else if (row["Headline 1"] || row["Final URL"]) detectedRowType = 'ad';
+            }
+            
             let requiredHeaders: string[] = [];
-            if (rowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
-            else if (rowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
-            else if (rowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
-            else if (rowType === 'location') requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
-            else if (rowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
+            if (detectedRowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
+            else if (detectedRowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
+            else if (detectedRowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
+            else if (detectedRowType === 'location') requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+            else if (detectedRowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
 
+            // Check for missing required headers
             requiredHeaders.forEach(reqHeader => {
                 if (!headers.includes(reqHeader)) {
                     results[rowIdx][reqHeader] = { 
                         status: 'warning', 
-                        message: `Required column '${reqHeader}' for '${rowType}' is missing from file headers.` 
+                        message: `Required column '${reqHeader}' for '${detectedRowType}' is missing from file headers.` 
                     };
                     warnings++;
+                } else {
+                    // Check if required field has value
+                    const value = (row[reqHeader] || "").trim();
+                    if (!value && detectedRowType !== '') {
+                        results[rowIdx][reqHeader] = {
+                            status: 'error',
+                            message: `Required field '${reqHeader}' is empty for Row Type: ${detectedRowType}.`
+                        };
+                        errors++;
+                    }
                 }
             });
             
             headers.forEach(header => {
                 const value = row[header];
-                const result = validateCell(header, value, rowType);
+                const result = validateCell(header, value, detectedRowType);
                 results[rowIdx][header] = result;
                 if (result.status === 'error') errors++;
                 if (result.status === 'warning') warnings++;
@@ -473,19 +540,39 @@ export const CSVValidator = () => {
             }
 
             // Count assets - more comprehensive tracking
-            if (rowType === 'sitelink' || assetType === 'sitelink') {
+            // Auto-detect asset type if Row Type is not explicitly set
+            let detectedAssetType = assetType;
+            if (!detectedAssetType && row['Asset Type']) {
+                detectedAssetType = (row['Asset Type'] || '').toLowerCase().trim();
+            }
+            
+            // Detect sitelinks
+            if (rowType === 'sitelink' || detectedAssetType === 'sitelink' || row['Link Text']) {
                 assets.sitelinks++;
-            } else if (rowType === 'call' || assetType === 'call') {
+            } 
+            // Detect call assets
+            else if (rowType === 'call' || detectedAssetType === 'call' || row['Phone Number']) {
                 assets.calls++;
-            } else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' || row['Location']) {
+            } 
+            // Detect locations - check multiple ways
+            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' || 
+                     row['Location'] || row['Location Target'] || row['Zip Codes'] || row['Cities']) {
                 assets.locations++;
-            } else if (rowType === 'callout' || assetType === 'callout') {
+            } 
+            // Detect callouts
+            else if (rowType === 'callout' || detectedAssetType === 'callout' || row['Callout Text']) {
                 assets.callouts++;
-            } else if (rowType === 'structured snippet' || assetType === 'structured snippet') {
+            } 
+            // Detect structured snippets
+            else if (rowType === 'structured snippet' || detectedAssetType === 'structured snippet' || row['Header']) {
                 assets.structuredSnippets++;
-            } else if (rowType === 'image' || assetType === 'image') {
+            } 
+            // Detect images
+            else if (rowType === 'image' || detectedAssetType === 'image' || row['Image URL']) {
                 assets.images++;
-            } else if (rowType.includes('asset') || assetType) {
+            } 
+            // Other assets
+            else if (rowType.includes('asset') || detectedAssetType) {
                 assets.other++;
             }
         });
@@ -578,6 +665,145 @@ export const CSVValidator = () => {
                 <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-3">
                     <Loader2 className="w-5 h-5 text-yellow-700 animate-spin" />
                     <p className="text-yellow-700">Processing data... Please wait.</p>
+                </div>
+            )}
+
+            {/* Loading Screen - Full Screen Overlay */}
+            {isProcessing && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center">
+                    <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 border-2 border-indigo-200">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-slate-800">Processing CSV File</h3>
+                            <p className="text-slate-600 text-center text-sm">
+                                Reading and validating your CSV data. This may take a few moments...
+                            </p>
+                            <div className="w-full bg-slate-200 rounded-full h-2.5 mt-2 overflow-hidden">
+                                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-2">Please wait while we process your file...</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Uploaded File Details */}
+            {uploadedData.length > 0 && uploadedHeaders.length > 0 && !isProcessing && (
+                <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <FileText className="w-5 h-5" />
+                                    Uploaded File Details
+                                </h2>
+                                <p className="text-indigo-100 text-sm mt-1.5">
+                                    {fileName} • {uploadedData.length} rows • {uploadedHeaders.length} columns
+                                </p>
+                            </div>
+                            <div className="bg-white/20 rounded-lg px-3 py-1.5">
+                                <span className="text-white text-sm font-medium">✓ Loaded</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        {/* Column Headers */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                                <Hash className="w-5 h-5 text-indigo-600" />
+                                Detected Columns ({uploadedHeaders.length})
+                            </h3>
+                            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
+                                {uploadedHeaders.map((header, idx) => {
+                                    const rule = COLUMN_RULES[header];
+                                    const hasRule = !!rule;
+                                    return (
+                                        <span
+                                            key={idx}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
+                                                hasRule
+                                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                                    : 'bg-slate-100 text-slate-600 border-slate-300'
+                                            }`}
+                                            title={rule ? rule.rule : 'No validation rule defined'}
+                                        >
+                                            {header}
+                                            {hasRule && <span className="ml-1 text-indigo-500">✓</span>}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-xs text-slate-500 mt-2">
+                                {uploadedHeaders.filter(h => COLUMN_RULES[h]).length} columns have validation rules
+                            </p>
+                        </div>
+
+                        {/* Sample Data Preview */}
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                                <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
+                                Data Preview (First 5 Rows)
+                            </h3>
+                            <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-semibold text-slate-700 sticky left-0 bg-slate-100 z-10">#</th>
+                                            {uploadedHeaders.slice(0, 7).map((header, idx) => (
+                                                <th key={idx} className="px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap min-w-[120px]">
+                                                    {header}
+                                                </th>
+                                            ))}
+                                            {uploadedHeaders.length > 7 && (
+                                                <th className="px-4 py-3 text-left font-semibold text-slate-500">
+                                                    +{uploadedHeaders.length - 7} more columns
+                                                </th>
+                                            )}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 bg-white">
+                                        {uploadedData.slice(0, 5).map((row, rowIdx) => (
+                                            <tr key={rowIdx} className="hover:bg-indigo-50/30 transition-colors">
+                                                <td className="px-4 py-2.5 font-semibold text-slate-600 sticky left-0 bg-white z-10 border-r border-slate-200">
+                                                    {rowIdx + 1}
+                                                </td>
+                                                {uploadedHeaders.slice(0, 7).map((header, colIdx) => {
+                                                    const value = row[header] || '';
+                                                    const displayValue = value.length > 25 ? value.substring(0, 25) + '...' : value;
+                                                    const validation = validationResults[rowIdx]?.[header];
+                                                    const hasError = validation?.status === 'error';
+                                                    const hasWarning = validation?.status === 'warning';
+                                                    return (
+                                                        <td 
+                                                            key={colIdx} 
+                                                            className={`px-4 py-2.5 text-slate-700 whitespace-nowrap min-w-[120px] ${
+                                                                hasError ? 'bg-red-50 text-red-700' : hasWarning ? 'bg-yellow-50 text-yellow-700' : ''
+                                                            }`}
+                                                            title={value || 'Empty cell'}
+                                                        >
+                                                            {displayValue || <span className="text-slate-400 italic text-xs">empty</span>}
+                                                        </td>
+                                                    );
+                                                })}
+                                                {uploadedHeaders.length > 7 && (
+                                                    <td className="px-4 py-2.5 text-slate-400 text-xs italic">
+                                                        ...
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {uploadedData.length > 5 && (
+                                <p className="text-xs text-slate-500 mt-3 text-center bg-slate-50 py-2 rounded-lg">
+                                    Showing first 5 of {uploadedData.length} rows. View full data with validation in the table below.
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 

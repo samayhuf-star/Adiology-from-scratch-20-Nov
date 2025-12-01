@@ -14,7 +14,8 @@ interface HistoryItem {
   type: string;
   data: any;
   timestamp: string;
-  status?: string;
+  status?: 'draft' | 'completed';
+  lastModified?: string;
 }
 
 export const KeywordSavedLists = () => {
@@ -24,6 +25,7 @@ export const KeywordSavedLists = () => {
   const [negativeHistory, setNegativeHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'saved' | 'draft' | 'edited'>('all');
 
   useEffect(() => {
     loadHistory();
@@ -148,10 +150,34 @@ export const KeywordSavedLists = () => {
     }
   };
 
-  const filteredHistory = getCurrentHistory().filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    JSON.stringify(item.data).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getItemStatus = (item: HistoryItem): 'saved' | 'draft' | 'edited' => {
+    if (item.status === 'draft') {
+      return 'draft';
+    }
+    // Check if item was edited (has lastModified and it's different from timestamp)
+    if (item.lastModified && item.timestamp) {
+      const lastModified = new Date(item.lastModified).getTime();
+      const created = new Date(item.timestamp).getTime();
+      if (lastModified > created + 1000) { // At least 1 second difference
+        return 'edited';
+      }
+    }
+    return 'saved';
+  };
+
+  const filteredHistory = getCurrentHistory().filter(item => {
+    // Search filter
+    const matchesSearch = 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      JSON.stringify(item.data).toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Status filter
+    if (statusFilter === 'all') return true;
+    const itemStatus = getItemStatus(item);
+    return itemStatus === statusFilter;
+  });
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -178,7 +204,7 @@ export const KeywordSavedLists = () => {
           </TabsTrigger>
         </TabsList>
 
-        <div className="mb-4">
+        <div className="mb-4 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
             <Input
@@ -188,6 +214,41 @@ export const KeywordSavedLists = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11"
             />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-slate-700">Filter by status:</span>
+            <Button
+              variant={statusFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('all')}
+              className={statusFilter === 'all' ? 'bg-indigo-600 text-white' : ''}
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === 'saved' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('saved')}
+              className={statusFilter === 'saved' ? 'bg-green-600 text-white' : ''}
+            >
+              Saved
+            </Button>
+            <Button
+              variant={statusFilter === 'edited' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('edited')}
+              className={statusFilter === 'edited' ? 'bg-blue-600 text-white' : ''}
+            >
+              Edited
+            </Button>
+            <Button
+              variant={statusFilter === 'draft' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('draft')}
+              className={statusFilter === 'draft' ? 'bg-amber-600 text-white' : ''}
+            >
+              Draft
+            </Button>
           </div>
         </div>
 
@@ -221,6 +282,12 @@ export const KeywordSavedLists = () => {
                   {filteredHistory.map((item) => {
                     const keywords = item.data?.generatedKeywords || [];
                     const date = new Date(item.timestamp || item.createdAt || Date.now());
+                    const itemStatus = getItemStatus(item);
+                    const statusColors = {
+                      saved: 'bg-green-100 text-green-700 border-green-300',
+                      edited: 'bg-blue-100 text-blue-700 border-blue-300',
+                      draft: 'bg-amber-100 text-amber-700 border-amber-300'
+                    };
                     return (
                       <div
                         key={item.id}
@@ -228,15 +295,23 @@ export const KeywordSavedLists = () => {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-3 mb-2 flex-wrap">
                               {getTypeIcon(item.type)}
                               <h3 className="font-semibold text-slate-900">{item.name}</h3>
+                              <Badge className={`text-xs ${statusColors[itemStatus]}`}>
+                                {itemStatus.charAt(0).toUpperCase() + itemStatus.slice(1)}
+                              </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {keywords.length} keywords
                               </Badge>
                             </div>
                             <p className="text-sm text-slate-500 mb-2">
                               Created: {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+                              {item.lastModified && itemStatus === 'edited' && (
+                                <span className="ml-2">
+                                  • Last edited: {new Date(item.lastModified).toLocaleDateString()} at {new Date(item.lastModified).toLocaleTimeString()}
+                                </span>
+                              )}
                             </p>
                             {keywords.length > 0 && (
                               <p className="text-xs text-slate-400 line-clamp-2">
@@ -311,6 +386,12 @@ export const KeywordSavedLists = () => {
                   {filteredHistory.map((item) => {
                     const keywords = item.data?.mixedKeywords || [];
                     const date = new Date(item.timestamp || item.createdAt || Date.now());
+                    const itemStatus = getItemStatus(item);
+                    const statusColors = {
+                      saved: 'bg-green-100 text-green-700 border-green-300',
+                      edited: 'bg-blue-100 text-blue-700 border-blue-300',
+                      draft: 'bg-amber-100 text-amber-700 border-amber-300'
+                    };
                     return (
                       <div
                         key={item.id}
@@ -318,15 +399,23 @@ export const KeywordSavedLists = () => {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-3 mb-2 flex-wrap">
                               {getTypeIcon(item.type)}
                               <h3 className="font-semibold text-slate-900">{item.name}</h3>
+                              <Badge className={`text-xs ${statusColors[itemStatus]}`}>
+                                {itemStatus.charAt(0).toUpperCase() + itemStatus.slice(1)}
+                              </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {keywords.length} keywords
                               </Badge>
                             </div>
                             <p className="text-sm text-slate-500 mb-2">
                               Created: {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+                              {item.lastModified && itemStatus === 'edited' && (
+                                <span className="ml-2">
+                                  • Last edited: {new Date(item.lastModified).toLocaleDateString()} at {new Date(item.lastModified).toLocaleTimeString()}
+                                </span>
+                              )}
                             </p>
                             {keywords.length > 0 && (
                               <p className="text-xs text-slate-400 line-clamp-2">
@@ -402,6 +491,12 @@ export const KeywordSavedLists = () => {
                     const keywords = item.data?.generatedKeywords || item.data?.keywords || [];
                     const keywordList = keywords.map((k: any) => typeof k === 'string' ? k : k.keyword || k.text || '').filter(Boolean);
                     const date = new Date(item.timestamp || item.createdAt || Date.now());
+                    const itemStatus = getItemStatus(item);
+                    const statusColors = {
+                      saved: 'bg-green-100 text-green-700 border-green-300',
+                      edited: 'bg-blue-100 text-blue-700 border-blue-300',
+                      draft: 'bg-amber-100 text-amber-700 border-amber-300'
+                    };
                     return (
                       <div
                         key={item.id}
@@ -409,15 +504,23 @@ export const KeywordSavedLists = () => {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
+                            <div className="flex items-center gap-3 mb-2 flex-wrap">
                               {getTypeIcon(item.type)}
                               <h3 className="font-semibold text-slate-900">{item.name}</h3>
+                              <Badge className={`text-xs ${statusColors[itemStatus]}`}>
+                                {itemStatus.charAt(0).toUpperCase() + itemStatus.slice(1)}
+                              </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {keywordList.length} keywords
                               </Badge>
                             </div>
                             <p className="text-sm text-slate-500 mb-2">
                               Created: {date.toLocaleDateString()} at {date.toLocaleTimeString()}
+                              {item.lastModified && itemStatus === 'edited' && (
+                                <span className="ml-2">
+                                  • Last edited: {new Date(item.lastModified).toLocaleDateString()} at {new Date(item.lastModified).toLocaleTimeString()}
+                                </span>
+                              )}
                             </p>
                             {keywordList.length > 0 && (
                               <p className="text-xs text-slate-400 line-clamp-2">

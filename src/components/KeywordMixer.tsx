@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
 import { DEFAULT_MIXER_KEYWORDS } from '../utils/defaultExamples';
+import { generateRandomMixerLists } from '../utils/randomDataGenerator';
 
 // Plumbing service keywords for sample data
 const PLUMBING_KEYWORDS = {
@@ -64,23 +65,15 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     }, [initialData]);
 
     const fillSampleInfo = () => {
-        // Helper to get random items from array (1-2 words max)
-        const getRandomItems = (arr: string[], count: number) => {
-            const shuffled = [...arr].sort(() => Math.random() - 0.5);
-            return shuffled.slice(0, count).filter(item => item.split(' ').length <= 2);
-        };
+        const { listA, listB, listC } = generateRandomMixerLists();
+        setListA(listA);
+        setListB(listB);
+        setListC(listC);
+        setMixedKeywords([]); // Clear previous results
 
-        // Fill each list with random plumbing keywords
-        const samplesA = getRandomItems(PLUMBING_KEYWORDS.services, 4);
-        const samplesB = getRandomItems(PLUMBING_KEYWORDS.locations, 4);
-        const samplesC = getRandomItems(PLUMBING_KEYWORDS.extras, 3);
-
-        setListA(samplesA.join('\n'));
-        setListB(samplesB.join('\n'));
-        setListC(samplesC.join('\n'));
-
-        notifications.success('Sample plumbing keywords filled!', {
-            title: 'Sample Data Loaded'
+        notifications.success('Random keyword lists filled!', {
+            title: 'Sample Data Loaded',
+            description: 'New random data generated for testing.'
         });
     };
 
@@ -250,19 +243,19 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
     };
 
     return (
-        <div className="p-4 max-w-5xl mx-auto">
-            <div className="mb-4 flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
+        <div className="p-3 sm:p-4 max-w-5xl mx-auto">
+            <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
                         Keyword Mixer
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-xs sm:text-sm text-slate-500">
                         Mix and match multiple keyword lists to generate all possible combinations
                     </p>
                 </div>
                 <button
                     onClick={fillSampleInfo}
-                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
+                    className="w-full sm:w-auto px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5"
                 >
                     <Sparkles className="w-3.5 h-3.5" />
                     Fill Sample Info
@@ -270,19 +263,19 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
-                <TabsList>
-                    <TabsTrigger value="mixer">Keyword Mixer</TabsTrigger>
-                    <TabsTrigger value="history">History</TabsTrigger>
+                <TabsList className="w-full sm:w-auto">
+                    <TabsTrigger value="mixer" className="flex-1 sm:flex-none">Keyword Mixer</TabsTrigger>
+                    <TabsTrigger value="history" className="flex-1 sm:flex-none">History</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="mixer">
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                 {/* Input Section - Horizontal Lists */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg">
-                    <h2 className="text-lg font-bold text-slate-800 mb-3">Keyword Lists</h2>
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-3 sm:p-4 border border-slate-200/60 shadow-lg">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">Keyword Lists</h2>
                     
                     {/* Lists arranged horizontally */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                         <div className="space-y-1.5">
                             <h3 className="text-sm font-semibold text-slate-700 mb-1">Keywords A</h3>
                             <Textarea

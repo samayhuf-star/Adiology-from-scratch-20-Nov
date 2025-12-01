@@ -14,6 +14,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { copyToClipboard } from '../utils/clipboard';
 import { notifications } from '../utils/notifications';
 import { DEFAULT_SEED_KEYWORDS, DEFAULT_NEGATIVE_KEYWORDS as DEFAULT_NEG_KW } from '../utils/defaultExamples';
+import { generateRandomSeedKeywords, generateRandomNegativeKeywords } from '../utils/randomDataGenerator';
 
 interface SavedList {
     id: string;
@@ -479,31 +480,31 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     }, []);
 
     return (
-        <div className="p-4 max-w-5xl mx-auto">
-            <div className="mb-4">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
+        <div className="p-3 sm:p-4 max-w-5xl mx-auto">
+            <div className="mb-3 sm:mb-4">
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
                     AI Keyword Planner
                 </h1>
-                <p className="text-sm text-slate-500">
+                <p className="text-xs sm:text-sm text-slate-500">
                     Generate comprehensive keyword lists using AI based on your seed keywords and negative filters
                 </p>
             </div>
 
             {/* Tabs at the top */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
-                <TabsList>
-                    <TabsTrigger value="planner">Keyword Planner</TabsTrigger>
-                    <TabsTrigger value="saved">Saved Lists</TabsTrigger>
+                <TabsList className="w-full sm:w-auto">
+                    <TabsTrigger value="planner" className="flex-1 sm:flex-none">Keyword Planner</TabsTrigger>
+                    <TabsTrigger value="saved" className="flex-1 sm:flex-none">Saved Lists</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="planner">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                         {/* Left Panel: Analysis Configuration */}
-                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg flex flex-col">
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-3 sm:p-4 border border-slate-200/60 shadow-lg flex flex-col">
                             <div className="relative mb-3">
-                                <div className="flex items-start justify-between mb-2">
-                                    <div>
-                                        <h2 className="text-lg font-bold text-slate-800 mb-1">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0 mb-2">
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">
                                             Analysis Configuration
                                         </h2>
                                         <p className="text-xs text-slate-500">
@@ -514,10 +515,11 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
-                                            setSeedKeywords('airline number, contact airline, delta phone number');
-                                            setNegativeKeywords(DEFAULT_NEGATIVE_KEYWORDS);
+                                            setSeedKeywords(generateRandomSeedKeywords());
+                                            setNegativeKeywords(generateRandomNegativeKeywords());
+                                            setGeneratedKeywords([]); // Clear previous results
                                         }}
-                                        className="shrink-0 text-xs"
+                                        className="shrink-0 text-xs w-full sm:w-auto"
                                     >
                                         <Sparkles className="w-3 h-3 mr-1" />
                                         Fill Info

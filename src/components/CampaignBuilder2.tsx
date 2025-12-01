@@ -519,7 +519,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   useEffect(() => {
     setIsInitialized(true);
   }, []);
-  const [structureType, setStructureType] = useState<StructureType | null>(null);
+  const [structureType, setStructureType] = useState<StructureType | null>('stag_plus');
   
   // Generate default campaign name with date and time
   const generateDefaultCampaignName = () => {
@@ -798,7 +798,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   useEffect(() => {
     if (initialData) {
       setCampaignName(initialData.campaignName || initialData.name || generateDefaultCampaignName());
-      setStructureType(initialData.structureType || (initialData.structure ? initialData.structure.toLowerCase() : null));
+      setStructureType(initialData.structureType || (initialData.structure ? initialData.structure.toLowerCase() : 'stag_plus'));
       setUrl(initialData.url || 'https://example.com');
       setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
       setAdTypes(initialData.adTypes || { rsa: true, dki: true, call: true });
@@ -853,7 +853,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   const loadCampaign = (campaign: any) => {
     const data = campaign.data || campaign;
     setCampaignName(data.campaignName || generateDefaultCampaignName());
-    setStructureType(data.structureType || null);
+    setStructureType(data.structureType || 'stag_plus');
     setStep(data.step || 1);
     setUrl(data.url || 'https://example.com');
     setMatchTypes(data.matchTypes || { broad: true, phrase: true, exact: true });
@@ -1401,103 +1401,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
-        {/* Match Types - Enhanced Design */}
-        <Card className="border-2 border-teal-200/80 bg-gradient-to-br from-white via-teal-50/30 to-cyan-50/30 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-300">
-          <CardHeader className="pb-6 border-b-2 border-teal-100/60">
-            <CardTitle className="text-2xl font-bold text-teal-900 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl shadow-lg">
-                <Tag className="w-6 h-6 text-white" />
-              </div>
-              Match Types
-            </CardTitle>
-            <CardDescription className="text-base mt-2 text-teal-700">
-              Select which keyword match types to include in your campaign
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-8">
-            <div className="flex flex-wrap gap-5">
-              <label
-                htmlFor="broad"
-                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
-                  matchTypes.broad
-                    ? 'bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 border-amber-500 shadow-lg scale-105'
-                    : 'bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border-amber-300 hover:border-amber-400 hover:shadow-lg hover:scale-105'
-                }`}
-              >
-                <Checkbox
-                  id="broad"
-                  checked={matchTypes.broad}
-                  onCheckedChange={(checked) => {
-                    setMatchTypes(prev => ({ ...prev, broad: !!checked }));
-                  }}
-                  className="border-amber-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600 data-[state=checked]:border-amber-600"
-                />
-                <span 
-                  className={`font-bold text-base transition-colors cursor-pointer ${
-                    matchTypes.broad 
-                      ? 'text-amber-950' 
-                      : 'text-amber-900 group-hover:text-amber-950'
-                  }`}
-                >
-                  Broad Match
-                </span>
-              </label>
-              <label
-                htmlFor="phrase"
-                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
-                  matchTypes.phrase
-                    ? 'bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-blue-500 shadow-lg scale-105'
-                    : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 border-blue-300 hover:border-blue-400 hover:shadow-lg hover:scale-105'
-                }`}
-              >
-                <Checkbox
-                  id="phrase"
-                  checked={matchTypes.phrase}
-                  onCheckedChange={(checked) => {
-                    setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
-                  }}
-                  className="border-blue-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-500 data-[state=checked]:to-cyan-600 data-[state=checked]:border-blue-600"
-                />
-                <span 
-                  className={`font-bold text-base transition-colors cursor-pointer ${
-                    matchTypes.phrase 
-                      ? 'text-blue-950' 
-                      : 'text-blue-900 group-hover:text-blue-950'
-                  }`}
-                >
-                  Phrase Match
-                </span>
-              </label>
-              <label
-                htmlFor="exact"
-                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
-                  matchTypes.exact
-                    ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 shadow-lg scale-105'
-                    : 'bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 border-emerald-300 hover:border-emerald-400 hover:shadow-lg hover:scale-105'
-                }`}
-              >
-                <Checkbox
-                  id="exact"
-                  checked={matchTypes.exact}
-                  onCheckedChange={(checked) => {
-                    setMatchTypes(prev => ({ ...prev, exact: !!checked }));
-                  }}
-                  className="border-emerald-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-600 data-[state=checked]:border-emerald-600"
-                />
-                <span 
-                  className={`font-bold text-base transition-colors cursor-pointer ${
-                    matchTypes.exact 
-                      ? 'text-emerald-950' 
-                      : 'text-emerald-900 group-hover:text-emerald-950'
-                  }`}
-                >
-                  Exact Match
-                </span>
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Navigation - Enhanced */}
         <div className="flex justify-end pt-6">
           <Button
@@ -1906,7 +1809,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                           setSelectedKeywords([]);
                         }
                       }}
-                      className="h-5 w-5 border-indigo-400"
                     />
                     <span>Select All</span>
                   </Label>
@@ -1959,7 +1861,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                                   }
                                 });
                               }}
-                              className="h-4 w-4 flex-shrink-0 border-indigo-400"
+                              className="flex-shrink-0"
                             />
                             <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
                               {keywordText}
@@ -2328,6 +2230,100 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             Generate and organize keywords based on your structure: <span className="font-semibold text-indigo-700">{STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</span>
           </p>
         </div>
+
+        {/* Match Types - Enhanced Design */}
+        <Card className="border-2 border-teal-200/80 bg-gradient-to-br from-white via-teal-50/30 to-cyan-50/30 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-300">
+          <CardHeader className="pb-6 border-b-2 border-teal-100/60">
+            <CardTitle className="text-2xl font-bold text-teal-900 flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl shadow-lg">
+                <Tag className="w-6 h-6 text-white" />
+              </div>
+              Match Types
+            </CardTitle>
+            <CardDescription className="text-base mt-2 text-teal-700">
+              Select which keyword match types to include in your campaign
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-8">
+            <div className="flex flex-wrap gap-5">
+              <label
+                htmlFor="broad-step2"
+                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
+                  matchTypes.broad
+                    ? 'bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 border-amber-500 shadow-lg scale-105'
+                    : 'bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border-amber-300 hover:border-amber-400 hover:shadow-lg hover:scale-105'
+                }`}
+              >
+                <Checkbox
+                  id="broad-step2"
+                  checked={matchTypes.broad}
+                  onCheckedChange={(checked) => {
+                    setMatchTypes(prev => ({ ...prev, broad: !!checked }));
+                  }}
+                />
+                <span 
+                  className={`font-bold text-base transition-colors cursor-pointer ${
+                    matchTypes.broad 
+                      ? 'text-amber-950' 
+                      : 'text-amber-900 group-hover:text-amber-950'
+                  }`}
+                >
+                  Broad Match
+                </span>
+              </label>
+              <label
+                htmlFor="phrase-step2"
+                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
+                  matchTypes.phrase
+                    ? 'bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-blue-500 shadow-lg scale-105'
+                    : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 border-blue-300 hover:border-blue-400 hover:shadow-lg hover:scale-105'
+                }`}
+              >
+                <Checkbox
+                  id="phrase-step2"
+                  checked={matchTypes.phrase}
+                  onCheckedChange={(checked) => {
+                    setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
+                  }}
+                />
+                <span 
+                  className={`font-bold text-base transition-colors cursor-pointer ${
+                    matchTypes.phrase 
+                      ? 'text-blue-950' 
+                      : 'text-blue-900 group-hover:text-blue-950'
+                  }`}
+                >
+                  Phrase Match
+                </span>
+              </label>
+              <label
+                htmlFor="exact-step2"
+                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
+                  matchTypes.exact
+                    ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 shadow-lg scale-105'
+                    : 'bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 border-emerald-300 hover:border-emerald-400 hover:shadow-lg hover:scale-105'
+                }`}
+              >
+                <Checkbox
+                  id="exact-step2"
+                  checked={matchTypes.exact}
+                  onCheckedChange={(checked) => {
+                    setMatchTypes(prev => ({ ...prev, exact: !!checked }));
+                  }}
+                />
+                <span 
+                  className={`font-bold text-base transition-colors cursor-pointer ${
+                    matchTypes.exact 
+                      ? 'text-emerald-950' 
+                      : 'text-emerald-900 group-hover:text-emerald-950'
+                  }`}
+                >
+                  Exact Match
+                </span>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
 
         {commonKeywordSection}
         {renderStructureSpecificUI()}
@@ -2825,6 +2821,111 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return extension;
   };
 
+  // Fill Info function - Auto-generate test ads for quick testing
+  const handleFillInfo = () => {
+    const dynamicAdGroups = getDynamicAdGroups();
+    const baseUrl = url || 'https://www.example.com';
+    const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+    const mainKeyword = selectedKeywords[0] || 'plumbing services';
+    const cleanMainKeyword = cleanKeywordForDKI(mainKeyword);
+    
+    const testAds: any[] = [];
+    let adIdCounter = Date.now();
+    
+    // Get current ad groups or use default
+    const adGroupsToUse = dynamicAdGroups.length > 0 ? dynamicAdGroups : [{ name: 'Group 1', keywords: selectedKeywords.slice(0, 5) }];
+    
+    // Create 2 RSA ads
+    adGroupsToUse.slice(0, 2).forEach((group, groupIdx) => {
+      testAds.push({
+        id: adIdCounter++,
+        type: 'rsa',
+        adGroup: group.name,
+        headline1: `${cleanMainKeyword} - Best Deals`,
+        headline2: 'Shop Now & Save',
+        headline3: 'Fast Delivery',
+        headline4: '24/7 Support Available',
+        headline5: 'Free Shipping',
+        description1: `Looking for ${cleanMainKeyword}? We offer competitive prices and fast service.`,
+        description2: 'Get started today with our expert team!',
+        finalUrl: formattedUrl,
+        path1: 'shop',
+        path2: 'deals'
+      });
+      
+      testAds.push({
+        id: adIdCounter++,
+        type: 'rsa',
+        adGroup: group.name,
+        headline1: `Top Rated ${cleanMainKeyword}`,
+        headline2: 'Expert Service',
+        headline3: 'Quality Guaranteed',
+        headline4: 'Trusted by Thousands',
+        headline5: 'Call Today',
+        description1: `Find the best ${cleanMainKeyword} solutions. Professional service you can trust.`,
+        description2: 'Contact us now for a free quote!',
+        finalUrl: formattedUrl,
+        path1: 'services',
+        path2: 'contact'
+      });
+    });
+    
+    // Create 2 DKI ads
+    adGroupsToUse.slice(0, 2).forEach((group) => {
+      testAds.push({
+        id: adIdCounter++,
+        type: 'dki',
+        adGroup: group.name,
+        headline1: `{KeyWord:${cleanMainKeyword}} - Official Site`,
+        headline2: `Buy {KeyWord:${cleanMainKeyword}} Online`,
+        headline3: `Top Rated {KeyWord:${cleanMainKeyword}}`,
+        headline4: `{KeyWord:${cleanMainKeyword}} Hotline`,
+        headline5: `Get {KeyWord:${cleanMainKeyword}} Help`,
+        description1: `Find the best {KeyWord:${cleanMainKeyword}}. Fast & reliable support available 24/7.`,
+        description2: 'Contact our experts for immediate assistance.',
+        finalUrl: formattedUrl,
+        path1: 'keyword',
+        path2: 'deals'
+      });
+    });
+    
+    // Create 1 Call-Only ad
+    if (adGroupsToUse.length > 0) {
+      testAds.push({
+        id: adIdCounter++,
+        type: 'callonly',
+        adGroup: adGroupsToUse[0].name,
+        headline1: `Call for ${cleanMainKeyword}`,
+        headline2: '24/7 Available',
+        description1: `Need ${cleanMainKeyword}? Call us now for immediate assistance.`,
+        description2: 'Expert service available around the clock.',
+        phone: '(555) 123-4567',
+        businessName: 'Your Business Name',
+        finalUrl: formattedUrl
+      });
+    }
+    
+    // Add extensions to first RSA ad
+    if (testAds.length > 0 && testAds[0].type === 'rsa') {
+      testAds[0].extensions = [
+        createExtensionObject('sitelink', adGroupsToUse[0], formattedUrl, cleanMainKeyword),
+        createExtensionObject('callout', adGroupsToUse[0], formattedUrl, cleanMainKeyword)
+      ];
+    }
+    
+    // Set the generated ads
+    setGeneratedAds([...generatedAds, ...testAds]);
+    
+    // Auto-select the new ads
+    const newAdIds = testAds.map(ad => ad.id);
+    setSelectedAdIds([...selectedAdIds, ...newAdIds]);
+    
+    notifications.success(`Generated ${testAds.length} test ads`, {
+      title: 'Test Data Filled',
+      description: 'Sample ads have been created for quick testing.',
+    });
+  };
+
   const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
     const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
     const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
@@ -3221,6 +3322,16 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   In the next section you can edit ads individually for each ad group.
                 </p>
               </div>
+              
+              {/* Fill Info Button */}
+              <Button
+                onClick={handleFillInfo}
+                disabled={selectedKeywords.length === 0}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white justify-center py-3 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold shadow-lg"
+              >
+                <Sparkles className="mr-2 w-4 h-4" />
+                Fill Info (Test Data)
+              </Button>
               
               {/* Total Ads Counter */}
               <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
@@ -5316,7 +5427,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   setSelectedKeywords([]);
                   setGeneratedAds([]);
                   setCurrentCampaignId(null);
-                  setStructureType(null);
+                  setStructureType('stag_plus');
                 }}
                 className="text-sm font-medium border-slate-300 hover:bg-slate-50"
               >
