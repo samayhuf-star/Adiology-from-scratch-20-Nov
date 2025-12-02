@@ -2128,140 +2128,147 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 }, 0);
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 py-6 text-base font-semibold"
-            >
-              {isGeneratingKeywords ? (
-                <><RefreshCw className="w-5 h-5 mr-2 animate-spin"/> Generating Keywords...</>
-              ) : (
-                <><Sparkles className="w-5 h-5 mr-2"/> Generate Keywords</>
-              )}
-            </Button>
-          </div>
-          
-          {/* Display Generated Keywords */}
-          {generatedKeywords.length > 0 && (
-            <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-purple-50/20 to-indigo-50/20 backdrop-blur-xl shadow-2xl mt-6">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
-                      <CheckCircle2 className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl text-indigo-900">Generated Keywords</CardTitle>
-                      <CardDescription className="text-sm mt-1">
-                        {generatedKeywords.length} keywords found • Select keywords to include in your campaign
-                      </CardDescription>
-                    </div>
+              className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-800 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 py-7 text-lg font-bold rounded-xl"
+          >
+            {isGeneratingKeywords ? (
+              <>
+                <RefreshCw className="w-6 h-6 mr-3 animate-spin"/> 
+                Generating Keywords...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-6 h-6 mr-3"/> 
+                Generate Keywords
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Display Generated Keywords */}
+        {generatedKeywords.length > 0 && (
+          <Card className="border-2 border-purple-200/80 bg-gradient-to-br from-white via-purple-50/30 to-indigo-50/30 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
+            <CardHeader className="pb-4 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 rounded-t-lg border-b border-purple-100/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 via-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                    <CheckCircle2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-700 to-indigo-700 bg-clip-text text-transparent">
+                      Generated Keywords
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1.5 text-slate-600">
+                      {generatedKeywords.length} keywords found • Select keywords to include in your campaign
+                    </CardDescription>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-xl border border-indigo-200/50">
-                  <Label 
-                    htmlFor="select-all-keywords"
-                    className="flex items-center gap-2 cursor-pointer font-semibold text-indigo-900"
-                    onClick={(e) => {
-                      // Prevent double-toggling when clicking directly on checkbox
-                      if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
-                        return;
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5 pt-6">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50/70 via-indigo-50/70 to-purple-50/70 rounded-xl border-2 border-purple-200/50 shadow-sm">
+                <Label 
+                  htmlFor="select-all-keywords"
+                  className="flex items-center gap-3 cursor-pointer font-bold text-indigo-900 text-base"
+                  onClick={(e) => {
+                    // Prevent double-toggling when clicking directly on checkbox
+                    if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                      return;
+                    }
+                  }}
+                >
+                  <Checkbox
+                    id="select-all-keywords"
+                    checked={generatedKeywords.length > 0 && selectedKeywords.length === generatedKeywords.length}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        const allKeywords = generatedKeywords.map(k => k.text || k.id);
+                        setSelectedKeywords(allKeywords);
+                      } else {
+                        setSelectedKeywords([]);
                       }
                     }}
-                  >
-                    <Checkbox
-                      id="select-all-keywords"
-                      checked={generatedKeywords.length > 0 && selectedKeywords.length === generatedKeywords.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          const allKeywords = generatedKeywords.map(k => k.text || k.id);
-                          setSelectedKeywords(allKeywords);
-                        } else {
-                          setSelectedKeywords([]);
-                        }
-                      }}
-                      className="h-5 w-5 border-indigo-400"
-                    />
-                    <span>Select All</span>
-                  </Label>
-                  <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1 font-semibold">
-                    {selectedKeywords.length} selected
-                  </Badge>
-                </div>
-                <ScrollArea className="h-[400px] border-2 border-indigo-200/50 rounded-xl bg-white/50">
-                    <div className="p-3 space-y-1">
-                      {generatedKeywords.map((keyword) => {
-                        const keywordText = keyword.text || keyword.id;
-                        const keywordId = `keyword-${keyword.id || keywordText}`;
-                        const isSelected = selectedKeywords.includes(keywordText);
-                        const volumeColor = keyword.volume === 'High' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' :
-                                          keyword.volume === 'Medium' ? 'bg-amber-100 text-amber-700 border-amber-300' :
-                                          'bg-slate-100 text-slate-700 border-slate-300';
-                        return (
-                          <Label
-                            key={keyword.id || keywordText}
-                            htmlFor={keywordId}
-                            onClick={(e) => {
-                              // Prevent double-toggling when clicking directly on checkbox
-                              if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
-                                return;
+                    className="h-5 w-5 border-indigo-500"
+                  />
+                  <span>Select All</span>
+                </Label>
+                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 font-bold text-sm shadow-md">
+                  {selectedKeywords.length} selected
+                </Badge>
+              </div>
+              <ScrollArea className="h-[450px] border-2 border-purple-200/50 rounded-xl bg-white/70 shadow-inner">
+                <div className="p-4 space-y-2">
+                  {generatedKeywords.map((keyword) => {
+                    const keywordText = keyword.text || keyword.id;
+                    const keywordId = `keyword-${keyword.id || keywordText}`;
+                    const isSelected = selectedKeywords.includes(keywordText);
+                    const volumeColor = keyword.volume === 'High' ? 'bg-emerald-100 text-emerald-800 border-emerald-400 shadow-sm' :
+                                      keyword.volume === 'Medium' ? 'bg-amber-100 text-amber-800 border-amber-400 shadow-sm' :
+                                      'bg-slate-100 text-slate-700 border-slate-300';
+                    return (
+                      <Label
+                        key={keyword.id || keywordText}
+                        htmlFor={keywordId}
+                        onClick={(e) => {
+                          // Prevent double-toggling when clicking directly on checkbox
+                          if ((e.target as HTMLElement).closest('[data-slot="checkbox"]')) {
+                            return;
+                          }
+                          // Toggle selection when clicking on label
+                          setSelectedKeywords(prev => {
+                            if (isSelected) {
+                              return prev.filter(k => k !== keywordText);
+                            } else {
+                              return prev.includes(keywordText) ? prev : [...prev, keywordText];
+                            }
+                          });
+                        }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 border-2 border-indigo-400 shadow-md transform scale-[1.02]' 
+                            : 'hover:bg-slate-50 border-2 border-transparent hover:border-indigo-200 hover:shadow-sm'
+                        }`}
+                      >
+                        <Checkbox
+                          id={keywordId}
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            setSelectedKeywords(prev => {
+                              if (checked) {
+                                return prev.includes(keywordText) ? prev : [...prev, keywordText];
+                              } else {
+                                return prev.filter(k => k !== keywordText);
                               }
-                              // Toggle selection when clicking on label
-                              setSelectedKeywords(prev => {
-                                if (isSelected) {
-                                  return prev.filter(k => k !== keywordText);
-                                } else {
-                                  return prev.includes(keywordText) ? prev : [...prev, keywordText];
-                                }
-                              });
-                            }}
-                            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
-                              isSelected 
-                                ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 shadow-sm' 
-                                : 'hover:bg-slate-50 border-2 border-transparent hover:border-indigo-100'
-                            }`}
-                          >
-                            <Checkbox
-                              id={keywordId}
-                              checked={isSelected}
-                              onCheckedChange={(checked) => {
-                                setSelectedKeywords(prev => {
-                                  if (checked) {
-                                    return prev.includes(keywordText) ? prev : [...prev, keywordText];
-                                  } else {
-                                    return prev.filter(k => k !== keywordText);
-                                  }
-                                });
-                              }}
-                              className="h-4 w-4 flex-shrink-0 border-indigo-400"
-                            />
-                            <span className={`flex-1 text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
-                              {keywordText}
+                            });
+                          }}
+                          className="h-5 w-5 flex-shrink-0 border-indigo-500"
+                        />
+                        <span className={`flex-1 text-sm font-semibold ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                          {keywordText}
+                        </span>
+                        {keyword.suggestedBid && intentResult && (
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge className="bg-green-100 text-green-800 border-green-400 text-xs px-2.5 py-1 font-bold shadow-sm">
+                              {keyword.suggestedBid}
+                            </Badge>
+                            <span className="text-sm text-slate-500" title={keyword.bidReason}>
+                              💡
                             </span>
-                            {keyword.suggestedBid && intentResult && (
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <Badge className="bg-green-100 text-green-700 border-green-300 text-xs px-2 py-0.5 font-semibold">
-                                  {keyword.suggestedBid}
-                                </Badge>
-                                <span className="text-xs text-slate-500" title={keyword.bidReason}>
-                                  💡
-                                </span>
-                              </div>
-                            )}
-                            {keyword.volume && (
-                              <Badge className={`text-xs px-2 py-0.5 font-semibold border ${volumeColor} flex-shrink-0`}>
-                                {keyword.volume}
-                              </Badge>
-                            )}
-                          </Label>
-                        );
-                      })}
-                    </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-        </CardContent>
-      </Card>
+                          </div>
+                        )}
+                        {keyword.volume && (
+                          <Badge className={`text-xs px-2.5 py-1 font-bold border ${volumeColor} flex-shrink-0`}>
+                            {keyword.volume}
+                          </Badge>
+                        )}
+                      </Label>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     );
 
     // Structure-specific UI
@@ -2276,25 +2283,54 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         case 'stag_plus':
           // Smart Grouping
           return (
-            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-              <CardHeader>
-                <CardTitle>Smart Groups</CardTitle>
-                <CardDescription>AI-powered keyword clustering</CardDescription>
+            <Card className="border-2 border-indigo-200/80 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
+              <CardHeader className="bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-t-lg border-b border-indigo-100/50">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 rounded-2xl shadow-lg">
+                    <Brain className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">
+                      Smart Groups
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1.5 text-slate-600">
+                      AI-powered keyword clustering
+                    </CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="pt-6">
+                <div className="space-y-5">
                   {Object.keys(smartClusters).length === 0 ? (
-                    <div className="text-center py-6 sm:py-8 text-slate-500">
-                      <Brain className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                      <p>Generate keywords to see smart clusters</p>
+                    <div className="text-center py-12 text-slate-500">
+                      <div className="p-4 bg-slate-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                        <Brain className="w-10 h-10 text-slate-300" />
+                      </div>
+                      <p className="text-base font-medium">Generate keywords to see smart clusters</p>
                     </div>
                   ) : (
-                    Object.entries(smartClusters).map(([clusterName, keywords]) => (
-                      <div key={clusterName} className="border border-slate-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-slate-800 mb-2">{clusterName}</h4>
+                    Object.entries(smartClusters).map(([clusterName, keywords], idx) => (
+                      <div 
+                        key={clusterName} 
+                        className="border-2 border-indigo-200/50 rounded-xl p-5 bg-gradient-to-br from-white to-indigo-50/30 shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        <h4 className="font-bold text-lg text-indigo-900 mb-4 flex items-center gap-2">
+                          <span className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                            {idx + 1}
+                          </span>
+                          {clusterName.charAt(0).toUpperCase() + clusterName.slice(1)}
+                          <Badge className="ml-2 bg-indigo-100 text-indigo-700 border-indigo-300">
+                            {keywords.length} keywords
+                          </Badge>
+                        </h4>
                         <div className="flex flex-wrap gap-2">
-                          {keywords.map((kw, idx) => (
-                            <Badge key={idx} variant="secondary">{kw}</Badge>
+                          {keywords.map((kw, kwIdx) => (
+                            <Badge 
+                              key={kwIdx} 
+                              className="bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 border border-indigo-300 px-3 py-1.5 font-semibold hover:shadow-md transition-all cursor-default"
+                            >
+                              {kw}
+                            </Badge>
                           ))}
                         </div>
                       </div>
@@ -2590,16 +2626,18 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     return (
       <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl mb-4">
-            <Hash className="w-7 h-7 text-white" />
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 shadow-2xl mb-6 transform hover:scale-105 transition-transform">
+            <Hash className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent mb-3">
             Keyword Generator
           </h2>
-          <p className="text-slate-600 text-sm">
-            Generate and organize keywords based on your structure: <span className="font-semibold text-indigo-700">{STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</span>
-          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full border border-indigo-200 shadow-sm">
+            <p className="text-slate-700 text-sm font-medium">
+              Structure: <span className="font-bold text-indigo-700">{STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</span>
+            </p>
+          </div>
         </div>
 
         {commonKeywordSection}
