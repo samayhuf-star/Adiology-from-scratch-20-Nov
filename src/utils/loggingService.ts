@@ -94,13 +94,6 @@ class LoggingService {
         const duration = Date.now() - startTime;
         const status = response.status;
 
-        // Don't log 404s for expected missing endpoints (edge functions, tables)
-        const isExpected404 = status === 404 && (
-          String(url).includes('/make-server-6757d0ca') ||
-          String(url).includes('/published_websites') ||
-          String(url).includes('/history/')
-        );
-        
         // Clone response to read body without consuming it
         const clonedResponse = response.clone();
         let responseData: any = null;
@@ -116,16 +109,30 @@ class LoggingService {
           // Ignore body parsing errors
         }
 
-        // Don't log 404s for expected missing endpoints (edge functions, tables)
+        // Check if this is an expected 404 (missing backend endpoints/tables)
+        const urlString = String(url);
         const isExpected404 = status === 404 && (
-          String(url).includes('/make-server-6757d0ca') ||
-          String(url).includes('/published_websites') ||
-          String(url).includes('/history/')
+          urlString.includes('/make-server-6757d0ca') ||
+          urlString.includes('/published_websites') ||
+          urlString.includes('/rest/v1/published_websites') ||
+          urlString.includes('/history/') ||
+          urlString.includes('/generate-ads') ||
+          urlString.includes('/functions/v1/make-server-6757d0ca/history/') ||
+          urlString.includes('/functions/v1/make-server-6757d0ca/generate-ads')
         );
         
-        // Skip logging expected 404s
-        if (!isExpected404) {
-          const level: LogLevel = status >= 400 ? 'error' : status >= 300 ? 'warning' : 'success';
+        if (isExpected404) {
+          // Log expected 404s as warnings with a clear message
+          this.addLog('warning', 'API', `${method} ${url} → 404 (Expected fallback - backend not deployed) (${duration}ms)`, {
+            method,
+            url: String(url),
+            status: 404,
+            duration,
+            note: 'This is expected when backend endpoints are not deployed. The app will use fallback mechanisms.',
+          });
+        } else if (status >= 400) {
+          // Log other errors normally
+          const level: LogLevel = status >= 500 ? 'error' : 'warning';
           const category = 'API';
           const message = `${method} ${url} → ${status} (${duration}ms)`;
 
@@ -139,21 +146,50 @@ class LoggingService {
               ? JSON.stringify(responseData).substring(0, 200) 
               : String(responseData).substring(0, 200),
           });
+        } else if (status >= 300) {
+          // Log redirects as info
+          this.addLog('info', 'API', `${method} ${url} → ${status} (${duration}ms)`, {
+            method,
+            url: String(url),
+            status,
+            duration,
+          });
         }
 
         return response;
       } catch (error) {
         const duration = Date.now() - startTime;
         const errorMessage = error instanceof Error ? error.message : String(error);
+        const urlString = String(url);
         
-        this.addLog('error', 'API', `${method} ${url} → Failed: ${errorMessage} (${duration}ms)`, {
-          method,
-          url: String(url),
-          error: errorMessage,
-          duration,
-          requestBody: options?.body,
-          stack: error instanceof Error ? error.stack : undefined,
-        });
+        // Check if this is an expected endpoint that might fail
+        const isExpectedEndpoint = 
+          urlString.includes('/make-server-6757d0ca') ||
+          urlString.includes('/published_websites') ||
+          urlString.includes('/rest/v1/published_websites') ||
+          urlString.includes('/history/') ||
+          urlString.includes('/generate-ads') ||
+          urlString.includes('/functions/v1/make-server-6757d0ca/');
+        
+        // Only log unexpected errors, or log expected ones as warnings
+        if (isExpectedEndpoint && (errorMessage.includes('404') || errorMessage.includes('fetch'))) {
+          this.addLog('warning', 'API', `${method} ${urlString} → Failed (Expected fallback - backend not deployed) (${duration}ms)`, {
+            method,
+            url: urlString,
+            error: errorMessage,
+            duration,
+            note: 'This is expected when backend endpoints are not deployed. The app will use fallback mechanisms.',
+          });
+        } else {
+          this.addLog('error', 'API', `${method} ${urlString} → Failed: ${errorMessage} (${duration}ms)`, {
+            method,
+            url: urlString,
+            error: errorMessage,
+            duration,
+            requestBody: options?.body,
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+        }
 
         throw error;
       }
