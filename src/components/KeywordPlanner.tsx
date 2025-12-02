@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Copy, Save, AlertCircle, Download, FolderOpen, Trash2, FileDown, ShieldCheck } from 'lucide-react';
+import { Sparkles, Copy, Save, AlertCircle, Download, FolderOpen, Trash2, FileDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
@@ -7,7 +7,6 @@ import { Textarea } from './ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
-import { api } from '../utils/api';
 import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { historyService } from '../utils/historyService';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -46,6 +45,16 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
     'scam',
     'feedback'
 ].join('\n');
+
+function normalizeListInput(value: string): string[] {
+    if (!value) {
+        return [];
+    }
+    return value
+        .split(/[\n\r,]+/)
+        .map(entry => entry.trim())
+        .filter(Boolean);
+}
 
 export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     const [seedKeywords, setSeedKeywords] = useState('');
@@ -100,16 +109,17 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             return;
         }
 
+        const normalizedNegativeKeywords = normalizeListInput(negativeKeywords);
+
         setIsGenerating(true);
 
         try {
-            console.log('Calling Google Ads API with:', { seeds: seedKeywords, negatives: negativeKeywords });                                                             
+            console.log('Calling Google Ads API with:', { seeds: seedKeywords, negatives: normalizedNegativeKeywords });                                                             
             
             // Use Google Ads API with AI fallback
-            const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
             const response = await generateKeywordsFromGoogleAds({
                 seedKeywords: seedKeywordsArray,
-                negativeKeywords: negativeKeywords.split(',').map(k => k.trim()).filter(Boolean),
+                negativeKeywords: normalizedNegativeKeywords,
                 maxResults: 500
             });
 
@@ -150,7 +160,7 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             
             // FALLBACK: Generate mock keywords locally when API is unavailable
             const seeds = seedKeywords.split(',').map(s => s.trim()).filter(Boolean);
-            const negatives = negativeKeywords.split('\n').map(n => n.trim().toLowerCase()).filter(Boolean);
+            const negatives = normalizedNegativeKeywords.map(n => n.toLowerCase());
             
             const mockKeywords: string[] = [];
             const modifiers = [
@@ -204,115 +214,6 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             } else {
                 setGeneratedKeywords(formattedKeywords);
             }
-            
-            setApiStatus('error');
-            console.log('Generated mock keywords:', formattedKeywords.length);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const handleGenerateNegatives = async () => {
-        if (!seedKeywords.trim()) {
-            notifications.warning('Please enter seed keywords', {
-                title: 'Seed Keywords Required'
-            });
-            return;
-        }
-
-        setIsGenerating(true);
-
-        try {
-            console.log('Calling API with:', { seeds: seedKeywords, negatives: negativeKeywords });
-            
-            const response = await api.post('/generate-negatives', {
-                seeds: seedKeywords,
-                negatives: negativeKeywords
-            });
-
-            console.log('API Response:', response);
-
-            if (response.keywords && Array.isArray(response.keywords)) {
-                // Extract keyword text and apply match type formatting
-                const keywordTexts = response.keywords.map((k: any) => k.text || k.keyword || k);
-                const formattedKeywords: string[] = [];
-                
-                keywordTexts.forEach((keyword: string) => {
-                    if (matchTypes.broad) {
-                        formattedKeywords.push(keyword);
-                    }
-                    if (matchTypes.phrase) {
-                        formattedKeywords.push(`"${keyword}"`);
-                    }
-                    if (matchTypes.exact) {
-                        formattedKeywords.push(`[${keyword}]`);
-                    }
-                });
-
-                setNegativeKeywords(formattedKeywords.join('\n'));
-                setApiStatus('ok');
-            } else {
-                console.error('Invalid response format:', response);
-                notifications.error('Invalid response from server. Check console for details.', {
-                    title: 'API Error'
-                });
-                setApiStatus('error');
-            }
-        } catch (error: any) {
-            console.log('ℹ️ Backend unavailable - using local fallback generation');
-            
-            // FALLBACK: Generate mock keywords locally when API is unavailable
-            const seeds = seedKeywords.split(',').map(s => s.trim()).filter(Boolean);
-            const negatives = negativeKeywords.split('\n').map(n => n.trim().toLowerCase()).filter(Boolean);
-            
-            const mockKeywords: string[] = [];
-            const modifiers = [
-                'near me', 'online', 'service', 'support', 'help', 'contact', 
-                'phone number', 'customer service', 'call center', 'hotline',
-                'number', '24/7', 'hours', 'location', 'address', 'chat',
-                'email', 'support team', 'helpline', 'assistance', 'care'
-            ];
-            
-            const questions = ['how to', 'what is', 'where is', 'when does', 'why'];
-            
-            seeds.forEach(seed => {
-                // Add base seed
-                if (!negatives.some(neg => seed.toLowerCase().includes(neg))) {
-                    mockKeywords.push(seed);
-                }
-                
-                // Add modifiers
-                modifiers.forEach(modifier => {
-                    const combined = `${seed} ${modifier}`;
-                    if (!negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                        mockKeywords.push(combined);
-                    }
-                });
-                
-                // Add question variations
-                questions.forEach(question => {
-                    const combined = `${question} ${seed}`;
-                    if (!negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                        mockKeywords.push(combined);
-                    }
-                });
-            });
-            
-            // Apply match type formatting
-            const formattedKeywords: string[] = [];
-            mockKeywords.forEach((keyword: string) => {
-                if (matchTypes.broad) {
-                    formattedKeywords.push(keyword);
-                }
-                if (matchTypes.phrase) {
-                    formattedKeywords.push(`"${keyword}"`);
-                }
-                if (matchTypes.exact) {
-                    formattedKeywords.push(`[${keyword}]`);
-                }
-            });
-            
-            setNegativeKeywords(formattedKeywords.join('\n'));
             
             setApiStatus('error');
             console.log('Generated mock keywords:', formattedKeywords.length);
@@ -589,20 +490,9 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
 
                                 {/* Negative Keywords */}
                                 <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-sm text-slate-700">
-                                            Negative Keywords
-                                        </Label>
-                                        <Button
-                                            onClick={() => handleGenerateNegatives()}
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-xs h-6 px-2 gap-1 border-red-300 text-red-600 hover:bg-red-50"
-                                        >
-                                            <ShieldCheck className="w-3 h-3" />
-                                            Generate
-                                        </Button>
-                                    </div>
+                                    <Label className="text-sm text-slate-700">
+                                        Negative Keywords
+                                    </Label>
                                     <Textarea
                                         placeholder="cheap, discount, reviews, job, free, best..."
                                         value={negativeKeywords}
