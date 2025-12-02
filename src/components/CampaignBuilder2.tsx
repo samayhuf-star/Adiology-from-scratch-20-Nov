@@ -3338,38 +3338,18 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         return;
       }
       
+      // If has regular ads, attach extension to all existing ads
       const dynamicAdGroups = getDynamicAdGroups();
-        const currentGroup = dynamicAdGroups.length > 0 ? dynamicAdGroups[0] : null;
-        const baseUrl = url || 'www.example.com';
-        const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
-        const rawKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
-        const mainKeyword = cleanKeywordForDKI(rawKeyword);
-        
-        const dkiAd: any = {
-          id: Date.now(),
-          type: 'dki',
-          adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup,
-          headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-          headline2: 'Best {KeyWord:' + mainKeyword + '} Deals',
-          headline3: 'Order {KeyWord:' + mainKeyword + '} Online',
-          description1: `Find quality {KeyWord:${mainKeyword}} at great prices. Shop our selection today.`,
-          description2: `Get your {KeyWord:${mainKeyword}} with fast shipping and expert support.`,
-          finalUrl: formattedUrl,
-          path1: 'keyword',
-          path2: 'deals',
-          extensions: []
-        };
-        
-        // Create and attach extension
-        const extension = createExtensionObject(type, currentGroup, formattedUrl, mainKeyword);
-        dkiAd.extensions = [extension];
-        
-        setGeneratedAds(prev => [...prev, dkiAd]);
-        
-        if (selectedAdGroup === ALL_AD_GROUPS_VALUE && selectedAdIds.length < 3) {
-          setSelectedAdIds(prev => [...prev, dkiAd.id]);
-        }
-        
+      const baseUrl = url || 'www.example.com';
+      const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
+      
+      // Check if any ad already has this extension type
+      const hasExtension = generatedAds.some(ad => 
+        (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') &&
+        ad.extensions?.some((ext: any) => ext.extensionType === type)
+      );
+      
+      if (hasExtension) {
         const extName = type === 'snippet' ? 'Snippet Extension' :
                        type === 'callout' ? 'Callout Extension' :
                        type === 'sitelink' ? 'Sitelink Extension' :
@@ -3382,77 +3362,46 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                        type === 'promotion' ? 'Promotion Extension' :
                        type === 'image' ? 'Image Extension' : 'Extension';
         
-        notifications.success(`${extName} added successfully`, {
-          title: 'Extension Added',
-          description: `Your ${extName} has been attached to the ad.`,
-        });
-        return;
-      } else {
-        // Attach extension to all existing ads
-        const dynamicAdGroups = getDynamicAdGroups();
-        const baseUrl = url || 'www.example.com';
-        const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
-        
-        // Check if any ad already has this extension type
-        const hasExtension = generatedAds.some(ad => 
-          (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') &&
-          ad.extensions?.some((ext: any) => ext.extensionType === type)
-        );
-        
-        if (hasExtension) {
-          const extName = type === 'snippet' ? 'Snippet Extension' :
-                         type === 'callout' ? 'Callout Extension' :
-                         type === 'sitelink' ? 'Sitelink Extension' :
-                         type === 'call' ? 'Call Extension' :
-                         type === 'price' ? 'Price Extension' :
-                         type === 'app' ? 'App Extension' :
-                         type === 'location' ? 'Location Extension' :
-                         type === 'message' ? 'Message Extension' :
-                         type === 'leadform' ? 'Lead Form Extension' :
-                         type === 'promotion' ? 'Promotion Extension' :
-                         type === 'image' ? 'Image Extension' : 'Extension';
-          
-          notifications.warning(`${extName} already exists in ads`, {
-            title: 'Duplicate Extension',
-            description: `Each ad can only have one ${extName}. Please edit or remove the existing one first.`,
-          });
-          return;
-        }
-        
-        const updatedAds = generatedAds.map(ad => {
-          if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
-            const currentGroup = dynamicAdGroups.find(g => g.name === ad.adGroup) || dynamicAdGroups[0];
-            const rawKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
-            const mainKeyword = cleanKeyword(rawKeyword);
-            const extension = createExtensionObject(type, currentGroup, formattedUrl, mainKeyword);
-            return {
-              ...ad,
-              extensions: [...(ad.extensions || []), extension]
-            };
-          }
-          return ad;
-        });
-        
-        setGeneratedAds(updatedAds);
-        
-        const extName = type === 'snippet' ? 'Snippet Extension' :
-                       type === 'callout' ? 'Callout Extension' :
-                       type === 'sitelink' ? 'Sitelink Extension' :
-                       type === 'call' ? 'Call Extension' :
-                       type === 'price' ? 'Price Extension' :
-                       type === 'app' ? 'App Extension' :
-                       type === 'location' ? 'Location Extension' :
-                       type === 'message' ? 'Message Extension' :
-                       type === 'leadform' ? 'Lead Form Extension' :
-                       type === 'promotion' ? 'Promotion Extension' :
-                       type === 'image' ? 'Image Extension' : 'Extension';
-        
-        notifications.success(`${extName} added to all ads`, {
-          title: 'Extension Added',
-          description: `Your ${extName} has been attached to all ads.`,
+        notifications.warning(`${extName} already exists in ads`, {
+          title: 'Duplicate Extension',
+          description: `Each ad can only have one ${extName}. Please edit or remove the existing one first.`,
         });
         return;
       }
+      
+      const updatedAds = generatedAds.map(ad => {
+        if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
+          const currentGroup = dynamicAdGroups.find(g => g.name === ad.adGroup) || dynamicAdGroups[0];
+          const rawKeyword = currentGroup?.keywords?.[0] || selectedKeywords[0] || 'your service';
+          const mainKeyword = cleanKeyword(rawKeyword);
+          const extension = createExtensionObject(type, currentGroup, formattedUrl, mainKeyword);
+          return {
+            ...ad,
+            extensions: [...(ad.extensions || []), extension]
+          };
+        }
+        return ad;
+      });
+      
+      setGeneratedAds(updatedAds);
+      
+      const extName = type === 'snippet' ? 'Snippet Extension' :
+                     type === 'callout' ? 'Callout Extension' :
+                     type === 'sitelink' ? 'Sitelink Extension' :
+                     type === 'call' ? 'Call Extension' :
+                     type === 'price' ? 'Price Extension' :
+                     type === 'app' ? 'App Extension' :
+                     type === 'location' ? 'Location Extension' :
+                     type === 'message' ? 'Message Extension' :
+                     type === 'leadform' ? 'Lead Form Extension' :
+                     type === 'promotion' ? 'Promotion Extension' :
+                     type === 'image' ? 'Image Extension' : 'Extension';
+      
+      notifications.success(`${extName} added to all ads`, {
+        title: 'Extension Added',
+        description: `Your ${extName} has been attached to all ads.`,
+      });
+      return;
     }
 
     const dynamicAdGroups = getDynamicAdGroups();
@@ -6104,7 +6053,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       </div>
     );
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 via-purple-50/30 to-indigo-50">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'builder' | 'saved')} className="w-full">
