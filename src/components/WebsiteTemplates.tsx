@@ -835,6 +835,15 @@ export const WebsiteTemplates: React.FC = () => {
             padding: 3rem 1rem; 
             width: 100%;
             overflow-x: hidden;
+            box-sizing: border-box;
+        }
+        @media (max-width: 639px) {
+            .section { 
+                padding: 2rem 1rem; 
+                width: 100%;
+                max-width: 100vw;
+                overflow-x: hidden;
+            }
         }
         a { 
             text-decoration: none; 
@@ -869,14 +878,34 @@ export const WebsiteTemplates: React.FC = () => {
             overflow-wrap: break-word;
         }
         @media (max-width: 639px) {
-            .section { padding: 2rem 1rem; }
-            h1 { font-size: 1.75rem !important; line-height: 1.2; }
-            h2 { font-size: 1.5rem !important; line-height: 1.3; }
-            h3 { font-size: 1.25rem !important; line-height: 1.4; }
-            p { font-size: 0.9375rem; }
+            .section { 
+                padding: 2rem 1rem; 
+                width: 100%;
+                max-width: 100vw;
+                overflow-x: hidden;
+                box-sizing: border-box;
+            }
+            .container {
+                padding: 0 1rem;
+                width: 100%;
+                max-width: 100vw;
+                box-sizing: border-box;
+            }
+            h1 { font-size: 1.75rem !important; line-height: 1.2; word-wrap: break-word; }
+            h2 { font-size: 1.5rem !important; line-height: 1.3; word-wrap: break-word; }
+            h3 { font-size: 1.25rem !important; line-height: 1.4; word-wrap: break-word; }
+            p { font-size: 0.9375rem; word-wrap: break-word; }
             button, a[href^="tel:"], a[href^="mailto:"] {
                 font-size: 1rem;
                 padding: 0.875rem 1.25rem;
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            .grid {
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
             }
         }
         @media (min-width: 640px) {

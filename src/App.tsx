@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -36,14 +36,13 @@ import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
-import { WebTemplates2 } from './components/WebTemplates2';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
-import HomePage from './components/HomePage';
+import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -112,7 +111,6 @@ const App = () => {
     'builder-2',
     'campaign-history',
     'website-templates',
-    'web-templates-2',
     'keyword-planner',
     'keyword-mixer',
     'ads-builder',
@@ -593,12 +591,25 @@ const App = () => {
       setView(user ? 'user' : 'auth');
     };
 
-    handleRoute();
+    // Only run routing if not loading
+    if (!loading) {
+      handleRoute();
+    }
 
     return () => {
       isActive = false;
     };
   }, [loading, user?.id]);
+
+  // Additional effect to ensure homepage shows when loading completes and no user
+  useEffect(() => {
+    if (!loading && !user && (window.location.pathname === '/' || window.location.pathname === '')) {
+      // Only set to homepage if we're not already on a specific route
+      if (appView !== 'homepage' && appView !== 'auth' && appView !== 'reset-password' && appView !== 'verify-email' && appView !== 'payment' && appView !== 'payment-success') {
+        setAppView('homepage');
+      }
+    }
+  }, [loading, user, appView]);
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -709,7 +720,6 @@ const App = () => {
       ]
     },
     { id: 'website-templates', label: 'Web Templates', icon: Layout },
-    { id: 'web-templates-2', label: 'Web Templates 2.0', icon: Globe },
     { 
       id: 'keyword-planner', 
       label: 'Keywords', 
@@ -941,8 +951,9 @@ const App = () => {
   }
 
   if (appView === 'homepage') {
+    console.log('✅ Rendering CreativeMinimalistHomepage');
     return (
-      <HomePage
+      <CreativeMinimalistHomepage
         onGetStarted={() => {
           setAuthMode('login');
           setAppView('auth');
@@ -951,6 +962,7 @@ const App = () => {
           setAuthMode('login');
           setAppView('auth');
         }}
+        onSelectPlan={handleSelectPlan}
       />
     );
   }
@@ -1089,6 +1101,14 @@ const App = () => {
     );
   }
 
+  // Fallback: If no user and not loading, ensure homepage is shown
+  if (!user && !loading && appView !== 'homepage' && appView !== 'auth' && appView !== 'reset-password' && appView !== 'verify-email' && appView !== 'payment' && appView !== 'payment-success' && !window.location.pathname.startsWith('/superadmin')) {
+    // Only redirect to homepage if we're on root path
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      setAppView('homepage');
+    }
+  }
+
   const renderContent = () => {
     // Reset history data if leaving the tab to prevent stale data injection
     // This is a simplification; for robust app, manage state more carefully
@@ -1109,8 +1129,6 @@ const App = () => {
         }} />;
       case 'website-templates':
         return <WebsiteTemplates />;
-      case 'web-templates-2':
-        return <WebTemplates2 />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
       case 'keyword-planner':
