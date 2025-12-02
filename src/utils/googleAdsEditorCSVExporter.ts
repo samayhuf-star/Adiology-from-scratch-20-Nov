@@ -480,9 +480,7 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
       if (locationType && (locationType.toLowerCase().includes('postal') || locationType.toLowerCase().includes('zip'))) {
         const zipCode = locationCode || location;
         if (zipCode) {
-          // Validate ZIP code format: 5 digits or 5+4 format (12345 or 12345-6789)
-          const zipRegex = /^\d{5}(-\d{4})?$/;
-          if (!zipRegex.test(zipCode)) {
+          if (!isValidZipCode(zipCode)) {
             errors.push(`Row ${rowNum}: Invalid ZIP code format "${zipCode}". ZIP codes must be 5 digits (e.g., 12345) or 5+4 format (e.g., 12345-6789)`);
           }
         }
