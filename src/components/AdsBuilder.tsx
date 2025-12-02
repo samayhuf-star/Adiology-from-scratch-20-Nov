@@ -732,7 +732,8 @@ export const AdsBuilder = () => {
                         // Fallback Call Only generation
                         try {
                             for (let i = 0; i < callOnlyPerGroup; i++) {
-                                allGeneratedAds.push(generateFallbackCallOnly(group.name, keywords, i, baseUrl));
+                                const fallbackAd = await generateFallbackCallOnly(group.name, keywords, i, baseUrl);
+                                allGeneratedAds.push(fallbackAd);
                             }
                         } catch (fallbackError) {
                             console.error('Fallback generation failed:', fallbackError);
@@ -1044,11 +1045,8 @@ export const AdsBuilder = () => {
         };
     };
 
-    const generateFallbackCallOnly = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
-        // Use the new comprehensive ad generation logic
+    const generateFallbackCallOnly = async (groupName: string, keywords: string[], index: number, baseUrl: string): Promise<GeneratedAd> => {
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        
-        // Extract industry from keyword
         const intent = detectUserIntent([selectedKeyword], 'Services');
         const industry = intent === 'product' ? 'Products' : 'Services';
         
