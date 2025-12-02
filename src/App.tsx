@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -14,7 +14,6 @@ import {
 } from './components/ui/dropdown-menu';
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
-import { CampaignBuilder3 } from './components/CampaignBuilder3';
 import { CSVValidator3 } from './components/CSVValidator3';
 import { GoogleAdsCSVExport } from './components/GoogleAdsCSVExport';
 import { KeywordPlanner } from './components/KeywordPlanner';
@@ -38,6 +37,7 @@ import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
+import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
@@ -46,8 +46,6 @@ import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from '.
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
 import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
 import { LiveLogs } from './components/LiveLogs';
-import { notifications as notificationService } from './utils/notifications';
-import { AutoFillButton } from './components/AutoFillButton';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -114,8 +112,8 @@ const App = () => {
     'dashboard',
     'campaign-presets',
     'builder-2',
-    'builder-3',
     'campaign-history',
+    'website-templates',
     'keyword-planner',
     'keyword-mixer',
     'keyword-generator-v3',
@@ -178,7 +176,7 @@ const App = () => {
     setActiveTabSafe(targetTab);
     
     // Show success notification
-    notificationService.success('History item restored successfully', {
+    notifications.success('History item restored successfully', {
       title: 'Restored',
       description: 'Your saved item has been loaded and is ready to use.'
     });
@@ -719,12 +717,12 @@ const App = () => {
       icon: Sparkles,
       submenu: [
         { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
-        { id: 'builder-3', label: 'Builder 3.0', icon: Zap },
-        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
-    {
+    { id: 'website-templates', label: 'Web Templates', icon: Layout },
+    { 
       id: 'keyword-planner', 
       label: 'Keywords', 
       icon: Lightbulb,
@@ -1128,14 +1126,14 @@ const App = () => {
         }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
-      case 'builder-3':
-        return <CampaignBuilder3 />;
       case 'campaign-history':
         // Campaign History - Show only saved campaigns, not all activity history
         return <CampaignHistoryView onLoadCampaign={(data) => {
           setHistoryData(data);
           setActiveTabSafe('builder-2');
         }} />;
+      case 'website-templates':
+        return <WebsiteTemplates />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
       case 'google-ads-csv-export':
@@ -1553,9 +1551,7 @@ const App = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full min-w-0 relative">
-          {/* Auto Fill Button - appears on all pages */}
-          {appView === 'user' && <AutoFillButton />}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full min-w-0">
           {renderContent()}
         </main>
       </div>

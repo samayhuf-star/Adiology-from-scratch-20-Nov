@@ -73,22 +73,20 @@ export async function getUserPublishedWebsites(
       // Check if error is about missing table (various error message formats)
       const errorMessage = error.message?.toLowerCase() || '';
       const errorCode = error.code || '';
-      const statusCode = (error as any)?.status || (error as any)?.statusCode;
       
-      // Handle 404 or missing table errors silently
       if (
-        statusCode === 404 ||
         errorMessage.includes('schema cache') || 
         errorMessage.includes('does not exist') ||
         errorMessage.includes('could not find the table') ||
         errorMessage.includes('relation') && errorMessage.includes('does not exist') ||
         errorCode === 'PGRST116' || // PostgREST error code for missing table
-        errorCode === '42P01' // PostgreSQL error code for undefined table
+        errorCode === '42P01' || // PostgreSQL error code for undefined table
+        errorCode === 'PGRST204' // PostgREST 404 equivalent
       ) {
         // Silently return empty array for missing table (expected in some deployments)
+        // Don't log this as an error - it's expected
         return [];
       }
-      // Only throw for unexpected errors
       throw new Error(`Failed to fetch published websites: ${error.message}`);
     }
 
@@ -97,20 +95,16 @@ export async function getUserPublishedWebsites(
     // Gracefully handle any errors and return empty array
     // Check if it's a missing table error that wasn't caught above
     const errorMessage = error?.message?.toLowerCase() || '';
-    const statusCode = error?.status || error?.statusCode;
-    
     if (
-      statusCode === 404 ||
       errorMessage.includes('schema cache') || 
       errorMessage.includes('could not find the table') ||
-      errorMessage.includes('does not exist') ||
-      errorMessage.includes('404')
+      errorMessage.includes('does not exist')
     ) {
       // Silently return empty array for missing table
       return [];
     }
-    // Only log non-table-missing errors (but don't show in console)
-    // Silently return empty array for all errors to prevent console spam
+    // Only log non-table-missing errors
+    console.warn('Error fetching published websites:', error);
     return [];
   }
 }

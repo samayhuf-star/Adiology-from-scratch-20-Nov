@@ -47,7 +47,6 @@ interface UserStats {
     myWebsites: number;
     myPresets: number;
     myDomains: number;
-    myNegativeKeywords: number;
   };
 }
 
@@ -216,7 +215,6 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       let myWebsites = 0;
       let myPresets = 0;
       let myDomains = 0;
-      let myNegativeKeywords = 0;
 
       try {
         // Get campaigns from history
@@ -233,12 +231,6 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           item.type === 'campaign-preset' ||
           item.type?.includes('preset') ||
           item.type?.includes('template')
-        ).length;
-
-        // Get saved negative keywords from history
-        myNegativeKeywords = allHistory.filter(item => 
-          item.type === 'negative-keywords' ||
-          item.type?.includes('negative')
         ).length;
 
         // Get published websites (gracefully handle missing table)
@@ -262,12 +254,29 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           myDomains = uniqueDomains.size;
         } catch (websiteError: any) {
           // Silently handle published websites errors (table might not exist)
-          // Don't log any errors - expected when table doesn't exist
+          const errorMessage = websiteError?.message?.toLowerCase() || '';
+          // Only log if it's not a missing table error
+          if (!errorMessage.includes('schema cache') && 
+              !errorMessage.includes('could not find the table') &&
+              !errorMessage.includes('does not exist')) {
+            console.warn('Could not fetch published websites:', websiteError);
+          }
           myWebsites = 0;
           myDomains = 0;
         }
       } catch (error: any) {
-        // Silently handle all errors - expected when tables/endpoints don't exist
+        // Check if error is about missing published_websites table
+        const errorMessage = error?.message?.toLowerCase() || '';
+        const isTableMissingError = 
+          errorMessage.includes('schema cache') || 
+          errorMessage.includes('could not find the table') ||
+          errorMessage.includes('does not exist') ||
+          errorMessage.includes('relation') && errorMessage.includes('does not exist');
+        
+        if (!isTableMissingError) {
+          // Only log non-table-missing errors
+          console.error('Error fetching user resources:', error);
+        }
         // Continue with 0 counts if there's an error
       }
 
@@ -291,7 +300,6 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           myWebsites,
           myPresets,
           myDomains,
-          myNegativeKeywords,
         },
       });
 
@@ -762,10 +770,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
         </h2>
         <div className={`grid ${getResponsiveGridCols(screenSize)} ${getResponsiveGap(screenSize)}`}>
           {/* My Campaigns */}
-          <Card 
-            className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group cursor-pointer ${getResponsivePadding(screenSize)}`}
-            onClick={() => onNavigate('builder-2')}
-          >
+          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
@@ -786,10 +791,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           </Card>
 
           {/* My Presets */}
-          <Card 
-            className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group cursor-pointer ${getResponsivePadding(screenSize)}`}
-            onClick={() => onNavigate('campaign-presets')}
-          >
+          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
@@ -809,26 +811,23 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
             </div>
           </Card>
 
-          {/* Negative Keywords Builder */}
-          <Card 
-            className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group cursor-pointer ${getResponsivePadding(screenSize)}`}
-            onClick={() => onNavigate('negative-keywords')}
-          >
+          {/* My Domains */}
+          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
-                  <Target className="w-7 h-7 text-white" />
+                  <Globe className="w-7 h-7 text-white" />
                 </div>
                 <Badge className="bg-amber-100 text-amber-700 border-amber-300 px-3 py-1">
-                  Saved
+                  Active
                 </Badge>
               </div>
               <div className="space-y-2">
                 <h3 className="text-3xl font-bold text-slate-800">
-                  {(stats?.userResources?.myNegativeKeywords || 0).toLocaleString()}
+                  {(stats?.userResources?.myDomains || 0).toLocaleString()}
                 </h3>
-                <p className="text-base text-slate-600">Negative Keywords Builder</p>
+                <p className="text-base text-slate-600">My Domains</p>
               </div>
             </div>
           </Card>

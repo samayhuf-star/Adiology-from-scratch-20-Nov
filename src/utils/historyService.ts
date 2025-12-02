@@ -1,6 +1,5 @@
 import { api } from './api';
 import { localStorageHistory, HistoryItem } from './localStorageHistory';
-import { campaignDatabaseService } from './campaignDatabaseService';
 
 /**
  * History service with automatic fallback to localStorage
@@ -13,35 +12,13 @@ export const historyService = {
    */
   async save(type: string, name: string, data: any, status: 'draft' | 'completed' = 'completed'): Promise<string> {
     try {
-      // Try server first with timeout handling
+      // Try server first
       const response = await api.post('/history/save', { type, name, data, status });
       return response.id || crypto.randomUUID();
-    } catch (error: any) {
-      // Check if it's an expected error (backend not deployed)
-      const isExpectedError = 
-        error?.name === 'NotFoundError' ||
-        error?.name === 'TimeoutError' ||
-        error?.message?.includes('timeout') ||
-        error?.message?.includes('Network error') ||
-        error?.message?.includes('404') ||
-        error?.message?.includes('fetch') ||
-        error?.message?.includes('Request failed');
-      
-      // Try direct database save as second fallback
-      if (isExpectedError) {
-        try {
-          const dbId = await campaignDatabaseService.save(type, name, data, status);
-          if (dbId) {
-            console.log('✅ Saved to database directly');
-            return dbId;
-          }
-        } catch (dbError) {
-          console.warn('Direct database save failed, using localStorage:', dbError);
-        }
-      }
-      
-      // Final fallback to localStorage
+    } catch (error) {
+      // Silently fallback to localStorage (expected when server is not deployed)
       await localStorageHistory.save(type, name, data, status);
+      // Get the last item's ID (the one we just saved)
       const items = localStorageHistory.getAll();
       return items[items.length - 1]?.id || crypto.randomUUID();
     }
@@ -49,35 +26,14 @@ export const historyService = {
 
   /**
    * Update an existing item (for drafts)
-   * If item doesn't exist, creates a new one (upsert behavior)
    */
   async update(id: string, data: any, name?: string): Promise<void> {
     try {
-      // Try server first with timeout handling
+      // Try server first
       await api.post('/history/update', { id, data, name });
-    } catch (error: any) {
-      // Silently fallback to localStorage (expected when server is not deployed or times out)
-      // This includes timeout errors, network errors, and 404s
-      const isExpectedError = 
-        error?.name === 'NotFoundError' ||
-        error?.name === 'TimeoutError' ||
-        error?.message?.includes('timeout') ||
-        error?.message?.includes('Network error') ||
-        error?.message?.includes('404') ||
-        error?.message?.includes('fetch') ||
-        error?.message?.includes('Request failed');
-      
-      // Always fallback silently - don't log expected errors
-      // localStorageHistory.update now handles "item not found" gracefully
-      try {
-        await localStorageHistory.update(id, data, name);
-      } catch (localError: any) {
-        // Silently handle localStorage errors - they're already handled internally
-        // Only log if it's an unexpected error
-        if (localError instanceof Error && !localError.message.includes('Item not found')) {
-          console.warn('localStorage update had an issue, but continuing:', localError.message);
-        }
-      }
+    } catch (error) {
+      // Silently fallback to localStorage (expected when server is not deployed)
+      await localStorageHistory.update(id, data, name);
     }
   },
 
@@ -103,38 +59,8 @@ export const historyService = {
       // Try server first
       const response = await api.get('/history/list');
       return response.items || [];
-    } catch (error: any) {
-      // Check if it's an expected error
-      const isExpectedError = 
-        error?.name === 'NotFoundError' ||
-        error?.name === 'TimeoutError' ||
-        error?.message?.includes('404') ||
-        error?.message?.includes('timeout') ||
-        error?.message?.includes('Network error') ||
-        error?.message?.includes('fetch');
-      
-      // Try direct database as fallback
-      if (isExpectedError) {
-        try {
-          const dbItems = await campaignDatabaseService.getAll();
-          if (dbItems && dbItems.length > 0) {
-            // Convert database format to HistoryItem format
-            return dbItems.map(item => ({
-              id: item.id || crypto.randomUUID(),
-              type: item.type,
-              name: item.name,
-              data: item.data,
-              timestamp: item.created_at || new Date().toISOString(),
-              status: item.status,
-              lastModified: item.updated_at,
-            }));
-          }
-        } catch (dbError) {
-          console.warn('Direct database getAll failed, using localStorage:', dbError);
-        }
-      }
-      
-      // Final fallback to localStorage
+    } catch (error) {
+      // Silently fallback to localStorage (expected when server is not deployed)
       return localStorageHistory.getAll();
     }
   },

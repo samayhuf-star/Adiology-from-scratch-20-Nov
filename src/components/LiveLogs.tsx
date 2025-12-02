@@ -212,8 +212,8 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
   return (
     <div className={`fixed bottom-4 right-4 bg-white border border-gray-200 shadow-2xl rounded-lg z-50 flex flex-col ${className}`} style={{ width: '500px', maxHeight: isExpanded ? '60vh' : '250px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 rounded-t-lg">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 rounded-t-lg flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
           <div className="flex items-center gap-2">
             <Bug className="w-5 h-5 text-indigo-600" />
             <h3 className="font-semibold text-gray-900">System Logs</h3>
@@ -274,7 +274,17 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+          {/* Export button - Make it more prominent and always visible */}
+          <button
+            onClick={handleExport}
+            className="p-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100 rounded transition-colors border border-indigo-300 bg-indigo-50 flex items-center gap-1.5 flex-shrink-0"
+            title="Export logs to text file"
+          >
+            <Download className="w-4 h-4" />
+            <span className="text-xs font-medium hidden sm:inline">Export</span>
+          </button>
+
           {/* Filter */}
           <select
             value={filter}
@@ -289,14 +299,30 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
             <option value="debug">Debug</option>
           </select>
 
-          {/* Export button */}
-          <button
-            onClick={handleExport}
-            className="p-1.5 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-            title="Export logs to text file"
-          >
-            <Download className="w-4 h-4" />
-          </button>
+          {/* Quick filter to errors button - only show if there are errors */}
+          {errorCount > 0 && (
+            <button
+              onClick={() => {
+                setFilter('error');
+                // Scroll to first error after a brief delay
+                setTimeout(() => {
+                  const firstError = logsContainerRef.current?.querySelector('[data-log-level="error"]');
+                  if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 100);
+              }}
+              className={`px-2 py-1 text-xs rounded font-medium transition-colors flex items-center gap-1 ${
+                filter === 'error'
+                  ? 'bg-red-500 text-white shadow-md'
+                  : 'bg-red-100 text-red-700 hover:bg-red-200'
+              }`}
+              title="Show only errors"
+            >
+              <AlertCircle className="w-3 h-3" />
+              Errors
+            </button>
+          )}
 
           {/* Auto-scroll toggle */}
           <button
@@ -329,19 +355,16 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
 
-          {/* Window Controls Separator */}
-          <div className="w-px h-5 bg-gray-300 mx-1" />
-
-          {/* Minimize - Window control style */}
+          {/* Minimize */}
           <button
             onClick={() => setIsMinimized(true)}
-            className="p-1.5 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors border border-transparent hover:border-orange-200 flex items-center justify-center"
-            title="Minimize window"
+            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+            title="Minimize"
           >
             <Minimize2 className="w-4 h-4" />
           </button>
 
-          {/* Close (hide completely) - Window control style */}
+          {/* Close (hide completely) */}
           <button
             onClick={() => {
               setIsMinimized(true);
@@ -350,8 +373,8 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
               // Dispatch event so other components can show logs again if needed
               window.dispatchEvent(new CustomEvent('liveLogsHidden'));
             }}
-            className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors border border-transparent hover:border-red-200 flex items-center justify-center"
-            title="Close window"
+            className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -377,7 +400,10 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
             {filteredLogs.map((log) => (
               <div
                 key={log.id}
-                className={`p-2 rounded border-l-2 ${getLogColor(log.level)} hover:bg-opacity-80 transition-colors`}
+                data-log-level={log.level}
+                className={`p-2 rounded border-l-2 ${getLogColor(log.level)} hover:bg-opacity-80 transition-colors ${
+                  log.level === 'error' ? 'ring-1 ring-red-300' : ''
+                }`}
               >
                 <div className="flex items-start gap-2">
                   <div className="mt-0.5 shrink-0">

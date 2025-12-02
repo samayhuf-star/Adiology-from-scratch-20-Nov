@@ -185,30 +185,14 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
 
         setIsGenerating(true);
 
-        // Calculate number of match types selected
-        const matchTypeCount = [matchTypes.broad, matchTypes.phrase, matchTypes.exact].filter(Boolean).length || 1;
-        
-        // Generate random target count between 730 and 890 (final count after match type formatting)
-        const targetCount = Math.floor(Math.random() * (890 - 730 + 1)) + 730;
-        
-        // Calculate base keyword count needed (divide by match type count, add some buffer)
-        // We add 10% buffer to account for variations, then we'll trim to target
-        const baseKeywordCount = Math.ceil((targetCount / matchTypeCount) * 1.1);
-
         try {
-            console.log('Calling Google Ads API with:', { 
-                seeds: seedKeywords, 
-                negatives: normalizedNegativeKeywords,
-                targetCount,
-                matchTypeCount,
-                baseKeywordCount
-            });                                                             
+            console.log('Calling Google Ads API with:', { seeds: seedKeywords, negatives: normalizedNegativeKeywords });                                                             
             
             // Use Google Ads API with AI fallback
             const response = await generateKeywordsFromGoogleAds({
                 seedKeywords: seedKeywordsArray,
                 negativeKeywords: normalizedNegativeKeywords,
-                maxResults: baseKeywordCount
+                maxResults: 500
             });
 
             console.log('Google Ads API Response:', response);
@@ -230,13 +214,10 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                     }
                 });
 
-                // Trim to target count if we exceeded it
-                const trimmedKeywords = formattedKeywords.slice(0, targetCount);
-
                 if (isAppend) {
-                    setGeneratedKeywords(prev => [...prev, ...trimmedKeywords]);                                                                              
+                    setGeneratedKeywords(prev => [...prev, ...formattedKeywords]);                                                                              
                 } else {
-                    setGeneratedKeywords(trimmedKeywords);
+                    setGeneratedKeywords(formattedKeywords);
                 }
                 setApiStatus('ok');
             } else {
@@ -300,13 +281,10 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                 }
             });
             
-            // Trim to target count (random between 730-890)
-            const trimmedKeywords = formattedKeywords.slice(0, targetCount);
-            
             if (isAppend) {
-                setGeneratedKeywords(prev => [...prev, ...trimmedKeywords]);
+                setGeneratedKeywords(prev => [...prev, ...formattedKeywords]);
             } else {
-                setGeneratedKeywords(trimmedKeywords);
+                setGeneratedKeywords(formattedKeywords);
             }
             
             setApiStatus('error');

@@ -106,49 +106,36 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
   ];
 
   // Expanded variation lists - use vertical-specific modifiers
-  // Prioritize vertical-specific modifiers first, then add generic ones
-  const verticalPrefixes = [
-    ...keywordModifiers.filter((m: string) => !m.includes('near me') && !m.includes('services')), // Location/service modifiers go to suffixes
+  // Increased list size to generate more keywords (410-630 range)
+  const prefixes = [
+    ...keywordModifiers.filter((m: string) => !m.includes('near me')), // Location modifiers go to suffixes
     ...emergencyModifiers,
-  ];
-  
-  // Generic prefixes (lower priority)
-  const genericPrefixes = [
     'call', 'contact', 'phone', 'reach', 'get', 'find', 'hire', 'book',
     'best', 'top', 'professional', 'expert', 'certified', 'licensed',
     'trusted', 'reliable', 'local', 'nearby', 'fast', 'quick', 'easy',
     'affordable', 'quality', 'premium', 'experienced', 'free consultation',
     'get quote', 'request quote', 'schedule', 'book now', 'call now',
     '24/7', 'emergency', 'same day', 'immediate', 'urgent', 'asap',
-  ];
-  
-  // Combine: vertical-specific first, then generic (prioritize relevant ones)
-  const prefixes = [
-    ...verticalPrefixes, // Vertical-specific modifiers first
-    ...genericPrefixes.slice(0, 30), // Limit generic to avoid dilution
-  ].slice(0, 50);
+    'cheap', 'discount', 'best price', 'low cost', 'affordable', 'budget',
+    'reviews', 'ratings', 'top rated', 'highly rated', 'five star',
+    'how to', 'what is', 'where to', 'when to', 'why', 'guide', 'tips',
+    'cost', 'price', 'pricing', 'rates', 'quotes', 'estimate'
+  ].slice(0, 50); // Increased from 30 to 50 for more combinations
 
   // Call/Lead focused suffixes - include vertical modifiers
-  const verticalSuffixes = [
+  const suffixes = [
     ...keywordModifiers.filter((m: string) => m.includes('near me') || m.includes('services')),
-  ];
-  
-  // Generic suffixes (prioritize conversion-focused)
-  const conversionSuffixes = [
     'call', 'contact', 'phone', 'call now', 'contact us', 'get quote',
     'free consultation', 'schedule', 'book', 'appointment', 'near me',
     'service', 'company', 'provider', 'expert', 'professional',
-    'get started', 'sign up', 'apply now', 'request info',
+    'get started', 'sign up', 'apply now', 'request info', 'learn more',
     'pricing', 'quotes', 'rates', 'cost', 'price', 'options', 'solutions',
     'today', 'now', 'immediately', 'asap', 'same day', 'next day',
     'nearby', 'local', 'in my area', 'close to me', 'nearby me',
-  ];
-  
-  // Combine: vertical-specific first, then conversion-focused
-  const suffixes = [
-    ...verticalSuffixes, // Vertical-specific modifiers first
-    ...conversionSuffixes.slice(0, 35), // Limit to avoid too many generic combinations
-  ].slice(0, 50);
+    'reviews', 'ratings', 'testimonials', 'feedback', 'recommended',
+    'cost', 'price', 'pricing', 'quotes', 'rates', 'estimate', 'budget',
+    'how', 'what', 'where', 'when', 'why', 'guide', 'tips', 'info'
+  ].slice(0, 50); // Increased from 30 to 50 for more combinations
 
   // Call/Lead Intent Keywords - Optimized for conversions
   const callLeadIntents = [
@@ -179,47 +166,12 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
   }
 
   // Add service tokens as additional seeds if landing page has services
-  if (allServiceTokens.length > 0 && seedList.length < 15) {
-    allServiceTokens.slice(0, 8).forEach((service: string) => {
-      const cleanService = service.toLowerCase().trim();
-      if (cleanService.length >= 3 && cleanService.length <= 40) {
-        if (!seedList.some(s => s.toLowerCase().includes(cleanService) || cleanService.includes(s.toLowerCase()))) {
-          seedList.push(cleanService);
-        }
+  if (allServiceTokens.length > 0 && seedList.length < 10) {
+    allServiceTokens.slice(0, 5).forEach((service: string) => {
+      if (!seedList.some(s => s.toLowerCase().includes(service.toLowerCase()))) {
+        seedList.push(service);
       }
     });
-  }
-  
-  // Extract additional seed terms from landing page title/h1
-  if (landingPageData) {
-    const title = (landingPageData.title || '').trim();
-    const h1 = (landingPageData.h1 || '').trim();
-    
-    // Extract 2-word phrases from title
-    if (title && seedList.length < 20) {
-      const titleWords = title.split(/\s+/).filter(w => w.length > 2);
-      for (let i = 0; i < titleWords.length - 1 && seedList.length < 20; i++) {
-        const phrase = `${titleWords[i]} ${titleWords[i + 1]}`.toLowerCase();
-        if (phrase.length >= 5 && phrase.length <= 40) {
-          if (!seedList.some(s => s.toLowerCase() === phrase)) {
-            seedList.push(phrase);
-          }
-        }
-      }
-    }
-    
-    // Extract 2-word phrases from h1
-    if (h1 && seedList.length < 25) {
-      const h1Words = h1.split(/\s+/).filter(w => w.length > 2);
-      for (let i = 0; i < h1Words.length - 1 && seedList.length < 25; i++) {
-        const phrase = `${h1Words[i]} ${h1Words[i + 1]}`.toLowerCase();
-        if (phrase.length >= 5 && phrase.length <= 40) {
-          if (!seedList.some(s => s.toLowerCase() === phrase)) {
-            seedList.push(phrase);
-          }
-        }
-      }
-    }
   }
 
   const locations = [
@@ -229,15 +181,10 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
     'in zip code', 'in neighborhood', 'in district', 'in county', 'in metro'
   ];
 
-  // Process each seed keyword - prioritize first few seeds (most relevant)
-  const prioritySeeds = seedList.slice(0, Math.min(5, seedList.length)); // First 5 seeds are most relevant
-  const remainingSeeds = seedList.slice(5);
-  
-  // Process priority seeds first with more variations
+  // Process each seed keyword
   for (let seedIdx = 0; seedIdx < seedList.length; seedIdx++) {
     const seed = seedList[seedIdx];
     const cleanSeed = seed.trim().toLowerCase();
-    const isPriority = seedIdx < prioritySeeds.length;
     let keywordCounter = 0;
 
     // Only use seeds that are 1-2 words
@@ -251,8 +198,8 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
           mockKeywords.push({
             id: `kw-${seedIdx}-${keywordCounter++}`,
             text: shortSeed,
-            volume: isPriority ? 'High' : 'Medium',
-            cpc: isPriority ? '$3.00' : '$2.50',
+            volume: 'High',
+            cpc: '$2.50',
             type: 'Seed'
           });
         }
@@ -265,19 +212,14 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
       mockKeywords.push({
         id: `kw-${seedIdx}-${keywordCounter++}`,
         text: seed.trim(),
-        volume: isPriority ? 'High' : 'Medium',
-        cpc: isPriority ? '$3.00' : '$2.50',
+        volume: 'High',
+        cpc: '$2.50',
         type: 'Seed'
       });
     }
-    
-    // For priority seeds, generate more variations
-    const maxPrefixes = isPriority ? 50 : 30;
-    const maxSuffixes = isPriority ? 50 : 30;
 
-    // Generate prefix + seed combinations (prioritize vertical-specific prefixes)
-    const prefixLimit = isPriority ? maxPrefixes : Math.min(30, prefixes.length);
-    for (let pIdx = 0; pIdx < prefixLimit && mockKeywords.length < maxKeywords; pIdx++) {
+    // Generate prefix + seed combinations (increased limit for more variations)
+    for (let pIdx = 0; pIdx < Math.min(prefixes.length, 50) && mockKeywords.length < maxKeywords; pIdx++) {
       const prefix = prefixes[pIdx];
       const keyword = `${prefix} ${cleanSeed}`;
       const wordCount = getWordCount(keyword);
@@ -295,9 +237,8 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
       }
     }
 
-    // Generate seed + suffix combinations (prioritize vertical-specific suffixes)
-    const suffixLimit = isPriority ? maxSuffixes : Math.min(30, suffixes.length);
-    for (let sIdx = 0; sIdx < suffixLimit && mockKeywords.length < maxKeywords; sIdx++) {
+    // Generate seed + suffix combinations (increased limit for more variations)
+    for (let sIdx = 0; sIdx < Math.min(suffixes.length, 50) && mockKeywords.length < maxKeywords; sIdx++) {
       const suffix = suffixes[sIdx];
       const keyword = `${cleanSeed} ${suffix}`;
       const wordCount = getWordCount(keyword);
@@ -315,10 +256,9 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
       }
     }
 
-    // Generate prefix + seed + suffix combinations (prioritize for priority seeds)
-    const comboLimit = isPriority ? 25 : 15;
-    for (let pIdx = 0; pIdx < Math.min(prefixes.length, comboLimit) && mockKeywords.length < maxKeywords; pIdx++) {
-      for (let sIdx = 0; sIdx < Math.min(suffixes.length, comboLimit) && mockKeywords.length < maxKeywords; sIdx++) {
+    // Generate prefix + seed + suffix combinations (new: more variations)
+    for (let pIdx = 0; pIdx < Math.min(prefixes.length, 25) && mockKeywords.length < maxKeywords; pIdx++) {
+      for (let sIdx = 0; sIdx < Math.min(suffixes.length, 25) && mockKeywords.length < maxKeywords; sIdx++) {
         const prefix = prefixes[pIdx];
         const suffix = suffixes[sIdx];
         const keyword = `${prefix} ${cleanSeed} ${suffix}`;

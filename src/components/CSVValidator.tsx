@@ -559,7 +559,6 @@ export const CSVValidator = () => {
         const keywords = { total: 0, negative: 0 };
         const ads = { RSA: 0, DKI: 0, CallOnly: 0, other: 0 };
         const assets = { sitelinks: 0, calls: 0, locations: 0, callouts: 0, structuredSnippets: 0, images: 0, other: 0 };
-        const locationSet = new Set<string>(); // Track unique locations
 
         uploadedData.forEach(row => {
             const campaign = row['Campaign'];
@@ -582,10 +581,7 @@ export const CSVValidator = () => {
             const hasDescriptions = row['Description 1'] || row['Description 2'];
             const hasPhone = row['Phone Number'];
             
-            // Only count as ad if Row Type is 'ad' or has ad-specific fields
-            const isAdRow = rowType === 'ad' || rowType === 'responsive search ad' || rowType === 'expanded text ad';
-            
-            if (isAdRow || (hasHeadlines && hasDescriptions && !rowType)) {
+            if (rowType === 'ad' || rowType === 'responsive search ad' || rowType === 'expanded text ad' || hasHeadlines || hasDescriptions) {
                 // Check if it's RSA, DKI, or Call-Only based on available fields
                 if (hasHeadlines || hasDescriptions) {
                     // Check for DKI syntax
@@ -602,99 +598,59 @@ export const CSVValidator = () => {
                 }
             }
 
-            // Count locations - count each unique location value and each location row
-            const locationValue = row['Location'] || row['Location Target'] || '';
-            const citiesValue = row['Cities'] || '';
-            const zipCodesValue = row['Zip Codes'] || '';
-            const isLocationRow = rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' ||
-                                 locationValue || row['Target Type'];
+            // Count assets - detect by column presence, not just Row Type
+            // Priority: Check for extension/location columns first (more reliable than Row Type)
             
-            if (isLocationRow) {
-                // Count individual location rows - each row with location data counts as at least 1
-                if (locationValue) {
-                    // If location contains multiple values (comma-separated), split and count each
-                    const locations = locationValue.split(',').map(l => l.trim()).filter(l => l);
-                    if (locations.length > 0) {
-                        locations.forEach(loc => {
-                            if (loc) locationSet.add(loc.toLowerCase());
-                        });
-                    } else {
-                        // Single location value
-                        locationSet.add(locationValue.toLowerCase());
-                    }
-                }
-                // Also check Cities and Zip Codes columns for multiple locations
-                if (citiesValue) {
-                    const cities = citiesValue.split(',').map(c => c.trim()).filter(c => c);
-                    if (cities.length > 0) {
-                        cities.forEach(city => {
-                            if (city) locationSet.add(`city:${city.toLowerCase()}`);
-                        });
-                    } else {
-                        locationSet.add(`city:${citiesValue.toLowerCase()}`);
-                    }
-                }
-                if (zipCodesValue) {
-                    const zips = zipCodesValue.split(',').map(z => z.trim()).filter(z => z);
-                    if (zips.length > 0) {
-                        zips.forEach(zip => {
-                            if (zip) locationSet.add(`zip:${zip.toLowerCase()}`);
-                        });
-                    } else {
-                        locationSet.add(`zip:${zipCodesValue.toLowerCase()}`);
-                    }
-                }
-                // If no location value but row type is location, count as 1 location row
-                if (!locationValue && !citiesValue && !zipCodesValue && 
-                    (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting')) {
-                    locationSet.add(`location_row_${locationSet.size}`);
-                }
+            // Sitelinks - check for "Sitelink Text" or "Link Text" column (and not an ad row)
+            if ((row['Sitelink Text'] || row['Link Text']) && !hasHeadlines && !hasDescriptions) {
+                assets.sitelinks++;
+            } 
+            // Callouts - check for "Callout Text" column (and not an ad row)
+            else if (row['Callout Text'] && !hasHeadlines && !hasDescriptions) {
+                assets.callouts++;
             }
-
-            // Count assets - prioritize Row Type, then check columns
-            // Only count as asset if NOT an ad row (unless explicitly an asset row type)
-            const isAssetRow = rowType === 'sitelink' || rowType === 'call' || rowType === 'callout' || 
-                              rowType === 'structured snippet' || rowType === 'image' || 
-                              assetType === 'sitelink' || assetType === 'call' || assetType === 'callout' ||
-                              assetType === 'structured snippet' || assetType === 'image';
-            
-            if (isAssetRow || (!isAdRow && !hasHeadlines && !hasDescriptions)) {
-                // Sitelinks - check Row Type first, then columns
-                if (rowType === 'sitelink' || assetType === 'sitelink' || 
-                    (row['Sitelink Text'] || row['Link Text']) && !hasHeadlines && !hasDescriptions) {
-                    assets.sitelinks++;
-                } 
-                // Callouts - check Row Type first, then columns
-                else if (rowType === 'callout' || assetType === 'callout' || 
-                        (row['Callout Text'] && !hasHeadlines && !hasDescriptions)) {
-                    assets.callouts++;
-                }
-                // Structured Snippets - check Row Type first, then columns
-                else if (rowType === 'structured snippet' || assetType === 'structured snippet' ||
-                        (row['Header'] && row['Values'] && !hasHeadlines && !hasDescriptions)) {
-                    assets.structuredSnippets++;
-                }
-                // Call assets - check Row Type first, then columns
-                else if (rowType === 'call' || assetType === 'call' ||
-                        (row['Phone Number'] && row['Country Code'] && !hasHeadlines && !hasDescriptions)) {
-                    assets.calls++;
-                }
-                // Images - check Row Type first, then columns
-                else if (rowType === 'image' || assetType === 'image' ||
-                        (row['Image URL'] || row['Alt Text'])) {
-                    assets.images++;
-                }
-                // Other assets
-                else if (rowType && (rowType.includes('asset') || assetType)) {
-                    assets.other++;
-                } else if (assetType || row['Asset Type']) {
-                    assets.other++;
-                }
+            // Structured Snippets - check for "Header" and "Values" columns (and not an ad row)
+            else if (row['Header'] && row['Values'] && !hasHeadlines && !hasDescriptions) {
+                assets.structuredSnippets++;
+            }
+            // Call assets - check for "Phone Number" and "Country Code" columns (and not an ad row)
+            else if (row['Phone Number'] && row['Country Code'] && !hasHeadlines && !hasDescriptions) {
+                assets.calls++;
+            }
+            // Locations - check for "Location Target" or "Location" or "Target Type" column
+            else if (row['Location Target'] || row['Location'] || row['Target Type']) {
+                assets.locations++;
+            }
+            // Images - check for "Image URL" or "Alt Text" columns
+            else if (row['Image URL'] || row['Alt Text']) {
+                assets.images++;
+            }
+            // Fallback to Row Type if columns don't match
+            else if (rowType === 'sitelink' || assetType === 'sitelink') {
+                assets.sitelinks++;
+            } 
+            else if (rowType === 'call' || assetType === 'call') {
+                assets.calls++;
+            } 
+            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting') {
+                assets.locations++;
+            } 
+            else if (rowType === 'callout' || assetType === 'callout') {
+                assets.callouts++;
+            } 
+            else if (rowType === 'structured snippet' || assetType === 'structured snippet') {
+                assets.structuredSnippets++;
+            } 
+            else if (rowType === 'image' || assetType === 'image') {
+                assets.images++;
+            } 
+            // Other assets - check for Asset Type column or other asset indicators
+            else if (rowType && rowType.includes('asset')) {
+                assets.other++;
+            } else if (assetType || row['Asset Type']) {
+                assets.other++;
             }
         });
-
-        // Set locations count to unique locations found, or count of location rows if no unique values
-        assets.locations = locationSet.size > 0 ? locationSet.size : assets.locations;
 
         return {
             campaigns: campaigns.size,
@@ -761,153 +717,6 @@ export const CSVValidator = () => {
                             )}
                         </div>
                     )}
-                </div>
-
-                {/* Parse & Validate Section */}
-                <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 justify-center">
-                    <button
-                        onClick={() => {
-                            if (uploadedData.length === 0 && !uploadedFile) {
-                                setErrorMessage('Please upload a CSV file first');
-                                document.getElementById('csvFile')?.click();
-                            } else if (uploadedData.length > 0) {
-                                // Re-validate existing data
-                                validateData(uploadedData, uploadedHeaders);
-                                setSuccessMessage('Validation completed');
-                            } else if (uploadedFile) {
-                                // Re-parse the file
-                                const reader = new FileReader();
-                                reader.onload = (e) => {
-                                    try {
-                                        const result = parseCSV(e.target?.result as string);
-                                        if (result.data.length === 0) {
-                                            throw new Error("The file is empty or could not be parsed.");
-                                        }
-                                        setUploadedData(result.data);
-                                        setUploadedHeaders(result.headers);
-                                        validateData(result.data, result.headers);
-                                        setSuccessMessage(`Successfully parsed and validated ${result.data.length} rows`);
-                                    } catch (error: any) {
-                                        setErrorMessage(`Error processing CSV: ${error.message}`);
-                                    }
-                                };
-                                reader.readAsText(uploadedFile);
-                            }
-                        }}
-                        disabled={isProcessing}
-                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                        {isProcessing ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                <CheckCircle className="w-5 h-5" />
-                                Parse & Validate
-                            </>
-                        )}
-                    </button>
-                    <button
-                        onClick={() => {
-                            // Generate CSV template
-                            const template = [
-                                {
-                                    "Row Type": "CAMPAIGN",
-                                    "Campaign": "Local Plumbing",
-                                    "Campaign Type": "SEARCH",
-                                    "Campaign Status": "ENABLED",
-                                    "Budget": "30.00",
-                                    "Bidding Strategy": "MANUAL_CPC",
-                                    "Start Date": "2025-12-05",
-                                    "End Date": "2026-12-05",
-                                    "Location Type": "COUNTRY",
-                                    "Location Code": "US"
-                                },
-                                {
-                                    "Row Type": "ADGROUP",
-                                    "Campaign": "Local Plumbing",
-                                    "Ad Group": "Emergency Repairs",
-                                    "AdGroup Status": "ENABLED",
-                                    "Default Max CPC": "2.00"
-                                },
-                                {
-                                    "Row Type": "KEYWORD",
-                                    "Campaign": "Local Plumbing",
-                                    "Ad Group": "Emergency Repairs",
-                                    "Keyword": "plumber near me",
-                                    "Match Type": "PHRASE",
-                                    "Keyword Max CPC": "2.00"
-                                },
-                                {
-                                    "Row Type": "AD",
-                                    "Campaign": "Local Plumbing",
-                                    "Ad Group": "Emergency Repairs",
-                                    "Ad Type": "RESPONSIVE_SEARCH_AD",
-                                    "Headline 1": "Fast Plumbers Near You",
-                                    "Headline 2": "24/7 Emergency Service",
-                                    "Headline 3": "Licensed & Insured",
-                                    "Description 1": "We fix leaks fast. Available 24/7 for emergency plumbing services.",
-                                    "Description 2": "Trusted local plumbers. Same-day service available.",
-                                    "Final URL": "https://example.com/emergency"
-                                },
-                                {
-                                    "Row Type": "SITELINK",
-                                    "Campaign": "Local Plumbing",
-                                    "Ad Group": "Emergency Repairs",
-                                    "Asset Type": "Sitelink",
-                                    "Link Text": "Emergency Service",
-                                    "Description Line 1": "24/7 Emergency Plumbing",
-                                    "Final URL": "https://example.com/emergency"
-                                },
-                                {
-                                    "Row Type": "CALLOUT",
-                                    "Campaign": "Local Plumbing",
-                                    "Ad Group": "Emergency Repairs",
-                                    "Asset Type": "Callout",
-                                    "Callout Text": "Licensed & Insured"
-                                },
-                                {
-                                    "Row Type": "LOCATION",
-                                    "Campaign": "Local Plumbing",
-                                    "Ad Group": "Emergency Repairs",
-                                    "Location": "New York, NY",
-                                    "Location Target": "New York, NY",
-                                    "Target Type": "City"
-                                }
-                            ];
-
-                            const headers = Object.keys(template[0]);
-                            const headerRow = headers.join(',');
-                            const dataRows = template.map(row => {
-                                return headers.map(header => {
-                                    let cellValue = row[header] || '';
-                                    if (cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n')) {
-                                        cellValue = `"${cellValue.replace(/"/g, '""')}"`;
-                                    }
-                                    return cellValue;
-                                }).join(',');
-                            });
-
-                            const csvContent = [headerRow, ...dataRows].join('\n');
-                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = 'ads_csv_template.csv';
-                            link.click();
-                            URL.revokeObjectURL(url);
-                            setSuccessMessage('CSV template downloaded successfully!');
-                        }}
-                        className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2"
-                    >
-                        <Download className="w-5 h-5" />
-                        Download CSV Template (Red)
-                    </button>
-                    <p className="text-sm text-slate-500 text-center sm:text-left">
-                        Upload your CSV exported from builder to check it before Google Ads Editor import.
-                    </p>
                 </div>
             </div>
 
@@ -1003,23 +812,6 @@ export const CSVValidator = () => {
                                 {summary.ads.DKI > 0 && <div>• {summary.ads.DKI} DKI</div>}
                                 {summary.ads.other > 0 && <div>• {summary.ads.other} Other</div>}
                             </div>
-                        </div>
-
-                        {/* Extensions/Assets Total */}
-                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
-                                    <Sparkles className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-slate-500">Extensions/Assets</p>
-                                    <p className="text-2xl font-bold text-slate-800">
-                                        {summary.assets.sitelinks + summary.assets.calls + summary.assets.callouts + 
-                                         summary.assets.structuredSnippets + summary.assets.images + summary.assets.other}
-                                    </p>
-                                </div>
-                            </div>
-                            <p className="text-xs text-slate-400">Total extensions & assets</p>
                         </div>
 
                         {/* Sitelinks */}
