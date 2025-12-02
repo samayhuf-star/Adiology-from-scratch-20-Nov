@@ -465,7 +465,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             const irrelevantBase = ['review', 'reviews', 'rating', 'ratings', 'comparison', 'compare', 'vs', 'versus', 'alternative', 'alternatives', 'best', 'top', 'worst', 'scam', 'complaint', 'complaints', 'problem', 'problems', 'issue', 'issues', 'competitors', 'similar to', 'like', 'better than', 'pros and cons', 'what is better', 'which is better', 'what is the best', 'which is the best', 'what is the top', 'which is the top', 'what is the worst', 'which is the worst', 'what is better than', 'which is better than', 'what is worse than', 'which is worse than', 'what is similar to', 'which is similar to', 'what is like', 'which is like', 'what is different from', 'which is different from', 'what is different than', 'which is different than', 'what is unlike', 'which is unlike', 'what is not like', 'which is not like', 'what is not similar', 'which is not similar', 'what is not same', 'which is not same', 'what is not identical', 'which is not identical', 'what is not equivalent', 'which is not equivalent', 'what is not equal', 'which is not equal', 'what is not comparable', 'which is not comparable', 'what is not comparable to', 'which is not comparable to', 'what is not comparable with', 'which is not comparable with', 'what is not comparable against', 'which is not comparable against', 'what is not comparable versus', 'which is not comparable versus', 'what is not comparable vs', 'which is not comparable vs', 'what is not comparable like', 'which is not comparable like', 'what is not comparable similar', 'which is not comparable similar', 'what is not comparable same', 'which is not comparable same', 'what is not comparable identical', 'which is not comparable identical', 'what is not comparable equivalent', 'which is not comparable equivalent', 'what is not comparable equal', 'which is not comparable equal', 'what is not comparable different', 'which is not comparable different', 'what is not comparable unlike', 'which is not comparable unlike', 'what is not comparable opposite', 'which is not comparable opposite', 'what is not comparable opposite of', 'which is not comparable opposite of', 'what is not comparable different from', 'which is not comparable different from', 'what is not comparable different than', 'which is not comparable different than', 'what is not comparable unlike', 'which is not comparable unlike', 'what is not comparable not like', 'which is not comparable not like', 'what is not comparable not similar', 'which is not comparable not similar', 'what is not comparable not same', 'which is not comparable not same', 'what is not comparable not identical', 'which is not comparable not identical', 'what is not comparable not equivalent', 'which is not comparable not equivalent', 'what is not comparable not equal', 'which is not comparable not equal'];
             
             irrelevantBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters review, comparison, and informational searches', NEGATIVE_KEYWORD_CATEGORIES['Price-Comparison'].label);
+                addUniqueKeyword(kw, 'Filters review, comparison, and informational searches', NEGATIVE_KEYWORD_CATEGORIES['Irrelevant-Product'].label);
             });
             
             // Informational (150+ variations)
@@ -535,12 +535,24 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         if (selectedCategories.size === 0) return generatedKeywords;
         
         return generatedKeywords.filter(kw => {
-            // Find category key from label
+            // Find category key from label - handle both exact match and normalized match
             const categoryKey = Object.keys(NEGATIVE_KEYWORD_CATEGORIES).find(
-                key => NEGATIVE_KEYWORD_CATEGORIES[key as NegativeKeywordCategory].label === kw.category
-            ) as NegativeKeywordCategory;
+                key => {
+                    const categoryLabel = NEGATIVE_KEYWORD_CATEGORIES[key as NegativeKeywordCategory].label;
+                    // Exact match
+                    if (categoryLabel === kw.category) return true;
+                    // Normalized match (trim whitespace, case-insensitive)
+                    if (categoryLabel.trim().toLowerCase() === kw.category.trim().toLowerCase()) return true;
+                    return false;
+                }
+            ) as NegativeKeywordCategory | undefined;
             
-            return categoryKey && selectedCategories.has(categoryKey);
+            // If category key found and it's in selected categories, include this keyword
+            if (categoryKey && selectedCategories.has(categoryKey)) {
+                return true;
+            }
+            
+            return false;
         });
     }, [generatedKeywords, selectedCategories]);
 

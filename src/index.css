@@ -46,6 +46,11 @@ html {
   max-width: 100%;
 }
 
+/* Allow homepage to break out of width constraints */
+body[data-homepage="true"] #root > * {
+  max-width: none;
+}
+
 /* Homepage-specific overrides - prevent global styles from interfering */
 body[data-homepage="true"],
 html[data-homepage="true"] {

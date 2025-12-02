@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -36,14 +36,13 @@ import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
 import { WebsiteTemplates } from './components/WebsiteTemplates';
-import { WebTemplates2 } from './components/WebTemplates2';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
-import HomePage from './components/HomePage';
+import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -112,7 +111,6 @@ const App = () => {
     'builder-2',
     'campaign-history',
     'website-templates',
-    'web-templates-2',
     'keyword-planner',
     'keyword-mixer',
     'ads-builder',
@@ -709,7 +707,6 @@ const App = () => {
       ]
     },
     { id: 'website-templates', label: 'Web Templates', icon: Layout },
-    { id: 'web-templates-2', label: 'Web Templates 2.0', icon: Globe },
     { 
       id: 'keyword-planner', 
       label: 'Keywords', 
@@ -942,7 +939,7 @@ const App = () => {
 
   if (appView === 'homepage') {
     return (
-      <HomePage
+      <CreativeMinimalistHomepage
         onGetStarted={() => {
           setAuthMode('login');
           setAppView('auth');
@@ -951,6 +948,7 @@ const App = () => {
           setAuthMode('login');
           setAppView('auth');
         }}
+        onSelectPlan={handleSelectPlan}
       />
     );
   }
@@ -1109,8 +1107,6 @@ const App = () => {
         }} />;
       case 'website-templates':
         return <WebsiteTemplates />;
-      case 'web-templates-2':
-        return <WebTemplates2 />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
       case 'keyword-planner':
