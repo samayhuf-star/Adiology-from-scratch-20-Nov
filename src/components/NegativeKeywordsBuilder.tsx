@@ -37,6 +37,85 @@ interface GeneratedKeyword {
     matchType?: 'exact' | 'phrase' | 'broad';
 }
 
+type NegativeFillPreset = {
+    url: string;
+    paths: string[];
+    coreKeywords: string[];
+    userGoal: 'leads' | 'calls' | 'signups' | 'branding' | 'ecommerce' | 'other';
+    targetLocation?: string;
+    competitorBrands?: string[];
+    excludeCompetitors?: boolean;
+    keywordCountRange?: [number, number];
+};
+
+const NEGATIVE_FILL_INFO_PRESETS: NegativeFillPreset[] = [
+    {
+        url: 'https://www.fleetguardian.io',
+        paths: ['enterprise-demo', 'fleet-audit', 'solutions'],
+        coreKeywords: [
+            'enterprise fleet tracking',
+            'gps telematics platform',
+            'dot compliance software',
+            'vehicle camera monitoring',
+            'driver safety coaching'
+        ],
+        userGoal: 'leads',
+        targetLocation: 'Dallas, TX',
+        competitorBrands: ['Fleetio', 'Samsara', 'Verizon Connect'],
+        excludeCompetitors: true,
+        keywordCountRange: [850, 1100]
+    },
+    {
+        url: 'https://www.horizonplasticsurgery.com',
+        paths: ['consult', 'vip', 'sculptra', 'body-contouring'],
+        coreKeywords: [
+            'tummy tuck specialist',
+            'mommy makeover surgeon',
+            'body contouring center',
+            'board certified plastic surgeon',
+            'liposuction revisions'
+        ],
+        userGoal: 'calls',
+        targetLocation: 'Miami, FL',
+        competitorBrands: ['Athenique', 'Vivid Body MD'],
+        excludeCompetitors: false,
+        keywordCountRange: [900, 1050]
+    },
+    {
+        url: 'https://www.atlascyberdefense.com',
+        paths: ['zero-trust', 'mssp', 'threat-lab', 'demo'],
+        coreKeywords: [
+            'managed soc service',
+            'zero trust deployment',
+            'cloud incident response',
+            'b2b cyber security experts',
+            'threat hunting retainer'
+        ],
+        userGoal: 'leads',
+        targetLocation: 'Austin, TX',
+        competitorBrands: ['Expel', 'CrowdStrike', 'Arctic Wolf'],
+        excludeCompetitors: true,
+        keywordCountRange: [780, 1000]
+    }
+];
+
+const pickNegativePreset = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
+
+const randomInt = (min: number, max: number) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const joinKeywords = (keywords: string[]) => {
+    if (keywords.length === 0) return '';
+    return [...keywords].sort(() => Math.random() - 0.5).join(', ');
+};
+
+const buildUrlWithPath = (baseUrl: string, slug: string) => {
+    const sanitized = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    if (!slug) return sanitized;
+    return `${sanitized}/${slug}`;
+};
+
 export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) => {
     // Input State
     const [url, setUrl] = useState('');
@@ -59,6 +138,26 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
     const [selectedCategories, setSelectedCategories] = useState<Set<NegativeKeywordCategory>>(new Set());
     const [exportFormat, setExportFormat] = useState<'exact' | 'phrase' | 'broad' | 'all'>('all');
     const [showStats, setShowStats] = useState(true);
+
+    const handleFillInfo = () => {
+        const preset = pickNegativePreset(NEGATIVE_FILL_INFO_PRESETS);
+        if (!preset) return;
+
+        const slug = pickNegativePreset(preset.paths) || '';
+        setUrl(buildUrlWithPath(preset.url, slug));
+        setCoreKeywords(joinKeywords(preset.coreKeywords));
+        setUserGoal(preset.userGoal);
+        setTargetLocation(preset.targetLocation || '');
+        setCompetitorBrands((preset.competitorBrands || []).join(', '));
+        setExcludeCompetitors(Boolean(preset.excludeCompetitors));
+
+        if (preset.keywordCountRange) {
+            setKeywordCount(randomInt(preset.keywordCountRange[0], preset.keywordCountRange[1]));
+        } else {
+            setKeywordCount(1000);
+        }
+        setUrlError('');
+    };
 
     // Load form data from localStorage on mount (Bug_34: Persist form fields)
     useEffect(() => {
@@ -701,15 +800,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    setUrl('https://example.com/landing-page');
-                                    setCoreKeywords('plumbing services, emergency plumber, drain cleaning, water heater repair, pipe repair');
-                                    setUserGoal('leads');
-                                    setTargetLocation('');
-                                    setCompetitorBrands('');
-                                    setExcludeCompetitors(false);
-                                    setKeywordCount(1000);
-                                }}
+                                onClick={handleFillInfo}
                                 className="flex items-center gap-2"
                             >
                                 <RefreshCw className="h-4 w-4" />

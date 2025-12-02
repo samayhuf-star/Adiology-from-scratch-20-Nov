@@ -215,6 +215,168 @@ interface GeneratedAd {
     type?: 'rsa' | 'dki' | 'callonly';
 }
 
+type FillInfoPreset = {
+    baseUrl: string;
+    paths: string[];
+    singleKeywords: string[];
+    adGroups: {
+        name: string;
+        keywords: string[];
+    }[];
+};
+
+const AD_FILL_INFO_PRESETS: FillInfoPreset[] = [
+    {
+        baseUrl: 'https://www.flyzenclaims.com',
+        paths: ['claims', 'support', 'vip-clients', ''],
+        singleKeywords: [
+            'airline refund assistance',
+            'flight voucher support',
+            'delayed flight compensation',
+            'airline hotline booking',
+            '24/7 airline agents',
+            'same day flight change help'
+        ],
+        adGroups: [
+            {
+                name: 'Flight Claims',
+                keywords: [
+                    'flight refund help',
+                    'airline claim desk',
+                    'flight voucher redemption',
+                    'delay compensation',
+                    'cancelled flight hotline',
+                    'lost baggage claim support'
+                ]
+            },
+            {
+                name: 'Hotline Support',
+                keywords: [
+                    'speak to airline agent',
+                    'emergency flight changes',
+                    'priority boarding help',
+                    'airline concierge desk',
+                    'flight customer hotline'
+                ]
+            },
+            {
+                name: 'VIP Flyers',
+                keywords: [
+                    'vip airline desk',
+                    'concierge flight team',
+                    'elite travel assistance',
+                    'airport lounge booking',
+                    'premium flight perks'
+                ]
+            }
+        ]
+    },
+    {
+        baseUrl: 'https://www.rapidplumbpros.com',
+        paths: ['book-now', 'emergency', 'services', 'quote'],
+        singleKeywords: [
+            'emergency plumber',
+            'water heater repair',
+            'burst pipe repair',
+            'licensed plumbing company',
+            'same day leak detection'
+        ],
+        adGroups: [
+            {
+                name: 'Emergency Crew',
+                keywords: [
+                    '24 7 plumber hotline',
+                    'weekend plumbing service',
+                    'emergency leak repair',
+                    'after hours plumber',
+                    'rapid sewer backup fix'
+                ]
+            },
+            {
+                name: 'Water Heaters',
+                keywords: [
+                    'tankless install experts',
+                    'water heater replacement',
+                    'gas water heater repair',
+                    'electric water heater service'
+                ]
+            },
+            {
+                name: 'Drain Team',
+                keywords: [
+                    'hydro jetting specials',
+                    'clogged drain service',
+                    'camera drain inspection',
+                    'rooter service near me'
+                ]
+            }
+        ]
+    },
+    {
+        baseUrl: 'https://www.guardiancloudsec.com',
+        paths: ['audits', 'zero-trust', 'demo', 'enterprise'],
+        singleKeywords: [
+            'managed soc services',
+            'cloud security monitoring',
+            'zero trust assessment',
+            'cybersecurity operations center',
+            'threat response automation'
+        ],
+        adGroups: [
+            {
+                name: 'SOC Monitoring',
+                keywords: [
+                    '24 7 soc desk',
+                    'outsourced cyber team',
+                    'managed detection response',
+                    'cloud breach monitoring'
+                ]
+            },
+            {
+                name: 'Zero Trust',
+                keywords: [
+                    'zero trust roadmap',
+                    'identity segmentation audit',
+                    'sase deployment team',
+                    'micro segmentation experts'
+                ]
+            },
+            {
+                name: 'Compliance',
+                keywords: [
+                    'soc 2 gap assessment',
+                    'hipaa cloud audit',
+                    'pci readiness service',
+                    'iso 27001 consultants'
+                ]
+            }
+        ]
+    }
+];
+
+const getRandomItem = <T,>(items: T[]): T => {
+    return items[Math.floor(Math.random() * items.length)];
+};
+
+const formatKeywordList = (keywords: string[], min = 3, max = 5) => {
+    if (keywords.length === 0) return '';
+    const pool = [...keywords].sort(() => Math.random() - 0.5);
+    const safeMin = Math.min(min, pool.length);
+    const safeMax = Math.max(safeMin, Math.min(max, pool.length));
+    const count = safeMin === safeMax
+        ? safeMin
+        : Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin;
+    return pool.slice(0, count || pool.length).join(', ');
+};
+
+const normalizeUrlWithSlug = (baseUrl: string, slug: string) => {
+    const sanitizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    if (!slug) {
+        return sanitizedBase;
+    }
+    return `${sanitizedBase}/${slug}`;
+};
+
 export const AdsBuilder = () => {
     const [mode, setMode] = useState<'single' | 'multiple'>('single');
     const [singleKeywords, setSingleKeywords] = useState('');
@@ -1258,6 +1420,23 @@ export const AdsBuilder = () => {
         return [...new Set(generatedAds.map(ad => ad.groupName))];
     }, [generatedAds]);
 
+    const handleFillInfo = () => {
+        const preset = getRandomItem(AD_FILL_INFO_PRESETS);
+        if (!preset) return;
+
+        const slug = getRandomItem(preset.paths) || '';
+        const formattedGroups: AdGroup[] = preset.adGroups.map((group, index) => ({
+            id: `${index + 1}`,
+            name: group.name,
+            keywords: formatKeywordList(group.keywords)
+        }));
+
+        setBaseUrl(normalizeUrlWithSlug(preset.baseUrl, slug));
+        setSingleKeywords(formatKeywordList(preset.singleKeywords));
+        setAdGroups(formattedGroups);
+        setUrlError('');
+    };
+
     return (
         <>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 p-5">
@@ -1272,6 +1451,15 @@ export const AdsBuilder = () => {
                             Generate high-converting Google Ads with AI optimization
                         </p>
                     </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleFillInfo}
+                        className="text-xs"
+                    >
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Fill Info
+                    </Button>
                 </div>
             </div>
 

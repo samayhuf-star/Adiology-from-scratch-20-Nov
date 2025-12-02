@@ -47,6 +47,69 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
     'feedback'
 ].join('\n');
 
+type KeywordPlannerFillPreset = {
+    seeds: string[];
+    negatives: string[];
+    matchTypes?: {
+        broad: boolean;
+        phrase: boolean;
+        exact: boolean;
+    };
+};
+
+const KEYWORD_PLANNER_FILL_INFO: KeywordPlannerFillPreset[] = [
+    {
+        seeds: [
+            'airline cancellation help',
+            'flight credit assistance',
+            'speak to airline agent',
+            '24/7 airline hotline',
+            'upgrade my flight'
+        ],
+        negatives: ['jobs', 'salary', 'complaint', 'cheap', 'diy', 'review', 'reddit', 'wiki', 'map'],
+        matchTypes: { broad: true, phrase: true, exact: true }
+    },
+    {
+        seeds: [
+            'emergency plumber',
+            'water heater repair',
+            'slab leak detection',
+            'licensed plumbing company',
+            'same day plumber'
+        ],
+        negatives: ['training', 'course', 'manual', 'parts', 'supplies', 'job', 'free', 'discount', 'review'],
+        matchTypes: { broad: true, phrase: false, exact: true }
+    },
+    {
+        seeds: [
+            'b2b saas security',
+            'zero trust platform',
+            'managed soc service',
+            'cloud compliance audit',
+            'endpoint hardening'
+        ],
+        negatives: ['open source', 'github', 'template', 'internship', 'career', 'cheap', 'free download', 'wikipedia'],
+        matchTypes: { broad: false, phrase: true, exact: true }
+    }
+];
+
+const pickRandomPreset = <T,>(items: T[]): T => {
+    return items[Math.floor(Math.random() * items.length)];
+};
+
+const formatSeeds = (seeds: string[]) => {
+    if (seeds.length === 0) return '';
+    const shuffled = [...seeds].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(5, shuffled.length)).join(', ');
+};
+
+const formatNegatives = (negatives: string[]) => {
+    if (negatives.length === 0) return '';
+    const shuffled = [...negatives].sort(() => Math.random() - 0.5);
+    const count = Math.min(15, shuffled.length);
+    return shuffled.slice(0, count).join('\n');
+};
+
 export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     const [seedKeywords, setSeedKeywords] = useState('');
     const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
@@ -65,6 +128,15 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
         phrase: true,
         exact: true
     });
+
+    const handleFillInfo = () => {
+        const preset = pickRandomPreset(KEYWORD_PLANNER_FILL_INFO);
+        if (!preset) return;
+
+        setSeedKeywords(formatSeeds(preset.seeds));
+        setNegativeKeywords(formatNegatives(preset.negatives));
+        setMatchTypes(preset.matchTypes || { broad: true, phrase: true, exact: true });
+    };
 
     useEffect(() => {
         if (initialData) {
@@ -513,10 +585,7 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => {
-                                            setSeedKeywords('airline number, contact airline, delta phone number');
-                                            setNegativeKeywords(DEFAULT_NEGATIVE_KEYWORDS);
-                                        }}
+                                        onClick={handleFillInfo}
                                         className="shrink-0 text-xs"
                                     >
                                         <Sparkles className="w-3 h-3 mr-1" />
