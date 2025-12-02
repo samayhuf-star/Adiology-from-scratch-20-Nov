@@ -42,7 +42,7 @@ import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
-import HomepageV2 from './components/HomepageV2';
+import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -946,10 +946,20 @@ const App = () => {
     );
   }
 
-  // Show homepage when not authenticated
   if (appView === 'homepage') {
-    console.log('✅ Rendering HomepageV2');
-    return <HomepageV2 />;
+    return (
+      <CreativeMinimalistHomepage
+        onGetStarted={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onSelectPlan={handleSelectPlan}
+      />
+    );
   }
 
   if (appView === 'auth') {
