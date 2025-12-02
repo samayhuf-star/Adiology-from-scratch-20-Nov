@@ -1775,73 +1775,102 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     // Common keyword input section
     const commonKeywordSection = (
-      <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/20 backdrop-blur-xl shadow-2xl">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                <Hash className="w-5 h-5 text-white" />
+      <div className="space-y-6">
+        {/* Seed Keywords Card */}
+        <Card className="border-2 border-indigo-200/80 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
+          <CardHeader className="pb-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-t-lg border-b border-indigo-100/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+                  <Hash className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">
+                    Seed Keywords
+                  </CardTitle>
+                  <CardDescription className="text-sm mt-1.5 text-slate-600">
+                    Enter your seed keywords (one per line)
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-xl text-indigo-900">Seed Keywords</CardTitle>
-                <CardDescription className="text-sm mt-1">Enter your seed keywords (one per line)</CardDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Randomly select a preset and fill both seed keywords and negative keywords
+                  const preset = pickRandomPreset(FILL_INFO_PRESETS);
+                  setSeedKeywords(preset.seedKeywords);
+                  setNegativeKeywords(preset.negativeKeywords);
+                  notifications.success('Random test data filled!', {
+                    title: 'Fill Info',
+                    description: 'Seed keywords and negative keywords have been populated with random test data.'
+                  });
+                }}
+                className="gap-2 border-indigo-300 hover:bg-indigo-100 hover:border-indigo-400 transition-all shadow-sm"
+              >
+                <Info className="w-4 h-4" />
+                Fill Info
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <div className="space-y-3">
+              <Textarea
+                value={seedKeywords}
+                onChange={(e) => setSeedKeywords(e.target.value)}
+                placeholder="Call airline&#10;airline number&#10;call united number"
+                rows={6}
+                className="font-mono text-sm border-2 border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl transition-all shadow-sm hover:shadow-md"
+              />
+              <div className="flex items-start gap-2 p-3 bg-blue-50/50 border border-blue-200/50 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-blue-700">
+                  Each keyword must be at least 3 characters long.
+                </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Randomly select a preset and fill both seed keywords and negative keywords
-                const preset = pickRandomPreset(FILL_INFO_PRESETS);
-                setSeedKeywords(preset.seedKeywords);
-                setNegativeKeywords(preset.negativeKeywords);
-                notifications.success('Random test data filled!', {
-                  title: 'Fill Info',
-                  description: 'Seed keywords and negative keywords have been populated with random test data.'
-                });
-              }}
-              className="gap-2 border-indigo-200 hover:bg-indigo-50"
-            >
-              <Info className="w-4 h-4" />
-              Fill Info
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <div className="space-y-3">
-            <Textarea
-              value={seedKeywords}
-              onChange={(e) => setSeedKeywords(e.target.value)}
-              placeholder="Call airline&#10;airline number&#10;call united number"
-              rows={5}
-              className="font-mono text-sm border-2 border-indigo-200 focus:border-indigo-400 focus:ring-indigo-400 rounded-xl"
-            />
-            <p className="text-xs text-slate-500 mt-3 flex items-center gap-2">
-              <AlertCircle className="w-3.5 h-3.5" />
-              <span>Each keyword must be at least 3 characters long.</span>
-            </p>
-          </div>
-          
-          {/* Negative Keywords Input */}
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold text-indigo-900 mb-3 block flex items-center gap-2">
-              <MinusCircle className="w-4 h-4 text-red-500" />
-              Negative Keywords
-            </Label>
-            <Input
-              value={negativeKeywords}
-              onChange={(e) => setNegativeKeywords(e.target.value)}
-              placeholder="cheap, discount, reviews, job, free..."
-              className="font-mono text-sm border-2 border-red-200 focus:border-red-400 focus:ring-red-400 rounded-xl h-11"
-            />
-            <p className="text-xs text-slate-500 mt-2">
-              Keywords containing these terms will be excluded. Separate with commas.
-            </p>
-          </div>
-          
-          <div className="pt-2">
-            <Button
-              onClick={async () => {
+          </CardContent>
+        </Card>
+
+        {/* Negative Keywords Card */}
+        <Card className="border-2 border-red-200/80 bg-gradient-to-br from-white via-red-50/20 to-orange-50/20 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
+          <CardHeader className="pb-4 bg-gradient-to-r from-red-50/50 to-orange-50/50 rounded-t-lg border-b border-red-100/50">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-red-500 via-orange-500 to-red-600 rounded-2xl shadow-lg">
+                <MinusCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-red-700 to-orange-700 bg-clip-text text-transparent">
+                  Negative Keywords
+                </CardTitle>
+                <CardDescription className="text-sm mt-1.5 text-slate-600">
+                  Exclude keywords containing these terms
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <Input
+                value={negativeKeywords}
+                onChange={(e) => setNegativeKeywords(e.target.value)}
+                placeholder="cheap, discount, reviews, job, free..."
+                className="font-mono text-sm border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 rounded-xl h-12 transition-all shadow-sm hover:shadow-md"
+              />
+              <div className="flex items-start gap-2 p-3 bg-red-50/50 border border-red-200/50 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-red-700">
+                  Keywords containing these terms will be excluded. Separate with commas.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Generate Button */}
+        <div className="pt-2">
+          <Button
+            onClick={async () => {
                 if (!seedKeywords.trim()) {
                   notifications.warning('Please enter seed keywords', { title: 'Seed Keywords Required' });
                   return;
@@ -1894,14 +1923,25 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       throw new Error('Seed keywords are required');
                     }
                     
+                    // Calculate dynamic keyword range: 410-630 keywords
+                    const seedList = seedKeywords.trim().split('\n').filter(k => k.trim());
+                    // Target: 410-630 keywords based on seed count
+                    // More seeds = more keywords, but always in the 410-630 range
+                    const seedCount = Math.max(1, seedList.length);
+                    const targetMin = 410;
+                    const targetMax = 630;
+                    // Scale slightly based on seed count, but keep in range
+                    const baseMin = Math.min(targetMax, targetMin + (seedCount * 10));
+                    const dynamicMinKeywords = Math.max(targetMin, Math.min(targetMax - 20, baseMin));
+                    
                     const keywordsWithBids = generateKeywordsUtil({
                       seedKeywords: seedKeywords.trim(),
                       negativeKeywords: negativeKeywords || '',
                       vertical: selectedVertical || 'default',
                       intentResult,
                       landingPageData,
-                      maxKeywords: 600,
-                      minKeywords: 300
+                      maxKeywords: targetMax, // 630 maximum
+                      minKeywords: dynamicMinKeywords // 410-610 range
                     });
                     
                     // Validate that keywords were generated
