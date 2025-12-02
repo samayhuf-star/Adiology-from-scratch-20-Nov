@@ -5141,11 +5141,30 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         }
         
         // Export to CSV using V3 format
-        const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-        exportCampaignToCSVV3(structure, filename);
-        
-        // Mark draft as completed (removes draft status in history)
-        saveCompleted();
+        try {
+          const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+          exportCampaignToCSVV3(structure, filename);
+          
+          // Mark draft as completed (removes draft status in history)
+          saveCompleted();
+          
+          notifications.success('Campaign exported successfully!', {
+            title: '✅ Export Complete',
+            description: `Your campaign "${campaignName}" has been exported to ${filename}`,
+            duration: 5000
+          });
+        } catch (error: any) {
+          console.error('CSV export error:', error);
+          notifications.error(
+            error?.message || 'Failed to export campaign. Please try again.',
+            { 
+              title: '❌ Export Failed',
+              description: 'There was an error exporting your campaign. Please check the console for details.',
+              duration: 10000
+            }
+          );
+          return;
+        }
         
         // Bug_86: Save campaign to saved campaigns list after successful validation
         try {

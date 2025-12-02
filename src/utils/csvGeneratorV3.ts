@@ -242,7 +242,15 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // Validate structure first
   const validation = validateCampaignStructure(structure);
   if (!validation.isValid) {
-    throw new Error(`CSV validation failed:\n${validation.errors.join('\n')}`);
+    const errorMessage = validation.errors.length > 0 
+      ? validation.errors.join('\n')
+      : 'Unknown validation error';
+    throw new Error(`CSV validation failed:\n${errorMessage}`);
+  }
+  
+  // Additional safety check
+  if (!structure || !structure.campaigns || structure.campaigns.length === 0) {
+    throw new Error('Campaign structure is empty. Please ensure you have at least one campaign with ad groups and ads.');
   }
   
   const blocks: string[] = [];

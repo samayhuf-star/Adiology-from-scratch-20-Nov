@@ -595,21 +595,63 @@ export const CSVValidator3 = () => {
             return false;
         }).length;
 
-        // Count extensions/assets (sitelink, call, or rows with Asset Type)
+        // Count extensions/assets - check multiple indicators:
+        // 1. Row Type matches extension types
+        // 2. Asset Type column has value
+        // 3. Extension-specific columns exist (Sitelink Text, Callout Text, Phone Number, etc.)
+        const sitelinkTextCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'sitelink text' || lower.includes('sitelink');
+        }) || '';
+        const calloutTextCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'callout text' || lower.includes('callout');
+        }) || '';
+        const phoneNumberCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'phone number' || lower.includes('phone');
+        }) || '';
+        const structuredSnippetHeaderCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'header' || (lower.includes('header') && lower.includes('snippet'));
+        }) || '';
+        
         const extensionsAssetsCount = rows.filter(row => {
             const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
             const assetType = (row[assetTypeCol] || '').trim();
-            return rowType === 'sitelink' || 
-                   rowType === 'call' ||
-                   rowType === 'callout' ||
-                   rowType === 'snippet' ||
-                   rowType === 'price' ||
-                   rowType === 'promotion' ||
-                   rowType === 'app' ||
-                   rowType === 'leadform' ||
-                   rowType === 'image' ||
-                   rowType === 'message' ||
-                   assetType !== '';
+            
+            // Check row type
+            if (rowType === 'sitelink' || 
+                rowType === 'call' ||
+                rowType === 'callout' ||
+                rowType === 'snippet' ||
+                rowType === 'structured snippet' ||
+                rowType === 'price' ||
+                rowType === 'promotion' ||
+                rowType === 'app' ||
+                rowType === 'leadform' ||
+                rowType === 'image' ||
+                rowType === 'message') {
+                return true;
+            }
+            
+            // Check asset type column
+            if (assetType !== '') {
+                return true;
+            }
+            
+            // Check extension-specific columns
+            if (sitelinkTextCol && (row[sitelinkTextCol] || '').trim() !== '') {
+                return true;
+            }
+            if (calloutTextCol && (row[calloutTextCol] || '').trim() !== '') {
+                return true;
+            }
+            if (phoneNumberCol && (row[phoneNumberCol] || '').trim() !== '') {
+                return true;
+            }
+            
+            return false;
         }).length;
 
         // Count locations - check for Location Target column (used in ZIP, City/State, and Location targeting blocks)
@@ -618,12 +660,43 @@ export const CSVValidator3 = () => {
             return lower === 'location target' || lower.includes('location target');
         }) || '';
         
-        // Count locations (Row Type = location, Location column has value, or Location Target column has value)
+        // Also check for Target Type column which indicates location targeting
+        const targetTypeCol = headers.find(h => {
+            const lower = h.toLowerCase();
+            return lower === 'target type' || lower.includes('target type');
+        }) || '';
+        
+        // Count locations (Row Type = location, Location column has value, Location Target column has value, or Target Type indicates location)
         const locationsCount = rows.filter(row => {
             const rowType = (row[rowTypeCol] || '').toLowerCase().trim();
             const location = row[locationCol] || '';
             const locationTarget = row[locationTargetCol] || '';
-            return rowType === 'location' || location.trim() !== '' || locationTarget.trim() !== '';
+            const targetType = (row[targetTypeCol] || '').toLowerCase().trim();
+            
+            // Check row type
+            if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting') {
+                return true;
+            }
+            
+            // Check location columns
+            if (location.trim() !== '') {
+                return true;
+            }
+            if (locationTarget.trim() !== '') {
+                return true;
+            }
+            
+            // Check target type for location-related values
+            if (targetType === 'location of interest' || 
+                targetType === 'city' || 
+                targetType === 'state' || 
+                targetType === 'postal code' ||
+                targetType === 'country' ||
+                targetType.includes('location')) {
+                return true;
+            }
+            
+            return false;
         }).length;
 
         return {
