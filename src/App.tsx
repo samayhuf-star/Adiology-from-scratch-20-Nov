@@ -19,6 +19,7 @@ import { GoogleAdsCSVExport } from './components/GoogleAdsCSVExport';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
+import { KeywordGeneratorV3 } from './components/KeywordGeneratorV3';
 import { KeywordSavedLists } from './components/KeywordSavedLists';
 import { AdsBuilder } from './components/AdsBuilder';
 import { BillingPanel } from './components/BillingPanel';
@@ -114,6 +115,7 @@ const App = () => {
     'website-templates',
     'keyword-planner',
     'keyword-mixer',
+    'keyword-generator-v3',
     'ads-builder',
     'negative-keywords',
     'csv-validator-3',
@@ -164,6 +166,7 @@ const App = () => {
       'campaign': 'builder-2',
       'keyword-planner': 'keyword-planner',
       'keyword-mixer': 'keyword-mixer',
+      'keyword-generator-v3': 'keyword-generator-v3',
       'negative-keywords': 'negative-keywords'
     };
     
@@ -726,6 +729,7 @@ const App = () => {
         { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
         { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
         { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
+        { id: 'keyword-generator-v3', label: 'Keyword Generator v3.0', icon: Sparkles },
         { id: 'keyword-saved-lists', label: 'Saved Lists', icon: FolderOpen },
       ]
     },
@@ -1139,6 +1143,8 @@ const App = () => {
         return <KeywordMixer initialData={activeTab === 'keyword-mixer' ? historyData : null} />;
       case 'negative-keywords':
         return <NegativeKeywordsBuilder initialData={activeTab === 'negative-keywords' ? historyData : null} />;
+      case 'keyword-generator-v3':
+        return <KeywordGeneratorV3 initialData={activeTab === 'keyword-generator-v3' ? historyData : null} />;
       case 'keyword-saved-lists':
         return <KeywordSavedLists />;
       case 'ads-builder':
