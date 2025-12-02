@@ -21,6 +21,7 @@ import {
     type ExpandedTextAd,
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
+import { generateAdsFallback } from '../utils/adGeneratorFallback';
 
 // Google Ads Generation System Prompt
 const GOOGLE_ADS_SYSTEM_PROMPT = `🟣 SYSTEM INSTRUCTION: GOOGLE ADS GENERATION RULES
@@ -637,7 +638,8 @@ export const AdsBuilder = () => {
                         // Fallback RSA generation (3 ads per group)
                         try {
                             for (let i = 0; i < rsaPerGroup; i++) {
-                                allGeneratedAds.push(generateFallbackRSA(group.name, keywords, i, baseUrl));
+                                const fallbackAd = await generateFallbackRSA(group.name, keywords, i, baseUrl);
+                                allGeneratedAds.push(fallbackAd);
                             }
                         } catch (fallbackError) {
                             console.error('Fallback generation failed:', fallbackError);
@@ -682,7 +684,8 @@ export const AdsBuilder = () => {
                         // Fallback DKI generation (3 ads per group)
                         try {
                             for (let i = 0; i < dkiPerGroup; i++) {
-                                allGeneratedAds.push(generateFallbackDKI(group.name, keywords, i, baseUrl));
+                                const fallbackAd = await generateFallbackDKI(group.name, keywords, i, baseUrl);
+                                allGeneratedAds.push(fallbackAd);
                             }
                         } catch (fallbackError) {
                             console.error('Fallback generation failed:', fallbackError);
@@ -811,13 +814,9 @@ export const AdsBuilder = () => {
         };
     };
 
-    const generateFallbackRSA = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
+    const generateFallbackRSA = async (groupName: string, keywords: string[], index: number, baseUrl: string): Promise<GeneratedAd> => {
         try {
-            // Use the new comprehensive ad generation logic
             const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-            
-            // Extract industry from keyword or use default
-            // Try to detect industry from keyword, default to 'Services'
             const intent = detectUserIntent([selectedKeyword], 'Services');
             const industry = intent === 'product' ? 'Products' : 'Services';
             
@@ -825,29 +824,39 @@ export const AdsBuilder = () => {
             const input: AdGenerationInput = {
                 keywords: [selectedKeyword],
                 industry: industry,
-                businessName: 'Your Business', // Default, can be enhanced later
+                businessName: 'Your Business',
                 baseUrl: baseUrl,
                 adType: 'RSA',
                 filters: {
-                    matchType: 'phrase', // Default match type
-                    campaignStructure: 'STAG', // Default structure
+                    matchType: 'phrase',
+                    campaignStructure: 'STAG',
                 }
             };
             
-            // Generate ad using new logic
+            // Try Python fallback first
+            try {
+                const fallbackAds = await generateAdsFallback(input);
+                if (fallbackAds && fallbackAds.length > 0) {
+                    const rsaAd = fallbackAds[0] as ResponsiveSearchAd;
+                    if (rsaAd && rsaAd.headlines && rsaAd.headlines.length > 0) {
+                        return convertRSAToGeneratedAd(rsaAd, groupName, baseUrl);
+                    }
+                }
+            } catch (pythonError) {
+                console.log('Python fallback unavailable, using local generation');
+            }
+            
+            // Fall back to local generation
             const generatedAd = generateAdsUtility(input) as ResponsiveSearchAd;
             
-            // Validate the generated ad before converting
             if (!generatedAd || !generatedAd.headlines || !Array.isArray(generatedAd.headlines)) {
                 console.error('Generated ad has invalid structure, using safe fallback');
                 return convertRSAToGeneratedAd({ headlines: [], descriptions: [], displayPath: [], finalUrl: baseUrl }, groupName, baseUrl);
             }
             
-            // Convert to GeneratedAd format
             return convertRSAToGeneratedAd(generatedAd, groupName, baseUrl);
         } catch (error) {
             console.error('Error in generateFallbackRSA:', error);
-            // Return a safe fallback ad
             return convertRSAToGeneratedAd({ headlines: [], descriptions: [], displayPath: [], finalUrl: baseUrl }, groupName, baseUrl);
         }
     };
@@ -932,31 +941,62 @@ export const AdsBuilder = () => {
         };
     };
 
-    const generateFallbackDKI = (groupName: string, keywords: string[], index: number, baseUrl: string): GeneratedAd => {
-        // Use the new comprehensive ad generation logic
+    const generateFallbackDKI = async (groupName: string, keywords: string[], index: number, baseUrl: string): Promise<GeneratedAd> => {
         const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
-        
-        // Extract industry from keyword
         const intent = detectUserIntent([selectedKeyword], 'Services');
         const industry = intent === 'product' ? 'Products' : 'Services';
         
-        // Create input for ad generator (generate RSA first, then convert to DKI)
+        // Create input for ad generator
         const input: AdGenerationInput = {
             keywords: [selectedKeyword],
             industry: industry,
             businessName: 'Your Business',
             baseUrl: baseUrl,
-            adType: 'RSA', // Generate as RSA first, then convert to DKI format
+            adType: 'ETA', // Use ETA for DKI generation
             filters: {
                 matchType: 'phrase',
                 campaignStructure: 'STAG',
             }
         };
         
-        // Generate ad using new logic
-        const generatedAd = generateAdsUtility(input) as ResponsiveSearchAd;
+        // Try Python fallback first
+        try {
+            const fallbackAds = await generateAdsFallback(input);
+            if (fallbackAds && fallbackAds.length > 0) {
+                const dkiAd = fallbackAds[0] as ExpandedTextAd;
+                if (dkiAd && dkiAd.headline1) {
+                    const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
+                    return {
+                        id: crypto.randomUUID(),
+                        groupName,
+                        adType: 'DKI',
+                        type: 'dki',
+                        headline1: dkiAd.headline1 || `{KeyWord:${mainKeyword}} - Official Site`,
+                        headline2: dkiAd.headline2 || `Buy {KeyWord:${mainKeyword}} Online`,
+                        headline3: dkiAd.headline3 || `Trusted {KeyWord:${mainKeyword}} Service`,
+                        headline4: '',
+                        headline5: '',
+                        description1: dkiAd.description1 || `Find the best {KeyWord:${mainKeyword}}. Fast & reliable support.`,
+                        description2: dkiAd.description2 || 'Contact our experts for 24/7 assistance.',
+                        path1: dkiAd.displayPath[0] || '',
+                        path2: dkiAd.displayPath[1] || '',
+                        finalUrl: dkiAd.finalUrl || baseUrl || 'https://www.example.com',
+                        selected: false,
+                        extensions: []
+                    };
+                }
+            }
+        } catch (pythonError) {
+            console.log('Python fallback unavailable for DKI, using local generation');
+        }
         
-        // Validate the generated ad before converting
+        // Fall back to local generation
+        const inputRSA: AdGenerationInput = {
+            ...input,
+            adType: 'RSA'
+        };
+        const generatedAd = generateAdsUtility(inputRSA) as ResponsiveSearchAd;
+        
         if (!generatedAd || !generatedAd.headlines || !Array.isArray(generatedAd.headlines)) {
             console.error('Generated ad has invalid structure for DKI, using safe fallback');
             const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
@@ -980,7 +1020,6 @@ export const AdsBuilder = () => {
             };
         }
         
-        // Convert RSA to DKI format
         return convertRSAToDKI(generatedAd, groupName, baseUrl, selectedKeyword);
     };
 
