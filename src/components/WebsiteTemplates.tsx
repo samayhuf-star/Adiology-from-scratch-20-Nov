@@ -884,14 +884,6 @@ export const WebsiteTemplates: React.FC = () => {
             overflow-x: hidden;
             box-sizing: border-box;
         }
-        @media (max-width: 639px) {
-            .section { 
-                padding: 2rem 1rem; 
-                width: 100%;
-                max-width: 100vw;
-                overflow-x: hidden;
-            }
-        }
         a { 
             text-decoration: none; 
             color: inherit; 
