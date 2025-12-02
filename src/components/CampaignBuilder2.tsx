@@ -3685,8 +3685,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     // Filter ads for the selected ad group
     // Filter ads for the selected ad group (only show regular ads, not extension-only objects)
     const filteredAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
-      ? generatedAds.filter(ad => selectedAdIds.includes(ad.id) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'))
-      : generatedAds.filter(ad => (ad.adGroup === selectedAdGroup || !ad.adGroup) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
+      ? generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
+      : generatedAds.filter(ad => {
+          // Match by adGroup name, groupName, or if ad was created for "ALL AD GROUPS"
+          const matchesGroup = ad.adGroup === selectedAdGroup || 
+                               ad.groupName === selectedAdGroup ||
+                               ad.adGroup === ALL_AD_GROUPS_VALUE ||
+                               (!ad.adGroup && !ad.groupName);
+          return matchesGroup && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+        });
     
     // Calculate total ads (only count regular ads)
     const totalAds = filteredAds.length;
