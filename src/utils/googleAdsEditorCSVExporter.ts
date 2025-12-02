@@ -458,7 +458,98 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
         errors.push(`Row ${rowNum}: Invalid Match Type for Negative Keyword "${matchType}"`);
       }
     }
+
+    // Location/ZIP Code validation
+    if (rowType === 'LOCATION') {
+      const campaignName = (row['Campaign'] || '').toString().trim();
+      const location = (row['Location'] || row['Location Name'] || '').toString().trim();
+      const locationCode = (row['Location Code'] || row['Criterion ID'] || '').toString().trim();
+      const locationType = (row['Location Type'] || row['Target Type'] || '').toString().trim();
+      const bidAdjustment = (row['Bid Adjustment'] || '').toString().trim();
+
+      if (!campaignName) {
+        errors.push(`Row ${rowNum}: Campaign name is required for Location targeting`);
+      }
+
+      // Validate location name or code is present
+      if (!location && !locationCode) {
+        errors.push(`Row ${rowNum}: Location Name or Location Code is required for Location targeting`);
+      }
+
+      // Validate ZIP code format if it's a postal code
+      if (locationType && (locationType.toLowerCase().includes('postal') || locationType.toLowerCase().includes('zip'))) {
+        const zipCode = locationCode || location;
+        if (zipCode) {
+          // Validate ZIP code format: 5 digits or 5+4 format (12345 or 12345-6789)
+          const zipRegex = /^\d{5}(-\d{4})?$/;
+          if (!zipRegex.test(zipCode)) {
+            errors.push(`Row ${rowNum}: Invalid ZIP code format "${zipCode}". ZIP codes must be 5 digits (e.g., 12345) or 5+4 format (e.g., 12345-6789)`);
+          }
+        }
+      }
+
+      // Validate bid adjustment if present
+      if (bidAdjustment) {
+        const bidMatch = bidAdjustment.match(/^(-?\d+(?:\.\d+)?)%?$/);
+        if (!bidMatch) {
+          errors.push(`Row ${rowNum}: Invalid Bid Adjustment format "${bidAdjustment}". Must be a percentage (e.g., 10% or -50%)`);
+        } else {
+          const bidValue = parseFloat(bidMatch[1]);
+          if (bidValue < -90 || bidValue > 900) {
+            errors.push(`Row ${rowNum}: Bid Adjustment "${bidAdjustment}" is out of range. Must be between -90% and 900%`);
+          }
+        }
+      }
+    }
   });
+
+  // Count ZIP codes and validate limits
+  const zipCodeRows = rows.filter(row => {
+    const rowType = (row['Row Type'] || '').toString().toUpperCase();
+    const locationType = (row['Location Type'] || row['Target Type'] || '').toString().toLowerCase();
+    return rowType === 'LOCATION' && (locationType.includes('postal') || locationType.includes('zip'));
+  });
+
+  if (zipCodeRows.length > 0) {
+    const uniqueZipCodes = new Set<string>();
+    zipCodeRows.forEach(row => {
+      const zipCode = (row['Location Code'] || row['Criterion ID'] || row['Location'] || row['Location Name'] || '').toString().trim();
+      if (zipCode) {
+        uniqueZipCodes.add(zipCode);
+      }
+    });
+
+    const zipCodeCount = uniqueZipCodes.size;
+
+    // Google Ads has limits on location targeting
+    if (zipCodeCount > 25000) {
+      errors.push(`Too many ZIP codes: ${zipCodeCount} unique ZIP codes found. Google Ads Editor supports a maximum of 25,000 location targets per campaign.`);
+    } else if (zipCodeCount > 5000) {
+      warnings.push(`Large number of ZIP codes: ${zipCodeCount} unique ZIP codes found. Google Ads Editor may have performance issues with more than 5,000 location targets. Consider splitting into multiple campaigns.`);
+    } else if (zipCodeCount > 0) {
+      // Info message for reasonable counts
+      warnings.push(`ZIP code targeting: ${zipCodeCount} unique ZIP code${zipCodeCount > 1 ? 's' : ''} will be included in the CSV.`);
+    }
+
+    // Check for duplicate ZIP codes in the same campaign
+    const campaignZipMap = new Map<string, Set<string>>();
+    zipCodeRows.forEach((row, index) => {
+      const campaignName = (row['Campaign'] || '').toString().trim();
+      const zipCode = (row['Location Code'] || row['Criterion ID'] || row['Location'] || row['Location Name'] || '').toString().trim();
+      
+      if (campaignName && zipCode) {
+        if (!campaignZipMap.has(campaignName)) {
+          campaignZipMap.set(campaignName, new Set());
+        }
+        const zipSet = campaignZipMap.get(campaignName)!;
+        if (zipSet.has(zipCode)) {
+          warnings.push(`Row ${index + 1}: Duplicate ZIP code "${zipCode}" found in campaign "${campaignName}". Duplicate location targets may cause import issues.`);
+        } else {
+          zipSet.add(zipCode);
+        }
+      }
+    });
+  }
 
   return {
     isValid: errors.length === 0,
