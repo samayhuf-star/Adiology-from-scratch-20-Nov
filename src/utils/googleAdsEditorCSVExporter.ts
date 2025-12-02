@@ -136,6 +136,51 @@ function isValidURL(url: string | null | undefined): boolean {
 }
 
 /**
+ * Validate ZIP code format
+ * Accepts: 5 digits (12345) or 5+4 format (12345-6789)
+ */
+function isValidZipCode(zip: string): boolean {
+  if (!zip || typeof zip !== 'string') return false;
+  const zipRegex = /^\d{5}(-\d{4})?$/;
+  return zipRegex.test(zip.trim());
+}
+
+/**
+ * Count unique ZIP codes in rows
+ */
+function countUniqueZipCodes(rows: CSVRow[]): { count: number; invalid: string[]; duplicates: number } {
+  const zipCodeRows = rows.filter(row => {
+    const rowType = (row['Row Type'] || '').toString().toUpperCase();
+    const locationType = (row['Location Type'] || row['Target Type'] || '').toString().toLowerCase();
+    return rowType === 'LOCATION' && (locationType.includes('postal') || locationType.includes('zip'));
+  });
+
+  const uniqueZips = new Set<string>();
+  const invalidZips: string[] = [];
+  const allZips: string[] = [];
+
+  zipCodeRows.forEach(row => {
+    const zipCode = (row['Location Code'] || row['Criterion ID'] || row['Location'] || row['Location Name'] || '').toString().trim();
+    if (zipCode) {
+      allZips.push(zipCode);
+      if (isValidZipCode(zipCode)) {
+        uniqueZips.add(zipCode);
+      } else {
+        invalidZips.push(zipCode);
+      }
+    }
+  });
+
+  const duplicateCount = allZips.length - uniqueZips.size;
+
+  return {
+    count: uniqueZips.size,
+    invalid: invalidZips,
+    duplicates: duplicateCount
+  };
+}
+
+/**
  * Convert campaign structure to Google Ads Editor CSV rows
  */
 export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow[] {
