@@ -40,15 +40,16 @@ import { WebTemplates2 } from './components/WebTemplates2';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
+import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
 
-type AppView = 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
+type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
 const App = () => {
   const { theme } = useTheme();
-  const [appView, setAppView] = useState<AppView>('auth');
+  const [appView, setAppView] = useState<AppView>('homepage');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -635,8 +636,8 @@ const App = () => {
               setAppView('user');
           }
         } else {
-          // Show auth for all paths when not logged in
-          setAppView('auth');
+          // Show homepage for all paths when not logged in
+          setAppView('homepage');
         }
       }
     };
@@ -652,7 +653,7 @@ const App = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
         setTimeout(() => {
-            setAppView('auth');
+            setAppView('homepage');
             setAuthMode('login');
           }, 1000);
         }
@@ -925,12 +926,29 @@ const App = () => {
           // Password reset successful, redirect to login
           window.history.pushState({}, '', '/');
           setAuthMode('login');
-          setAppView('auth');
+          setAppView('homepage');
         }}
           onBackToHome={() => {
-          setAppView('auth');
+          setAppView('homepage');
           setAuthMode('login');
         }}
+      />
+    );
+  }
+
+  // Show homepage when not authenticated
+  if (appView === 'homepage') {
+    return (
+      <CreativeMinimalistHomepage
+        onGetStarted={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onSelectPlan={handleSelectPlan}
       />
     );
   }
