@@ -2180,9 +2180,29 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   />
                   <span>Select All</span>
                 </Label>
-                <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 font-bold text-sm shadow-md">
-                  {selectedKeywords.length} selected
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 font-bold text-sm shadow-md">
+                    {selectedKeywords.length} selected
+                  </Badge>
+                  {/* Floating Next Button */}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (selectedKeywords.length === 0) {
+                        notifications.error('Please generate and select at least one keyword', { 
+                          title: 'Keywords Required',
+                          description: 'You must select keywords in Step 2 before proceeding to the next step.'
+                        });
+                        return;
+                      }
+                      setStep(3);
+                    }}
+                    disabled={selectedKeywords.length === 0}
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold px-4 py-1.5"
+                  >
+                    Next <ArrowRight className="ml-1.5 w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <ScrollArea className="h-[450px] border-2 border-purple-200/50 rounded-xl bg-white/70 shadow-inner">
                 <div className="p-4 space-y-2">

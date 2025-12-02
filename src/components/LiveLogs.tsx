@@ -329,16 +329,19 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
 
-          {/* Minimize */}
+          {/* Window Controls Separator */}
+          <div className="w-px h-5 bg-gray-300 mx-1" />
+
+          {/* Minimize - Window control style */}
           <button
             onClick={() => setIsMinimized(true)}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-            title="Minimize"
+            className="p-1.5 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors border border-transparent hover:border-orange-200 flex items-center justify-center"
+            title="Minimize window"
           >
             <Minimize2 className="w-4 h-4" />
           </button>
 
-          {/* Close (hide completely) */}
+          {/* Close (hide completely) - Window control style */}
           <button
             onClick={() => {
               setIsMinimized(true);
@@ -347,8 +350,8 @@ export function LiveLogs({ className = '' }: LiveLogsProps) {
               // Dispatch event so other components can show logs again if needed
               window.dispatchEvent(new CustomEvent('liveLogsHidden'));
             }}
-            className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-            title="Close"
+            className="p-1.5 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors border border-transparent hover:border-red-200 flex items-center justify-center"
+            title="Close window"
           >
             <X className="w-4 h-4" />
           </button>

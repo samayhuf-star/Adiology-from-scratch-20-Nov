@@ -94,6 +94,13 @@ class LoggingService {
         const duration = Date.now() - startTime;
         const status = response.status;
 
+        // Don't log 404s for expected missing endpoints (edge functions, tables)
+        const isExpected404 = status === 404 && (
+          String(url).includes('/make-server-6757d0ca') ||
+          String(url).includes('/published_websites') ||
+          String(url).includes('/history/')
+        );
+        
         // Clone response to read body without consuming it
         const clonedResponse = response.clone();
         let responseData: any = null;
@@ -109,20 +116,30 @@ class LoggingService {
           // Ignore body parsing errors
         }
 
-        const level: LogLevel = status >= 400 ? 'error' : status >= 300 ? 'warning' : 'success';
-        const category = 'API';
-        const message = `${method} ${url} → ${status} (${duration}ms)`;
+        // Don't log 404s for expected missing endpoints (edge functions, tables)
+        const isExpected404 = status === 404 && (
+          String(url).includes('/make-server-6757d0ca') ||
+          String(url).includes('/published_websites') ||
+          String(url).includes('/history/')
+        );
+        
+        // Skip logging expected 404s
+        if (!isExpected404) {
+          const level: LogLevel = status >= 400 ? 'error' : status >= 300 ? 'warning' : 'success';
+          const category = 'API';
+          const message = `${method} ${url} → ${status} (${duration}ms)`;
 
-        this.addLog(level, category, message, {
-          method,
-          url: String(url),
-          status,
-          duration,
-          requestBody: options?.body,
-          responseData: responseData && typeof responseData === 'object' 
-            ? JSON.stringify(responseData).substring(0, 200) 
-            : String(responseData).substring(0, 200),
-        });
+          this.addLog(level, category, message, {
+            method,
+            url: String(url),
+            status,
+            duration,
+            requestBody: options?.body,
+            responseData: responseData && typeof responseData === 'object' 
+              ? JSON.stringify(responseData).substring(0, 200) 
+              : String(responseData).substring(0, 200),
+          });
+        }
 
         return response;
       } catch (error) {

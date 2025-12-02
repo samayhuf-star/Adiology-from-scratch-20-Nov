@@ -58,6 +58,13 @@ export const api = {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
+          // Silently handle 404s for expected missing endpoints (edge functions, tables)
+          if (response.status === 404) {
+            const silentError = new Error('Request failed');
+            silentError.name = 'NotFoundError';
+            throw silentError;
+          }
+          
           let errorMessage = 'Request failed';
           try {
             const errorData = await response.json();
@@ -149,6 +156,13 @@ export const api = {
       });
 
       if (!response.ok) {
+        // Silently handle 404s for expected missing endpoints (edge functions, tables)
+        if (response.status === 404) {
+          const silentError = new Error('Request failed');
+          silentError.name = 'NotFoundError';
+          throw silentError;
+        }
+        
         let errorMessage = 'Request failed';
         try {
           const errorData = await response.json();

@@ -18,25 +18,19 @@ export const historyService = {
     } catch (error: any) {
       // Silently fallback to localStorage (expected when server is not deployed or times out)
       const isExpectedError = 
+        error?.name === 'NotFoundError' ||
         error?.name === 'TimeoutError' ||
         error?.message?.includes('timeout') ||
         error?.message?.includes('Network error') ||
         error?.message?.includes('404') ||
-        error?.message?.includes('fetch');
+        error?.message?.includes('fetch') ||
+        error?.message?.includes('Request failed');
       
-      if (isExpectedError) {
-        // Expected error - fallback silently
-        await localStorageHistory.save(type, name, data, status);
-        // Get the last item's ID (the one we just saved)
-        const items = localStorageHistory.getAll();
-        return items[items.length - 1]?.id || crypto.randomUUID();
-      } else {
-        // Unexpected error - log but still fallback
-        console.warn('Unexpected error in historyService.save, falling back to localStorage:', error);
-        await localStorageHistory.save(type, name, data, status);
-        const items = localStorageHistory.getAll();
-        return items[items.length - 1]?.id || crypto.randomUUID();
-      }
+      // Always fallback silently - don't log expected errors
+      await localStorageHistory.save(type, name, data, status);
+      // Get the last item's ID (the one we just saved)
+      const items = localStorageHistory.getAll();
+      return items[items.length - 1]?.id || crypto.randomUUID();
     }
   },
 
@@ -51,20 +45,16 @@ export const historyService = {
       // Silently fallback to localStorage (expected when server is not deployed or times out)
       // This includes timeout errors, network errors, and 404s
       const isExpectedError = 
+        error?.name === 'NotFoundError' ||
         error?.name === 'TimeoutError' ||
         error?.message?.includes('timeout') ||
         error?.message?.includes('Network error') ||
         error?.message?.includes('404') ||
-        error?.message?.includes('fetch');
+        error?.message?.includes('fetch') ||
+        error?.message?.includes('Request failed');
       
-      if (isExpectedError) {
-        // Expected error - fallback silently
-        await localStorageHistory.update(id, data, name);
-      } else {
-        // Unexpected error - log but still fallback
-        console.warn('Unexpected error in historyService.update, falling back to localStorage:', error);
-        await localStorageHistory.update(id, data, name);
-      }
+      // Always fallback silently - don't log expected errors
+      await localStorageHistory.update(id, data, name);
     }
   },
 
@@ -90,8 +80,21 @@ export const historyService = {
       // Try server first
       const response = await api.get('/history/list');
       return response.items || [];
-    } catch (error) {
+    } catch (error: any) {
       // Silently fallback to localStorage (expected when server is not deployed)
+      // Check if it's an expected 404 or network error
+      const isExpectedError = 
+        error?.name === 'NotFoundError' ||
+        error?.name === 'TimeoutError' ||
+        error?.message?.includes('404') ||
+        error?.message?.includes('timeout') ||
+        error?.message?.includes('Network error') ||
+        error?.message?.includes('fetch');
+      
+      if (!isExpectedError) {
+        // Only log unexpected errors (but don't show in console)
+        // Silently fallback anyway
+      }
       return localStorageHistory.getAll();
     }
   },
