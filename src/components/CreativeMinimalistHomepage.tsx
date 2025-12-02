@@ -13,11 +13,6 @@ export default function CreativeMinimalistHomepage({
   onLogin, 
   onSelectPlan 
 }: CreativeMinimalistHomepageProps) {
-  // Debug log to confirm component is loading
-  useEffect(() => {
-    console.log('✅ CreativeMinimalistHomepage component loaded');
-  }, []);
-
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll();
@@ -30,16 +25,6 @@ export default function CreativeMinimalistHomepage({
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  // Set data-homepage attribute for CSS overrides
-  useEffect(() => {
-    document.body.setAttribute('data-homepage', 'true');
-    document.documentElement.setAttribute('data-homepage', 'true');
-    return () => {
-      document.body.removeAttribute('data-homepage');
-      document.documentElement.removeAttribute('data-homepage');
-    };
   }, []);
 
   return (
