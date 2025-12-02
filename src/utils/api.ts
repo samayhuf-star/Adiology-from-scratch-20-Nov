@@ -38,34 +38,71 @@ export const api = {
 
     try {
       loggingService.logTransaction('API', `POST ${endpoint}`, { endpoint, bodySize: JSON.stringify(body).length });
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Request failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage += `: ${response.statusText}`;
-        }
-        loggingService.addLog('error', 'API', `POST ${endpoint} failed: ${errorMessage}`, { 
-          endpoint, 
-          status: response.status,
-          statusText: response.statusText 
+      
+      // Create abort controller for timeout (30 seconds for auto-save operations, 60 for others)
+      const timeoutMs = endpoint.includes('/history/update') || endpoint.includes('/history/save') ? 30000 : 60000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${publicAnonKey}`
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal
         });
-        throw new Error(errorMessage);
-      }
+        
+        clearTimeout(timeoutId);
 
-      const data = await response.json();
-      loggingService.logTransaction('API', `POST ${endpoint} succeeded`, { endpoint, status: response.status });
-      return data;
+        if (!response.ok) {
+          let errorMessage = 'Request failed';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage += `: ${response.statusText}`;
+          }
+          loggingService.addLog('error', 'API', `POST ${endpoint} failed: ${errorMessage}`, { 
+            endpoint, 
+            status: response.status,
+            statusText: response.statusText 
+          });
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        loggingService.logTransaction('API', `POST ${endpoint} succeeded`, { endpoint, status: response.status });
+        return data;
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        // Handle abort/timeout errors
+        if (fetchError.name === 'AbortError' || fetchError.message?.includes('aborted')) {
+          const timeoutError = new Error(`Request timeout after ${timeoutMs}ms`);
+          timeoutError.name = 'TimeoutError';
+          
+          // For history operations, log as warning (expected fallback)
+          if (endpoint.includes('/history/')) {
+            loggingService.addLog('warning', 'API', `POST ${endpoint} timed out (falling back to localStorage)`, { 
+              endpoint,
+              timeout: timeoutMs
+            });
+          } else {
+            loggingService.addLog('error', 'API', `POST ${endpoint} timed out`, { 
+              endpoint,
+              timeout: timeoutMs
+            });
+          }
+          
+          throw timeoutError;
+        }
+        
+        // Re-throw other errors
+        throw fetchError;
+      }
     } catch (e) {
       // Silently fail for expected server unavailability (Make.com endpoints)
       // The calling code will handle fallback to localStorage

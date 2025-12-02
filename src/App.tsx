@@ -46,6 +46,7 @@ import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from '.
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
 import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
 import { LiveLogs } from './components/LiveLogs';
+import { notifications as notificationService } from './utils/notifications';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -176,7 +177,7 @@ const App = () => {
     setActiveTabSafe(targetTab);
     
     // Show success notification
-    notifications.success('History item restored successfully', {
+    notificationService.success('History item restored successfully', {
       title: 'Restored',
       description: 'Your saved item has been loaded and is ready to use.'
     });

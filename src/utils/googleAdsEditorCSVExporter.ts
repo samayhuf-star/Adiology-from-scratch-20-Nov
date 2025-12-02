@@ -478,11 +478,26 @@ export async function exportCampaignToGoogleAdsEditorCSV(
   // Convert structure to CSV rows
   const rows = campaignStructureToCSVRows(structure);
 
-  // Validate rows
+  // Validate rows (but don't block export for non-critical errors)
   const validation = validateCSVRows(rows);
 
-  if (!validation.isValid) {
-    throw new Error(`CSV validation failed:\n${validation.errors.join('\n')}`);
+  // Only throw for critical errors that would make the CSV unusable
+  if (!validation.isValid && validation.errors.length > 0) {
+    const criticalErrors = validation.errors.filter(err => 
+      err.includes('No rows to export') || 
+      err.includes('Missing Row Type') ||
+      err.includes('Campaign name is required')
+    );
+    
+    if (criticalErrors.length > 0) {
+      throw new Error(`CSV validation failed:\n${criticalErrors.join('\n')}`);
+    }
+    
+    // Log non-critical errors as warnings but continue export
+    if (validation.errors.length > criticalErrors.length) {
+      console.warn('CSV validation warnings (export will continue):', 
+        validation.errors.filter(err => !criticalErrors.includes(err)).join('\n'));
+    }
   }
 
   // Generate CSV content using PapaParse

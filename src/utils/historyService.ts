@@ -12,15 +12,31 @@ export const historyService = {
    */
   async save(type: string, name: string, data: any, status: 'draft' | 'completed' = 'completed'): Promise<string> {
     try {
-      // Try server first
+      // Try server first with timeout handling
       const response = await api.post('/history/save', { type, name, data, status });
       return response.id || crypto.randomUUID();
-    } catch (error) {
-      // Silently fallback to localStorage (expected when server is not deployed)
-      await localStorageHistory.save(type, name, data, status);
-      // Get the last item's ID (the one we just saved)
-      const items = localStorageHistory.getAll();
-      return items[items.length - 1]?.id || crypto.randomUUID();
+    } catch (error: any) {
+      // Silently fallback to localStorage (expected when server is not deployed or times out)
+      const isExpectedError = 
+        error?.name === 'TimeoutError' ||
+        error?.message?.includes('timeout') ||
+        error?.message?.includes('Network error') ||
+        error?.message?.includes('404') ||
+        error?.message?.includes('fetch');
+      
+      if (isExpectedError) {
+        // Expected error - fallback silently
+        await localStorageHistory.save(type, name, data, status);
+        // Get the last item's ID (the one we just saved)
+        const items = localStorageHistory.getAll();
+        return items[items.length - 1]?.id || crypto.randomUUID();
+      } else {
+        // Unexpected error - log but still fallback
+        console.warn('Unexpected error in historyService.save, falling back to localStorage:', error);
+        await localStorageHistory.save(type, name, data, status);
+        const items = localStorageHistory.getAll();
+        return items[items.length - 1]?.id || crypto.randomUUID();
+      }
     }
   },
 
@@ -29,11 +45,26 @@ export const historyService = {
    */
   async update(id: string, data: any, name?: string): Promise<void> {
     try {
-      // Try server first
+      // Try server first with timeout handling
       await api.post('/history/update', { id, data, name });
-    } catch (error) {
-      // Silently fallback to localStorage (expected when server is not deployed)
-      await localStorageHistory.update(id, data, name);
+    } catch (error: any) {
+      // Silently fallback to localStorage (expected when server is not deployed or times out)
+      // This includes timeout errors, network errors, and 404s
+      const isExpectedError = 
+        error?.name === 'TimeoutError' ||
+        error?.message?.includes('timeout') ||
+        error?.message?.includes('Network error') ||
+        error?.message?.includes('404') ||
+        error?.message?.includes('fetch');
+      
+      if (isExpectedError) {
+        // Expected error - fallback silently
+        await localStorageHistory.update(id, data, name);
+      } else {
+        // Unexpected error - log but still fallback
+        console.warn('Unexpected error in historyService.update, falling back to localStorage:', error);
+        await localStorageHistory.update(id, data, name);
+      }
     }
   },
 

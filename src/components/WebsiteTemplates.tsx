@@ -46,159 +46,210 @@ interface SavedTemplate {
   updatedAt: string;
 }
 
-const defaultTemplate: Template = {
-  id: 'template-1',
-  name: 'Professional Service Landing Page',
-  description: 'Complete single-page website with all Google Ads required policies',
-  thumbnail: '🏢',
-  category: 'Business',
-  sections: [
-    {
-      id: 'hero-1',
-      type: 'hero',
-      title: 'Hero Section',
-      content: {
-        heading: 'Professional Services You Can Trust',
-        subheading: 'Expert solutions for your business needs with 24/7 support',
-        ctaText: 'Get Started Today',
-        ctaPhone: '1-800-123-4567',
-        backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop',
-        hours: 'Mon-Sat: 7AM-6PM'
-      }
-    },
-    {
-      id: 'features-1',
-      type: 'features',
-      title: 'Features Section',
-      content: {
-        heading: 'Why Choose Us',
-        features: [
-          {
-            icon: '⚡',
-            title: 'Fast Response',
-            description: 'Quick turnaround time for all service requests'
-          },
-          {
-            icon: '🎯',
-            title: 'Expert Team',
-            description: 'Certified professionals with years of experience'
-          },
-          {
-            icon: '💯',
-            title: 'Quality Guaranteed',
-            description: '100% satisfaction guarantee on all services'
-          },
-          {
-            icon: '🔒',
-            title: 'Secure & Safe',
-            description: 'Licensed, bonded, and fully insured'
-          }
-        ]
-      }
-    },
-    {
-      id: 'services-1',
-      type: 'services',
-      title: 'Services Section',
-      content: {
-        heading: 'Our Services',
-        subheading: 'Comprehensive solutions tailored to your needs',
-        services: [
-          {
-            image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=300&fit=crop',
-            title: 'Consultation',
-            description: 'Expert consultation to assess your needs and provide tailored solutions',
-            price: 'Starting at $99'
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
-            title: 'Implementation',
-            description: 'Professional implementation of solutions with minimal disruption',
-            price: 'Custom Pricing'
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-            title: 'Support & Maintenance',
-            description: 'Ongoing support and maintenance to ensure optimal performance',
-            price: 'From $199/month'
-          }
-        ]
-      }
-    },
-    {
-      id: 'testimonials-1',
-      type: 'testimonials',
-      title: 'Testimonials Section',
-      content: {
-        heading: 'What Our Clients Say',
-        testimonials: [
-          {
-            name: 'John Smith',
-            company: 'ABC Corporation',
-            rating: 5,
-            text: 'Outstanding service! They exceeded our expectations and delivered results quickly.',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
-          },
-          {
-            name: 'Sarah Johnson',
-            company: 'XYZ Industries',
-            rating: 5,
-            text: 'Professional, reliable, and efficient. Highly recommend their services!',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop'
-          },
-          {
-            name: 'Michael Brown',
-            company: 'Tech Solutions Inc',
-            rating: 5,
-            text: 'Best decision we made for our business. Great team and excellent results.',
-            avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop'
-          }
-        ]
-      }
-    },
-    {
-      id: 'cta-1',
-      type: 'cta',
-      title: 'Call to Action',
-      content: {
-        heading: 'Ready to Get Started?',
-        subheading: 'Contact us today for a free consultation',
-        ctaText: 'Call Now',
-        phone: '1-800-123-4567',
-        email: 'info@yourcompany.com',
-        hours: 'Available 24/7'
-      }
-    },
-    {
-      id: 'footer-1',
-      type: 'footer',
-      title: 'Footer',
-      content: {
-        contactTitle: 'Contact us',
-        address: '1th Avenue, New York - United States',
-        phone: '+22 342 2345 345 | Fax: +22 724 2342 343',
-        email: 'info@example.com',
-        skype: 'my-company',
-        mailingListTitle: 'Mailing list',
-        mailingListDescription: 'Lorem ipsum dolor sit amet, ea eum labitur scsstie percipitoleat.',
-        followUsTitle: 'Follow us',
-        socialIcons: [
-          { name: 'Facebook', icon: 'f', href: '#' },
-          { name: 'Google+', icon: 'g+', href: '#' },
-          { name: 'YouTube', icon: '▶', href: '#' },
-          { name: 'Dribbble', icon: 'b', href: '#' },
-          { name: 'LinkedIn', icon: 'in', href: '#' },
-          { name: 'Twitter', icon: '🐦', href: '#' },
-          { name: 'RSS', icon: 'S', href: '#' },
-          { name: 'Pinterest', icon: 'P', href: '#' }
-        ],
-        latestNewsTitle: 'Latest News',
-        latestNewsDescription: 'Lorem ipsum dolor labitur scsstie per sit amet, ea eum labitur scsstie percipitoleat.',
-        latestNewsButtonText: 'Get Mores!',
-        copyright: `© ${new Date().getFullYear()} All rights reserved.`
+// Template image mapping - ensures all templates have relevant, unique images
+// Maps template IDs and category names to specific, relevant images
+const templateImageMap: Record<string, string> = {
+  // Base templates
+  'plumbing-1': 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=800&h=600&fit=crop',
+  'hvac-1': 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&h=600&fit=crop',
+  'electrical-1': 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=800&h=600&fit=crop',
+  'roofing-1': 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=800&h=600&fit=crop',
+  'landscaping-1': 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=800&h=600&fit=crop',
+  
+  // Generated templates - using category-based matching
+  'cleaning-6': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'pest-control-6': 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=600&fit=crop',
+  'locksmith-6': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&h=600&fit=crop',
+  'garage-door-6': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop',
+  'painting-6': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&h=600&fit=crop',
+  'carpet-cleaning-6': 'https://images.unsplash.com/photo-1600428964546-988ac40e86f1?w=800&h=600&fit=crop',
+  'window-cleaning-6': 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=800&h=600&fit=crop',
+  'handyman-6': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+  'moving-6': 'https://images.unsplash.com/photo-1600518464441-9154a4dea21b?w=800&h=600&fit=crop',
+  'pool-service-6': 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=800&h=600&fit=crop',
+  'tree-service-6': 'https://images.unsplash.com/photo-1616680214084-22670de1bc82?w=800&h=600&fit=crop',
+  'appliance-repair-6': 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&h=600&fit=crop',
+  'flooring-6': 'https://images.unsplash.com/photo-1615873968403-89e068629265?w=800&h=600&fit=crop',
+  'home-security-6': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=800&h=600&fit=crop',
+  'solar-6': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=600&fit=crop',
+  'gutter-cleaning-6': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=600&fit=crop',
+  'concrete-6': 'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=800&h=600&fit=crop',
+  'fencing-6': 'https://images.unsplash.com/photo-1587502537815-0c8b5c9ba39a?w=800&h=600&fit=crop',
+  'siding-6': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'pressure-washing-6': 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=800&h=600&fit=crop',
+  'junk-removal-6': 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&h=600&fit=crop',
+  'septic-service-6': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'insulation-6': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'chimney-service-6': 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop',
+  'waterproofing-6': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+};
+
+// Category-based image mapping for templates that don't have specific IDs
+const categoryImageMap: Record<string, string> = {
+  'Cleaning': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'Pest Control': 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=600&fit=crop',
+  'Locksmith': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&h=600&fit=crop',
+  'Garage Door': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop',
+  'Painting': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&h=600&fit=crop',
+  'Carpet Cleaning': 'https://images.unsplash.com/photo-1600428964546-988ac40e86f1?w=800&h=600&fit=crop',
+  'Window Cleaning': 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=800&h=600&fit=crop',
+  'Handyman': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+  'Moving': 'https://images.unsplash.com/photo-1600518464441-9154a4dea21b?w=800&h=600&fit=crop',
+  'Pool Service': 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=800&h=600&fit=crop',
+  'Tree Service': 'https://images.unsplash.com/photo-1616680214084-22670de1bc82?w=800&h=600&fit=crop',
+  'Appliance Repair': 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&h=600&fit=crop',
+  'Flooring': 'https://images.unsplash.com/photo-1615873968403-89e068629265?w=800&h=600&fit=crop',
+  'Home Security': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=800&h=600&fit=crop',
+  'Solar': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=600&fit=crop',
+  'Gutter Cleaning': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=600&fit=crop',
+  'Concrete': 'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=800&h=600&fit=crop',
+  'Fencing': 'https://images.unsplash.com/photo-1587502537815-0c8b5c9ba39a?w=800&h=600&fit=crop',
+  'Siding': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'Pressure Washing': 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=800&h=600&fit=crop',
+  'Junk Removal': 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&h=600&fit=crop',
+  'Septic Service': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'Insulation': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'Chimney Service': 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop',
+  'Waterproofing': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+};
+
+// Helper function to get template image with fallbacks
+const getTemplateImage = (template: Template): string | null => {
+  // 1. Try template-specific image map (by ID)
+  if (templateImageMap[template.id]) {
+    return templateImageMap[template.id];
+  }
+  
+  // 2. Try category-based image map
+  if (categoryImageMap[template.category]) {
+    return categoryImageMap[template.category];
+  }
+  
+  // 3. Try hero background image (most reliable source)
+  const heroSection = template.sections.find(s => s.type === 'hero');
+  if (heroSection?.content?.backgroundImage) {
+    return heroSection.content.backgroundImage;
+  }
+  
+  // 4. Try first service image
+  const serviceSection = template.sections.find(s => s.type === 'services');
+  if (serviceSection?.content?.services?.[0]?.image) {
+    return serviceSection.content.services[0].image;
+  }
+  
+  // 5. Try any service image
+  if (serviceSection?.content?.services) {
+    for (const service of serviceSection.content.services) {
+      if (service.image) {
+        return service.image;
       }
     }
-  ]
+  }
+  
+  // 6. Try about section image
+  const aboutSection = template.sections.find(s => s.type === 'about');
+  if (aboutSection?.content?.image) {
+    return aboutSection.content.image;
+  }
+  
+  // 7. Return null to show thumbnail emoji
+  return null;
+};
+
+// Template Card Component with Image Error Handling
+const TemplateCard: React.FC<{ 
+  template: Template; 
+  templateImage: string | null;
+  onUseTemplate: (template: Template) => Promise<void>;
+  onExportTemplate: (template: Template) => void;
+}> = ({ template, templateImage, onUseTemplate, onExportTemplate }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  
+  return (
+    <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300 flex flex-col">
+      {/* Template Preview/Thumbnail with Vertical Image */}
+      <div className="relative h-64 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
+        {templateImage && !imageError ? (
+          <>
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+              </div>
+            )}
+            <img 
+              src={templateImage} 
+              alt={template.name}
+              className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              onError={() => {
+                setImageError(true);
+                setImageLoading(false);
+              }}
+              onLoad={() => setImageLoading(false)}
+              loading="lazy"
+            />
+          </>
+        ) : (
+          <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
+            {template.thumbnail}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-3 right-3">
+          <Badge className="bg-white/90 backdrop-blur-sm text-slate-700 border-0 shadow-lg font-semibold">
+            {template.category}
+          </Badge>
+        </div>
+        <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-wrap gap-1">
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+              {template.sections.length} sections
+            </Badge>
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+              <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
+              Google Ads
+            </Badge>
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+              <Smartphone className="w-2.5 h-2.5 mr-0.5" />
+              Responsive
+            </Badge>
+          </div>
+        </div>
+      </div>
+      
+      {/* Template Info */}
+      <div className="p-5 flex-1 flex flex-col">
+        <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
+          {template.name}
+        </h3>
+        <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem] flex-1">
+          {template.description}
+        </p>
+        
+        {/* Action Buttons */}
+        <div className="flex gap-2 mt-auto">
+          <Button 
+            onClick={() => onUseTemplate(template)}
+            variant="default"
+            size="sm"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl"
+          >
+            <Edit className="w-4 h-4 mr-1" />
+            Use / Edit
+          </Button>
+          <Button 
+            onClick={() => onExportTemplate(template)}
+            variant="outline"
+            size="sm"
+            className="flex-shrink-0 px-3"
+            title="Download HTML"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
 };
 
 // Function to reorder sections so "about" comes right after "hero"
@@ -1835,125 +1886,59 @@ export const WebsiteTemplates: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredTemplates.map((template) => {
-                // Get vertical image from template (first service image or hero background)
-                const heroSection = template.sections.find(s => s.type === 'hero');
-                const serviceSection = template.sections.find(s => s.type === 'services');
-                const verticalImage = serviceSection?.content?.services?.[0]?.image || 
-                                     heroSection?.content?.backgroundImage || 
-                                     null;
+                // Get template image using improved helper function
+                const templateImage = getTemplateImage(template);
                 
                 return (
-                  <Card key={template.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300 flex flex-col">
-                  {/* Template Preview/Thumbnail with Vertical Image */}
-                  <div className="relative h-64 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
-                    {verticalImage ? (
-                      <img 
-                        src={verticalImage} 
-                        alt={template.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
-                        {template.thumbnail}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-white/90 backdrop-blur-sm text-slate-700 border-0 shadow-lg font-semibold">
-                        {template.category}
-                      </Badge>
-                    </div>
-                    <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
-                          {template.sections.length} sections
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
-                          <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
-                          Google Ads
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
-                          <Smartphone className="w-2.5 h-2.5 mr-0.5" />
-                          Responsive
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Template Info */}
-                  <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
-                      {template.name}
-                    </h3>
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem] flex-1">
-                      {template.description}
-                    </p>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 mt-auto">
-                      <Button 
-                        onClick={async () => {
-                          // Automatically copy template to user's templates before editing
-                          try {
-                            const completedTemplate = completeTemplateSections(template.sections);
-                            const newTemplate: SavedTemplate = {
-                              id: `template-${Date.now()}`,
-                              name: template.name,
-                              originalTemplateId: template.id,
-                              customizedSections: completedTemplate,
-                              createdAt: new Date().toISOString(),
-                              updatedAt: new Date().toISOString()
-                            };
-                            
-                            // Save to user's templates
-                            await historyService.save('website-template', newTemplate.name, {
-                              template: newTemplate
-                            });
-                            
-                            // Load saved templates to refresh list
-                            await loadSavedTemplates();
-                            
-                            // Open editor with the copied template
-                            setEditingTemplate(newTemplate);
-                            setShowEditor(true);
-                            
-                            notifications.success('Template copied to your templates and ready to edit!', {
-                              title: 'Template Ready'
-                            });
-                          } catch (error) {
-                            console.error('Failed to copy template:', error);
-                            notifications.error('Failed to copy template', { title: 'Error' });
-                          }
-                        }}
-                        variant="default"
-                        size="sm"
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Use / Edit
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          const savedTemplate: SavedTemplate = {
-                            id: template.id,
-                            name: template.name,
-                            originalTemplateId: template.id,
-                            customizedSections: template.sections,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                          };
-                          handleExportHTML(savedTemplate);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="px-3"
-                        title="Export as HTML"
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  </Card>
+                  <TemplateCard 
+                    key={template.id}
+                    template={template}
+                    templateImage={templateImage}
+                    onUseTemplate={async (template) => {
+                      // Automatically copy template to user's templates before editing
+                      try {
+                        const completedTemplate = completeTemplateSections(template.sections);
+                        const newTemplate: SavedTemplate = {
+                          id: `template-${Date.now()}`,
+                          name: template.name,
+                          originalTemplateId: template.id,
+                          customizedSections: completedTemplate,
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString()
+                        };
+                        
+                        // Save to user's templates
+                        await historyService.save('website-template', newTemplate.name, {
+                          template: newTemplate
+                        });
+                        
+                        // Load saved templates to refresh list
+                        await loadSavedTemplates();
+                        
+                        // Open editor with the copied template
+                        setEditingTemplate(newTemplate);
+                        setShowEditor(true);
+                        
+                        notifications.success('Template copied to your templates and ready to edit!', {
+                          title: 'Template Ready'
+                        });
+                      } catch (error) {
+                        console.error('Failed to copy template:', error);
+                        notifications.error('Failed to copy template', { title: 'Error' });
+                      }
+                    }}
+                    onExportTemplate={(template) => {
+                      const savedTemplate: SavedTemplate = {
+                        id: template.id,
+                        name: template.name,
+                        originalTemplateId: template.id,
+                        customizedSections: template.sections,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                      };
+                      handleExportHTML(savedTemplate);
+                    }}
+                  />
                 );
               })}
             </div>

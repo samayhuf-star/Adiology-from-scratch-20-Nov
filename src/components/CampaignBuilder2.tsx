@@ -1632,10 +1632,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             <div className="flex flex-wrap gap-5">
               <label
                 htmlFor="broad"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMatchTypes(prev => ({ ...prev, broad: !prev.broad }));
-                }}
                 className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
                   matchTypes.broad
                     ? 'bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 border-amber-500 shadow-lg scale-105'
@@ -1648,7 +1644,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes(prev => ({ ...prev, broad: !!checked }));
                   }}
-                  onClick={(e) => e.stopPropagation()}
                   className="border-amber-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600 data-[state=checked]:border-amber-600"
                 />
                 <span 
@@ -1663,10 +1658,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </label>
               <label
                 htmlFor="phrase"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMatchTypes(prev => ({ ...prev, phrase: !prev.phrase }));
-                }}
                 className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
                   matchTypes.phrase
                     ? 'bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-blue-500 shadow-lg scale-105'
@@ -1679,7 +1670,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
                   }}
-                  onClick={(e) => e.stopPropagation()}
                   className="border-blue-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-500 data-[state=checked]:to-cyan-600 data-[state=checked]:border-blue-600"
                 />
                 <span 
@@ -1694,10 +1684,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </label>
               <label
                 htmlFor="exact"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMatchTypes(prev => ({ ...prev, exact: !prev.exact }));
-                }}
                 className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
                   matchTypes.exact
                     ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 shadow-lg scale-105'
@@ -1710,7 +1696,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   onCheckedChange={(checked) => {
                     setMatchTypes(prev => ({ ...prev, exact: !!checked }));
                   }}
-                  onClick={(e) => e.stopPropagation()}
                   className="border-emerald-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-600 data-[state=checked]:border-emerald-600"
                 />
                 <span 
@@ -1748,6 +1733,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               if (!url.match(/^https?:\/\/.+/i)) {
                 notifications.error('Please enter a valid URL starting with http:// or https://', { title: 'Invalid URL' });
                 setUrlError('Please enter a valid URL starting with http:// or https://');
+                return;
+              }
+              if (!matchTypes.broad && !matchTypes.phrase && !matchTypes.exact) {
+                notifications.error('Please select at least one match type', { title: 'Match Type Required' });
                 return;
               }
               setStep(2);
@@ -4795,22 +4784,60 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Step 5: Detailed Review - shows all ad groups with editable content
   const renderStep5 = () => {
+    // First, get unique ad group names from generatedAds (these reflect any name changes from editing)
+    const uniqueAdGroupsFromAds = Array.from(new Set(generatedAds.map(ad => ad.adGroup).filter(Boolean))) as string[];
+    
     // Use preset ad groups if available (from preset), otherwise use dynamic ad groups
     let reviewAdGroups = presetAdGroups || getDynamicAdGroups();
+    
+    // Sync reviewAdGroups names with generatedAds to reflect any edits
+    // This ensures that when ad group names are edited, the reviewAdGroups array uses the updated names
+    if (uniqueAdGroupsFromAds.length > 0 && reviewAdGroups.length > 0) {
+      // Create a mapping: for each group in reviewAdGroups, find its corresponding name in generatedAds
+      reviewAdGroups = reviewAdGroups.map((group, idx) => {
+        // First, try to find ads that belong to this group by matching keywords
+        const groupKeywords = group.keywords || [];
+        const matchingAds = generatedAds.filter(ad => {
+          if (!ad.adGroup || ad.extensionType) return false;
+          // Check if ad content matches this group's keywords
+          const adText = `${ad.headline1 || ''} ${ad.headline2 || ''} ${ad.description1 || ''}`.toLowerCase();
+          return groupKeywords.some(kw => {
+            const cleanKw = kw.toLowerCase().replace(/[\[\]"]/g, '');
+            return adText.includes(cleanKw);
+          });
+        });
+        
+        if (matchingAds.length > 0) {
+          // Use the ad group name from the matching ads (this reflects any edits)
+          const actualName = matchingAds[0].adGroup;
+          if (actualName && actualName !== group.name) {
+            return { ...group, name: actualName };
+          }
+        }
+        
+        // Fallback: match by index if we have a corresponding ad group name
+        if (idx < uniqueAdGroupsFromAds.length) {
+          const adGroupName = uniqueAdGroupsFromAds[idx];
+          const adsForThisName = generatedAds.filter(ad => ad.adGroup === adGroupName);
+          if (adsForThisName.length > 0) {
+            return { ...group, name: adGroupName };
+          }
+        }
+        
+        return group;
+      });
+    }
     
     // Fallback: If no groups exist but we have keywords or ads, create a default structure
     if (reviewAdGroups.length === 0) {
       const formattedKeywords = applyMatchTypeFormatting(selectedKeywords);
       
-      // First, try to create groups from unique ad groups in generatedAds
-      const uniqueAdGroups = Array.from(new Set(generatedAds.map(ad => ad.adGroup).filter(Boolean))) as string[];
-      
-      if (uniqueAdGroups.length > 0) {
+      if (uniqueAdGroupsFromAds.length > 0) {
         // Use ad groups that already exist in generatedAds
-        reviewAdGroups = uniqueAdGroups.map(adGroupName => {
+        reviewAdGroups = uniqueAdGroupsFromAds.map(adGroupName => {
           // Distribute keywords evenly across groups
-          const keywordsPerGroup = Math.max(1, Math.ceil(formattedKeywords.length / uniqueAdGroups.length));
-          const groupIndex = uniqueAdGroups.indexOf(adGroupName);
+          const keywordsPerGroup = Math.max(1, Math.ceil(formattedKeywords.length / uniqueAdGroupsFromAds.length));
+          const groupIndex = uniqueAdGroupsFromAds.indexOf(adGroupName);
           const startIdx = groupIndex * keywordsPerGroup;
           const endIdx = Math.min(startIdx + keywordsPerGroup, formattedKeywords.length);
           const groupKeywords = formattedKeywords.slice(startIdx, endIdx);
@@ -4876,10 +4903,19 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     const handleSaveGroupName = (oldName: string) => {
       if (tempGroupName.trim()) {
+        const newName = tempGroupName.trim();
+        
         // Update ad group name in generatedAds
         setGeneratedAds(generatedAds.map(ad => 
-          ad.adGroup === oldName ? { ...ad, adGroup: tempGroupName } : ad
+          ad.adGroup === oldName ? { ...ad, adGroup: newName } : ad
         ));
+        
+        // Update presetAdGroups if it exists (for persistence)
+        if (presetAdGroups) {
+          setPresetAdGroups(presetAdGroups.map(group => 
+            group.name === oldName ? { ...group, name: newName } : group
+          ));
+        }
       }
       setEditingGroupName(null);
     };
@@ -5636,20 +5672,42 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           });
         }
         
-        // If any errors exist, block export
-        if (allErrors.length > 0) {
-          const errorMessage = allErrors.map((err, idx) => `${idx + 1}. ${err}`).join('\n');
+        // Filter out non-critical errors (convert some to warnings)
+        const criticalErrors: string[] = [];
+        const nonCriticalErrors: string[] = [];
+        
+        allErrors.forEach(err => {
+          // Critical errors that must be fixed
+          if (err.includes('Campaign name is required') || 
+              err.includes('Ad group name is required') ||
+              err.includes('No campaigns found') ||
+              err.includes('No ad groups found')) {
+            criticalErrors.push(err);
+          } else {
+            // Non-critical errors - convert to warnings
+            nonCriticalErrors.push(err);
+          }
+        });
+        
+        // If critical errors exist, block export
+        if (criticalErrors.length > 0) {
+          const errorMessage = criticalErrors.map((err, idx) => `${idx + 1}. ${err}`).join('\n');
           notifications.error(
             <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
               {errorMessage}
             </div>,
             { 
               title: '❌ CSV Validation Failed',
-              description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
+              description: 'Please fix the critical errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
               duration: 15000
             }
           );
           return;
+        }
+        
+        // Add non-critical errors to warnings
+        if (nonCriticalErrors.length > 0) {
+          allWarnings.push(...nonCriticalErrors);
         }
         
         // Show warnings if any (but still allow export)
@@ -5675,15 +5733,38 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           const rows = campaignStructureToCSVRows(structure);
           const validation = validateCSVRows(rows);
           
-          if (!validation.isValid) {
-            const errorMessage = validation.errors.slice(0, 5).join('\n') + 
-              (validation.errors.length > 5 ? `\n... and ${validation.errors.length - 5} more errors` : '');
-            notifications.error('CSV validation failed', {
-              title: '❌ Validation Errors',
-              description: errorMessage,
-              duration: 10000
-            });
-            return;
+          // Only block export for critical validation errors
+          // Allow export to proceed with warnings
+          if (!validation.isValid && validation.errors.length > 0) {
+            // Filter critical errors
+            const criticalErrors = validation.errors.filter(err => 
+              err.includes('No rows to export') || 
+              err.includes('Missing Row Type') ||
+              err.includes('Campaign name is required')
+            );
+            
+            if (criticalErrors.length > 0) {
+              const errorMessage = criticalErrors.slice(0, 5).join('\n') + 
+                (criticalErrors.length > 5 ? `\n... and ${criticalErrors.length - 5} more errors` : '');
+              notifications.error('CSV validation failed', {
+                title: '❌ Validation Errors',
+                description: errorMessage,
+                duration: 10000
+              });
+              return;
+            }
+            
+            // Non-critical errors - show as warnings but allow export
+            const warnings = validation.errors.filter(err => !criticalErrors.includes(err));
+            if (warnings.length > 0) {
+              const warningMessage = warnings.slice(0, 3).join('\n') + 
+                (warnings.length > 3 ? `\n... and ${warnings.length - 3} more warnings` : '');
+              notifications.warning('Some validation warnings', {
+                title: '⚠️ Export Warnings',
+                description: `Export will proceed, but consider fixing: ${warningMessage}`,
+                duration: 8000
+              });
+            }
           }
           
           // Export with validation
