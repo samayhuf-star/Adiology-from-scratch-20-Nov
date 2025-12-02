@@ -29,6 +29,7 @@ import { generateCampaignStructure, type StructureSettings } from '../utils/camp
 import { exportCampaignToCSV } from '../utils/csvExporter';
 import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
 import { validateCampaignForExport, formatValidationErrors } from '../utils/csvValidator';
+import { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows } from '../utils/googleAdsEditorCSVExporter';
 import { DEFAULT_SEED_KEYWORDS, DEFAULT_URL, DEFAULT_CAMPAIGN_NAME, DEFAULT_NEGATIVE_KEYWORDS } from '../utils/defaultExamples';
 import { api } from '../utils/api';
 import { projectId } from '../utils/supabase/info';
@@ -5140,17 +5141,38 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           );
         }
         
-        // Export to CSV using V3 format
+        // Export to CSV using Google Ads Editor format with validation
         try {
-          const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
-          exportCampaignToCSVV3(structure, filename);
+          const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+          
+          // Convert to CSV rows and validate
+          const rows = campaignStructureToCSVRows(structure);
+          const validation = validateCSVRows(rows);
+          
+          if (!validation.isValid) {
+            const errorMessage = validation.errors.slice(0, 5).join('\n') + 
+              (validation.errors.length > 5 ? `\n... and ${validation.errors.length - 5} more errors` : '');
+            notifications.error('CSV validation failed', {
+              title: '❌ Validation Errors',
+              description: errorMessage,
+              duration: 10000
+            });
+            return;
+          }
+          
+          // Export with validation
+          await exportCampaignToGoogleAdsEditorCSV(structure, filename);
           
           // Mark draft as completed (removes draft status in history)
           saveCompleted();
           
+          const warningText = validation.warnings.length > 0 
+            ? ` (${validation.warnings.length} warning${validation.warnings.length > 1 ? 's' : ''})`
+            : '';
+          
           notifications.success('Campaign exported successfully!', {
             title: '✅ Export Complete',
-            description: `Your campaign "${campaignName}" has been exported to ${filename}`,
+            description: `Your campaign "${campaignName}" has been exported to ${filename}${warningText}`,
             duration: 5000
           });
         } catch (error: any) {

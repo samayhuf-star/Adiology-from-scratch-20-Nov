@@ -693,27 +693,23 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         let filename: string;
 
         try {
-            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
-            
             if (format === 'google-ads-editor') {
-                // Use V3 format for Google Ads Editor
+                // Use new Google Ads Editor format
+                const { exportNegativeKeywordsToCSV } = await import('../utils/googleAdsEditorCSVExporter');
                 filename = `negative_keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
-                const result = await exportCSVWithValidation(
+                
+                const validation = exportNegativeKeywordsToCSV(
                     negativeKeywords,
-                    filename,
-                    'negativeKeywords',
-                    {
-                        campaignName: 'Negative Keywords Campaign',
-                        adGroupName: 'All Ad Groups',
-                        finalUrl: 'https://www.example.com'
-                    }
+                    'Negative Keywords Campaign',
+                    'All Ad Groups',
+                    filename
                 );
                 
-                if (result.warnings && result.warnings.length > 0) {
+                if (validation.warnings && validation.warnings.length > 0) {
+                    const warningMessage = validation.warnings.slice(0, 5).join('\n') + 
+                      (validation.warnings.length > 5 ? `\n... and ${validation.warnings.length - 5} more warnings` : '');
                     notifications.warning(
-                        <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
-                            {result.warnings.join('\n')}
-                        </div>,
+                        warningMessage,
                         { 
                             title: '⚠️  CSV Validation Warnings',
                             description: 'Your campaign will export, but consider fixing these warnings.',
@@ -722,7 +718,8 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                     );
                 } else {
                     notifications.success('Negative keywords exported successfully!', {
-                        title: 'Export Complete'
+                        title: 'Export Complete',
+                        description: `Exported ${negativeKeywords.length} negative keyword(s) to CSV.`
                     });
                 }
             } else {

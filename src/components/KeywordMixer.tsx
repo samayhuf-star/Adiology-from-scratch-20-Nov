@@ -220,23 +220,30 @@ export const KeywordMixer = ({ initialData }: { initialData?: any }) => {
 
     const exportToCSV = async () => {
         try {
-            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
-            const filename = 'keywords.csv';
+            const { exportKeywordsToCSV } = await import('../utils/googleAdsEditorCSVExporter');
+            const filename = `keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
             
-            await exportCSVWithValidation(
+            const validation = exportKeywordsToCSV(
                 mixedKeywords,
-                filename,
-                'keywords',
-                {
-                    campaignName: 'Keywords Campaign',
-                    adGroupName: 'All Keywords',
-                    finalUrl: 'https://www.example.com'
-                }
+                'Keywords Campaign',
+                'All Keywords',
+                filename
             );
             
-            notifications.success(`Exported ${mixedKeywords.length} keywords to CSV`, {
-                title: 'Export Complete'
-            });
+            if (validation.warnings && validation.warnings.length > 0) {
+                notifications.warning(
+                    `Exported with ${validation.warnings.length} warning(s)`,
+                    { 
+                        title: '⚠️ Export Complete',
+                        description: 'Your keywords have been exported, but consider fixing the warnings.'
+                    }
+                );
+            } else {
+                notifications.success(`Exported ${mixedKeywords.length} keywords to CSV`, {
+                    title: 'Export Complete',
+                    description: 'Your CSV file has been downloaded successfully.'
+                });
+            }
         } catch (error: any) {
             console.error('Export error:', error);
             notifications.error(

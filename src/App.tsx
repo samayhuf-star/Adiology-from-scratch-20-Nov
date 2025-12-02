@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -15,6 +15,7 @@ import {
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
 import { CSVValidator3 } from './components/CSVValidator3';
+import { GoogleAdsCSVExport } from './components/GoogleAdsCSVExport';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
@@ -116,6 +117,7 @@ const App = () => {
     'ads-builder',
     'negative-keywords',
     'csv-validator-3',
+    'google-ads-csv-export',
     'settings',
     'billing',
     'support',
@@ -729,6 +731,7 @@ const App = () => {
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'csv-validator-3', label: 'CSV Validator', icon: FileCheck },
+    { id: 'google-ads-csv-export', label: 'CSV Export', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -781,7 +784,7 @@ const App = () => {
       'keywords', 'keyword research', 'keyword planning',
       'ads', 'advertising', 'ad builder',
       'negative keywords', 'exclude keywords',
-      'csv', 'export', 'import', 'validator',
+      'csv', 'export', 'import', 'validator', 'csv export', 'google ads csv',
       'settings', 'billing', 'account',
       'help', 'support', 'documentation'
     ];
@@ -838,7 +841,9 @@ const App = () => {
         'advertising': 'ads-builder',
         'negative keywords': 'negative-keywords',
         'csv': 'csv-validator-3',
-        'export': 'csv-validator-3',
+        'export': 'google-ads-csv-export',
+        'csv export': 'google-ads-csv-export',
+        'google ads csv': 'google-ads-csv-export',
         'settings': 'settings',
         'billing': 'settings',
         'help': 'support-help',
@@ -1126,6 +1131,8 @@ const App = () => {
         return <WebsiteTemplates />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
+      case 'google-ads-csv-export':
+        return <GoogleAdsCSVExport />;
       case 'keyword-planner':
         return <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />;
       case 'keyword-mixer':

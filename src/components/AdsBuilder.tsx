@@ -1063,30 +1063,27 @@ export const AdsBuilder = () => {
         const adsToExport = generatedAds.filter(ad => selectedAds.includes(ad.id));
         
         try {
-            const { exportCSVWithValidation, exportCampaignToCSVV3, adsToCampaignStructure } = await import('../utils/csvGeneratorV3');
-            const filename = `google-ads-${new Date().toISOString().split('T')[0]}.csv`;
+            const { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows } = await import('../utils/googleAdsEditorCSVExporter');
+            const { adsToCampaignStructure } = await import('../utils/csvGeneratorV3');
+            const filename = `google-ads-editor-${new Date().toISOString().split('T')[0]}.csv`;
             
             // Get default final URL from first ad or base URL
             const defaultUrl = adsToExport[0]?.finalUrl || baseUrl || 'https://www.example.com';
             
-            // Validate before exporting
-            const validationResult = await exportCSVWithValidation(
-                adsToExport,
-                filename,
-                'ads',
-                {
-                    campaignName: 'Ads Campaign',
-                    finalUrl: defaultUrl
-                }
-            );
+            // Convert ads to campaign structure
+            const structure = adsToCampaignStructure(adsToExport, 'Ads Campaign', defaultUrl);
+            
+            // Convert to CSV rows and validate
+            const rows = campaignStructureToCSVRows(structure);
+            const validation = validateCSVRows(rows);
             
             // Check if validation passed
-            if (!validationResult.isValid) {
+            if (!validation.isValid) {
                 // Show validation errors - don't export
+                const errorMessage = validation.errors.slice(0, 5).join('\n') + 
+                  (validation.errors.length > 5 ? `\n... and ${validation.errors.length - 5} more errors` : '');
                 notifications.error(
-                    <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
-                        {validationResult.errors?.join('\n') || 'Validation failed'}
-                    </div>,
+                    errorMessage,
                     { 
                         title: '❌ CSV Validation Failed',
                         description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
@@ -1097,20 +1094,14 @@ export const AdsBuilder = () => {
             }
             
             // Export the CSV if validation passed
-            if (validationResult.structure) {
-                exportCampaignToCSVV3(validationResult.structure, filename);
-            } else {
-                // Fallback: generate structure and export
-                const structure = adsToCampaignStructure(adsToExport, 'Ads Campaign', defaultUrl);
-                exportCampaignToCSVV3(structure, filename);
-            }
+            await exportCampaignToGoogleAdsEditorCSV(structure, filename);
             
             // Show warnings if any (but export was successful)
-            if (validationResult.warnings && validationResult.warnings.length > 0) {
+            if (validation.warnings && validation.warnings.length > 0) {
+                const warningMessage = validation.warnings.slice(0, 5).join('\n') + 
+                  (validation.warnings.length > 5 ? `\n... and ${validation.warnings.length - 5} more warnings` : '');
                 notifications.warning(
-                    <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
-                        {validationResult.warnings.join('\n')}
-                    </div>,
+                    warningMessage,
                     { 
                         title: '⚠️  CSV Validation Warnings',
                         description: 'Your ads have been exported, but consider fixing these warnings.',

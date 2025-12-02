@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Google Ads CSV Import Validator</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 18px; color:#0f172a; }
+    h1{font-size:20px;margin-bottom:8px}
+    .container{max-width:1100px}
+    .panel{border:1px solid #e6e9ee;padding:14px;border-radius:10px;margin-bottom:14px;background:#fff}
+    table{width:100%;border-collapse:collapse}
+    table th, table td{padding:8px;border-bottom:1px solid #f0f2f6;text-align:left;font-size:13px}
+    .error{color:#b91c1c}
+    .warn{color:#92400e}
+    .ok{color:#065f46}
+    .btn{display:inline-block;padding:8px 12px;border-radius:8px;background:#7c3aed;color:white;text-decoration:none;margin-right:8px;border:none;cursor:pointer;font-size:14px}
+    .btn.red{background:#ef4444}
+    .btn:hover{opacity:0.9}
+    .small{font-size:13px;color:#475569}
+    pre{background:#0b1220;color:#d1fae5;padding:12px;border-radius:6px;overflow:auto}
+  </style>
+  <!-- PapaParse -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Google Ads CSV Import Validator</h1>
+    <div class="panel">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="file" id="csvFile" accept=".csv" />
+        <button id="btnParse" class="btn">Parse & Validate</button>
+        <button id="btnDownloadTemplate" class="btn red">Download CSV Template (Red)</button>
+        <span class="small">Upload your CSV exported from builder to check it before Google Ads Editor import.</span>
+      </div>
+    </div>
+
+    <div id="report" class="panel" style="display:none"></div>
+
+    <div id="rowsReport" class="panel" style="display:none"></div>
+
+    <script>
+      // --- CONFIG: full schema expectations (subset used for validation) ---
+      const REQUIRED_HEADERS = ['Row Type']; // minimal
+      const VALID_ROW_TYPES = ['CAMPAIGN','ADGROUP','AD','KEYWORD','NEGATIVE_KEYWORD','ASSET','LOCATION','AD_EXTENSION','AUDIENCE','SHARED_BUDGET'];
+      const VALID_CAMPAIGN_TYPES = ['SEARCH','DISPLAY','SHOPPING','VIDEO','PERFORMANCE_MAX','SMART','DISCOVERY'];
+      const VALID_AD_TYPES = ['EXPANDED_TEXT_AD','RESPONSIVE_SEARCH_AD','RESPONSIVE_DISPLAY_AD','IMAGE_AD','VIDEO_AD','APP_AD','DYNAMIC_SEARCH_AD','SHOPPING_AD'];
+      const VALID_MATCH_TYPES = ['BROAD','PHRASE','EXACT','NEGATIVE_BROAD','NEGATIVE_PHRASE','NEGATIVE_EXACT'];
+      const ISO2_COUNTRIES = ['US','CA','GB','AU','IN','DE','FR','ES','IT','NL','BR','MX','JP','CN','NZ','ZA','AR','CL','CO','PE','VE','PH','TH','VN','ID','MY','SG','KR','AE','SA','EG','NG','KE','GH','MA','DZ','TN','PL','CZ','HU','RO','GR','PT','FI','SE','NO','DK','IE','CH','AT','BE','LU','IS','EE','LV','LT','SK','SI','HR','BG','RS','UA','BY','RU','TR','IL','JO','LB','IQ','KW','QA','OM','BH','YE','PK','BD','LK','MM','KH','LA','BN','MO','HK','TW','MN','KZ','UZ','TJ','TM','KG','AF','IR','AZ','GE','AM','CY','MT','AD','MC','LI','SM','VA','MT','AL','BA','ME','MK','XK','MD','UA','BY','RU','TR','IL','JO','LB','IQ','KW','QA','OM','BH','YE','PK','BD','LK','MM','KH','LA','BN','MO','HK','TW','MN','KZ','UZ','TJ','TM','KG','AF','IR','AZ','GE','AM','CY','MT','AD','MC','LI','SM','VA','MT','AL','BA','ME','MK','XK','MD']; // expanded list
+
+      // helper validators
+      function isISOCountry(code){ if(!code) return false; return ISO2_COUNTRIES.includes(code.toUpperCase()); }
+      function isDateYMD(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s); }
+      function isNumber(s){ return !isNaN(parseFloat(s)) && isFinite(s); }
+      function isURL(s){ try { if(!s) return false; const u = new URL(s); return ['http:','https:'].includes(u.protocol);} catch(e){ return false; } }
+      function emailLike(s){ return /.+@.+\..+/.test(s); }
+
+      // parse & validate
+      document.getElementById('btnParse').addEventListener('click', ()=> {
+        const f = document.getElementById('csvFile').files[0];
+        if(!f){ alert('Select a CSV file first'); return; }
+        Papa.parse(f, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            const data = results.data;
+            const headers = results.meta.fields;
+            renderReport(headers, data);
+          },
+          error: function(err){ alert('Parse error: '+err.message); }
+        })
+      });
+
+      // download template
+      document.getElementById('btnDownloadTemplate').addEventListener('click', ()=>{
+        const sample = [
+          {
+            "Row Type":"CAMPAIGN","Campaign":"Local Plumbing","Campaign Type":"SEARCH","Campaign Status":"ENABLED","Budget":"30.00","Bidding Strategy":"MANUAL_CPC","Start Date":"2025-12-05","End Date":"2026-12-05","Location Type":"COUNTRY","Location Code":"US"
+          },
+          {
+            "Row Type":"ADGROUP","Campaign":"Local Plumbing","AdGroup":"Emergency Repairs","AdGroup Status":"ENABLED","Default Max CPC":"2.00"
+          },
+          {
+            "Row Type":"KEYWORD","Campaign":"Local Plumbing","AdGroup":"Emergency Repairs","Keyword":"plumber near me","Match Type":"PHRASE","Keyword Max CPC":"2.00"
+          },
+          {
+            "Row Type":"AD","Campaign":"Local Plumbing","AdGroup":"Emergency Repairs","Ad Type":"RESPONSIVE_SEARCH_AD","Headline 1":"Fast Plumbers Near You","Headline 2":"24/7 Emergency Service","Description 1":"We fix leaks fast","Final URL":"https://example.com/emergency","Asset Type":"IMAGE","Asset URL":"/assets/service1.jpg"
+          }
+        ];
+        const csv = Papa.unparse(sample);
+        const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'ads_csv_template.csv'; document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      function renderReport(headers, rows){
+        const report = document.getElementById('report');
+        report.style.display = 'block';
+        report.innerHTML = '';
+
+        // Header analysis
+        const headerSet = new Set(headers.map(h=>h.trim()).filter(Boolean));
+        const missingRequired = REQUIRED_HEADERS.filter(r => !headerSet.has(r));
+        const unknownHeaders = [...headerSet].filter(h => !isLikelyKnownHeader(h));
+
+        let html = `<h3>Header Analysis</h3><table><tr><th>Header</th><th>Present</th></tr>`;
+        headers.forEach(h => { html += `<tr><td>${escapeHtml(h)}</td><td class="ok">yes</td></tr>`; });
+        html += `</table>`;
+        html += `<div class="small">Missing required headers: ${missingRequired.length ? '<span class="error">'+missingRequired.join(', ')+'</span>' : '<span class="ok">none</span>'}</div>`;
+        if(unknownHeaders.length) html += `<div class="warn small">Unknown / suspicious headers: ${unknownHeaders.join(', ')}</div>`;
+
+        // Which Google Ads Editor fields present (simple check: map to known)
+        const gadFields = {
+          'Campaign':false,'AdGroup':false,'Keyword':false,'Match Type':false,'Ad Type':false,'Final URL':false,'Headline 1':false,'Description 1':false,'Asset Type':false,'Asset URL':false,'Start Date':false,'End Date':false,'Budget':false
+        };
+        Object.keys(gadFields).forEach(k => { if(headerSet.has(k)) gadFields[k] = true; });
+
+        html += `<h3>Google Ads Editor Field Presence</h3><table><tr><th>Field</th><th>Present</th></tr>`;
+        Object.entries(gadFields).forEach(([k,v]) => html += `<tr><td>${k}</td><td>${v?'<span class="ok">yes</span>':'<span class="warn">no</span>'}</td></tr>`);
+        html += `</table>`;
+
+        // Row-level validation
+        const rowsHtml = [];
+        const rowsReportEl = document.getElementById('rowsReport');
+        rowsReportEl.style.display='block';
+        rowsReportEl.innerHTML = '<h3>Row-level Validation</h3>';
+
+        let errorCount = 0, warnCount = 0;
+        rows.forEach((r, idx) => {
+          const rowErrors = [];
+          const rowWarns = [];
+          const rowType = (r['Row Type']||'').toUpperCase().trim();
+          if(!rowType) { rowErrors.push('Missing Row Type'); }
+          else if(!VALID_ROW_TYPES.includes(rowType)) { rowWarns.push('Unknown Row Type: '+rowType); }
+
+          // Campaign validation
+          if(rowType === 'CAMPAIGN'){
+            if(!r['Campaign'] || !r['Campaign'].trim()) rowErrors.push('Campaign name required');
+            if(r['Campaign Type'] && !VALID_CAMPAIGN_TYPES.includes(r['Campaign Type'].toUpperCase().trim())) rowWarns.push('Campaign Type not recognized: '+r['Campaign Type']);
+            if(r['Start Date'] && !isDateYMD(r['Start Date'])) rowWarns.push('Start Date not YYYY-MM-DD');
+            if(r['End Date'] && !isDateYMD(r['End Date'])) rowWarns.push('End Date not YYYY-MM-DD');
+            if(r['Budget'] && !isNumber(r['Budget'])) rowWarns.push('Budget not numeric');
+            if(r['Location Code'] && !isISOCountry(r['Location Code'])) rowWarns.push('Location Code not a known ISO2 country: '+r['Location Code']);
+          }
+
+          // Adgroup validation
+          if(rowType === 'ADGROUP'){
+            if(!r['AdGroup'] && !r['AdGroup Name'] && !r['AdGroupName']) rowErrors.push('AdGroup name required');
+            if(r['Default Max CPC'] && !isNumber(r['Default Max CPC'])) rowWarns.push('Default Max CPC not numeric');
+          }
+
+          // Keyword validation
+          if(rowType === 'KEYWORD'){
+            if(!r['Keyword'] || !r['Keyword'].trim()) rowErrors.push('Keyword text required');
+            if(r['Match Type'] && !VALID_MATCH_TYPES.includes((r['Match Type']||'').toUpperCase().trim())) rowWarns.push('Unknown match type: '+r['Match Type']);
+            if(r['Keyword Max CPC'] && !isNumber(r['Keyword Max CPC'])) rowWarns.push('Keyword Max CPC not numeric');
+          }
+
+          // Ad validation
+          if(rowType === 'AD'){
+            if(!r['Ad Type'] || !VALID_AD_TYPES.includes((r['Ad Type']||'').toUpperCase().trim())) rowWarns.push('Ad Type missing or unknown: '+(r['Ad Type']||''));
+            if(r['Final URL'] && !isURL(r['Final URL'])) rowWarns.push('Final URL invalid: '+r['Final URL']);
+            if(r['Asset URL'] && r['Asset URL'].split(',').some(u=>u && !isURL(u) && !u.startsWith('/'))) rowWarns.push('One or more Asset URLs appear invalid (absolute http(s) expected or local path starting with /).');
+          }
+
+          // Asset validation
+          if(rowType === 'ASSET'){
+            if(!r['Asset Type']) rowErrors.push('Asset Type required');
+            if(!r['Asset URL'] && !r['Asset Name']) rowWarns.push('Asset missing URL and name');
+          }
+
+          // Generic checks
+          if(r['Email'] && !emailLike(r['Email'])) rowWarns.push('Email looks invalid');
+
+          if(rowErrors.length) errorCount += rowErrors.length;
+          if(rowWarns.length) warnCount += rowWarns.length;
+
+          // prepare row report snippet
+          const snippet = `<div style="margin-bottom:8px;padding:8px;border:1px solid #f0f2f6;border-radius:8px">
+            <div style="font-weight:600">Row ${idx+1} — Type: ${escapeHtml(rowType||'N/A')} — Campaign: ${escapeHtml(r['Campaign']||'')} — AdGroup: ${escapeHtml(r['AdGroup']||'')}</div>
+            ${rowErrors.length ? '<div class="error">Errors: <ul>'+rowErrors.map(e=>'<li>'+escapeHtml(e)+'</li>').join('')+'</ul></div>' : ''}
+            ${rowWarns.length ? '<div class="warn">Warnings: <ul>'+rowWarns.map(w=>'<li>'+escapeHtml(w)+'</li>').join('')+'</ul></div>' : ''}
+            ${(!rowErrors.length && !rowWarns.length) ? '<div class="ok">OK — no issues detected</div>' : ''}
+          </div>`;
+          rowsReportEl.innerHTML += snippet;
+        });
+
+        html += `<div style="margin-top:12px">Rows parsed: ${rows.length} — <span class="error">${errorCount} errors</span> — <span class="warn">${warnCount} warnings</span></div>`;
+        report.innerHTML = html;
+        // scroll to rows
+        rowsReportEl.scrollIntoView({behavior:'smooth'});
+      }
+
+      function isLikelyKnownHeader(h){
+        const s = h.toLowerCase();
+        const known = ['row type','campaign','adgroup','keyword','match type','ad type','headline','description','final url','asset','asset url','budget','start date','end date','location','location code'];
+        return known.some(k=>s.includes(k));
+      }
+
+      function escapeHtml(s){ if(s===undefined||s===null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    </script>
+  </div>
+</body>
+</html>
+
