@@ -39,6 +39,37 @@ const TEMPLATES = [
 const BASE_URL = 'https://raw.githubusercontent.com/samayhuf-star/website-templates/master';
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'web-templates-2');
 
+// Helper function to sanitize and validate file paths to prevent path traversal
+function sanitizePath(baseDir, userPath) {
+  // Remove leading slashes and normalize separators
+  const cleanPath = userPath.replace(/^\/+/, '').replace(/\\/g, '/');
+  
+  // Remove any path traversal sequences
+  if (cleanPath.includes('..') || cleanPath.includes('./')) {
+    throw new Error(`Path traversal detected in: ${userPath}`);
+  }
+  
+  // Resolve path relative to base directory
+  const resolvedPath = path.resolve(baseDir, cleanPath);
+  const resolvedBase = path.resolve(baseDir);
+  
+  // Verify the resolved path is still within the base directory
+  if (!resolvedPath.startsWith(resolvedBase)) {
+    throw new Error(`Path traversal detected: resolved path outside base directory`);
+  }
+  
+  return resolvedPath;
+}
+
+// Helper function to sanitize template ID to prevent path traversal
+function sanitizeTemplateId(templateId) {
+  // Only allow alphanumeric characters, dashes, and underscores
+  if (!/^[a-zA-Z0-9_-]+$/.test(templateId)) {
+    throw new Error(`Invalid template ID: ${templateId}`);
+  }
+  return templateId;
+}
+
 // Helper function to download a file
 function downloadFile(url, filePath) {
   return new Promise((resolve, reject) => {
@@ -107,23 +138,25 @@ async function getDirectoryFiles(templateId) {
 
 // Download a template and all its assets
 async function downloadTemplate(templateId) {
-  const templateDir = path.join(OUTPUT_DIR, templateId);
+  // Sanitize template ID to prevent path traversal
+  const safeTemplateId = sanitizeTemplateId(templateId);
+  const templateDir = path.join(OUTPUT_DIR, safeTemplateId);
   await fs.ensureDir(templateDir);
   
-  console.log(`\n📦 Downloading ${templateId}...`);
+  console.log(`\n📦 Downloading ${safeTemplateId}...`);
   
   // Try to get directory structure from GitHub API
   let files = [];
   try {
-    files = await getDirectoryFiles(templateId);
+    files = await getDirectoryFiles(safeTemplateId);
   } catch (error) {
     console.log(`⚠️  Could not get directory structure, trying direct download...`);
   }
   
   // Download index.html first
   const htmlPaths = [
-    `${templateId}/index.html`,
-    `${templateId}.html`,
+    `${safeTemplateId}/index.html`,
+    `${safeTemplateId}.html`,
   ];
   
   let htmlDownloaded = false;
@@ -171,9 +204,10 @@ async function downloadTemplate(templateId) {
       // Download assets
       for (const assetPath of allAssets) {
         try {
+          // Sanitize and validate the asset path to prevent path traversal
           const cleanPath = assetPath.startsWith('/') ? assetPath.slice(1) : assetPath;
-          const assetUrl = `${BASE_URL}/${templateId}/${cleanPath}`;
-          const assetLocalPath = path.join(templateDir, cleanPath);
+          const assetLocalPath = sanitizePath(templateDir, cleanPath);
+          const assetUrl = `${BASE_URL}/${safeTemplateId}/${cleanPath}`;
           
           // Ensure directory exists
           await fs.ensureDir(path.dirname(assetLocalPath));
@@ -181,7 +215,12 @@ async function downloadTemplate(templateId) {
           await downloadFile(assetUrl, assetLocalPath);
           console.log(`  ✅ Downloaded ${cleanPath}`);
         } catch (error) {
-          console.log(`  ⚠️  Could not download ${assetPath}: ${error.message}`);
+          // Log path traversal attempts as warnings
+          if (error.message.includes('Path traversal')) {
+            console.log(`  ⚠️  Security: Blocked potentially malicious path: ${assetPath}`);
+          } else {
+            console.log(`  ⚠️  Could not download ${assetPath}: ${error.message}`);
+          }
         }
       }
       
@@ -192,10 +231,10 @@ async function downloadTemplate(templateId) {
   }
   
   if (!htmlDownloaded) {
-    throw new Error(`Could not download HTML for ${templateId}`);
+    throw new Error(`Could not download HTML for ${safeTemplateId}`);
   }
   
-  console.log(`  ✨ Completed ${templateId}`);
+  console.log(`  ✨ Completed ${safeTemplateId}`);
 }
 
 // Main function
