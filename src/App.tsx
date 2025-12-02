@@ -591,12 +591,25 @@ const App = () => {
       setView(user ? 'user' : 'auth');
     };
 
-    handleRoute();
+    // Only run routing if not loading
+    if (!loading) {
+      handleRoute();
+    }
 
     return () => {
       isActive = false;
     };
   }, [loading, user?.id]);
+
+  // Additional effect to ensure homepage shows when loading completes and no user
+  useEffect(() => {
+    if (!loading && !user && (window.location.pathname === '/' || window.location.pathname === '')) {
+      // Only set to homepage if we're not already on a specific route
+      if (appView !== 'homepage' && appView !== 'auth' && appView !== 'reset-password' && appView !== 'verify-email' && appView !== 'payment' && appView !== 'payment-success') {
+        setAppView('homepage');
+      }
+    }
+  }, [loading, user, appView]);
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -938,6 +951,7 @@ const App = () => {
   }
 
   if (appView === 'homepage') {
+    console.log('✅ Rendering CreativeMinimalistHomepage');
     return (
       <CreativeMinimalistHomepage
         onGetStarted={() => {
@@ -1085,6 +1099,14 @@ const App = () => {
         </div>
       </div>
     );
+  }
+
+  // Fallback: If no user and not loading, ensure homepage is shown
+  if (!user && !loading && appView !== 'homepage' && appView !== 'auth' && appView !== 'reset-password' && appView !== 'verify-email' && appView !== 'payment' && appView !== 'payment-success' && !window.location.pathname.startsWith('/superadmin')) {
+    // Only redirect to homepage if we're on root path
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      setAppView('homepage');
+    }
   }
 
   const renderContent = () => {
