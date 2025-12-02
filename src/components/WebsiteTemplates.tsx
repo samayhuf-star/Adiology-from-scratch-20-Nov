@@ -905,6 +905,9 @@ export const WebsiteTemplates: React.FC = () => {
             gap: 1.5rem; 
             width: 100%;
         }
+        .grid > * {
+            min-width: 0; /* Important: allow shrinking inside grid */
+        }
         .grid-cols-1 { 
             grid-template-columns: repeat(1, minmax(0, 1fr)); 
         }
@@ -1014,6 +1017,151 @@ export const WebsiteTemplates: React.FC = () => {
         @media (min-width: 1024px) {
             .lg\\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .lg\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+        
+        /* ---------- Mobile-fix overrides for template ---------- */
+        
+        /* Safety & helpers */
+        html, body, #__next { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: inherit; }
+        html, body { overflow-x: hidden !important; }
+        img, picture, video, iframe, embed, object { max-width: 100% !important; height: auto !important; display: block !important; }
+        
+        /* Ensure flex/grid children can shrink (common source of overflow) */
+        .min-w-0-fix { min-width: 0 !important; }
+        
+        /* ---------------- .grid (features / services / testimonials) ---------------- */
+        /* Make grid responsive using auto-fit + minmax so cards wrap naturally */
+        .grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+            gap: 1rem !important;
+            align-items: start !important;
+            justify-items: center !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        
+        /* Card items inside .grid: allow shrink, set safe max-width and full width on small screens */
+        .grid > div,
+        .grid > * {
+            min-width: 0 !important;
+            width: 100% !important;
+            max-width: 360px !important;
+            box-sizing: border-box !important;
+            display: block !important;
+        }
+        
+        /* Keep inner content from forcing overflow (eg: large shadows/pseudo elements) */
+        .grid > div * { word-wrap: break-word !important; overflow-wrap: anywhere !important; }
+        
+        /* Optional: visual centering for card content */
+        .grid > div { margin: 0 auto !important; }
+        
+        /* ---------------- Footer: .footer-content ---------------- */
+        /* Make footer columns use flex that wraps on small screens */
+        .footer-content {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 1rem !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 1rem 0 !important;
+        }
+        
+        /* Individual footer columns: stack to 100% on small screens and keep tidy on large */
+        .footer-content > div {
+            flex: 1 1 220px !important;
+            min-width: 0 !important;
+            width: 100% !important;
+            max-width: 320px !important;
+            box-sizing: border-box !important;
+            padding: 0.25rem 0 !important;
+        }
+        
+        /* Social icons inside footer: prevent overlap and make them wrap */
+        .footer-content .social,
+        .footer-content .social-icons,
+        .footer-content .social-bubbles,
+        .social-bubbles {
+            display: flex !important;
+            gap: 0.5rem !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            position: static !important;
+            transform: none !important;
+            margin: 0 !important;
+        }
+        
+        .footer-content .social .social-icon,
+        .footer-content .social-icon,
+        .social-bubbles .social-icon {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            border-radius: 999px !important;
+            transform: none !important;
+        }
+        
+        /* ---------------- Hero sections (section[class*="section"]) ---------------- */
+        /* Target hero/section areas to remove dangerous absolute positioning or transforms on small screens */
+        section[class*="section"],
+        .section {
+            box-sizing: border-box !important;
+            width: 100% !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+        
+        /* Make any images inside hero/section flow normally on mobile */
+        section[class*="section"] img,
+        .section img {
+            position: static !important;
+            transform: none !important;
+            width: 100% !important;
+            max-width: 480px !important;
+            height: auto !important;
+            margin: 0.6rem auto !important;
+            object-fit: cover !important;
+        }
+        
+        /* Force CTA buttons inside sections to be full width on small screens */
+        section[class*="section"] .cta,
+        .section .cta,
+        section[class*="section"] .btn,
+        .section .btn {
+            display: block !important;
+            width: 100% !important;
+            max-width: 420px !important;
+            margin: 0.6rem auto !important;
+        }
+        
+        /* ---------------- Typography scaling and small-screen rules ---------------- */
+        @media (max-width: 640px) {
+            h1, .page-title, .hero-title { font-size: clamp(1.4rem, 6.5vw, 2rem) !important; line-height: 1.05 !important; text-align: center !important; }
+            h2, .section-title { font-size: clamp(1.1rem, 5.0vw, 1.5rem) !important; text-align: center !important; }
+            
+            /* ensure grid cards stack with full width */
+            .grid { grid-template-columns: repeat(1, 1fr) !important; gap: 1rem !important; }
+            
+            /* footer columns stack vertically on small screens */
+            .footer-content { flex-direction: column !important; gap: 1rem !important; align-items: stretch !important; }
+            .footer-content > div { width: 100% !important; max-width: 100% !important; padding: .6rem 0 !important; }
+            
+            /* remove any floating/absolute positions used for decorative elements */
+            .floating, .floating-image, .floating-icons, .floating-cta, .hero .decor, .side-image {
+                position: static !important;
+                transform: none !important;
+                margin: .4rem auto !important;
+                width: 100% !important;
+            }
         }
     </style>
 </head>
