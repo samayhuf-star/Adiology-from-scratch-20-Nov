@@ -46,7 +46,6 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
     'feedback'
 ].join('\n');
 
-<<<<<<< HEAD
 type KeywordPlannerFillPreset = {
     seeds: string[];
     negatives: string[];
