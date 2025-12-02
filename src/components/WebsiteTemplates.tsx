@@ -814,16 +814,63 @@ export const WebsiteTemplates: React.FC = () => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${escapeHtml(template.name)}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        /* 0) Safe defaults */
+        html, body { 
+            box-sizing: border-box; 
+            -webkit-font-smoothing: antialiased; 
+            -moz-osx-font-smoothing: grayscale; 
+        }
+        *, *::before, *::after { 
+            box-sizing: inherit; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        /* 1) Viewport - must be in <head> */
+        /* <meta name="viewport" content="width=device-width, initial-scale=1"> */
+        
+        /* 2) Prevent horizontal scroll while we fix elements */
+        html, body { 
+            overflow-x: hidden; 
+        }
+        
+        html { 
+            -webkit-text-size-adjust: 100%; 
+            -ms-text-size-adjust: 100%; 
+        }
+        
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
             line-height: 1.6; 
             color: #333; 
-            overflow-x: hidden;
             width: 100%;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* 3) Make images/iframes responsive */
+        img, picture, video, iframe, embed, object { 
+            max-width: 100%; 
+            height: auto; 
+            display: block; 
+        }
+        
+        /* 4) Flexible card baseline — use for testimonial/service/feature cards */
+        .responsive-card-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            align-items: stretch;
+        }
+        
+        /* Each card becomes flexible and will wrap on small screens */
+        .responsive-card-row > .card,
+        .responsive-card-row > .testimonial,
+        .responsive-card-row > .feature {
+            flex: 1 1 220px;
+            max-width: 320px;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
         .container { 
             max-width: 1200px; 
@@ -877,7 +924,62 @@ export const WebsiteTemplates: React.FC = () => {
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
-        @media (max-width: 639px) {
+        /* 5) Fix absolute/translated elements on small screens */
+        @media (max-width: 640px) {
+            /* Remove harmful absolute positioning or transforms on small screens */
+            .hero-image, .image-card, .floating-icons, .social-bubbles {
+                position: static !important;
+                transform: none !important;
+                margin: 0 auto;
+                width: 100% !important;
+                max-width: 420px;
+            }
+            
+            /* Reduce heading sizes */
+            h1 { 
+                font-size: clamp(1.4rem, 5vw, 2rem) !important; 
+                line-height: 1.05; 
+                word-wrap: break-word; 
+            }
+            h2 { 
+                font-size: clamp(1.2rem, 4.2vw, 1.6rem) !important; 
+                line-height: 1.3; 
+                word-wrap: break-word; 
+            }
+            h3 { 
+                font-size: 1.25rem !important; 
+                line-height: 1.4; 
+                word-wrap: break-word; 
+            }
+            p { 
+                font-size: 0.9375rem; 
+                word-wrap: break-word; 
+            }
+            
+            /* Make CTA/buttons full width */
+            .cta, .btn-primary, button, a[href^="tel:"], a[href^="mailto:"] {
+                width: 100% !important;
+                max-width: 420px;
+                margin: 0.6rem auto;
+                display: block;
+                font-size: 1rem;
+                padding: 0.875rem 1.25rem;
+                box-sizing: border-box;
+            }
+            
+            /* Footer columns stack vertically */
+            .footer .col, .footer-content > div {
+                width: 100% !important;
+                display: block;
+                padding: 1rem 0;
+            }
+            .footer .social-bubbles {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            
             .section { 
                 padding: 2rem 1rem; 
                 width: 100%;
@@ -891,22 +993,17 @@ export const WebsiteTemplates: React.FC = () => {
                 max-width: 100vw;
                 box-sizing: border-box;
             }
-            h1 { font-size: 1.75rem !important; line-height: 1.2; word-wrap: break-word; }
-            h2 { font-size: 1.5rem !important; line-height: 1.3; word-wrap: break-word; }
-            h3 { font-size: 1.25rem !important; line-height: 1.4; word-wrap: break-word; }
-            p { font-size: 0.9375rem; word-wrap: break-word; }
-            button, a[href^="tel:"], a[href^="mailto:"] {
-                font-size: 1rem;
-                padding: 0.875rem 1.25rem;
-                width: 100%;
-                max-width: 100%;
-                box-sizing: border-box;
-            }
             .grid {
                 width: 100%;
                 max-width: 100%;
                 box-sizing: border-box;
             }
+        }
+        
+        /* 6) If elements still overflow, force break words & clamp widths */
+        .card, .testimonial, .feature {
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
         }
         @media (min-width: 640px) {
             .container { padding: 0 1.5rem; }
