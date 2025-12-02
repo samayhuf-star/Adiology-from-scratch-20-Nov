@@ -659,6 +659,42 @@ export const CSVValidator3 = () => {
         });
     }, [headers, rows]);
 
+    // Export CSV with errors (always available when data exists)
+    const handleExportWithErrors = useCallback(() => {
+        if (rows.length === 0) {
+            notifications.warning('Please upload and process a file first.', {
+                title: 'No File Processed'
+            });
+            return;
+        }
+
+        // Ensure all headers are included in the CSV
+        const allHeaders = headers.length > 0 ? headers : Object.keys(rows[0] || {});
+        const csv = Papa.unparse({ 
+            fields: allHeaders, 
+            data: rows.map(r => allHeaders.map(h => r[h] || '')) 
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const errorCount = problems.length > 0 ? `-${problems.length}-errors` : '';
+        link.download = `google-ads-editor-${errorCount}-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        const errorMsg = problems.length > 0 
+            ? `Exported CSV with ${problems.length} error(s) for debugging.`
+            : 'CSV exported successfully.';
+        
+        notifications.success(errorMsg, {
+            title: 'CSV Exported',
+            description: `File: ${link.download}`
+        });
+    }, [headers, rows, problems]);
+
     // Get cell problem
     const getCellProblem = useCallback((rowIdx: number, col: string): ValidationProblem | undefined => {
         return problems.find(p => p.row === rowIdx + 2 && p.col === col);
@@ -991,12 +1027,23 @@ export const CSVValidator3 = () => {
                         </Button>
                         <Button
                             onClick={handleDownload}
-                            disabled={rows.length === 0}
+                            disabled={rows.length === 0 || problems.length > 0}
                             variant="outline"
                             className="border-slate-300"
+                            title={problems.length > 0 ? "Fix errors first or use 'Export with Errors' button" : "Download validated CSV"}
                         >
                             <Download className="w-4 h-4 mr-2" />
                             Download CSV
+                        </Button>
+                        <Button
+                            onClick={handleExportWithErrors}
+                            disabled={rows.length === 0}
+                            variant="outline"
+                            className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                            title="Export CSV file even with errors for debugging"
+                        >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Export with Errors
                         </Button>
                     </div>
                 )}

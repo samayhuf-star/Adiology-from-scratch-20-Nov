@@ -1177,19 +1177,44 @@ export const WebsiteTemplates: React.FC = () => {
     return div.innerHTML;
   };
 
+  // Validate and sanitize URLs to prevent XSS via javascript: or data: schemes
+  const sanitizeUrl = (url: string | undefined | null): string => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    // Block javascript: and data: URLs which can execute code
+    if (trimmed.toLowerCase().startsWith('javascript:') || 
+        trimmed.toLowerCase().startsWith('data:') ||
+        trimmed.toLowerCase().startsWith('vbscript:')) {
+      return '#';
+    }
+    // Allow http, https, tel, mailto, and relative paths
+    if (trimmed.startsWith('http://') || 
+        trimmed.startsWith('https://') || 
+        trimmed.startsWith('tel:') || 
+        trimmed.startsWith('mailto:') ||
+        trimmed.startsWith('/') ||
+        trimmed.startsWith('./') ||
+        trimmed.startsWith('../') ||
+        !trimmed.includes(':')) {
+      return trimmed;
+    }
+    // Block other protocols
+    return '#';
+  };
+
   const renderSectionHTML = (section: TemplateSection): string => {
     const content = section.content || {};
     
     switch (section.type) {
       case 'hero':
-        return `<section id="${section.id}" class="section" style="position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${content.backgroundImage || ''}'); background-size: cover; background-position: center; width: 100%; overflow-x: hidden;">
+        return `<section id="${section.id}" class="section" style="position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${escapeHtml(sanitizeUrl(content.backgroundImage))}'); background-size: cover; background-position: center; width: 100%; overflow-x: hidden;">
             <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3));"></div>
             <div style="position: relative; z-index: 10; max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem; width: 100%;">
                 <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); line-height: 1.2; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h1>
                 <p style="font-size: 0.9375rem; margin-bottom: 1.5rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading || '')}</p>
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; width: 100%; max-width: 500px; margin: 0 auto;">
                     <a href="#contact" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.2);">${escapeHtml(content.ctaText || 'Get Started')}</a>
-                    <a href="tel:${content.ctaPhoneNumber || content.ctaPhone || ''}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
+                    <a href="tel:${escapeHtml((content.ctaPhoneNumber || content.ctaPhone || '').replace(/[^0-9+()-]/g, ''))}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
                 </div>
             </div>
             <style>
@@ -1219,9 +1244,9 @@ export const WebsiteTemplates: React.FC = () => {
         return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: #f8fafc; width: 100%; overflow-x: hidden;">
             <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
                 <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style="gap: 1.5rem; width: 100%;">
+                <div class="features-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                     ${features.map((feature: any) => `
-                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%;">
+                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box;">
                             <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">${escapeHtml(feature.icon || '')}</div>
                             <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #4f46e5; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(feature.title || '')}</h3>
                             <p style="color: #64748b; font-size: 0.875rem; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.5;">${escapeHtml(feature.description || '')}</p>
@@ -1230,22 +1255,25 @@ export const WebsiteTemplates: React.FC = () => {
                 </div>
             </div>
             <style>
+                #${section.id} .features-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 1.5rem;
+                    width: 100%;
+                }
                 @media (max-width: 639px) {
-                    #${section.id} { padding: 2rem 1rem; }
-                    #${section.id} h2 { font-size: 1.5rem !important; margin-bottom: 1.5rem; }
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.25rem, 5vw, 1.5rem) !important; margin-bottom: 1.5rem !important; }
                 }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
-                    #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
-                    #${section.id} .feature-card { padding: 2rem; }
-                    #${section.id} .feature-icon { font-size: 3.5rem; }
-                    #${section.id} .feature-title { font-size: 1.25rem; }
-                    #${section.id} .feature-desc { font-size: 1rem; }
+                    #${section.id} .features-grid { grid-template-columns: repeat(2, 1fr); }
+                    #${section.id} h2 { font-size: clamp(1.75rem, 4vw, 2.25rem); margin-bottom: 2.5rem; }
                 }
-                @media (min-width: 768px) {
+                @media (min-width: 1024px) {
                     #${section.id} { padding: 5rem 2rem; }
-                    #${section.id} h2 { font-size: 3rem; margin-bottom: 3rem; }
-                    #${section.id} .feature-icon { font-size: 3.75rem; }
+                    #${section.id} .features-grid { grid-template-columns: repeat(4, 1fr); }
+                    #${section.id} h2 { font-size: clamp(2rem, 3vw, 3rem); margin-bottom: 3rem; }
                 }
             </style>
         </section>`;
@@ -1256,10 +1284,10 @@ export const WebsiteTemplates: React.FC = () => {
             <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
                 <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
                 ${content.subheading ? `<p style="text-align: center; color: #64748b; margin-bottom: 1.5rem; font-size: 0.9375rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem; width: 100%;">
+                <div class="services-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                     ${services.map((service: any) => `
-                        <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; width: 100%;">
-                            ${service.image ? `<img src="${service.image}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 10rem; object-fit: cover; display: block;">` : '<div style="width: 100%; height: 10rem; background: #f1f5f9;"></div>'}
+                        <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; width: 100%; box-sizing: border-box;">
+                            ${service.image ? `<img src="${escapeHtml(sanitizeUrl(service.image))}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 10rem; object-fit: cover; display: block; max-width: 100%;">` : '<div style="width: 100%; height: 10rem; background: #f1f5f9;"></div>'}
                             <div style="padding: 1.25rem;">
                                 <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(service.title || '')}</h3>
                                 <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.875rem; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.5;">${escapeHtml(service.description || '')}</p>
@@ -1270,23 +1298,25 @@ export const WebsiteTemplates: React.FC = () => {
                 </div>
             </div>
             <style>
+                #${section.id} .services-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 1.5rem;
+                    width: 100%;
+                }
                 @media (max-width: 639px) {
-                    #${section.id} { padding: 2rem 1rem; }
-                    #${section.id} h2 { font-size: 1.5rem !important; }
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.25rem, 5vw, 1.5rem) !important; }
                 }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
-                    #${section.id} h2 { font-size: 2.25rem; }
-                    #${section.id} .subheading { font-size: 1.125rem; margin-bottom: 2.5rem; }
-                    #${section.id} .service-image { height: 12rem; }
-                    #${section.id} .service-content { padding: 1.5rem; }
-                    #${section.id} .service-title { font-size: 1.25rem; }
-                    #${section.id} .service-desc { font-size: 1rem; }
+                    #${section.id} .services-grid { grid-template-columns: repeat(2, 1fr); }
+                    #${section.id} h2 { font-size: clamp(1.75rem, 4vw, 2.25rem); }
                 }
-                @media (min-width: 768px) {
+                @media (min-width: 1024px) {
                     #${section.id} { padding: 5rem 2rem; }
-                    #${section.id} h2 { font-size: 3rem; }
-                    #${section.id} .subheading { font-size: 1.25rem; margin-bottom: 3rem; }
+                    #${section.id} .services-grid { grid-template-columns: repeat(3, 1fr); }
+                    #${section.id} h2 { font-size: clamp(2rem, 3vw, 3rem); }
                 }
             </style>
         </section>`;
@@ -1296,11 +1326,11 @@ export const WebsiteTemplates: React.FC = () => {
         return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: #f8fafc; width: 100%; overflow-x: hidden;">
             <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
                 <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem; width: 100%;">
+                <div class="testimonials-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                     ${testimonials.map((testimonial: any) => `
-                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%;">
+                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box;">
                             <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
-                                ${testimonial.avatar ? `<img src="${testimonial.avatar}" alt="${escapeHtml(testimonial.name || '')}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; object-fit: cover; flex-shrink: 0;">` : '<div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; background: #e2e8f0; flex-shrink: 0;"></div>'}
+                                ${testimonial.avatar ? `<img src="${escapeHtml(sanitizeUrl(testimonial.avatar))}" alt="${escapeHtml(testimonial.name || '')}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; object-fit: cover; flex-shrink: 0; max-width: 100%;">` : '<div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; background: #e2e8f0; flex-shrink: 0;"></div>'}
                                 <div style="min-width: 0; flex: 1;">
                                     <h4 style="font-weight: 600; color: #0f172a; font-size: 0.9375rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(testimonial.name || '')}</h4>
                                     ${testimonial.company ? `<p style="font-size: 0.75rem; color: #64748b; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(testimonial.company)}</p>` : ''}
@@ -1313,20 +1343,25 @@ export const WebsiteTemplates: React.FC = () => {
                 </div>
             </div>
             <style>
+                #${section.id} .testimonials-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 1.5rem;
+                    width: 100%;
+                }
                 @media (max-width: 639px) {
-                    #${section.id} { padding: 2rem 1rem; }
-                    #${section.id} h2 { font-size: 1.5rem !important; margin-bottom: 1.5rem; }
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.25rem, 5vw, 1.5rem) !important; margin-bottom: 1.5rem !important; }
                 }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
-                    #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
-                    #${section.id} .testimonial-card { padding: 1.5rem; }
-                    #${section.id} .testimonial-avatar { width: 3rem; height: 3rem; }
-                    #${section.id} .testimonial-text { font-size: 1rem; }
+                    #${section.id} .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+                    #${section.id} h2 { font-size: clamp(1.75rem, 4vw, 2.25rem); margin-bottom: 2.5rem; }
                 }
-                @media (min-width: 768px) {
+                @media (min-width: 1024px) {
                     #${section.id} { padding: 5rem 2rem; }
-                    #${section.id} h2 { font-size: 3rem; margin-bottom: 3rem; }
+                    #${section.id} .testimonials-grid { grid-template-columns: repeat(3, 1fr); }
+                    #${section.id} h2 { font-size: clamp(2rem, 3vw, 3rem); margin-bottom: 3rem; }
                 }
             </style>
         </section>`;
@@ -1337,8 +1372,8 @@ export const WebsiteTemplates: React.FC = () => {
                 <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
                 ${content.subheading ? `<p style="font-size: 0.9375rem; margin-bottom: 1.5rem; opacity: 0.9; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; align-items: center; margin-bottom: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto; width: 100%;">
-                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${content.phoneNumber || content.phone}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
-                    ${content.email ? `<a href="mailto:${content.email}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.1);">✉️ Email Us</a>` : ''}
+                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${escapeHtml((content.phoneNumber || content.phone || '').replace(/[^0-9+()-]/g, ''))}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
+                    ${content.email ? `<a href="mailto:${escapeHtml(content.email.replace(/[<>"']/g, ''))}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.1);">✉️ Email Us</a>` : ''}
                 </div>
                 ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.875rem; flex-wrap: wrap;"><span>🕐</span><p style="opacity: 0.9; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.hours)}</p></div>` : ''}
             </div>
@@ -1373,7 +1408,7 @@ export const WebsiteTemplates: React.FC = () => {
           { name: 'RSS', icon: 'S', href: '#' },
           { name: 'Pinterest', icon: 'P', href: '#' }
         ]).map((icon: any) => 
-          `<a href="${icon.href || '#'}" style="width: 2.5rem; height: 2.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; transition: all 0.2s; font-size: 0.875rem; font-weight: 600;">${escapeHtml(icon.icon || icon.name?.[0] || '?')}</a>`
+          `<a href="${escapeHtml(sanitizeUrl(icon.href || '#'))}" style="width: 2.5rem; height: 2.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; transition: all 0.2s; font-size: 0.875rem; font-weight: 600;">${escapeHtml(icon.icon || icon.name?.[0] || '?')}</a>`
         ).join('');
         
         return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 2rem 1rem 1.5rem; width: 100%; overflow-x: hidden;">
@@ -1384,9 +1419,9 @@ export const WebsiteTemplates: React.FC = () => {
                         <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.contactTitle || 'Contact us')}</h4>
                         <div style="color: #94a3b8; font-size: 0.875rem; line-height: 1.8;">
                             ${content.address ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: start; gap: 0.5rem;"><span>📍</span><span>${escapeHtml(content.address)}</span></p>` : ''}
-                            ${(content.phoneNumber || content.phone) ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>📞</span><a href="tel:${content.phoneNumber || content.phone}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></p>` : ''}
-                            ${content.email ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>✉️</span><a href="mailto:${content.email}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.email)}</a></p>` : ''}
-                            ${content.skype ? `<p style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span>💬</span><a href="skype:${content.skype}?chat" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.skype)}</a></p>` : ''}
+                            ${(content.phoneNumber || content.phone) ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>📞</span><a href="tel:${escapeHtml((content.phoneNumber || content.phone || '').replace(/[^0-9+()-]/g, ''))}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></p>` : ''}
+                            ${content.email ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>✉️</span><a href="mailto:${escapeHtml(content.email.replace(/[<>"']/g, ''))}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.email)}</a></p>` : ''}
+                            ${content.skype ? `<p style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span>💬</span><a href="skype:${escapeHtml(content.skype.replace(/[^a-zA-Z0-9._-]/g, ''))}?chat" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.skype)}</a></p>` : ''}
                         </div>
                     </div>
                     
@@ -1418,6 +1453,16 @@ export const WebsiteTemplates: React.FC = () => {
                 ${content.copyright ? `<div style="padding-top: 1.5rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 1.5rem;">${escapeHtml(content.copyright)}</div>` : ''}
             </div>
             <style>
+                #${section.id} .footer-content {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    width: 100%;
+                }
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem 1.5rem !important; }
+                    #${section.id} .footer-content { grid-template-columns: 1fr !important; }
+                }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem 2rem; }
                     #${section.id} .footer-content { grid-template-columns: repeat(2, 1fr); }
@@ -1474,71 +1519,101 @@ export const WebsiteTemplates: React.FC = () => {
         </section>`;
 
       case 'about':
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: linear-gradient(to bottom, white, #f8fafc, white);">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;">
-                    <div>
-                        <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                        ${content.subheading ? `<p style="font-size: 1.25rem; color: #4f46e5; font-weight: 600; margin-bottom: 1.5rem;">${escapeHtml(content.subheading)}</p>` : ''}
-                        ${content.description ? `<p style="font-size: 1.125rem; color: #64748b; margin-bottom: 2rem; line-height: 1.7;">${escapeHtml(content.description)}</p>` : ''}
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: linear-gradient(to bottom, white, #f8fafc, white); width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <div class="about-grid" style="display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; width: 100%;">
+                    <div style="width: 100%;">
+                        <h2 style="font-size: clamp(1.5rem, 5vw, 3rem); font-weight: 700; margin-bottom: 1rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                        ${content.subheading ? `<p style="font-size: clamp(1rem, 3vw, 1.25rem); color: #4f46e5; font-weight: 600; margin-bottom: 1.5rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
+                        ${content.description ? `<p style="font-size: clamp(0.9375rem, 2.5vw, 1.125rem); color: #64748b; margin-bottom: 2rem; line-height: 1.7; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.description)}</p>` : ''}
                         ${content.stats ? `
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+                            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem; width: 100%;">
                                 ${content.stats.map((stat: any) => `
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 2rem; font-weight: 700; color: #4f46e5; margin-bottom: 0.5rem;">${escapeHtml(stat.number || '')}</div>
-                                        <div style="font-size: 0.875rem; color: #64748b;">${escapeHtml(stat.label || '')}</div>
+                                    <div style="text-align: center; width: 100%;">
+                                        <div style="font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; color: #4f46e5; margin-bottom: 0.5rem;">${escapeHtml(stat.number || '')}</div>
+                                        <div style="font-size: clamp(0.75rem, 2vw, 0.875rem); color: #64748b; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(stat.label || '')}</div>
                                     </div>
                                 `).join('')}
                             </div>
                         ` : ''}
                         ${content.values ? `
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div class="values-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                                 ${content.values.map((value: any) => `
-                                    <div style="display: flex; align-items: start; gap: 1rem;">
-                                        <div style="font-size: 2rem;">${escapeHtml(value.icon || '')}</div>
-                                        <div>
-                                            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 0.25rem;">${escapeHtml(value.title || '')}</h3>
-                                            <p style="font-size: 0.875rem; color: #64748b;">${escapeHtml(value.description || '')}</p>
+                                    <div style="display: flex; align-items: start; gap: 1rem; width: 100%;">
+                                        <div style="font-size: 2rem; flex-shrink: 0;">${escapeHtml(value.icon || '')}</div>
+                                        <div style="min-width: 0; flex: 1;">
+                                            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 0.25rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(value.title || '')}</h3>
+                                            <p style="font-size: 0.875rem; color: #64748b; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(value.description || '')}</p>
                                         </div>
                                     </div>
                                 `).join('')}
                             </div>
                         ` : ''}
                     </div>
-                    <div>
-                        ${content.image ? `<img src="${content.image}" alt="About us" style="width: 100%; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">` : ''}
+                    <div style="width: 100%;">
+                        ${content.image ? `<img src="${escapeHtml(sanitizeUrl(content.image))}" alt="About us" style="width: 100%; max-width: 100%; height: auto; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); display: block;">` : ''}
                     </div>
                 </div>
             </div>
+            <style>
+                #${section.id} .about-grid { grid-template-columns: 1fr; }
+                #${section.id} .stats-grid { grid-template-columns: repeat(2, 1fr); }
+                #${section.id} .values-grid { grid-template-columns: 1fr; }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} .about-grid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+                    #${section.id} .stats-grid { grid-template-columns: repeat(4, 1fr); }
+                    #${section.id} .values-grid { grid-template-columns: repeat(2, 1fr); }
+                }
+                @media (min-width: 1024px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                }
+            </style>
         </section>`;
 
       case 'how-it-works':
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: white;">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                ${content.subheading ? `<p style="font-size: 1.25rem; color: #64748b; text-align: center; margin-bottom: 3rem;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;">
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: white; width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: clamp(1.5rem, 5vw, 3rem); font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="font-size: clamp(0.9375rem, 3vw, 1.25rem); color: #64748b; text-align: center; margin-bottom: 2rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div class="steps-grid" style="display: grid; grid-template-columns: 1fr; gap: 2rem; width: 100%;">
                     ${(content.steps || []).map((step: any, idx: number) => `
-                        <div style="text-align: center;">
+                        <div style="text-align: center; width: 100%;">
                             <div style="position: relative; margin-bottom: 1.5rem;">
                                 <div style="width: 5rem; height: 5rem; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.875rem; font-weight: 700; margin: 0 auto 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
                                     ${step.number || (idx + 1)}
                                 </div>
                                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">${escapeHtml(step.icon || '')}</div>
-                                ${step.image ? `<img src="${step.image}" alt="${escapeHtml(step.title || '')}" style="width: 100%; height: 12rem; object-fit: cover; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1rem;">` : ''}
+                                ${step.image ? `<img src="${escapeHtml(sanitizeUrl(step.image))}" alt="${escapeHtml(step.title || '')}" style="width: 100%; max-width: 100%; height: auto; min-height: 12rem; object-fit: cover; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1rem; display: block;">` : ''}
                             </div>
-                            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a;">${escapeHtml(step.title || '')}</h3>
-                            <p style="color: #64748b; line-height: 1.6;">${escapeHtml(step.description || '')}</p>
+                            <h3 style="font-size: clamp(1rem, 3vw, 1.25rem); font-weight: 600; margin-bottom: 0.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(step.title || '')}</h3>
+                            <p style="color: #64748b; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(step.description || '')}</p>
                         </div>
                     `).join('')}
                 </div>
             </div>
+            <style>
+                #${section.id} .steps-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    width: 100%;
+                }
+                @media (min-width: 640px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} .steps-grid { grid-template-columns: repeat(2, 1fr); }
+                }
+                @media (min-width: 1024px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                    #${section.id} .steps-grid { grid-template-columns: repeat(4, 1fr); }
+                }
+            </style>
         </section>`;
 
       case 'contact':
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: linear-gradient(to bottom, #f8fafc, white);">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: linear-gradient(to bottom, #f8fafc, white); width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <div class="contact-grid" style="display: grid; grid-template-columns: 1fr; gap: 2rem; width: 100%;">
                     <div>
                         <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
                         ${content.subheading ? `<p style="font-size: 1.25rem; color: #4f46e5; font-weight: 600; margin-bottom: 1rem;">${escapeHtml(content.subheading)}</p>` : ''}
@@ -1548,13 +1623,13 @@ export const WebsiteTemplates: React.FC = () => {
                                 ${content.contactInfo.phone ? `
                                     <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
                                         <span style="font-size: 1.5rem;">📞</span>
-                                        <a href="tel:${content.contactInfo.phone}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.phone)}</a>
+                                        <a href="tel:${escapeHtml((content.contactInfo.phone || '').replace(/[^0-9+()-]/g, ''))}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.phone)}</a>
                                     </div>
                                 ` : ''}
                                 ${content.contactInfo.email ? `
                                     <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
                                         <span style="font-size: 1.5rem;">✉️</span>
-                                        <a href="mailto:${content.contactInfo.email}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.email)}</a>
+                                        <a href="mailto:${escapeHtml((content.contactInfo.email || '').replace(/[<>"']/g, ''))}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.email)}</a>
                                     </div>
                                 ` : ''}
                                 ${content.contactInfo.address ? `
@@ -1573,7 +1648,7 @@ export const WebsiteTemplates: React.FC = () => {
                         ` : ''}
                         ${content.mapEmbed ? `
                             <div style="margin-top: 2rem; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                <iframe src="${content.mapEmbed}" width="100%" height="300" style="border: 0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                <iframe src="${escapeHtml(sanitizeUrl(content.mapEmbed))}" width="100%" height="300" style="border: 0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                             </div>
                         ` : ''}
                     </div>
@@ -1603,6 +1678,25 @@ export const WebsiteTemplates: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <style>
+                #${section.id} .contact-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    width: 100%;
+                }
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.5rem, 5vw, 2rem) !important; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} .contact-grid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+                }
+                @media (min-width: 1024px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                }
+            </style>
         </section>`;
 
       default:
