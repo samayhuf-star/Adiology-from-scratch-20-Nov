@@ -888,6 +888,19 @@ export function adsToCampaignStructure(
   campaignName: string = 'Ads Campaign',
   finalUrl: string = 'https://www.example.com'
 ): CampaignStructure {
+  // Helper function to ensure URL is valid
+  const ensureValidUrl = (url: string | undefined | null): string => {
+    if (!url || url.trim() === '') {
+      return finalUrl || 'https://www.example.com';
+    }
+    const trimmed = url.trim();
+    // If URL doesn't start with http:// or https://, add https://
+    if (!trimmed.match(/^https?:\/\//i)) {
+      return `https://${trimmed}`;
+    }
+    return trimmed;
+  };
+  
   // Group ads by ad group
   const adGroupsMap = new Map<string, any[]>();
   ads.forEach(ad => {
@@ -899,9 +912,17 @@ export function adsToCampaignStructure(
   });
   
   const adGroups: AdGroup[] = Array.from(adGroupsMap.entries()).map(([groupName, groupAds]) => {
+    // Collect location data from first ad in group (if available)
+    const firstAd = groupAds[0];
+    const locationTarget = firstAd?.location_target || firstAd?.locationTarget;
+    const zipCodes = firstAd?.zip_codes || firstAd?.zipCodes || [];
+    const cities = firstAd?.cities || [];
+    const states = firstAd?.states || [];
+    
     const convertedAds: Ad[] = groupAds.map(ad => {
       // Ensure required fields are present and valid
-      const adType = (ad.adType === 'CallOnly' ? 'callonly' : ad.adType === 'DKI' ? 'dki' : 'rsa') as 'rsa' | 'dki' | 'callonly';
+      // Convert Call-Only ads to RSA format for CSV export (Google Ads Editor doesn't support Call-Only in CSV)
+      const adType = (ad.adType === 'CallOnly' ? 'rsa' : ad.adType === 'DKI' ? 'dki' : 'rsa') as 'rsa' | 'dki' | 'callonly';
       
       // For RSA/DKI, ensure we have at least 3 headlines and 2 descriptions
       let headline1 = (ad.headline1 || '').trim();
@@ -909,27 +930,33 @@ export function adsToCampaignStructure(
       let headline3 = (ad.headline3 || '').trim();
       
       // If missing headlines, use fallbacks
-      if (adType === 'rsa' || adType === 'dki') {
-        if (!headline1) headline1 = 'Professional Service';
-        if (!headline2) headline2 = 'Expert Solutions';
-        if (!headline3) headline3 = 'Quality Guaranteed';
-      }
+      if (!headline1) headline1 = 'Professional Service';
+      if (!headline2) headline2 = 'Expert Solutions';
+      if (!headline3) headline3 = 'Quality Guaranteed';
       
       let description1 = (ad.description1 || '').trim();
       let description2 = (ad.description2 || '').trim();
       
       // If missing descriptions, use fallbacks
-      if (adType === 'rsa' || adType === 'dki') {
-        if (!description1) description1 = 'Get professional service you can trust.';
-        if (!description2) description2 = 'Contact us today for expert assistance.';
-      }
+      if (!description1) description1 = 'Get professional service you can trust.';
+      if (!description2) description2 = 'Contact us today for expert assistance.';
       
-      // Truncate if too long
+      // Truncate if too long (Google Ads limits)
       headline1 = headline1.length > 30 ? headline1.substring(0, 30) : headline1;
       headline2 = headline2.length > 30 ? headline2.substring(0, 30) : headline2;
       headline3 = headline3.length > 30 ? headline3.substring(0, 30) : headline3;
       description1 = description1.length > 90 ? description1.substring(0, 90) : description1;
       description2 = description2.length > 90 ? description2.substring(0, 90) : description2;
+      
+      // Ensure final URL is valid
+      const validFinalUrl = ensureValidUrl(ad.finalUrl || finalUrl);
+      
+      // Ensure path1 and path2 are within limits (15 chars each)
+      const path1 = (ad.path1 || '').trim().substring(0, 15);
+      const path2 = (ad.path2 || '').trim().substring(0, 15);
+      
+      // Preserve extensions if they exist
+      const extensions = ad.extensions && Array.isArray(ad.extensions) ? ad.extensions : [];
       
       return {
         type: adType,
@@ -940,9 +967,10 @@ export function adsToCampaignStructure(
         headline5: (ad.headline5 || '').trim().substring(0, 30),
         description1,
         description2,
-        final_url: ad.finalUrl || finalUrl,
-        path1: (ad.path1 || '').trim().substring(0, 15),
-        path2: (ad.path2 || '').trim().substring(0, 15)
+        final_url: validFinalUrl,
+        path1,
+        path2,
+        extensions: extensions // Preserve extensions
       };
     });
     
@@ -951,7 +979,12 @@ export function adsToCampaignStructure(
       keywords: [], // Ads-only export has no keywords
       match_types: [],
       ads: convertedAds,
-      negative_keywords: []
+      negative_keywords: [],
+      // Preserve location data
+      location_target: locationTarget,
+      zip_codes: zipCodes.length > 0 ? zipCodes : undefined,
+      cities: cities.length > 0 ? cities : undefined,
+      states: states.length > 0 ? states : undefined
     };
   });
   

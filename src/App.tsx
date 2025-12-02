@@ -45,6 +45,7 @@ import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
 import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
+import { LiveLogs } from './components/LiveLogs';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -1554,6 +1555,11 @@ const App = () => {
           {renderContent()}
         </main>
       </div>
+
+      {/* Live Logs - Only show in user view */}
+      {appView === 'user' && (
+        <LiveLogs />
+      )}
       
     </div>
   );

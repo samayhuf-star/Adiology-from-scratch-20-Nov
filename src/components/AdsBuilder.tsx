@@ -1063,25 +1063,28 @@ export const AdsBuilder = () => {
         const adsToExport = generatedAds.filter(ad => selectedAds.includes(ad.id));
         
         try {
-            const { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows } = await import('../utils/googleAdsEditorCSVExporter');
-            const { adsToCampaignStructure } = await import('../utils/csvGeneratorV3');
+            const { exportCSVWithValidation, exportCampaignToCSVV3 } = await import('../utils/csvGeneratorV3');
             const filename = `google-ads-editor-${new Date().toISOString().split('T')[0]}.csv`;
             
             // Get default final URL from first ad or base URL
             const defaultUrl = adsToExport[0]?.finalUrl || baseUrl || 'https://www.example.com';
             
-            // Convert ads to campaign structure
-            const structure = adsToCampaignStructure(adsToExport, 'Ads Campaign', defaultUrl);
-            
-            // Convert to CSV rows and validate
-            const rows = campaignStructureToCSVRows(structure);
-            const validation = validateCSVRows(rows);
+            // Validate and convert ads to campaign structure using V3 format
+            const result = await exportCSVWithValidation(
+                adsToExport,
+                filename,
+                'ads',
+                {
+                    campaignName: 'Ads Campaign',
+                    finalUrl: defaultUrl
+                }
+            );
             
             // Check if validation passed
-            if (!validation.isValid) {
+            if (!result.isValid) {
                 // Show validation errors - don't export
-                const errorMessage = validation.errors.slice(0, 5).join('\n') + 
-                  (validation.errors.length > 5 ? `\n... and ${validation.errors.length - 5} more errors` : '');
+                const errorMessage = (result.errors || []).slice(0, 5).join('\n') + 
+                  ((result.errors || []).length > 5 ? `\n... and ${(result.errors || []).length - 5} more errors` : '');
                 notifications.error(
                     errorMessage,
                     { 
@@ -1093,28 +1096,32 @@ export const AdsBuilder = () => {
                 return;
             }
             
-            // Export the CSV if validation passed
-            await exportCampaignToGoogleAdsEditorCSV(structure, filename);
-            
-            // Show warnings if any (but export was successful)
-            if (validation.warnings && validation.warnings.length > 0) {
-                const warningMessage = validation.warnings.slice(0, 5).join('\n') + 
-                  (validation.warnings.length > 5 ? `\n... and ${validation.warnings.length - 5} more warnings` : '');
-                notifications.warning(
-                    warningMessage,
-                    { 
-                        title: '⚠️  CSV Validation Warnings',
-                        description: 'Your ads have been exported, but consider fixing these warnings.',
-                        duration: 10000
-                    }
-                );
+            // Export the CSV if validation passed and structure is available
+            if (result.structure) {
+                exportCampaignToCSVV3(result.structure, filename);
+                
+                // Show warnings if any (but export was successful)
+                if (result.warnings && result.warnings.length > 0) {
+                    const warningMessage = result.warnings.slice(0, 5).join('\n') + 
+                      (result.warnings.length > 5 ? `\n... and ${result.warnings.length - 5} more warnings` : '');
+                    notifications.warning(
+                        warningMessage,
+                        { 
+                            title: '⚠️  CSV Validation Warnings',
+                            description: 'Your ads have been exported, but consider fixing these warnings.',
+                            duration: 10000
+                        }
+                    );
+                } else {
+                    // Show success message
+                    notifications.success(`Exported ${adsToExport.length} ad(s) to CSV`, {
+                        title: 'Export Complete',
+                        description: 'Your CSV file has been downloaded successfully and is ready for Google Ads Editor import.',
+                        duration: 3000
+                    });
+                }
             } else {
-                // Show success message
-                notifications.success(`Exported ${adsToExport.length} ad(s) to CSV`, {
-                    title: 'Export Complete',
-                    description: 'Your CSV file has been downloaded successfully.',
-                    duration: 3000
-                });
+                throw new Error('Failed to generate campaign structure');
             }
         } catch (error: any) {
             console.error('Export error:', error);
