@@ -46,159 +46,210 @@ interface SavedTemplate {
   updatedAt: string;
 }
 
-const defaultTemplate: Template = {
-  id: 'template-1',
-  name: 'Professional Service Landing Page',
-  description: 'Complete single-page website with all Google Ads required policies',
-  thumbnail: '🏢',
-  category: 'Business',
-  sections: [
-    {
-      id: 'hero-1',
-      type: 'hero',
-      title: 'Hero Section',
-      content: {
-        heading: 'Professional Services You Can Trust',
-        subheading: 'Expert solutions for your business needs with 24/7 support',
-        ctaText: 'Get Started Today',
-        ctaPhone: '1-800-123-4567',
-        backgroundImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop',
-        hours: 'Mon-Sat: 7AM-6PM'
-      }
-    },
-    {
-      id: 'features-1',
-      type: 'features',
-      title: 'Features Section',
-      content: {
-        heading: 'Why Choose Us',
-        features: [
-          {
-            icon: '⚡',
-            title: 'Fast Response',
-            description: 'Quick turnaround time for all service requests'
-          },
-          {
-            icon: '🎯',
-            title: 'Expert Team',
-            description: 'Certified professionals with years of experience'
-          },
-          {
-            icon: '💯',
-            title: 'Quality Guaranteed',
-            description: '100% satisfaction guarantee on all services'
-          },
-          {
-            icon: '🔒',
-            title: 'Secure & Safe',
-            description: 'Licensed, bonded, and fully insured'
-          }
-        ]
-      }
-    },
-    {
-      id: 'services-1',
-      type: 'services',
-      title: 'Services Section',
-      content: {
-        heading: 'Our Services',
-        subheading: 'Comprehensive solutions tailored to your needs',
-        services: [
-          {
-            image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&h=300&fit=crop',
-            title: 'Consultation',
-            description: 'Expert consultation to assess your needs and provide tailored solutions',
-            price: 'Starting at $99'
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
-            title: 'Implementation',
-            description: 'Professional implementation of solutions with minimal disruption',
-            price: 'Custom Pricing'
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-            title: 'Support & Maintenance',
-            description: 'Ongoing support and maintenance to ensure optimal performance',
-            price: 'From $199/month'
-          }
-        ]
-      }
-    },
-    {
-      id: 'testimonials-1',
-      type: 'testimonials',
-      title: 'Testimonials Section',
-      content: {
-        heading: 'What Our Clients Say',
-        testimonials: [
-          {
-            name: 'John Smith',
-            company: 'ABC Corporation',
-            rating: 5,
-            text: 'Outstanding service! They exceeded our expectations and delivered results quickly.',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'
-          },
-          {
-            name: 'Sarah Johnson',
-            company: 'XYZ Industries',
-            rating: 5,
-            text: 'Professional, reliable, and efficient. Highly recommend their services!',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop'
-          },
-          {
-            name: 'Michael Brown',
-            company: 'Tech Solutions Inc',
-            rating: 5,
-            text: 'Best decision we made for our business. Great team and excellent results.',
-            avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop'
-          }
-        ]
-      }
-    },
-    {
-      id: 'cta-1',
-      type: 'cta',
-      title: 'Call to Action',
-      content: {
-        heading: 'Ready to Get Started?',
-        subheading: 'Contact us today for a free consultation',
-        ctaText: 'Call Now',
-        phone: '1-800-123-4567',
-        email: 'info@yourcompany.com',
-        hours: 'Available 24/7'
-      }
-    },
-    {
-      id: 'footer-1',
-      type: 'footer',
-      title: 'Footer',
-      content: {
-        contactTitle: 'Contact us',
-        address: '1th Avenue, New York - United States',
-        phone: '+22 342 2345 345 | Fax: +22 724 2342 343',
-        email: 'info@example.com',
-        skype: 'my-company',
-        mailingListTitle: 'Mailing list',
-        mailingListDescription: 'Lorem ipsum dolor sit amet, ea eum labitur scsstie percipitoleat.',
-        followUsTitle: 'Follow us',
-        socialIcons: [
-          { name: 'Facebook', icon: 'f', href: '#' },
-          { name: 'Google+', icon: 'g+', href: '#' },
-          { name: 'YouTube', icon: '▶', href: '#' },
-          { name: 'Dribbble', icon: 'b', href: '#' },
-          { name: 'LinkedIn', icon: 'in', href: '#' },
-          { name: 'Twitter', icon: '🐦', href: '#' },
-          { name: 'RSS', icon: 'S', href: '#' },
-          { name: 'Pinterest', icon: 'P', href: '#' }
-        ],
-        latestNewsTitle: 'Latest News',
-        latestNewsDescription: 'Lorem ipsum dolor labitur scsstie per sit amet, ea eum labitur scsstie percipitoleat.',
-        latestNewsButtonText: 'Get Mores!',
-        copyright: `© ${new Date().getFullYear()} All rights reserved.`
+// Template image mapping - ensures all templates have relevant, unique images
+// Maps template IDs and category names to specific, relevant images
+const templateImageMap: Record<string, string> = {
+  // Base templates
+  'plumbing-1': 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=800&h=600&fit=crop',
+  'hvac-1': 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&h=600&fit=crop',
+  'electrical-1': 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=800&h=600&fit=crop',
+  'roofing-1': 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=800&h=600&fit=crop',
+  'landscaping-1': 'https://images.unsplash.com/photo-1558904541-efa843a96f01?w=800&h=600&fit=crop',
+  
+  // Generated templates - using category-based matching
+  'cleaning-6': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'pest-control-6': 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=600&fit=crop',
+  'locksmith-6': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&h=600&fit=crop',
+  'garage-door-6': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop',
+  'painting-6': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&h=600&fit=crop',
+  'carpet-cleaning-6': 'https://images.unsplash.com/photo-1600428964546-988ac40e86f1?w=800&h=600&fit=crop',
+  'window-cleaning-6': 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=800&h=600&fit=crop',
+  'handyman-6': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+  'moving-6': 'https://images.unsplash.com/photo-1600518464441-9154a4dea21b?w=800&h=600&fit=crop',
+  'pool-service-6': 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=800&h=600&fit=crop',
+  'tree-service-6': 'https://images.unsplash.com/photo-1616680214084-22670de1bc82?w=800&h=600&fit=crop',
+  'appliance-repair-6': 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&h=600&fit=crop',
+  'flooring-6': 'https://images.unsplash.com/photo-1615873968403-89e068629265?w=800&h=600&fit=crop',
+  'home-security-6': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=800&h=600&fit=crop',
+  'solar-6': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=600&fit=crop',
+  'gutter-cleaning-6': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=600&fit=crop',
+  'concrete-6': 'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=800&h=600&fit=crop',
+  'fencing-6': 'https://images.unsplash.com/photo-1587502537815-0c8b5c9ba39a?w=800&h=600&fit=crop',
+  'siding-6': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'pressure-washing-6': 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=800&h=600&fit=crop',
+  'junk-removal-6': 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&h=600&fit=crop',
+  'septic-service-6': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'insulation-6': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'chimney-service-6': 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop',
+  'waterproofing-6': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+};
+
+// Category-based image mapping for templates that don't have specific IDs
+const categoryImageMap: Record<string, string> = {
+  'Cleaning': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'Pest Control': 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=600&fit=crop',
+  'Locksmith': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&h=600&fit=crop',
+  'Garage Door': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop',
+  'Painting': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=800&h=600&fit=crop',
+  'Carpet Cleaning': 'https://images.unsplash.com/photo-1600428964546-988ac40e86f1?w=800&h=600&fit=crop',
+  'Window Cleaning': 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=800&h=600&fit=crop',
+  'Handyman': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+  'Moving': 'https://images.unsplash.com/photo-1600518464441-9154a4dea21b?w=800&h=600&fit=crop',
+  'Pool Service': 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=800&h=600&fit=crop',
+  'Tree Service': 'https://images.unsplash.com/photo-1616680214084-22670de1bc82?w=800&h=600&fit=crop',
+  'Appliance Repair': 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800&h=600&fit=crop',
+  'Flooring': 'https://images.unsplash.com/photo-1615873968403-89e068629265?w=800&h=600&fit=crop',
+  'Home Security': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=800&h=600&fit=crop',
+  'Solar': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=800&h=600&fit=crop',
+  'Gutter Cleaning': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&h=600&fit=crop',
+  'Concrete': 'https://images.unsplash.com/photo-1600585154363-67eb9e2e2099?w=800&h=600&fit=crop',
+  'Fencing': 'https://images.unsplash.com/photo-1587502537815-0c8b5c9ba39a?w=800&h=600&fit=crop',
+  'Siding': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'Pressure Washing': 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=800&h=600&fit=crop',
+  'Junk Removal': 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&h=600&fit=crop',
+  'Septic Service': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop',
+  'Insulation': 'https://images.unsplash.com/photo-1513467535987-fd81bc7d62f8?w=800&h=600&fit=crop',
+  'Chimney Service': 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&h=600&fit=crop',
+  'Waterproofing': 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
+};
+
+// Helper function to get template image with fallbacks
+const getTemplateImage = (template: Template): string | null => {
+  // 1. Try template-specific image map (by ID)
+  if (templateImageMap[template.id]) {
+    return templateImageMap[template.id];
+  }
+  
+  // 2. Try category-based image map
+  if (categoryImageMap[template.category]) {
+    return categoryImageMap[template.category];
+  }
+  
+  // 3. Try hero background image (most reliable source)
+  const heroSection = template.sections.find(s => s.type === 'hero');
+  if (heroSection?.content?.backgroundImage) {
+    return heroSection.content.backgroundImage;
+  }
+  
+  // 4. Try first service image
+  const serviceSection = template.sections.find(s => s.type === 'services');
+  if (serviceSection?.content?.services?.[0]?.image) {
+    return serviceSection.content.services[0].image;
+  }
+  
+  // 5. Try any service image
+  if (serviceSection?.content?.services) {
+    for (const service of serviceSection.content.services) {
+      if (service.image) {
+        return service.image;
       }
     }
-  ]
+  }
+  
+  // 6. Try about section image
+  const aboutSection = template.sections.find(s => s.type === 'about');
+  if (aboutSection?.content?.image) {
+    return aboutSection.content.image;
+  }
+  
+  // 7. Return null to show thumbnail emoji
+  return null;
+};
+
+// Template Card Component with Image Error Handling
+const TemplateCard: React.FC<{ 
+  template: Template; 
+  templateImage: string | null;
+  onUseTemplate: (template: Template) => Promise<void>;
+  onExportTemplate: (template: Template) => void;
+}> = ({ template, templateImage, onUseTemplate, onExportTemplate }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  
+  return (
+    <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300 flex flex-col">
+      {/* Template Preview/Thumbnail with Vertical Image */}
+      <div className="relative h-64 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
+        {templateImage && !imageError ? (
+          <>
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+              </div>
+            )}
+            <img 
+              src={templateImage} 
+              alt={template.name}
+              className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              onError={() => {
+                setImageError(true);
+                setImageLoading(false);
+              }}
+              onLoad={() => setImageLoading(false)}
+              loading="lazy"
+            />
+          </>
+        ) : (
+          <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
+            {template.thumbnail}
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-3 right-3">
+          <Badge className="bg-white/90 backdrop-blur-sm text-slate-700 border-0 shadow-lg font-semibold">
+            {template.category}
+          </Badge>
+        </div>
+        <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex flex-wrap gap-1">
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+              {template.sections.length} sections
+            </Badge>
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+              <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
+              Google Ads
+            </Badge>
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
+              <Smartphone className="w-2.5 h-2.5 mr-0.5" />
+              Responsive
+            </Badge>
+          </div>
+        </div>
+      </div>
+      
+      {/* Template Info */}
+      <div className="p-5 flex-1 flex flex-col">
+        <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
+          {template.name}
+        </h3>
+        <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem] flex-1">
+          {template.description}
+        </p>
+        
+        {/* Action Buttons */}
+        <div className="flex gap-2 mt-auto">
+          <Button 
+            onClick={() => onUseTemplate(template)}
+            variant="default"
+            size="sm"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl"
+          >
+            <Edit className="w-4 h-4 mr-1" />
+            Use / Edit
+          </Button>
+          <Button 
+            onClick={() => onExportTemplate(template)}
+            variant="outline"
+            size="sm"
+            className="flex-shrink-0 px-3"
+            title="Download HTML"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
 };
 
 // Function to reorder sections so "about" comes right after "hero"
@@ -1177,19 +1228,44 @@ export const WebsiteTemplates: React.FC = () => {
     return div.innerHTML;
   };
 
+  // Validate and sanitize URLs to prevent XSS via javascript: or data: schemes
+  const sanitizeUrl = (url: string | undefined | null): string => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    // Block javascript: and data: URLs which can execute code
+    if (trimmed.toLowerCase().startsWith('javascript:') || 
+        trimmed.toLowerCase().startsWith('data:') ||
+        trimmed.toLowerCase().startsWith('vbscript:')) {
+      return '#';
+    }
+    // Allow http, https, tel, mailto, and relative paths
+    if (trimmed.startsWith('http://') || 
+        trimmed.startsWith('https://') || 
+        trimmed.startsWith('tel:') || 
+        trimmed.startsWith('mailto:') ||
+        trimmed.startsWith('/') ||
+        trimmed.startsWith('./') ||
+        trimmed.startsWith('../') ||
+        !trimmed.includes(':')) {
+      return trimmed;
+    }
+    // Block other protocols
+    return '#';
+  };
+
   const renderSectionHTML = (section: TemplateSection): string => {
     const content = section.content || {};
     
     switch (section.type) {
       case 'hero':
-        return `<section id="${section.id}" class="section" style="position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${content.backgroundImage || ''}'); background-size: cover; background-position: center; width: 100%; overflow-x: hidden;">
+        return `<section id="${section.id}" class="section" style="position: relative; min-height: 300px; display: flex; align-items: center; justify-content: center; text-align: center; color: white; background-image: url('${escapeHtml(sanitizeUrl(content.backgroundImage))}'); background-size: cover; background-position: center; width: 100%; overflow-x: hidden;">
             <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.3));"></div>
             <div style="position: relative; z-index: 10; max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem; width: 100%;">
                 <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); line-height: 1.2; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h1>
                 <p style="font-size: 0.9375rem; margin-bottom: 1.5rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading || '')}</p>
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; width: 100%; max-width: 500px; margin: 0 auto;">
                     <a href="#contact" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4f46e5; color: white; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.2);">${escapeHtml(content.ctaText || 'Get Started')}</a>
-                    <a href="tel:${content.ctaPhoneNumber || content.ctaPhone || ''}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
+                    <a href="tel:${escapeHtml((content.ctaPhoneNumber || content.ctaPhone || '').replace(/[^0-9+()-]/g, ''))}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; text-align: center; min-height: 44px; display: flex; align-items: center; justify-content: center; width: 100%; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaPhoneDisplay || content.ctaPhone || '')}</a>
                 </div>
             </div>
             <style>
@@ -1219,9 +1295,9 @@ export const WebsiteTemplates: React.FC = () => {
         return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: #f8fafc; width: 100%; overflow-x: hidden;">
             <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
                 <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style="gap: 1.5rem; width: 100%;">
+                <div class="features-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                     ${features.map((feature: any) => `
-                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%;">
+                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box;">
                             <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">${escapeHtml(feature.icon || '')}</div>
                             <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #4f46e5; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(feature.title || '')}</h3>
                             <p style="color: #64748b; font-size: 0.875rem; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.5;">${escapeHtml(feature.description || '')}</p>
@@ -1230,22 +1306,25 @@ export const WebsiteTemplates: React.FC = () => {
                 </div>
             </div>
             <style>
+                #${section.id} .features-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 1.5rem;
+                    width: 100%;
+                }
                 @media (max-width: 639px) {
-                    #${section.id} { padding: 2rem 1rem; }
-                    #${section.id} h2 { font-size: 1.5rem !important; margin-bottom: 1.5rem; }
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.25rem, 5vw, 1.5rem) !important; margin-bottom: 1.5rem !important; }
                 }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
-                    #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
-                    #${section.id} .feature-card { padding: 2rem; }
-                    #${section.id} .feature-icon { font-size: 3.5rem; }
-                    #${section.id} .feature-title { font-size: 1.25rem; }
-                    #${section.id} .feature-desc { font-size: 1rem; }
+                    #${section.id} .features-grid { grid-template-columns: repeat(2, 1fr); }
+                    #${section.id} h2 { font-size: clamp(1.75rem, 4vw, 2.25rem); margin-bottom: 2.5rem; }
                 }
-                @media (min-width: 768px) {
+                @media (min-width: 1024px) {
                     #${section.id} { padding: 5rem 2rem; }
-                    #${section.id} h2 { font-size: 3rem; margin-bottom: 3rem; }
-                    #${section.id} .feature-icon { font-size: 3.75rem; }
+                    #${section.id} .features-grid { grid-template-columns: repeat(4, 1fr); }
+                    #${section.id} h2 { font-size: clamp(2rem, 3vw, 3rem); margin-bottom: 3rem; }
                 }
             </style>
         </section>`;
@@ -1256,10 +1335,10 @@ export const WebsiteTemplates: React.FC = () => {
             <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
                 <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
                 ${content.subheading ? `<p style="text-align: center; color: #64748b; margin-bottom: 1.5rem; font-size: 0.9375rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem; width: 100%;">
+                <div class="services-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                     ${services.map((service: any) => `
-                        <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; width: 100%;">
-                            ${service.image ? `<img src="${service.image}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 10rem; object-fit: cover; display: block;">` : '<div style="width: 100%; height: 10rem; background: #f1f5f9;"></div>'}
+                        <div style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; width: 100%; box-sizing: border-box;">
+                            ${service.image ? `<img src="${escapeHtml(sanitizeUrl(service.image))}" alt="${escapeHtml(service.title || '')}" style="width: 100%; height: 10rem; object-fit: cover; display: block; max-width: 100%;">` : '<div style="width: 100%; height: 10rem; background: #f1f5f9;"></div>'}
                             <div style="padding: 1.25rem;">
                                 <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(service.title || '')}</h3>
                                 <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.875rem; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.5;">${escapeHtml(service.description || '')}</p>
@@ -1270,23 +1349,25 @@ export const WebsiteTemplates: React.FC = () => {
                 </div>
             </div>
             <style>
+                #${section.id} .services-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 1.5rem;
+                    width: 100%;
+                }
                 @media (max-width: 639px) {
-                    #${section.id} { padding: 2rem 1rem; }
-                    #${section.id} h2 { font-size: 1.5rem !important; }
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.25rem, 5vw, 1.5rem) !important; }
                 }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
-                    #${section.id} h2 { font-size: 2.25rem; }
-                    #${section.id} .subheading { font-size: 1.125rem; margin-bottom: 2.5rem; }
-                    #${section.id} .service-image { height: 12rem; }
-                    #${section.id} .service-content { padding: 1.5rem; }
-                    #${section.id} .service-title { font-size: 1.25rem; }
-                    #${section.id} .service-desc { font-size: 1rem; }
+                    #${section.id} .services-grid { grid-template-columns: repeat(2, 1fr); }
+                    #${section.id} h2 { font-size: clamp(1.75rem, 4vw, 2.25rem); }
                 }
-                @media (min-width: 768px) {
+                @media (min-width: 1024px) {
                     #${section.id} { padding: 5rem 2rem; }
-                    #${section.id} h2 { font-size: 3rem; }
-                    #${section.id} .subheading { font-size: 1.25rem; margin-bottom: 3rem; }
+                    #${section.id} .services-grid { grid-template-columns: repeat(3, 1fr); }
+                    #${section.id} h2 { font-size: clamp(2rem, 3vw, 3rem); }
                 }
             </style>
         </section>`;
@@ -1296,11 +1377,11 @@ export const WebsiteTemplates: React.FC = () => {
         return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: #f8fafc; width: 100%; overflow-x: hidden;">
             <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
                 <h2 style="font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style="gap: 1.5rem; width: 100%;">
+                <div class="testimonials-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                     ${testimonials.map((testimonial: any) => `
-                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%;">
+                        <div style="background: white; padding: 1.25rem; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box;">
                             <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
-                                ${testimonial.avatar ? `<img src="${testimonial.avatar}" alt="${escapeHtml(testimonial.name || '')}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; object-fit: cover; flex-shrink: 0;">` : '<div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; background: #e2e8f0; flex-shrink: 0;"></div>'}
+                                ${testimonial.avatar ? `<img src="${escapeHtml(sanitizeUrl(testimonial.avatar))}" alt="${escapeHtml(testimonial.name || '')}" style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; object-fit: cover; flex-shrink: 0; max-width: 100%;">` : '<div style="width: 2.5rem; height: 2.5rem; border-radius: 50%; margin-right: 0.75rem; background: #e2e8f0; flex-shrink: 0;"></div>'}
                                 <div style="min-width: 0; flex: 1;">
                                     <h4 style="font-weight: 600; color: #0f172a; font-size: 0.9375rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(testimonial.name || '')}</h4>
                                     ${testimonial.company ? `<p style="font-size: 0.75rem; color: #64748b; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(testimonial.company)}</p>` : ''}
@@ -1313,20 +1394,25 @@ export const WebsiteTemplates: React.FC = () => {
                 </div>
             </div>
             <style>
+                #${section.id} .testimonials-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 1.5rem;
+                    width: 100%;
+                }
                 @media (max-width: 639px) {
-                    #${section.id} { padding: 2rem 1rem; }
-                    #${section.id} h2 { font-size: 1.5rem !important; margin-bottom: 1.5rem; }
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.25rem, 5vw, 1.5rem) !important; margin-bottom: 1.5rem !important; }
                 }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem; }
-                    #${section.id} h2 { font-size: 2.25rem; margin-bottom: 2.5rem; }
-                    #${section.id} .testimonial-card { padding: 1.5rem; }
-                    #${section.id} .testimonial-avatar { width: 3rem; height: 3rem; }
-                    #${section.id} .testimonial-text { font-size: 1rem; }
+                    #${section.id} .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+                    #${section.id} h2 { font-size: clamp(1.75rem, 4vw, 2.25rem); margin-bottom: 2.5rem; }
                 }
-                @media (min-width: 768px) {
+                @media (min-width: 1024px) {
                     #${section.id} { padding: 5rem 2rem; }
-                    #${section.id} h2 { font-size: 3rem; margin-bottom: 3rem; }
+                    #${section.id} .testimonials-grid { grid-template-columns: repeat(3, 1fr); }
+                    #${section.id} h2 { font-size: clamp(2rem, 3vw, 3rem); margin-bottom: 3rem; }
                 }
             </style>
         </section>`;
@@ -1337,8 +1423,8 @@ export const WebsiteTemplates: React.FC = () => {
                 <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
                 ${content.subheading ? `<p style="font-size: 0.9375rem; margin-bottom: 1.5rem; opacity: 0.9; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
                 <div style="display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; align-items: center; margin-bottom: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto; width: 100%;">
-                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${content.phoneNumber || content.phone}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
-                    ${content.email ? `<a href="mailto:${content.email}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.1);">✉️ Email Us</a>` : ''}
+                    ${(content.phoneNumber || content.phone) ? `<a href="tel:${escapeHtml((content.phoneNumber || content.phone || '').replace(/[^0-9+()-]/g, ''))}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: white; color: #4f46e5; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(79,70,229,0.1);">📞 ${escapeHtml(content.ctaText || 'Call Now')} ${escapeHtml(content.phoneDisplay || content.phone || '')}</a>` : ''}
+                    ${content.email ? `<a href="mailto:${escapeHtml(content.email.replace(/[<>"']/g, ''))}" style="padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; border-radius: 0.5rem; background: #4338ca; color: white; transition: all 0.3s; width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: rgba(255,255,255,0.1);">✉️ Email Us</a>` : ''}
                 </div>
                 ${content.hours ? `<div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.875rem; flex-wrap: wrap;"><span>🕐</span><p style="opacity: 0.9; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.hours)}</p></div>` : ''}
             </div>
@@ -1373,7 +1459,7 @@ export const WebsiteTemplates: React.FC = () => {
           { name: 'RSS', icon: 'S', href: '#' },
           { name: 'Pinterest', icon: 'P', href: '#' }
         ]).map((icon: any) => 
-          `<a href="${icon.href || '#'}" style="width: 2.5rem; height: 2.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; transition: all 0.2s; font-size: 0.875rem; font-weight: 600;">${escapeHtml(icon.icon || icon.name?.[0] || '?')}</a>`
+          `<a href="${escapeHtml(sanitizeUrl(icon.href || '#'))}" style="width: 2.5rem; height: 2.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; text-decoration: none; transition: all 0.2s; font-size: 0.875rem; font-weight: 600;">${escapeHtml(icon.icon || icon.name?.[0] || '?')}</a>`
         ).join('');
         
         return `<footer id="${section.id}" style="background: #0f172a; color: #cbd5e1; padding: 2rem 1rem 1.5rem; width: 100%; overflow-x: hidden;">
@@ -1384,9 +1470,9 @@ export const WebsiteTemplates: React.FC = () => {
                         <h4 style="color: white; font-weight: 600; margin-bottom: 1rem; font-size: 1rem; line-height: 1.5;">${escapeHtml(content.contactTitle || 'Contact us')}</h4>
                         <div style="color: #94a3b8; font-size: 0.875rem; line-height: 1.8;">
                             ${content.address ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: start; gap: 0.5rem;"><span>📍</span><span>${escapeHtml(content.address)}</span></p>` : ''}
-                            ${(content.phoneNumber || content.phone) ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>📞</span><a href="tel:${content.phoneNumber || content.phone}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></p>` : ''}
-                            ${content.email ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>✉️</span><a href="mailto:${content.email}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.email)}</a></p>` : ''}
-                            ${content.skype ? `<p style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span>💬</span><a href="skype:${content.skype}?chat" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.skype)}</a></p>` : ''}
+                            ${(content.phoneNumber || content.phone) ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>📞</span><a href="tel:${escapeHtml((content.phoneNumber || content.phone || '').replace(/[^0-9+()-]/g, ''))}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.phoneDisplay || content.phone || '')}</a></p>` : ''}
+                            ${content.email ? `<p style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;"><span>✉️</span><a href="mailto:${escapeHtml(content.email.replace(/[<>"']/g, ''))}" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.email)}</a></p>` : ''}
+                            ${content.skype ? `<p style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><span>💬</span><a href="skype:${escapeHtml(content.skype.replace(/[^a-zA-Z0-9._-]/g, ''))}?chat" style="color: #60a5fa; text-decoration: none;">${escapeHtml(content.skype)}</a></p>` : ''}
                         </div>
                     </div>
                     
@@ -1418,6 +1504,16 @@ export const WebsiteTemplates: React.FC = () => {
                 ${content.copyright ? `<div style="padding-top: 1.5rem; border-top: 1px solid #1e293b; text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 1.5rem;">${escapeHtml(content.copyright)}</div>` : ''}
             </div>
             <style>
+                #${section.id} .footer-content {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    width: 100%;
+                }
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem 1.5rem !important; }
+                    #${section.id} .footer-content { grid-template-columns: 1fr !important; }
+                }
                 @media (min-width: 640px) {
                     #${section.id} { padding: 4rem 1.5rem 2rem; }
                     #${section.id} .footer-content { grid-template-columns: repeat(2, 1fr); }
@@ -1474,71 +1570,101 @@ export const WebsiteTemplates: React.FC = () => {
         </section>`;
 
       case 'about':
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: linear-gradient(to bottom, white, #f8fafc, white);">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;">
-                    <div>
-                        <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                        ${content.subheading ? `<p style="font-size: 1.25rem; color: #4f46e5; font-weight: 600; margin-bottom: 1.5rem;">${escapeHtml(content.subheading)}</p>` : ''}
-                        ${content.description ? `<p style="font-size: 1.125rem; color: #64748b; margin-bottom: 2rem; line-height: 1.7;">${escapeHtml(content.description)}</p>` : ''}
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: linear-gradient(to bottom, white, #f8fafc, white); width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <div class="about-grid" style="display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; width: 100%;">
+                    <div style="width: 100%;">
+                        <h2 style="font-size: clamp(1.5rem, 5vw, 3rem); font-weight: 700; margin-bottom: 1rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                        ${content.subheading ? `<p style="font-size: clamp(1rem, 3vw, 1.25rem); color: #4f46e5; font-weight: 600; margin-bottom: 1.5rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
+                        ${content.description ? `<p style="font-size: clamp(0.9375rem, 2.5vw, 1.125rem); color: #64748b; margin-bottom: 2rem; line-height: 1.7; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.description)}</p>` : ''}
                         ${content.stats ? `
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+                            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 2rem; width: 100%;">
                                 ${content.stats.map((stat: any) => `
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 2rem; font-weight: 700; color: #4f46e5; margin-bottom: 0.5rem;">${escapeHtml(stat.number || '')}</div>
-                                        <div style="font-size: 0.875rem; color: #64748b;">${escapeHtml(stat.label || '')}</div>
+                                    <div style="text-align: center; width: 100%;">
+                                        <div style="font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; color: #4f46e5; margin-bottom: 0.5rem;">${escapeHtml(stat.number || '')}</div>
+                                        <div style="font-size: clamp(0.75rem, 2vw, 0.875rem); color: #64748b; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(stat.label || '')}</div>
                                     </div>
                                 `).join('')}
                             </div>
                         ` : ''}
                         ${content.values ? `
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div class="values-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; width: 100%;">
                                 ${content.values.map((value: any) => `
-                                    <div style="display: flex; align-items: start; gap: 1rem;">
-                                        <div style="font-size: 2rem;">${escapeHtml(value.icon || '')}</div>
-                                        <div>
-                                            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 0.25rem;">${escapeHtml(value.title || '')}</h3>
-                                            <p style="font-size: 0.875rem; color: #64748b;">${escapeHtml(value.description || '')}</p>
+                                    <div style="display: flex; align-items: start; gap: 1rem; width: 100%;">
+                                        <div style="font-size: 2rem; flex-shrink: 0;">${escapeHtml(value.icon || '')}</div>
+                                        <div style="min-width: 0; flex: 1;">
+                                            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 0.25rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(value.title || '')}</h3>
+                                            <p style="font-size: 0.875rem; color: #64748b; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(value.description || '')}</p>
                                         </div>
                                     </div>
                                 `).join('')}
                             </div>
                         ` : ''}
                     </div>
-                    <div>
-                        ${content.image ? `<img src="${content.image}" alt="About us" style="width: 100%; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">` : ''}
+                    <div style="width: 100%;">
+                        ${content.image ? `<img src="${escapeHtml(sanitizeUrl(content.image))}" alt="About us" style="width: 100%; max-width: 100%; height: auto; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); display: block;">` : ''}
                     </div>
                 </div>
             </div>
+            <style>
+                #${section.id} .about-grid { grid-template-columns: 1fr; }
+                #${section.id} .stats-grid { grid-template-columns: repeat(2, 1fr); }
+                #${section.id} .values-grid { grid-template-columns: 1fr; }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} .about-grid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+                    #${section.id} .stats-grid { grid-template-columns: repeat(4, 1fr); }
+                    #${section.id} .values-grid { grid-template-columns: repeat(2, 1fr); }
+                }
+                @media (min-width: 1024px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                }
+            </style>
         </section>`;
 
       case 'how-it-works':
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: white;">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <h2 style="font-size: 3rem; font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
-                ${content.subheading ? `<p style="font-size: 1.25rem; color: #64748b; text-align: center; margin-bottom: 3rem;">${escapeHtml(content.subheading)}</p>` : ''}
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;">
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: white; width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <h2 style="font-size: clamp(1.5rem, 5vw, 3rem); font-weight: 700; text-align: center; margin-bottom: 1rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.heading || '')}</h2>
+                ${content.subheading ? `<p style="font-size: clamp(0.9375rem, 3vw, 1.25rem); color: #64748b; text-align: center; margin-bottom: 2rem; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(content.subheading)}</p>` : ''}
+                <div class="steps-grid" style="display: grid; grid-template-columns: 1fr; gap: 2rem; width: 100%;">
                     ${(content.steps || []).map((step: any, idx: number) => `
-                        <div style="text-align: center;">
+                        <div style="text-align: center; width: 100%;">
                             <div style="position: relative; margin-bottom: 1.5rem;">
                                 <div style="width: 5rem; height: 5rem; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.875rem; font-weight: 700; margin: 0 auto 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
                                     ${step.number || (idx + 1)}
                                 </div>
                                 <div style="font-size: 2.5rem; margin-bottom: 1rem;">${escapeHtml(step.icon || '')}</div>
-                                ${step.image ? `<img src="${step.image}" alt="${escapeHtml(step.title || '')}" style="width: 100%; height: 12rem; object-fit: cover; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1rem;">` : ''}
+                                ${step.image ? `<img src="${escapeHtml(sanitizeUrl(step.image))}" alt="${escapeHtml(step.title || '')}" style="width: 100%; max-width: 100%; height: auto; min-height: 12rem; object-fit: cover; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 1rem; display: block;">` : ''}
                             </div>
-                            <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #0f172a;">${escapeHtml(step.title || '')}</h3>
-                            <p style="color: #64748b; line-height: 1.6;">${escapeHtml(step.description || '')}</p>
+                            <h3 style="font-size: clamp(1rem, 3vw, 1.25rem); font-weight: 600; margin-bottom: 0.5rem; color: #0f172a; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(step.title || '')}</h3>
+                            <p style="color: #64748b; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(step.description || '')}</p>
                         </div>
                     `).join('')}
                 </div>
             </div>
+            <style>
+                #${section.id} .steps-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    width: 100%;
+                }
+                @media (min-width: 640px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} .steps-grid { grid-template-columns: repeat(2, 1fr); }
+                }
+                @media (min-width: 1024px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                    #${section.id} .steps-grid { grid-template-columns: repeat(4, 1fr); }
+                }
+            </style>
         </section>`;
 
       case 'contact':
-        return `<section id="${section.id}" class="section" style="padding: 5rem 1.25rem; background: linear-gradient(to bottom, #f8fafc, white);">
-            <div style="max-width: 72rem; margin: 0 auto;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+        return `<section id="${section.id}" class="section" style="padding: 2rem 1rem; background: linear-gradient(to bottom, #f8fafc, white); width: 100%; overflow-x: hidden;">
+            <div style="max-width: 72rem; margin: 0 auto; width: 100%;">
+                <div class="contact-grid" style="display: grid; grid-template-columns: 1fr; gap: 2rem; width: 100%;">
                     <div>
                         <h2 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a;">${escapeHtml(content.heading || '')}</h2>
                         ${content.subheading ? `<p style="font-size: 1.25rem; color: #4f46e5; font-weight: 600; margin-bottom: 1rem;">${escapeHtml(content.subheading)}</p>` : ''}
@@ -1548,13 +1674,13 @@ export const WebsiteTemplates: React.FC = () => {
                                 ${content.contactInfo.phone ? `
                                     <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
                                         <span style="font-size: 1.5rem;">📞</span>
-                                        <a href="tel:${content.contactInfo.phone}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.phone)}</a>
+                                        <a href="tel:${escapeHtml((content.contactInfo.phone || '').replace(/[^0-9+()-]/g, ''))}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.phone)}</a>
                                     </div>
                                 ` : ''}
                                 ${content.contactInfo.email ? `
                                     <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
                                         <span style="font-size: 1.5rem;">✉️</span>
-                                        <a href="mailto:${content.contactInfo.email}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.email)}</a>
+                                        <a href="mailto:${escapeHtml((content.contactInfo.email || '').replace(/[<>"']/g, ''))}" style="font-size: 1.125rem; color: #334155; text-decoration: none; transition: color 0.2s;">${escapeHtml(content.contactInfo.email)}</a>
                                     </div>
                                 ` : ''}
                                 ${content.contactInfo.address ? `
@@ -1573,7 +1699,7 @@ export const WebsiteTemplates: React.FC = () => {
                         ` : ''}
                         ${content.mapEmbed ? `
                             <div style="margin-top: 2rem; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                                <iframe src="${content.mapEmbed}" width="100%" height="300" style="border: 0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                <iframe src="${escapeHtml(sanitizeUrl(content.mapEmbed))}" width="100%" height="300" style="border: 0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
                             </div>
                         ` : ''}
                     </div>
@@ -1603,6 +1729,25 @@ export const WebsiteTemplates: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <style>
+                #${section.id} .contact-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    width: 100%;
+                }
+                @media (max-width: 639px) {
+                    #${section.id} { padding: 2rem 1rem !important; }
+                    #${section.id} h2 { font-size: clamp(1.5rem, 5vw, 2rem) !important; }
+                }
+                @media (min-width: 768px) {
+                    #${section.id} { padding: 4rem 1.5rem; }
+                    #${section.id} .contact-grid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+                }
+                @media (min-width: 1024px) {
+                    #${section.id} { padding: 5rem 2rem; }
+                }
+            </style>
         </section>`;
 
       default:
@@ -1741,125 +1886,59 @@ export const WebsiteTemplates: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredTemplates.map((template) => {
-                // Get vertical image from template (first service image or hero background)
-                const heroSection = template.sections.find(s => s.type === 'hero');
-                const serviceSection = template.sections.find(s => s.type === 'services');
-                const verticalImage = serviceSection?.content?.services?.[0]?.image || 
-                                     heroSection?.content?.backgroundImage || 
-                                     null;
+                // Get template image using improved helper function
+                const templateImage = getTemplateImage(template);
                 
                 return (
-                  <Card key={template.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 group border-2 hover:border-indigo-300 flex flex-col">
-                  {/* Template Preview/Thumbnail with Vertical Image */}
-                  <div className="relative h-64 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center overflow-hidden">
-                    {verticalImage ? (
-                      <img 
-                        src={verticalImage} 
-                        alt={template.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="text-7xl opacity-80 group-hover:scale-110 transition-transform duration-300">
-                        {template.thumbnail}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-white/90 backdrop-blur-sm text-slate-700 border-0 shadow-lg font-semibold">
-                        {template.category}
-                      </Badge>
-                    </div>
-                    <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
-                          {template.sections.length} sections
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
-                          <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
-                          Google Ads
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 bg-white/90 backdrop-blur-sm border-white/50 text-slate-700 font-medium">
-                          <Smartphone className="w-2.5 h-2.5 mr-0.5" />
-                          Responsive
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Template Info */}
-                  <div className="p-5 flex-1 flex flex-col">
-                    <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">
-                      {template.name}
-                    </h3>
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2 min-h-[2.5rem] flex-1">
-                      {template.description}
-                    </p>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 mt-auto">
-                      <Button 
-                        onClick={async () => {
-                          // Automatically copy template to user's templates before editing
-                          try {
-                            const completedTemplate = completeTemplateSections(template.sections);
-                            const newTemplate: SavedTemplate = {
-                              id: `template-${Date.now()}`,
-                              name: template.name,
-                              originalTemplateId: template.id,
-                              customizedSections: completedTemplate,
-                              createdAt: new Date().toISOString(),
-                              updatedAt: new Date().toISOString()
-                            };
-                            
-                            // Save to user's templates
-                            await historyService.save('website-template', newTemplate.name, {
-                              template: newTemplate
-                            });
-                            
-                            // Load saved templates to refresh list
-                            await loadSavedTemplates();
-                            
-                            // Open editor with the copied template
-                            setEditingTemplate(newTemplate);
-                            setShowEditor(true);
-                            
-                            notifications.success('Template copied to your templates and ready to edit!', {
-                              title: 'Template Ready'
-                            });
-                          } catch (error) {
-                            console.error('Failed to copy template:', error);
-                            notifications.error('Failed to copy template', { title: 'Error' });
-                          }
-                        }}
-                        variant="default"
-                        size="sm"
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg hover:shadow-xl"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Use / Edit
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          const savedTemplate: SavedTemplate = {
-                            id: template.id,
-                            name: template.name,
-                            originalTemplateId: template.id,
-                            customizedSections: template.sections,
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString()
-                          };
-                          handleExportHTML(savedTemplate);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="px-3"
-                        title="Export as HTML"
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  </Card>
+                  <TemplateCard 
+                    key={template.id}
+                    template={template}
+                    templateImage={templateImage}
+                    onUseTemplate={async (template) => {
+                      // Automatically copy template to user's templates before editing
+                      try {
+                        const completedTemplate = completeTemplateSections(template.sections);
+                        const newTemplate: SavedTemplate = {
+                          id: `template-${Date.now()}`,
+                          name: template.name,
+                          originalTemplateId: template.id,
+                          customizedSections: completedTemplate,
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString()
+                        };
+                        
+                        // Save to user's templates
+                        await historyService.save('website-template', newTemplate.name, {
+                          template: newTemplate
+                        });
+                        
+                        // Load saved templates to refresh list
+                        await loadSavedTemplates();
+                        
+                        // Open editor with the copied template
+                        setEditingTemplate(newTemplate);
+                        setShowEditor(true);
+                        
+                        notifications.success('Template copied to your templates and ready to edit!', {
+                          title: 'Template Ready'
+                        });
+                      } catch (error) {
+                        console.error('Failed to copy template:', error);
+                        notifications.error('Failed to copy template', { title: 'Error' });
+                      }
+                    }}
+                    onExportTemplate={(template) => {
+                      const savedTemplate: SavedTemplate = {
+                        id: template.id,
+                        name: template.name,
+                        originalTemplateId: template.id,
+                        customizedSections: template.sections,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                      };
+                      handleExportHTML(savedTemplate);
+                    }}
+                  />
                 );
               })}
             </div>

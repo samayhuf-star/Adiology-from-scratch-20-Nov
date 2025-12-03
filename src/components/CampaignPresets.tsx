@@ -196,17 +196,19 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
 
     try {
       // Convert preset to CampaignStructure format
-      const { presetToCampaignStructure, exportCampaignToCSVV3, validateCSVBeforeExport } = await import('../utils/csvGeneratorV3');
+      const { presetToCampaignStructure } = await import('../utils/csvGeneratorV3');
+      const { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows } = await import('../utils/googleAdsEditorCSVExporter');
       const structure = presetToCampaignStructure(exportPreset);
       
-      // Validate before export
-      const validation = validateCSVBeforeExport(structure);
+      // Convert to CSV rows and validate
+      const rows = campaignStructureToCSVRows(structure);
+      const validation = validateCSVRows(rows);
+      
       if (!validation.isValid) {
-        const errorMessage = validation.errors.join('\n');
+        const errorMessage = validation.errors.slice(0, 5).join('\n') + 
+          (validation.errors.length > 5 ? `\n... and ${validation.errors.length - 5} more errors` : '');
         notifications.error(
-          <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
-            {errorMessage}
-          </div>,
+          errorMessage,
           { 
             title: '❌ CSV Validation Failed',
             description: 'Please fix the errors above before exporting.',
@@ -218,11 +220,10 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
       
       // Show warnings if any
       if (validation.warnings.length > 0) {
-        const warningMessage = validation.warnings.join('\n');
+        const warningMessage = validation.warnings.slice(0, 5).join('\n') + 
+          (validation.warnings.length > 5 ? `\n... and ${validation.warnings.length - 5} more warnings` : '');
         notifications.warning(
-          <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
-            {warningMessage}
-          </div>,
+          warningMessage,
           { 
             title: '⚠️  CSV Validation Warnings',
             description: 'Your campaign will export, but consider fixing these warnings.',
@@ -231,12 +232,13 @@ export const CampaignPresets: React.FC<CampaignPresetsProps> = ({ onLoadPreset }
         );
       }
       
-      // Export using V3 format
-      const filename = `${exportPreset.slug}-google-ads-editor.csv`;
-      exportCampaignToCSVV3(structure, filename);
+      // Export using Google Ads Editor format
+      const filename = `${exportPreset.slug}-google-ads-editor-${new Date().toISOString().split('T')[0]}.csv`;
+      await exportCampaignToGoogleAdsEditorCSV(structure, filename);
       
       notifications.success(`Campaign exported successfully! File: ${filename}`, {
-        title: 'Export Complete'
+        title: 'Export Complete',
+        description: 'Your CSV file has been downloaded successfully.'
       });
     } catch (error: any) {
       console.error('Export error:', error);

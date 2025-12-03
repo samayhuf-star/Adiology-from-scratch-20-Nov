@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -15,9 +15,11 @@ import {
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
 import { CSVValidator3 } from './components/CSVValidator3';
+import { GoogleAdsCSVExport } from './components/GoogleAdsCSVExport';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
+import { KeywordGeneratorV3 } from './components/KeywordGeneratorV3';
 import { KeywordSavedLists } from './components/KeywordSavedLists';
 import { AdsBuilder } from './components/AdsBuilder';
 import { BillingPanel } from './components/BillingPanel';
@@ -42,7 +44,9 @@ import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
-import HomepageV2 from './components/HomepageV2';
+import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
+import { LiveLogs } from './components/LiveLogs';
+import { notifications as notificationService } from './utils/notifications';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -113,9 +117,11 @@ const App = () => {
     'website-templates',
     'keyword-planner',
     'keyword-mixer',
+    'keyword-generator-v3',
     'ads-builder',
     'negative-keywords',
     'csv-validator-3',
+    'google-ads-csv-export',
     'settings',
     'billing',
     'support',
@@ -162,6 +168,7 @@ const App = () => {
       'campaign': 'builder-2',
       'keyword-planner': 'keyword-planner',
       'keyword-mixer': 'keyword-mixer',
+      'keyword-generator-v3': 'keyword-generator-v3',
       'negative-keywords': 'negative-keywords'
     };
     
@@ -170,7 +177,7 @@ const App = () => {
     setActiveTabSafe(targetTab);
     
     // Show success notification
-    notifications.success('History item restored successfully', {
+    notificationService.success('History item restored successfully', {
       title: 'Restored',
       description: 'Your saved item has been loaded and is ready to use.'
     });
@@ -224,9 +231,9 @@ const App = () => {
         // Clear any cached data
         localStorage.removeItem('supabase.auth.token');
         sessionStorage.clear();
-        // Redirect to homepage
+        // Redirect to auth
         window.history.pushState({}, '', '/');
-      setAppView('homepage');
+      setAppView('auth');
       setAuthMode('login');
       setActiveTab('dashboard');
         // Force page reload to clear all state
@@ -426,12 +433,12 @@ const App = () => {
             }
             return prevUser;
           });
-          // If user signed out and we're on user view, go to homepage
+          // If user signed out and we're on user view, go to auth
           if (event === 'SIGNED_OUT') {
             // Use setTimeout to avoid state update during render
             setTimeout(() => {
               if (isMounted) {
-                setAppView('homepage');
+                setAppView('auth');
                 setAuthMode('login');
               }
             }, 0);
@@ -575,15 +582,15 @@ const App = () => {
         return;
       }
 
-      // Show homepage on root path
+      // Show auth on root path
       if (path === '/' || path === '') {
         // If user is logged in, go to user dashboard
         if (user) {
           setView('user');
           return;
         }
-        // If no user, show homepage
-        setView('homepage');
+        // If no user, show auth
+        setView('auth');
         return;
       }
 
@@ -647,12 +654,8 @@ const App = () => {
               setAppView('user');
           }
         } else {
-          // Show homepage on root path, auth for other paths
-          if (path === '/' || path === '') {
-            setAppView('homepage');
-          } else {
-            setAppView('auth');
-          }
+          // Show homepage for all paths when not logged in
+          setAppView('homepage');
         }
       }
     };
@@ -728,11 +731,13 @@ const App = () => {
         { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
         { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
         { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
+        { id: 'keyword-generator-v3', label: 'Keyword Generator v3.0', icon: Sparkles },
         { id: 'keyword-saved-lists', label: 'Saved Lists', icon: FolderOpen },
       ]
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'csv-validator-3', label: 'CSV Validator', icon: FileCheck },
+    { id: 'google-ads-csv-export', label: 'CSV Export', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -785,7 +790,7 @@ const App = () => {
       'keywords', 'keyword research', 'keyword planning',
       'ads', 'advertising', 'ad builder',
       'negative keywords', 'exclude keywords',
-      'csv', 'export', 'import', 'validator',
+      'csv', 'export', 'import', 'validator', 'csv export', 'google ads csv',
       'settings', 'billing', 'account',
       'help', 'support', 'documentation'
     ];
@@ -842,7 +847,9 @@ const App = () => {
         'advertising': 'ads-builder',
         'negative keywords': 'negative-keywords',
         'csv': 'csv-validator-3',
-        'export': 'csv-validator-3',
+        'export': 'google-ads-csv-export',
+        'csv export': 'google-ads-csv-export',
+        'google ads csv': 'google-ads-csv-export',
         'settings': 'settings',
         'billing': 'settings',
         'help': 'support-help',
@@ -925,8 +932,8 @@ const App = () => {
           setAuthMode('login');
           setAppView('auth');
         }}
-        onBackToHome={() => {
-          setAppView('homepage');
+          onBackToHome={() => {
+          setAppView('auth');
           setAuthMode('login');
         }}
       />
@@ -940,9 +947,9 @@ const App = () => {
           // Password reset successful, redirect to login
           window.history.pushState({}, '', '/');
           setAuthMode('login');
-          setAppView('auth');
+          setAppView('homepage');
         }}
-        onBackToHome={() => {
+          onBackToHome={() => {
           setAppView('homepage');
           setAuthMode('login');
         }}
@@ -951,8 +958,19 @@ const App = () => {
   }
 
   if (appView === 'homepage') {
-    console.log('✅ Rendering HomepageV2');
-    return <HomepageV2 />;
+    return (
+      <CreativeMinimalistHomepage
+        onGetStarted={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onSelectPlan={handleSelectPlan}
+      />
+    );
   }
 
   if (appView === 'auth') {
@@ -1006,8 +1024,8 @@ const App = () => {
             setAppView('user');
           }
         }}
-        onBackToHome={() => {
-          setAppView('homepage');
+          onBackToHome={() => {
+          setAppView('auth');
           setAuthMode('login');
         }}
       />
@@ -1119,12 +1137,16 @@ const App = () => {
         return <WebsiteTemplates />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
+      case 'google-ads-csv-export':
+        return <GoogleAdsCSVExport />;
       case 'keyword-planner':
         return <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />;
       case 'keyword-mixer':
         return <KeywordMixer initialData={activeTab === 'keyword-mixer' ? historyData : null} />;
       case 'negative-keywords':
         return <NegativeKeywordsBuilder initialData={activeTab === 'negative-keywords' ? historyData : null} />;
+      case 'keyword-generator-v3':
+        return <KeywordGeneratorV3 initialData={activeTab === 'keyword-generator-v3' ? historyData : null} />;
       case 'keyword-saved-lists':
         return <KeywordSavedLists />;
       case 'ads-builder':
@@ -1534,6 +1556,11 @@ const App = () => {
           {renderContent()}
         </main>
       </div>
+
+      {/* Live Logs - Only show in user view */}
+      {appView === 'user' && (
+        <LiveLogs />
+      )}
       
     </div>
   );

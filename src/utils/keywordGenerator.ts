@@ -79,8 +79,8 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
     vertical = 'default',
     intentResult,
     landingPageData,
-    maxKeywords = 600,
-    minKeywords = 300
+    maxKeywords = 630,
+    minKeywords = 410
   } = options;
 
   // Parse negative keywords (comma or newline separated)
@@ -106,6 +106,7 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
   ];
 
   // Expanded variation lists - use vertical-specific modifiers
+  // Increased list size to generate more keywords (410-630 range)
   const prefixes = [
     ...keywordModifiers.filter((m: string) => !m.includes('near me')), // Location modifiers go to suffixes
     ...emergencyModifiers,
@@ -113,8 +114,13 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
     'best', 'top', 'professional', 'expert', 'certified', 'licensed',
     'trusted', 'reliable', 'local', 'nearby', 'fast', 'quick', 'easy',
     'affordable', 'quality', 'premium', 'experienced', 'free consultation',
-    'get quote', 'request quote', 'schedule', 'book now', 'call now'
-  ].slice(0, 30); // Limit to prevent too many iterations
+    'get quote', 'request quote', 'schedule', 'book now', 'call now',
+    '24/7', 'emergency', 'same day', 'immediate', 'urgent', 'asap',
+    'cheap', 'discount', 'best price', 'low cost', 'affordable', 'budget',
+    'reviews', 'ratings', 'top rated', 'highly rated', 'five star',
+    'how to', 'what is', 'where to', 'when to', 'why', 'guide', 'tips',
+    'cost', 'price', 'pricing', 'rates', 'quotes', 'estimate'
+  ].slice(0, 50); // Increased from 30 to 50 for more combinations
 
   // Call/Lead focused suffixes - include vertical modifiers
   const suffixes = [
@@ -123,8 +129,13 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
     'free consultation', 'schedule', 'book', 'appointment', 'near me',
     'service', 'company', 'provider', 'expert', 'professional',
     'get started', 'sign up', 'apply now', 'request info', 'learn more',
-    'pricing', 'quotes', 'rates', 'cost', 'price', 'options', 'solutions'
-  ].slice(0, 30); // Limit to prevent too many iterations
+    'pricing', 'quotes', 'rates', 'cost', 'price', 'options', 'solutions',
+    'today', 'now', 'immediately', 'asap', 'same day', 'next day',
+    'nearby', 'local', 'in my area', 'close to me', 'nearby me',
+    'reviews', 'ratings', 'testimonials', 'feedback', 'recommended',
+    'cost', 'price', 'pricing', 'quotes', 'rates', 'estimate', 'budget',
+    'how', 'what', 'where', 'when', 'why', 'guide', 'tips', 'info'
+  ].slice(0, 50); // Increased from 30 to 50 for more combinations
 
   // Call/Lead Intent Keywords - Optimized for conversions
   const callLeadIntents = [
@@ -165,7 +176,9 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
 
   const locations = [
     'near me', 'local', 'nearby', 'in my area', 'close to me', 'nearby me',
-    'in city', 'in town', 'in state', 'in region', 'in area', 'in location'
+    'in city', 'in town', 'in state', 'in region', 'in area', 'in location',
+    'today', 'same day', 'next day', 'asap', 'immediately', 'now',
+    'in zip code', 'in neighborhood', 'in district', 'in county', 'in metro'
   ];
 
   // Process each seed keyword
@@ -205,67 +218,123 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
       });
     }
 
-    // Generate prefix + seed combinations (limit iterations and stop at maxKeywords)
-    for (let pIdx = 0; pIdx < Math.min(prefixes.length, 20) && mockKeywords.length < maxKeywords; pIdx++) {
+    // Generate prefix + seed combinations (increased limit for more variations)
+    for (let pIdx = 0; pIdx < Math.min(prefixes.length, 50) && mockKeywords.length < maxKeywords; pIdx++) {
       const prefix = prefixes[pIdx];
       const keyword = `${prefix} ${cleanSeed}`;
       const wordCount = getWordCount(keyword);
-      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-        mockKeywords.push({
-          id: `kw-${seedIdx}-${keywordCounter++}`,
-          text: keyword,
-          volume: ['High', 'Medium', 'Low'][pIdx % 3],
-          cpc: ['$2.50', '$1.80', '$1.20'][pIdx % 3],
-          type: ['Exact', 'Phrase', 'Broad'][pIdx % 3]
-        });
+      if (wordCount >= 2 && wordCount <= 5 && !negativeList.some(n => keyword.includes(n))) {
+        const existing = mockKeywords.find(k => k.text.toLowerCase() === keyword.toLowerCase());
+        if (!existing) {
+          mockKeywords.push({
+            id: `kw-${seedIdx}-${keywordCounter++}`,
+            text: keyword,
+            volume: ['High', 'Medium', 'Low'][pIdx % 3],
+            cpc: ['$2.50', '$1.80', '$1.20'][pIdx % 3],
+            type: ['Exact', 'Phrase', 'Broad'][pIdx % 3]
+          });
+        }
       }
     }
 
-    // Generate seed + suffix combinations (limit iterations and stop at maxKeywords)
-    for (let sIdx = 0; sIdx < Math.min(suffixes.length, 20) && mockKeywords.length < maxKeywords; sIdx++) {
+    // Generate seed + suffix combinations (increased limit for more variations)
+    for (let sIdx = 0; sIdx < Math.min(suffixes.length, 50) && mockKeywords.length < maxKeywords; sIdx++) {
       const suffix = suffixes[sIdx];
       const keyword = `${cleanSeed} ${suffix}`;
       const wordCount = getWordCount(keyword);
-      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-        mockKeywords.push({
-          id: `kw-${seedIdx}-${keywordCounter++}`,
-          text: keyword,
-          volume: ['High', 'Medium', 'Low'][sIdx % 3],
-          cpc: ['$2.50', '$1.80', '$1.20'][sIdx % 3],
-          type: ['Exact', 'Phrase', 'Broad'][sIdx % 3]
-        });
+      if (wordCount >= 2 && wordCount <= 5 && !negativeList.some(n => keyword.includes(n))) {
+        const existing = mockKeywords.find(k => k.text.toLowerCase() === keyword.toLowerCase());
+        if (!existing) {
+          mockKeywords.push({
+            id: `kw-${seedIdx}-${keywordCounter++}`,
+            text: keyword,
+            volume: ['High', 'Medium', 'Low'][sIdx % 3],
+            cpc: ['$2.50', '$1.80', '$1.20'][sIdx % 3],
+            type: ['Exact', 'Phrase', 'Broad'][sIdx % 3]
+          });
+        }
       }
     }
 
-    // Generate intent + seed combinations (limit iterations and stop at maxKeywords)
-    for (let iIdx = 0; iIdx < Math.min(intents.length, 15) && mockKeywords.length < maxKeywords; iIdx++) {
+    // Generate prefix + seed + suffix combinations (new: more variations)
+    for (let pIdx = 0; pIdx < Math.min(prefixes.length, 25) && mockKeywords.length < maxKeywords; pIdx++) {
+      for (let sIdx = 0; sIdx < Math.min(suffixes.length, 25) && mockKeywords.length < maxKeywords; sIdx++) {
+        const prefix = prefixes[pIdx];
+        const suffix = suffixes[sIdx];
+        const keyword = `${prefix} ${cleanSeed} ${suffix}`;
+        const wordCount = getWordCount(keyword);
+        if (wordCount >= 3 && wordCount <= 6 && !negativeList.some(n => keyword.includes(n))) {
+          const existing = mockKeywords.find(k => k.text.toLowerCase() === keyword.toLowerCase());
+          if (!existing) {
+            mockKeywords.push({
+              id: `kw-${seedIdx}-${keywordCounter++}`,
+              text: keyword,
+              volume: 'High',
+              cpc: '$3.00',
+              type: 'Phrase'
+            });
+          }
+        }
+      }
+    }
+
+    // Generate intent + seed combinations (increased limit)
+    for (let iIdx = 0; iIdx < Math.min(intents.length, 30) && mockKeywords.length < maxKeywords; iIdx++) {
       const intent = intents[iIdx];
       const keyword = `${intent} ${cleanSeed}`;
       const wordCount = getWordCount(keyword);
-      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-        mockKeywords.push({
-          id: `kw-${seedIdx}-${keywordCounter++}`,
-          text: keyword,
-          volume: 'High',
-          cpc: '$3.50',
-          type: 'Exact'
-        });
+      if (wordCount >= 2 && wordCount <= 5 && !negativeList.some(n => keyword.includes(n))) {
+        const existing = mockKeywords.find(k => k.text.toLowerCase() === keyword.toLowerCase());
+        if (!existing) {
+          mockKeywords.push({
+            id: `kw-${seedIdx}-${keywordCounter++}`,
+            text: keyword,
+            volume: 'High',
+            cpc: '$3.50',
+            type: 'Exact'
+          });
+        }
       }
     }
 
-    // Generate seed + location combinations (limit iterations and stop at maxKeywords)
-    for (let lIdx = 0; lIdx < Math.min(locations.length, 6) && mockKeywords.length < maxKeywords; lIdx++) {
+    // Generate seed + location combinations (increased limit)
+    for (let lIdx = 0; lIdx < Math.min(locations.length, 15) && mockKeywords.length < maxKeywords; lIdx++) {
       const loc = locations[lIdx];
       const keyword = `${cleanSeed} ${loc}`;
       const wordCount = getWordCount(keyword);
-      if (wordCount >= 2 && wordCount <= 4 && !negativeList.some(n => keyword.includes(n))) {
-        mockKeywords.push({
-          id: `kw-${seedIdx}-${keywordCounter++}`,
-          text: keyword,
-          volume: 'Medium',
-          cpc: '$4.20',
-          type: 'Local'
-        });
+      if (wordCount >= 2 && wordCount <= 5 && !negativeList.some(n => keyword.includes(n))) {
+        const existing = mockKeywords.find(k => k.text.toLowerCase() === keyword.toLowerCase());
+        if (!existing) {
+          mockKeywords.push({
+            id: `kw-${seedIdx}-${keywordCounter++}`,
+            text: keyword,
+            volume: 'Medium',
+            cpc: '$4.20',
+            type: 'Local'
+          });
+        }
+      }
+    }
+
+    // Generate intent + seed + location combinations (new: high-intent local keywords)
+    for (let iIdx = 0; iIdx < Math.min(intents.length, 15) && mockKeywords.length < maxKeywords; iIdx++) {
+      for (let lIdx = 0; lIdx < Math.min(locations.length, 10) && mockKeywords.length < maxKeywords; lIdx++) {
+        const intent = intents[iIdx];
+        const loc = locations[lIdx];
+        const keyword = `${intent} ${cleanSeed} ${loc}`;
+        const wordCount = getWordCount(keyword);
+        if (wordCount >= 3 && wordCount <= 6 && !negativeList.some(n => keyword.includes(n))) {
+          const existing = mockKeywords.find(k => k.text.toLowerCase() === keyword.toLowerCase());
+          if (!existing) {
+            mockKeywords.push({
+              id: `kw-${seedIdx}-${keywordCounter++}`,
+              text: keyword,
+              volume: 'High',
+              cpc: '$5.00',
+              type: 'Exact'
+            });
+          }
+        }
       }
     }
 
@@ -275,20 +344,106 @@ export function generateKeywords(options: KeywordGenerationOptions): GeneratedKe
     }
   }
 
-  // Ensure we have minKeywords
-  if (mockKeywords.length < minKeywords) {
+  // Generate more genuine variations if we need more keywords
+  // Instead of padding with fake numbered keywords, create more combinations
+  if (mockKeywords.length < minKeywords && seedList.length > 0) {
     const needed = minKeywords - mockKeywords.length;
-    for (let i = 0; i < needed; i++) {
-      const base = mockKeywords[i % mockKeywords.length];
-      const variation = `${base.text} ${i}`;
-      if (!negativeList.some(n => variation.includes(n))) {
-        mockKeywords.push({
-          id: `kw-extra-${i}`,
-          text: variation,
-          volume: base.volume,
-          cpc: base.cpc,
-          type: base.type
-        });
+    const additionalModifiers = [
+      '24/7', 'emergency', 'same day', 'next day', 'immediate', 'urgent',
+      'licensed', 'certified', 'insured', 'bonded', 'experienced', 'professional',
+      'affordable', 'cheap', 'best price', 'low cost', 'discount', 'special offer',
+      'free estimate', 'free quote', 'no obligation', 'guaranteed', 'warranty',
+      'reviews', 'ratings', 'top rated', 'highly rated', 'best', 'top',
+      'how to', 'what is', 'where to', 'when to', 'why', 'guide', 'tips',
+      'cost', 'price', 'pricing', 'rates', 'quotes', 'estimate', 'budget'
+    ];
+    
+    let generated = 0;
+    for (let seedIdx = 0; seedIdx < seedList.length && generated < needed; seedIdx++) {
+      const seed = seedList[seedIdx].trim().toLowerCase();
+      const seedWords = seed.split(/\s+/);
+      
+      // Create word combinations from seed
+      for (let i = 0; i < seedWords.length && generated < needed; i++) {
+        for (let j = i + 1; j < seedWords.length && generated < needed; j++) {
+          const combo = `${seedWords[i]} ${seedWords[j]}`;
+          if (!mockKeywords.some(k => k.text.toLowerCase() === combo) &&
+              !negativeList.some(n => combo.includes(n))) {
+            mockKeywords.push({
+              id: `kw-combo-${generated}`,
+              text: combo,
+              volume: 'Medium',
+              cpc: '$1.50',
+              type: 'Broad'
+            });
+            generated++;
+          }
+        }
+      }
+      
+      // Add modifier combinations (expanded)
+      for (let modIdx = 0; modIdx < additionalModifiers.length && generated < needed; modIdx++) {
+        const modifier = additionalModifiers[modIdx];
+        const variations = [
+          `${modifier} ${seed}`,
+          `${seed} ${modifier}`,
+          ...(seedWords.length > 1 ? [
+            `${modifier} ${seedWords[0]}`, 
+            `${seedWords[0]} ${modifier}`,
+            `${modifier} ${seedWords[seedWords.length - 1]}`,
+            `${seedWords[seedWords.length - 1]} ${modifier}`
+          ] : [])
+        ];
+        
+        for (const variation of variations) {
+          if (generated >= needed) break;
+          const wordCount = getWordCount(variation);
+          if (wordCount >= 2 && wordCount <= 5 &&
+              !mockKeywords.some(k => k.text.toLowerCase() === variation.toLowerCase()) &&
+              !negativeList.some(n => variation.includes(n))) {
+            mockKeywords.push({
+              id: `kw-mod-${generated}`,
+              text: variation,
+              volume: 'Medium',
+              cpc: '$1.80',
+              type: 'Phrase'
+            });
+            generated++;
+          }
+        }
+      }
+      
+      // Add more combinations: modifier + word + another modifier
+      if (seedWords.length >= 2 && generated < needed) {
+        for (let i = 0; i < Math.min(additionalModifiers.length, 15) && generated < needed; i++) {
+          for (let j = 0; j < Math.min(additionalModifiers.length, 15) && generated < needed; j++) {
+            if (i === j) continue;
+            const mod1 = additionalModifiers[i];
+            const mod2 = additionalModifiers[j];
+            const variations = [
+              `${mod1} ${seed} ${mod2}`,
+              `${seedWords[0]} ${mod1} ${mod2}`,
+              `${mod1} ${mod2} ${seed}`
+            ];
+            
+            for (const variation of variations) {
+              if (generated >= needed) break;
+              const wordCount = getWordCount(variation);
+              if (wordCount >= 3 && wordCount <= 6 &&
+                  !mockKeywords.some(k => k.text.toLowerCase() === variation.toLowerCase()) &&
+                  !negativeList.some(n => variation.includes(n))) {
+                mockKeywords.push({
+                  id: `kw-mod2-${generated}`,
+                  text: variation,
+                  volume: 'Medium',
+                  cpc: '$2.00',
+                  type: 'Broad'
+                });
+                generated++;
+              }
+            }
+          }
+        }
       }
     }
   }

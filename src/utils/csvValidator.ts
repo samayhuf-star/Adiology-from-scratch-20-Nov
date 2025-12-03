@@ -238,6 +238,82 @@ export function validateCampaignForExport(structure: any): ValidationResult {
         });
       }
     });
+
+    // Validate ZIP codes if present at campaign level
+    if (campaign.zip_codes && Array.isArray(campaign.zip_codes)) {
+      const zipCodeSet = new Set<string>();
+      const invalidZips: string[] = [];
+      
+      campaign.zip_codes.forEach((zip: string, zipIndex: number) => {
+        if (zip && zip.trim() !== '') {
+          const cleanZip = zip.trim();
+          
+          // Validate ZIP code format: 5 digits or 5+4 format
+          const zipRegex = /^\d{5}(-\d{4})?$/;
+          if (!zipRegex.test(cleanZip)) {
+            invalidZips.push(cleanZip);
+          } else {
+            zipCodeSet.add(cleanZip);
+          }
+        }
+      });
+
+      // Report invalid ZIP codes
+      if (invalidZips.length > 0) {
+        invalidZips.slice(0, 10).forEach(zip => {
+          errors.push({
+            type: 'error',
+            field: 'zip_code',
+            message: `Campaign "${campaign.campaign_name}": Invalid ZIP code format "${zip}". ZIP codes must be 5 digits (e.g., 12345) or 5+4 format (e.g., 12345-6789)`,
+            entity: 'Location Targeting'
+          });
+        });
+        if (invalidZips.length > 10) {
+          errors.push({
+            type: 'error',
+            field: 'zip_code',
+            message: `Campaign "${campaign.campaign_name}": ${invalidZips.length - 10} more invalid ZIP codes found`,
+            entity: 'Location Targeting'
+          });
+        }
+      }
+
+      // Check ZIP code count limits
+      const zipCodeCount = zipCodeSet.size;
+      if (zipCodeCount > 25000) {
+        errors.push({
+          type: 'error',
+          field: 'zip_codes',
+          message: `Campaign "${campaign.campaign_name}": Too many ZIP codes (${zipCodeCount}). Google Ads Editor supports a maximum of 25,000 location targets per campaign. Please reduce the number of ZIP codes.`,
+          entity: 'Location Targeting'
+        });
+      } else if (zipCodeCount > 5000) {
+        warnings.push({
+          type: 'warning',
+          field: 'zip_codes',
+          message: `Campaign "${campaign.campaign_name}": Large number of ZIP codes (${zipCodeCount}). Google Ads Editor may have performance issues with more than 5,000 location targets. Consider splitting into multiple campaigns.`,
+          entity: 'Location Targeting'
+        });
+      } else if (zipCodeCount > 0) {
+        warnings.push({
+          type: 'warning',
+          field: 'zip_codes',
+          message: `Campaign "${campaign.campaign_name}": ${zipCodeCount} ZIP code${zipCodeCount > 1 ? 's' : ''} will be included in location targeting.`,
+          entity: 'Location Targeting'
+        });
+      }
+
+      // Check for duplicates
+      if (zipCodeSet.size !== campaign.zip_codes.length) {
+        const duplicateCount = campaign.zip_codes.length - zipCodeSet.size;
+        warnings.push({
+          type: 'warning',
+          field: 'zip_codes',
+          message: `Campaign "${campaign.campaign_name}": ${duplicateCount} duplicate ZIP code${duplicateCount > 1 ? 's' : ''} found. Duplicates will be removed during export.`,
+          entity: 'Location Targeting'
+        });
+      }
+    }
   });
 
   return {

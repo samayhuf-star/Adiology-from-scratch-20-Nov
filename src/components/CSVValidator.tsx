@@ -62,13 +62,47 @@ const REQUIRED_HEADERS_FOR_SNIPPET = ["Campaign", "Ad Group", "Row Type", "Asset
 
 // --- Utility Functions ---
 function parseCSV(text: string) {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
+    // Handle both CRLF and LF line endings
+    const lines = text.split(/\r?\n/);
     if (lines.length === 0) return [];
 
-    let headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    
-    // Normalize headers
-    headers = headers.map(h => {
+    const result: any[] = [];
+    const allHeaders = new Set<string>();
+    let currentHeaders: string[] = [];
+    let i = 0;
+
+    // Helper to parse CSV line with proper quote handling
+    function parseCSVLine(line: string): string[] {
+        const values: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    // Escaped quote
+                    current += '"';
+                    i++; // Skip next quote
+                } else {
+                    // Toggle quote state
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                // End of field
+                values.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        // Add last field
+        values.push(current.trim());
+        return values;
+    }
+
+    // Helper to normalize header name
+    function normalizeHeader(h: string): string {
         const normalized = h.split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
         
         for (const ruleKey in COLUMN_RULES) {
@@ -77,21 +111,73 @@ function parseCSV(text: string) {
             }
         }
         return h;
-    });
-
-    const result = [];
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
-        if (!values) continue;
-
-        const row: any = {};
-        for (let j = 0; j < headers.length; j++) {
-            const value = (values[j] || '').trim().replace(/^"|"$/g, '');
-            row[headers[j]] = value;
-        }
-        result.push(row);
     }
-    return { data: result, headers };
+
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        
+        // Skip empty lines (they separate blocks in V3 format)
+        if (!line) {
+            i++;
+            // Reset headers on empty line to allow new block headers
+            currentHeaders = [];
+            continue;
+        }
+
+        const values = parseCSVLine(line);
+        
+        // Check if this line looks like a header (contains common header words and is likely a header)
+        const isHeaderRow = values.some(v => {
+            const lower = v.toLowerCase().replace(/^"|"$/g, '');
+            return lower.includes('campaign') || lower.includes('ad group') || 
+                   lower.includes('headline') || lower.includes('description') ||
+                   lower.includes('sitelink') || lower.includes('callout') ||
+                   lower.includes('location') || lower.includes('target') ||
+                   lower.includes('keyword') || lower.includes('final url') ||
+                   lower.includes('phone number') || lower.includes('country code') ||
+                   lower.includes('callout text') || lower.includes('link text');
+        }) && values.length >= 2; // Headers typically have multiple columns
+
+        // If it looks like a header, update current headers
+        if (isHeaderRow) {
+            currentHeaders = values.map(h => {
+                const cleaned = h.trim().replace(/^"|"$/g, '');
+                const normalized = normalizeHeader(cleaned);
+                allHeaders.add(normalized);
+                return normalized;
+            });
+            i++;
+            continue;
+        }
+
+        // If we have headers, process this as a data row
+        if (currentHeaders.length > 0 && values.length > 0) {
+            const row: any = {};
+            // Check if this row has data (not just empty values)
+            const hasData = values.some(v => {
+                const cleaned = v.trim().replace(/^"|"$/g, '');
+                return cleaned !== '' && cleaned !== '""';
+            });
+            
+            if (hasData) {
+                for (let j = 0; j < Math.max(currentHeaders.length, values.length); j++) {
+                    const header = currentHeaders[j] || `Column${j + 1}`;
+                    const value = (values[j] || '').trim().replace(/^"|"$/g, '');
+                    if (value && value !== '""') {
+                        row[header] = value;
+                    }
+                }
+                // Only add row if it has at least one non-empty value
+                if (Object.keys(row).length > 0) {
+                    result.push(row);
+                }
+            }
+        }
+
+        i++;
+    }
+
+    return { data: result, headers: Array.from(allHeaders) };
 }
 
 function validateCell(header: string, value: string, rowType: string) {
@@ -513,34 +599,55 @@ export const CSVValidator = () => {
             }
 
             // Count assets - detect by column presence, not just Row Type
-            // Sitelinks - check for "Sitelink Text" or "Link Text" column
-            if (rowType === 'sitelink' || assetType === 'sitelink' || row['Sitelink Text'] || row['Link Text']) {
+            // Priority: Check for extension/location columns first (more reliable than Row Type)
+            
+            // Sitelinks - check for "Sitelink Text" or "Link Text" column (and not an ad row)
+            if ((row['Sitelink Text'] || row['Link Text']) && !hasHeadlines && !hasDescriptions) {
                 assets.sitelinks++;
             } 
-            // Call assets - check for "Phone Number" and "Country Code" columns
-            else if (rowType === 'call' || assetType === 'call' || (row['Phone Number'] && row['Country Code'] && !hasHeadlines)) {
+            // Callouts - check for "Callout Text" column (and not an ad row)
+            else if (row['Callout Text'] && !hasHeadlines && !hasDescriptions) {
+                assets.callouts++;
+            }
+            // Structured Snippets - check for "Header" and "Values" columns (and not an ad row)
+            else if (row['Header'] && row['Values'] && !hasHeadlines && !hasDescriptions) {
+                assets.structuredSnippets++;
+            }
+            // Call assets - check for "Phone Number" and "Country Code" columns (and not an ad row)
+            else if (row['Phone Number'] && row['Country Code'] && !hasHeadlines && !hasDescriptions) {
+                assets.calls++;
+            }
+            // Locations - check for "Location Target" or "Location" or "Target Type" column
+            else if (row['Location Target'] || row['Location'] || row['Target Type']) {
+                assets.locations++;
+            }
+            // Images - check for "Image URL" or "Alt Text" columns
+            else if (row['Image URL'] || row['Alt Text']) {
+                assets.images++;
+            }
+            // Fallback to Row Type if columns don't match
+            else if (rowType === 'sitelink' || assetType === 'sitelink') {
+                assets.sitelinks++;
+            } 
+            else if (rowType === 'call' || assetType === 'call') {
                 assets.calls++;
             } 
-            // Locations - check for "Location Target" or "Location" column
-            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' || 
-                     row['Location'] || row['Location Target'] || row['Target Type']) {
+            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting') {
                 assets.locations++;
             } 
-            // Callouts - check for "Callout Text" column
-            else if (rowType === 'callout' || assetType === 'callout' || row['Callout Text']) {
+            else if (rowType === 'callout' || assetType === 'callout') {
                 assets.callouts++;
             } 
-            // Structured Snippets - check for "Header" and "Values" columns
-            else if (rowType === 'structured snippet' || assetType === 'structured snippet' || 
-                     (row['Header'] && row['Values'])) {
+            else if (rowType === 'structured snippet' || assetType === 'structured snippet') {
                 assets.structuredSnippets++;
             } 
-            // Images - check for "Image URL" or "Alt Text" columns
-            else if (rowType === 'image' || assetType === 'image' || row['Image URL'] || row['Alt Text']) {
+            else if (rowType === 'image' || assetType === 'image') {
                 assets.images++;
             } 
             // Other assets - check for Asset Type column or other asset indicators
-            else if (rowType.includes('asset') || assetType || row['Asset Type']) {
+            else if (rowType && rowType.includes('asset')) {
+                assets.other++;
+            } else if (assetType || row['Asset Type']) {
                 assets.other++;
             }
         });
