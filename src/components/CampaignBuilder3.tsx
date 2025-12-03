@@ -267,21 +267,6 @@ export const CampaignBuilder3: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [campaignSaved, setCampaignSaved] = useState(false);
-
-  // Enforce 3 ads maximum limit
-  useEffect(() => {
-    if (campaignData.ads.length > 3) {
-      const excessAds = campaignData.ads.length - 3;
-      setCampaignData(prev => ({
-        ...prev,
-        ads: prev.ads.slice(0, 3), // Hard limit to 3 ads
-      }));
-      notifications.warning(`Ads limited to maximum of 3. ${excessAds} ad(s) removed.`, {
-        title: 'Limit Enforced',
-        description: 'Only the first 3 ads are kept. Please delete ads if you want to add different ones.'
-      });
-    }
-  }, [campaignData.ads.length]);
   const [locationSearchTerm, setLocationSearchTerm] = useState({ countries: '', states: '', cities: '', zipCodes: '' });
   const [campaignData, setCampaignData] = useState<CampaignData>({
     url: '',
@@ -306,6 +291,21 @@ export const CampaignBuilder3: React.FC = () => {
     csvData: null,
     csvErrors: [],
   });
+
+  // Enforce 3 ads maximum limit
+  useEffect(() => {
+    if (campaignData.ads.length > 3) {
+      const excessAds = campaignData.ads.length - 3;
+      setCampaignData(prev => ({
+        ...prev,
+        ads: prev.ads.slice(0, 3), // Hard limit to 3 ads
+      }));
+      notifications.warning(`Ads limited to maximum of 3. ${excessAds} ad(s) removed.`, {
+        title: 'Limit Enforced',
+        description: 'Only the first 3 ads are kept. Please delete ads if you want to add different ones.'
+      });
+    }
+  }, [campaignData.ads.length]);
 
   // Generate default campaign name: Search-date-time
   useEffect(() => {

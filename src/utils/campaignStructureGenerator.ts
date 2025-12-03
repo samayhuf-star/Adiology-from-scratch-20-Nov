@@ -176,8 +176,8 @@ function addLocationDataToAdGroup(adGroup: AdGroup, settings: StructureSettings)
 function generateSKAG(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -221,8 +221,8 @@ function generateSKAG(keywords: string[], settings: StructureSettings): Campaign
 function generateSTAG(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -276,8 +276,8 @@ function generateSTAG(keywords: string[], settings: StructureSettings): Campaign
 function generateMIX(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -350,8 +350,8 @@ function generateMIX(keywords: string[], settings: StructureSettings): CampaignS
 function generateSTAGPlus(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -400,8 +400,8 @@ function generateSTAGPlus(keywords: string[], settings: StructureSettings): Camp
 function generateIntentStructure(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -508,8 +508,8 @@ function generateAlphaBeta(keywords: string[], settings: StructureSettings): Cam
 function generateMatchTypeSplit(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -555,8 +555,8 @@ function generateMatchTypeSplit(keywords: string[], settings: StructureSettings)
 function generateGeoSegmented(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -678,8 +678,8 @@ function generateFunnelStructure(keywords: string[], settings: StructureSettings
 function generateBrandSplit(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
@@ -788,8 +788,8 @@ function generateCompetitor(keywords: string[], settings: StructureSettings): Ca
 function generateNgramClusters(keywords: string[], settings: StructureSettings): CampaignStructure {
   const matchTypes = getMatchTypes(settings.matchTypes);
   let ads = settings.ads || getDefaultAds(settings);
-  // Ensure all ads have final_url
-  ads = ads.map(ad => ({
+  // Ensure all ads have final_url and limit to 3 ads per ad group
+  ads = ads.slice(0, 3).map(ad => ({
     ...ad,
     final_url: ad.final_url || settings.url || 'https://www.example.com'
   }));
