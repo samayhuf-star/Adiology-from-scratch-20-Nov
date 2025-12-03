@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Save, AlertCircle, CheckSquare, Square, ShieldCheck } from 'lucide-react';
+import { Sparkles, Save, AlertCircle, CheckSquare, Square, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -33,6 +33,8 @@ export const KeywordPlannerSelectable = ({
     const [isSaving, setIsSaving] = useState(false);
     const [apiStatus, setApiStatus] = useState<'unknown' | 'ok' | 'error'>('unknown');
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [keywordsPerPage, setKeywordsPerPage] = useState(20);
+    const [showAllKeywords, setShowAllKeywords] = useState(false);
     
     // Match types - all selected by default
     const [matchTypes, setMatchTypes] = useState({
@@ -458,6 +460,20 @@ export const KeywordPlannerSelectable = ({
 
     const allSelected = generatedKeywords.length > 0 && selectedKeywords.length === generatedKeywords.length;
 
+    // Helper function to get keyword classification (simple heuristic based on length)
+    const getKeywordClassification = (keyword: string): 'Low' | 'Medium' | 'High' => {
+        const length = keyword.length;
+        if (length <= 15) return 'Low';
+        if (length <= 30) return 'Medium';
+        return 'High';
+    };
+
+    // Get keywords to display based on pagination
+    const displayedKeywords = showAllKeywords 
+        ? generatedKeywords 
+        : generatedKeywords.slice(0, keywordsPerPage);
+    const hasMoreKeywords = generatedKeywords.length > keywordsPerPage && !showAllKeywords;
+
     return (
         <div className="p-8">
             <div className="mb-6">
@@ -668,61 +684,59 @@ export const KeywordPlannerSelectable = ({
                 </div>
 
                 {/* Right Panel: Generated Keyword List with Selection */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-indigo-600">
-                            2. Generated Keyword List
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-xl flex flex-col">
+                    <div className="flex justify-between items-center mb-3">
+                        <h2 className="text-lg font-semibold text-indigo-600">
+                            2. Keywords
                         </h2>
                         {generatedKeywords.length > 0 && (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    {isSaving ? 'Saving...' : 'Save'}
-                                </Button>
-                            </div>
+                            <Button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs px-2 gap-1.5"
+                            >
+                                <Save className="w-3 h-3" />
+                                {isSaving ? 'Saving...' : 'Save'}
+                            </Button>
                         )}
                     </div>
 
                     {generatedKeywords.length > 0 && (
                         <>
-                            <div className="mb-4 flex items-center justify-between px-4 py-3 bg-slate-100 rounded-lg">
-                                <span className="text-sm font-semibold text-slate-700">
-                                    {generatedKeywords.length} Keywords Generated
+                            <div className="mb-2 flex items-center justify-between px-2 py-1.5 bg-slate-100 rounded text-xs">
+                                <span className="font-medium text-slate-700">
+                                    {generatedKeywords.length} keywords
                                     {selectedKeywords.length > 0 && (
-                                        <span className="ml-2 text-indigo-600">
-                                            ({selectedKeywords.length} selected)
+                                        <span className="ml-1.5 text-indigo-600 font-semibold">
+                                            • {selectedKeywords.length} selected
                                         </span>
                                     )}
                                 </span>
-                                <div className="flex gap-2">
+                                <div className="flex gap-1">
                                     <Button
                                         onClick={handleRemoveDuplicateKeywords}
                                         variant="outline"
                                         size="sm"
-                                        className="h-7 text-xs"
+                                        className="h-6 text-[10px] px-2"
                                     >
-                                        Remove Duplicates
+                                        Dedupe
                                     </Button>
                                     <Button
                                         onClick={handleSelectAll}
                                         variant="outline"
                                         size="sm"
-                                        className="gap-2"
+                                        className="h-6 text-[10px] px-2 gap-1"
                                     >
                                         {allSelected ? (
                                             <>
-                                                <Square className="w-4 h-4" />
-                                                Deselect All
+                                                <Square className="w-3 h-3" />
+                                                Deselect
                                             </>
                                         ) : (
                                             <>
-                                                <CheckSquare className="w-4 h-4" />
+                                                <CheckSquare className="w-3 h-3" />
                                                 Select All
                                             </>
                                         )}
@@ -731,64 +745,111 @@ export const KeywordPlannerSelectable = ({
                                         onClick={handleClearAllKeywords}
                                         variant="outline"
                                         size="sm"
-                                        className="h-7 text-xs text-red-600 hover:text-red-700"
+                                        className="h-6 text-[10px] px-2 text-red-600 hover:text-red-700"
                                     >
-                                        Clear All
+                                        Clear
                                     </Button>
                                 </div>
                             </div>
 
                             {selectedKeywords.length === 0 && (
-                                <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-sm text-amber-800 flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4" />
-                                        Please select keywords to proceed to the next step
+                                <div className="mb-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-xs">
+                                    <p className="text-amber-800 flex items-center gap-1.5">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        Select keywords to proceed
                                     </p>
                                 </div>
                             )}
                         </>
                     )}
 
-                    <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[600px]">
+                    <div className="flex-1 bg-slate-50 rounded-lg border border-slate-200 p-2 overflow-y-auto max-h-[500px]">
                         {generatedKeywords.length > 0 ? (
-                            <div className="space-y-1">
-                                {generatedKeywords.map((keyword, idx) => {
-                                    const isSelected = selectedKeywords.includes(keyword);
-                                    return (
-                                        <div
-                                            key={idx}
-                                            className={`px-3 py-2 rounded border cursor-pointer transition-all text-sm font-mono flex items-center gap-3 ${
-                                                isSelected 
-                                                    ? 'bg-indigo-50 border-indigo-300 hover:bg-indigo-100' 
-                                                    : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <input 
-                                                type="checkbox"
-                                                id={`keyword-checkbox-${idx}`}
-                                                checked={isSelected}
-                                                onChange={(e) => {
-                                                    if (e.target.checked !== isSelected) {
-                                                        toggleKeyword(keyword);
-                                                    }
-                                                }}
-                                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
-                                            />
-                                            <label 
-                                                htmlFor={`keyword-checkbox-${idx}`}
-                                                className={`flex-1 cursor-pointer select-none ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700'}`}
+                            <>
+                                <div className="space-y-0.5">
+                                    {displayedKeywords.map((keyword, idx) => {
+                                        const isSelected = selectedKeywords.includes(keyword);
+                                        const classification = getKeywordClassification(keyword);
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`px-2 py-1.5 rounded border cursor-pointer transition-all text-xs flex items-center gap-2 ${
+                                                    isSelected 
+                                                        ? 'bg-indigo-50 border-indigo-300 hover:bg-indigo-100' 
+                                                        : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                                                }`}
+                                                onClick={() => toggleKeyword(keyword)}
                                             >
-                                                {keyword}
-                                            </label>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                                <input 
+                                                    type="checkbox"
+                                                    id={`keyword-checkbox-${idx}`}
+                                                    checked={isSelected}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        if (e.target.checked !== isSelected) {
+                                                            toggleKeyword(keyword);
+                                                        }
+                                                    }}
+                                                    className="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-1 cursor-pointer flex-shrink-0"
+                                                />
+                                                <label 
+                                                    htmlFor={`keyword-checkbox-${idx}`}
+                                                    className={`flex-1 cursor-pointer select-none truncate ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                                >
+                                                    {keyword}
+                                                </label>
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                                                    classification === 'High' 
+                                                        ? 'bg-green-100 text-green-700' 
+                                                        : classification === 'Medium' 
+                                                        ? 'bg-yellow-100 text-yellow-700' 
+                                                        : 'bg-slate-100 text-slate-600'
+                                                }`}>
+                                                    {classification}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {hasMoreKeywords && (
+                                    <div className="mt-2 pt-2 border-t border-slate-200">
+                                        <Button
+                                            onClick={() => setShowAllKeywords(true)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full h-8 text-xs"
+                                        >
+                                            <ChevronDown className="w-3 h-3 mr-1" />
+                                            Show More ({generatedKeywords.length - keywordsPerPage} remaining)
+                                        </Button>
+                                    </div>
+                                )}
+                                {showAllKeywords && generatedKeywords.length > keywordsPerPage && (
+                                    <div className="mt-2 pt-2 border-t border-slate-200">
+                                        <Button
+                                            onClick={() => {
+                                                setShowAllKeywords(false);
+                                                // Scroll to top when collapsing
+                                                const container = document.querySelector('.overflow-y-auto');
+                                                if (container) {
+                                                    container.scrollTop = 0;
+                                                }
+                                            }}
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full h-8 text-xs"
+                                        >
+                                            <ChevronUp className="w-3 h-3 mr-1" />
+                                            Show Less
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
-                            <div className="flex items-center justify-center h-full">
+                            <div className="flex items-center justify-center h-full min-h-[200px]">
                                 <div className="text-center">
-                                    <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-slate-500">
+                                    <Sparkles className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-sm text-slate-500">
                                         Enter seed keywords and click "Generate" to create your keyword list
                                     </p>
                                 </div>

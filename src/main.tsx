@@ -13,6 +13,7 @@ import { initializeUserPreferences } from "./utils/userPreferences";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { validateEnvironment } from "./utils/envCheck";
+import { loggingService } from "./utils/loggingService";
 
 // Initialize notification service
 notifications.setToastInstance(toast);
@@ -51,6 +52,9 @@ if (typeof window !== 'undefined') {
 
 // Initialize user preferences on app load
 initializeUserPreferences();
+
+// Initialize logging service to start capturing logs
+loggingService.logSystemEvent('Application starting', { timestamp: new Date().toISOString() });
 
 // Check environment variables before rendering
 const rootElement = document.getElementById("root");

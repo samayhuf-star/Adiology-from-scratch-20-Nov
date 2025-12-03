@@ -35,6 +35,14 @@ export const CSVValidator3 = () => {
     const [uploading, setUploading] = useState(false);
     const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
     const [editValue, setEditValue] = useState('');
+    const [expandedStats, setExpandedStats] = useState<Set<string>>(new Set());
+    const [validationStats, setValidationStats] = useState({
+        errors: 0,
+        warnings: 0,
+        totalRows: 0,
+        errorDetails: [] as Array<{ row: number; message: string }>,
+        warningDetails: [] as Array<{ row: number; message: string }>,
+    });
 
     // Normalize headers
     const normalizeHeaders = useCallback((headers: string[]) => {
@@ -260,6 +268,83 @@ export const CSVValidator3 = () => {
         }
     }, [normalizeHeaders]);
 
+    // Validate using Google Ads Editor format
+    const validateGoogleAdsEditorFormat = useCallback((rows: any[], headers: string[]): { errors: string[]; warnings: string[]; errorDetails: Array<{ row: number; message: string }>; warningDetails: Array<{ row: number; message: string }> } => {
+        const errors: string[] = [];
+        const warnings: string[] = [];
+        const errorDetails: Array<{ row: number; message: string }> = [];
+        const warningDetails: Array<{ row: number; message: string }> = [];
+
+        // Check for Row Type column
+        const hasRowType = headers.some(h => h.toLowerCase().trim() === 'row type');
+        if (!hasRowType) {
+            errors.push('Missing required header: Row Type');
+        }
+
+        rows.forEach((row, i) => {
+            const rowNum = i + 2; // header row is 1
+            const rowType = (row['Row Type'] || row['row type'] || '').toString().toUpperCase().trim();
+            
+            // If no Row Type, try to infer it
+            if (!rowType) {
+                if (row['Campaign'] && !row['AdGroup'] && !row['Keyword'] && !row['Ad Type']) {
+                    // Likely a campaign row
+                    warnings.push(`Row ${rowNum}: Missing Row Type (inferred as CAMPAIGN)`);
+                    warningDetails.push({ row: rowNum, message: 'Missing Row Type - inferred as CAMPAIGN' });
+                } else if (row['Campaign'] && row['AdGroup'] && !row['Keyword'] && !row['Ad Type']) {
+                    // Likely an ad group row
+                    warnings.push(`Row ${rowNum}: Missing Row Type (inferred as ADGROUP)`);
+                    warningDetails.push({ row: rowNum, message: 'Missing Row Type - inferred as ADGROUP' });
+                } else if (row['Keyword'] || row['Match Type']) {
+                    // Likely a keyword row
+                    warnings.push(`Row ${rowNum}: Missing Row Type (inferred as KEYWORD)`);
+                    warningDetails.push({ row: rowNum, message: 'Missing Row Type - inferred as KEYWORD' });
+                } else if (row['Ad Type'] || row['Headline 1']) {
+                    // Likely an ad row
+                    warnings.push(`Row ${rowNum}: Missing Row Type (inferred as AD)`);
+                    warningDetails.push({ row: rowNum, message: 'Missing Row Type - inferred as AD' });
+                } else {
+                    errors.push(`Row ${rowNum}: Missing Row Type`);
+                    errorDetails.push({ row: rowNum, message: 'Missing Row Type - cannot determine row type' });
+                }
+            }
+
+            // Validate campaign rows
+            if (rowType === 'CAMPAIGN' || (!rowType && row['Campaign'] && !row['AdGroup'])) {
+                if (!row['Campaign'] || !row['Campaign'].toString().trim()) {
+                    errors.push(`Row ${rowNum}: Campaign name is required`);
+                    errorDetails.push({ row: rowNum, message: 'Campaign name is required for CAMPAIGN row' });
+                }
+            }
+
+            // Validate ad group rows
+            if (rowType === 'ADGROUP' || (!rowType && row['Campaign'] && row['AdGroup'] && !row['Keyword'])) {
+                if (!row['AdGroup'] || !row['AdGroup'].toString().trim()) {
+                    errors.push(`Row ${rowNum}: AdGroup name is required`);
+                    errorDetails.push({ row: rowNum, message: 'AdGroup name is required for ADGROUP row' });
+                }
+            }
+
+            // Validate keyword rows
+            if (rowType === 'KEYWORD' || (!rowType && (row['Keyword'] || row['Match Type']))) {
+                if (!row['Keyword'] || !row['Keyword'].toString().trim()) {
+                    errors.push(`Row ${rowNum}: Keyword text is required`);
+                    errorDetails.push({ row: rowNum, message: 'Keyword text is required for KEYWORD row' });
+                }
+            }
+
+            // Validate ad rows
+            if (rowType === 'AD' || (!rowType && (row['Ad Type'] || row['Headline 1']))) {
+                if (!row['Final URL'] || !row['Final URL'].toString().trim()) {
+                    errors.push(`Row ${rowNum}: Final URL is required for AD row`);
+                    errorDetails.push({ row: rowNum, message: 'Final URL is required for AD row' });
+                }
+            }
+        });
+
+        return { errors, warnings, errorDetails, warningDetails };
+    }, []);
+
     // Validate
     const handleValidate = useCallback(async () => {
         if (rows.length === 0) {
@@ -271,45 +356,41 @@ export const CSVValidator3 = () => {
 
         setLoading(true);
         try {
-            // Try API first, fallback to client-side validation
-            try {
-                const resp = await api.post('/validate-csv', { headers, rows });
-                const problems = resp.problems || [];
-                setProblems(problems);
-                setEditorBehavior(resp.editorBehavior || []);
-                
-                // Show confirmation message
-                if (problems.length === 0) {
-                    notifications.success('CSV validation completed successfully! No errors found.', {
-                        title: 'Validation Complete'
-                    });
-                } else {
-                    notifications.warning(`Validation completed with ${problems.length} problem(s) found.`, {
-                        title: 'Validation Complete'
-                    });
+            // Use Google Ads Editor format validation
+            const validation = validateGoogleAdsEditorFormat(rows, headers);
+            const problems = validateRows(rows, headers);
+            
+            // Combine validations
+            const allProblems = [...problems];
+            validation.errors.forEach(err => {
+                allProblems.push({ row: 0, col: 'Row Type', type: 'missing', message: err });
+            });
+            
+            setProblems(allProblems);
+            setValidationStats({
+                errors: validation.errors.length + problems.filter(p => p.type === 'missing' || p.type === 'invalid' || p.type === 'format_mismatch').length,
+                warnings: validation.warnings.length + problems.filter(p => p.type === 'duplicate' || p.type === 'too_long').length,
+                totalRows: rows.length,
+                errorDetails: validation.errorDetails,
+                warningDetails: validation.warningDetails,
+            });
+            
+            const behavior: string[] = [];
+            if (allProblems.length === 0) {
+                behavior.push('Google Ads Editor should accept this CSV without errors.');
+                notifications.success('CSV validation completed successfully! No errors found.', {
+                    title: 'Validation Complete'
+                });
+            } else {
+                behavior.push('Google Ads Editor may reject rows with format errors or show them in the "Rejected changes" pane.');
+                if (!headers.some(h => h.toLowerCase().trim() === 'row type')) {
+                    behavior.push('Missing "Row Type" column - this is required for Google Ads Editor import.');
                 }
-            } catch (apiError) {
-                // Fallback to client-side validation
-                console.log('API unavailable, using client-side validation');
-                const problems = validateRows(rows, headers);
-                setProblems(problems);
-                
-                const behavior: string[] = [];
-                if (problems.length === 0) {
-                    behavior.push('Google Ads Editor should accept this CSV without errors.');
-                    notifications.success('CSV validation completed successfully! No errors found.', {
-                        title: 'Validation Complete'
-                    });
-                } else {
-                    behavior.push('Google Ads Editor may reject rows with format errors (e.g., match type mismatches) or show them in the "Rejected changes" pane.');
-                    behavior.push('Duplicates may be imported but will appear as separate rows unless Editor de-duplicates; consider removing duplicates.');
-                    behavior.push('Fields longer than 255 characters may be truncated on import.');
-                    notifications.warning(`Validation completed with ${problems.length} problem(s) found.`, {
-                        title: 'Validation Complete'
-                    });
-                }
-                setEditorBehavior(behavior);
+                notifications.warning(`Validation completed with ${allProblems.length} problem(s) found.`, {
+                    title: 'Validation Complete'
+                });
             }
+            setEditorBehavior(behavior);
         } catch (error: any) {
             console.error('Validation error:', error);
             notifications.error('Validation failed: ' + (error.message || 'Unknown error'), {
@@ -318,7 +399,7 @@ export const CSVValidator3 = () => {
         } finally {
             setLoading(false);
         }
-    }, [headers, rows, validateRows]);
+    }, [headers, rows, validateRows, validateGoogleAdsEditorFormat]);
 
     // Update cell
     const updateCell = useCallback((rowIdx: number, col: string, value: string) => {
@@ -347,7 +428,7 @@ export const CSVValidator3 = () => {
         }
     }, [editingCell, editValue, updateCell]);
 
-    // Fix sheet with AI
+    // Fix sheet with AI - Google Ads Editor format
     const handleFixSheet = useCallback(async () => {
         if (rows.length === 0) {
             notifications.warning('Please upload a CSV file first.', {
@@ -358,101 +439,185 @@ export const CSVValidator3 = () => {
 
         setFixing(true);
         try {
-            // Try API first, fallback to client-side fix
-            try {
-                const resp = await api.post('/fix-csv', { 
-                    headers, 
-                    rows, 
-                    fixOptions: { removeDuplicates: true } 
-                });
-                setRows(resp.fixedRows || rows);
-                setProblems([]);
-                const actionsText = (resp.actions || []).slice(0, 20).map((a: FixAction) => `Row ${a.row}: ${a.action}`).join('\n');
-                notifications.success(`Fix completed. Actions: ${actionsText}`, {
-                    title: 'Fix Completed',
-                    duration: 8000
-                });
-            } catch (apiError) {
-                // Fallback to client-side fix
-                console.log('API unavailable, using client-side fix');
-                const fixed: any[] = [];
-                const actions: FixAction[] = [];
-                const seen = new Set<string>();
+            const fixed: any[] = [];
+            const actions: FixAction[] = [];
+            const seen = new Set<string>();
+            let newHeaders = [...headers];
+            
+            // Add Row Type column if missing
+            const hasRowType = headers.some(h => h.toLowerCase().trim() === 'row type');
+            if (!hasRowType) {
+                newHeaders = ['Row Type', ...headers];
+                actions.push({ row: 0, action: 'Added missing "Row Type" column' });
+            }
 
-                rows.forEach((row, i) => {
-                    const copy = { ...row };
-                    const changed: string[] = [];
+            rows.forEach((row, i) => {
+                const copy: any = { ...row };
+                const changed: string[] = [];
+                const rowNum = i + 2;
 
-                    // Normalize whitespace
-                    if (copy['Keyword']) {
-                        const orig = copy['Keyword'];
-                        copy['Keyword'] = orig.replace(/\s+/g, ' ').trim();
-                        if (copy['Keyword'] !== orig) changed.push('normalized whitespace');
+                // Determine and set Row Type if missing
+                if (!copy['Row Type'] && !copy['row type']) {
+                    if (copy['Campaign'] && !copy['AdGroup'] && !copy['Keyword'] && !copy['Ad Type']) {
+                        copy['Row Type'] = 'CAMPAIGN';
+                        changed.push('set Row Type to CAMPAIGN');
+                    } else if (copy['Campaign'] && copy['AdGroup'] && !copy['Keyword'] && !copy['Ad Type']) {
+                        copy['Row Type'] = 'ADGROUP';
+                        changed.push('set Row Type to ADGROUP');
+                    } else if (copy['Keyword'] || copy['Match Type']) {
+                        copy['Row Type'] = 'KEYWORD';
+                        changed.push('set Row Type to KEYWORD');
+                    } else if (copy['Ad Type'] || copy['Headline 1']) {
+                        copy['Row Type'] = 'AD';
+                        changed.push('set Row Type to AD');
+                    } else if (copy['Negative Keyword']) {
+                        copy['Row Type'] = 'NEGATIVE_KEYWORD';
+                        changed.push('set Row Type to NEGATIVE_KEYWORD');
+                    } else {
+                        copy['Row Type'] = 'KEYWORD'; // Default
+                        changed.push('set Row Type to KEYWORD (default)');
                     }
+                }
 
-                    // Fix match type
-                    if (!copy['Match type'] || !ALLOWED_MATCH_TYPES.includes((copy['Match type'] || '').trim())) {
-                        const detected = detectMatchTypeFormat(copy['Keyword']);
+                // Normalize Row Type to uppercase
+                if (copy['Row Type']) {
+                    copy['Row Type'] = copy['Row Type'].toString().toUpperCase().trim();
+                }
+
+                // Normalize whitespace
+                if (copy['Keyword']) {
+                    const orig = copy['Keyword'];
+                    copy['Keyword'] = orig.toString().replace(/\s+/g, ' ').trim();
+                    if (copy['Keyword'] !== orig) changed.push('normalized whitespace');
+                }
+
+                // Fix match type for keywords
+                if (copy['Row Type'] === 'KEYWORD' || copy['Row Type'] === 'NEGATIVE_KEYWORD') {
+                    if (!copy['Match Type'] && !copy['match type']) {
+                        const detected = detectMatchTypeFormat(copy['Keyword']?.toString() || '');
                         if (detected) {
-                            copy['Match type'] = detected;
-                            changed.push(`set match type to ${detected}`);
+                            copy['Match Type'] = detected.toUpperCase();
+                            changed.push(`set Match Type to ${detected.toUpperCase()}`);
                         } else {
-                            if (copy['Keyword'] && /^\[.*\]$/.test(copy['Keyword'])) {
-                                copy['Match type'] = 'Exact';
-                            } else if (copy['Keyword'] && /^\".*\"$/.test(copy['Keyword'])) {
-                                copy['Match type'] = 'Phrase';
-                            } else {
-                                copy['Match type'] = 'Broad';
-                            }
-                            changed.push(`defaulted match type to ${copy['Match type']}`);
+                            copy['Match Type'] = 'BROAD';
+                            changed.push('set Match Type to BROAD (default)');
+                        }
+                    } else {
+                        // Normalize match type
+                        const matchType = (copy['Match Type'] || copy['match type'] || '').toString().toUpperCase().trim();
+                        copy['Match Type'] = matchType;
+                    }
+                }
+
+                // Fix keyword format to match match type
+                if (copy['Keyword'] && copy['Match Type']) {
+                    const mt = copy['Match Type'].toString().toUpperCase();
+                    const keyword = copy['Keyword'].toString();
+                    if (!isValidKeywordForMatch(keyword, mt)) {
+                        if (mt === 'EXACT' && !/^\[.*\]$/.test(keyword)) {
+                            copy['Keyword'] = `[${keyword.replace(/^\-/, '')}]`;
+                            changed.push('wrapped keyword in [ ] for EXACT');
+                        } else if (mt === 'PHRASE' && !/^\".*\"$/.test(keyword)) {
+                            copy['Keyword'] = `"${keyword.replace(/^\-/, '')}"`;
+                            changed.push('wrapped keyword in "" for PHRASE');
+                        } else if (mt === 'BROAD' && (/^\[.*\]$/.test(keyword) || /^\".*\"$/.test(keyword))) {
+                            copy['Keyword'] = keyword.replace(/^\[|\]$|^\"|\"$/g, '');
+                            changed.push('removed brackets/quotes for BROAD');
                         }
                     }
+                }
 
-                    // Fix keyword format to match match type
-                    if (copy['Keyword'] && copy['Match type']) {
-                        const mt = copy['Match type'].trim();
-                        if (!isValidKeywordForMatch(copy['Keyword'], mt)) {
-                            if (mt === 'Exact' && !/^\[.*\]$/.test(copy['Keyword'])) {
-                                copy['Keyword'] = `[${copy['Keyword'].replace(/^\-/, '')}]`;
-                                changed.push('wrapped keyword in [ ] for Exact');
-                            } else if (mt === 'Phrase' && !/^\".*\"$/.test(copy['Keyword'])) {
-                                copy['Keyword'] = `"${copy['Keyword'].replace(/^\-/, '')}"`;
-                                changed.push('wrapped keyword in "" for Phrase');
-                            } else if (mt === 'Broad' && (/^\[.*\]$/.test(copy['Keyword']) || /^\".*\"$/.test(copy['Keyword']))) {
-                                copy['Keyword'] = copy['Keyword'].replace(/^\[|\]$|^\"|\"$/g, '');
-                                changed.push('removed brackets/quotes for Broad');
-                            }
-                        }
+                // Truncate long fields
+                if (copy['Keyword'] && copy['Keyword'].toString().length > 250) {
+                    copy['Keyword'] = copy['Keyword'].toString().slice(0, 250);
+                    changed.push('truncated keyword to 250 chars');
+                }
+
+                // Ensure required fields for campaigns
+                if (copy['Row Type'] === 'CAMPAIGN') {
+                    if (!copy['Campaign Status']) {
+                        copy['Campaign Status'] = 'ENABLED';
+                        changed.push('set Campaign Status to ENABLED');
                     }
-
-                    // Truncate long fields
-                    if (copy['Keyword'] && copy['Keyword'].length > 250) {
-                        copy['Keyword'] = copy['Keyword'].slice(0, 250);
-                        changed.push('truncated keyword to 250 chars');
+                    if (!copy['Campaign Type']) {
+                        copy['Campaign Type'] = 'SEARCH';
+                        changed.push('set Campaign Type to SEARCH');
                     }
+                }
 
-                    // De-duplicate
-                    const norm = (copy['Keyword'] || '').toLowerCase().replace(/[\s\u00A0]+/g, ' ').trim();
+                // Ensure required fields for ad groups
+                if (copy['Row Type'] === 'ADGROUP') {
+                    if (!copy['AdGroup Status']) {
+                        copy['AdGroup Status'] = 'ENABLED';
+                        changed.push('set AdGroup Status to ENABLED');
+                    }
+                }
+
+                // Ensure required fields for keywords
+                if (copy['Row Type'] === 'KEYWORD') {
+                    if (!copy['Keyword Status']) {
+                        copy['Keyword Status'] = 'ENABLED';
+                        changed.push('set Keyword Status to ENABLED');
+                    }
+                }
+
+                // Ensure required fields for ads
+                if (copy['Row Type'] === 'AD') {
+                    if (!copy['Ad Status']) {
+                        copy['Ad Status'] = 'ENABLED';
+                        changed.push('set Ad Status to ENABLED');
+                    }
+                    if (!copy['Ad Type']) {
+                        copy['Ad Type'] = 'RESPONSIVE_SEARCH_AD';
+                        changed.push('set Ad Type to RESPONSIVE_SEARCH_AD');
+                    }
+                }
+
+                // De-duplicate keywords
+                if (copy['Row Type'] === 'KEYWORD' || copy['Row Type'] === 'NEGATIVE_KEYWORD') {
+                    const norm = (copy['Keyword'] || '').toString().toLowerCase().replace(/[\s\u00A0]+/g, ' ').trim();
                     if (seen.has(norm)) {
                         return; // Skip duplicate
                     } else {
                         seen.add(norm);
                     }
+                }
 
-                    if (changed.length) {
-                        actions.push({ row: i + 2, action: changed.join('; ') });
-                    }
-                    fixed.push(copy);
-                });
+                if (changed.length) {
+                    actions.push({ row: rowNum, action: changed.join('; ') });
+                }
+                fixed.push(copy);
+            });
 
-                setRows(fixed);
-                setProblems([]);
-                const actionsText = actions.slice(0, 20).map(a => `Row ${a.row}: ${a.action}`).join('\n');
-                notifications.success(`Fix completed. Actions: ${actionsText}`, {
-                    title: 'Fix Completed',
-                    duration: 8000
+            setHeaders(newHeaders);
+            setRows(fixed);
+            setProblems([]);
+            
+            // Re-validate after fixing - trigger validation manually
+            setTimeout(() => {
+                const validation = validateGoogleAdsEditorFormat(fixed, newHeaders);
+                const problems = validateRows(fixed, newHeaders);
+                const allProblems = [...problems];
+                validation.errors.forEach(err => {
+                    allProblems.push({ row: 0, col: 'Row Type', type: 'missing', message: err });
                 });
-            }
+                setProblems(allProblems);
+                setValidationStats({
+                    errors: validation.errors.length + problems.filter(p => p.type === 'missing' || p.type === 'invalid' || p.type === 'format_mismatch').length,
+                    warnings: validation.warnings.length + problems.filter(p => p.type === 'duplicate' || p.type === 'too_long').length,
+                    totalRows: fixed.length,
+                    errorDetails: validation.errorDetails,
+                    warningDetails: validation.warningDetails,
+                });
+            }, 100);
+
+            const actionsText = actions.slice(0, 10).map(a => `Row ${a.row}: ${a.action}`).join('\n') + 
+                (actions.length > 10 ? `\n... and ${actions.length - 10} more fixes` : '');
+            notifications.success(`CSV fixed successfully! ${actions.length} fix(es) applied.`, {
+                title: 'Fix Completed',
+                description: actionsText,
+                duration: 8000
+            });
         } catch (error: any) {
             console.error('Fix error:', error);
             notifications.error('Fix failed: ' + (error.message || 'Unknown error'), {
@@ -461,7 +626,7 @@ export const CSVValidator3 = () => {
         } finally {
             setFixing(false);
         }
-    }, [headers, rows, detectMatchTypeFormat, isValidKeywordForMatch]);
+    }, [headers, rows, detectMatchTypeFormat, isValidKeywordForMatch, validateGoogleAdsEditorFormat, validateRows]);
 
     // Download CSV
     const handleDownload = useCallback(() => {
@@ -472,15 +637,63 @@ export const CSVValidator3 = () => {
             return;
         }
 
-        const csv = Papa.unparse({ fields: headers, data: rows.map(r => headers.map(h => r[h] || '')) });
+        // Ensure all headers are included in the CSV
+        const allHeaders = headers.length > 0 ? headers : Object.keys(rows[0] || {});
+        const csv = Papa.unparse({ 
+            fields: allHeaders, 
+            data: rows.map(r => allHeaders.map(h => r[h] || '')) 
+        });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'fixed-google-ads.csv';
+        link.download = `google-ads-editor-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        
+        notifications.success('CSV downloaded successfully!', {
+            title: 'Download Complete',
+            description: `File: ${link.download}`
+        });
     }, [headers, rows]);
+
+    // Export CSV with errors (always available when data exists)
+    const handleExportWithErrors = useCallback(() => {
+        if (rows.length === 0) {
+            notifications.warning('Please upload and process a file first.', {
+                title: 'No File Processed'
+            });
+            return;
+        }
+
+        // Ensure all headers are included in the CSV
+        const allHeaders = headers.length > 0 ? headers : Object.keys(rows[0] || {});
+        const csv = Papa.unparse({ 
+            fields: allHeaders, 
+            data: rows.map(r => allHeaders.map(h => r[h] || '')) 
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const errorCount = problems.length > 0 ? `-${problems.length}-errors` : '';
+        link.download = `google-ads-editor-${errorCount}-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        const errorMsg = problems.length > 0 
+            ? `Exported CSV with ${problems.length} error(s) for debugging.`
+            : 'CSV exported successfully.';
+        
+        notifications.success(errorMsg, {
+            title: 'CSV Exported',
+            description: `File: ${link.download}`
+        });
+    }, [headers, rows, problems]);
 
     // Get cell problem
     const getCellProblem = useCallback((rowIdx: number, col: string): ValidationProblem | undefined => {
@@ -814,12 +1027,23 @@ export const CSVValidator3 = () => {
                         </Button>
                         <Button
                             onClick={handleDownload}
-                            disabled={rows.length === 0}
+                            disabled={rows.length === 0 || problems.length > 0}
                             variant="outline"
                             className="border-slate-300"
+                            title={problems.length > 0 ? "Fix errors first or use 'Export with Errors' button" : "Download validated CSV"}
                         >
                             <Download className="w-4 h-4 mr-2" />
                             Download CSV
+                        </Button>
+                        <Button
+                            onClick={handleExportWithErrors}
+                            disabled={rows.length === 0}
+                            variant="outline"
+                            className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                            title="Export CSV file even with errors for debugging"
+                        >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Export with Errors
                         </Button>
                     </div>
                 )}
@@ -882,6 +1106,7 @@ export const CSVValidator3 = () => {
 
                 {/* Statistics Cards */}
                 {rows.length > 0 && (
+                    <>
                     <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                         {/* Campaigns Card */}
                         <Card className="border-slate-200/60 bg-gradient-to-br from-indigo-50 to-indigo-100/50 backdrop-blur-xl shadow-lg hover:shadow-xl transition-shadow">
@@ -958,6 +1183,148 @@ export const CSVValidator3 = () => {
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Statistics Table */}
+                    {problems.length > 0 || validationStats.errors > 0 || validationStats.warnings > 0 ? (
+                        <Card className="mb-4 sm:mb-6 border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-xl">
+                            <CardHeader className="p-4 sm:p-6">
+                                <CardTitle className="text-base sm:text-lg">Validation Statistics</CardTitle>
+                                <CardDescription className="text-sm">Click on any row to expand and see details</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full border-collapse">
+                                        <thead className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+                                            <tr>
+                                                <th className="p-3 text-left text-sm font-semibold border-r border-slate-700">Metric</th>
+                                                <th className="p-3 text-left text-sm font-semibold border-r border-slate-700">Count</th>
+                                                <th className="p-3 text-left text-sm font-semibold">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200">
+                                            <tr 
+                                                className={`hover:bg-slate-50 cursor-pointer transition-colors ${expandedStats.has('errors') ? 'bg-red-50' : ''}`}
+                                                onClick={() => {
+                                                    const newExpanded = new Set(expandedStats);
+                                                    if (newExpanded.has('errors')) {
+                                                        newExpanded.delete('errors');
+                                                    } else {
+                                                        newExpanded.add('errors');
+                                                    }
+                                                    setExpandedStats(newExpanded);
+                                                }}
+                                            >
+                                                <td className="p-3 text-sm font-medium text-slate-700 border-r border-slate-200">
+                                                    <div className="flex items-center gap-2">
+                                                        <AlertCircle className="w-4 h-4 text-red-600" />
+                                                        Errors
+                                                    </div>
+                                                </td>
+                                                <td className="p-3 text-sm text-red-600 font-semibold border-r border-slate-200">
+                                                    {validationStats.errors || problems.filter(p => p.type === 'missing' || p.type === 'invalid' || p.type === 'format_mismatch').length}
+                                                </td>
+                                                <td className="p-3 text-sm text-slate-600">
+                                                    {expandedStats.has('errors') ? 'Click to collapse' : 'Click to expand'}
+                                                </td>
+                                            </tr>
+                                            {expandedStats.has('errors') && (
+                                                <tr className="bg-red-50/50">
+                                                    <td colSpan={3} className="p-4">
+                                                        <div className="max-h-64 overflow-y-auto space-y-2">
+                                                            {validationStats.errorDetails.length > 0 ? (
+                                                                validationStats.errorDetails.map((detail, idx) => (
+                                                                    <div key={idx} className="text-sm text-red-700 p-2 bg-red-100 rounded">
+                                                                        <strong>Row {detail.row}:</strong> {detail.message}
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                problems.filter(p => p.type === 'missing' || p.type === 'invalid' || p.type === 'format_mismatch').slice(0, 20).map((p, idx) => (
+                                                                    <div key={idx} className="text-sm text-red-700 p-2 bg-red-100 rounded">
+                                                                        <strong>Row {p.row} • {p.col}:</strong> {p.message}
+                                                                    </div>
+                                                                ))
+                                                            )}
+                                                            {(validationStats.errorDetails.length > 20 || problems.filter(p => p.type === 'missing' || p.type === 'invalid' || p.type === 'format_mismatch').length > 20) && (
+                                                                <div className="text-xs text-slate-500 italic">
+                                                                    ... and more errors
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            <tr 
+                                                className={`hover:bg-slate-50 cursor-pointer transition-colors ${expandedStats.has('warnings') ? 'bg-yellow-50' : ''}`}
+                                                onClick={() => {
+                                                    const newExpanded = new Set(expandedStats);
+                                                    if (newExpanded.has('warnings')) {
+                                                        newExpanded.delete('warnings');
+                                                    } else {
+                                                        newExpanded.add('warnings');
+                                                    }
+                                                    setExpandedStats(newExpanded);
+                                                }}
+                                            >
+                                                <td className="p-3 text-sm font-medium text-slate-700 border-r border-slate-200">
+                                                    <div className="flex items-center gap-2">
+                                                        <AlertCircle className="w-4 h-4 text-yellow-600" />
+                                                        Warnings
+                                                    </div>
+                                                </td>
+                                                <td className="p-3 text-sm text-yellow-600 font-semibold border-r border-slate-200">
+                                                    {validationStats.warnings || problems.filter(p => p.type === 'duplicate' || p.type === 'too_long').length}
+                                                </td>
+                                                <td className="p-3 text-sm text-slate-600">
+                                                    {expandedStats.has('warnings') ? 'Click to collapse' : 'Click to expand'}
+                                                </td>
+                                            </tr>
+                                            {expandedStats.has('warnings') && (
+                                                <tr className="bg-yellow-50/50">
+                                                    <td colSpan={3} className="p-4">
+                                                        <div className="max-h-64 overflow-y-auto space-y-2">
+                                                            {validationStats.warningDetails.length > 0 ? (
+                                                                validationStats.warningDetails.map((detail, idx) => (
+                                                                    <div key={idx} className="text-sm text-yellow-700 p-2 bg-yellow-100 rounded">
+                                                                        <strong>Row {detail.row}:</strong> {detail.message}
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                problems.filter(p => p.type === 'duplicate' || p.type === 'too_long').slice(0, 20).map((p, idx) => (
+                                                                    <div key={idx} className="text-sm text-yellow-700 p-2 bg-yellow-100 rounded">
+                                                                        <strong>Row {p.row} • {p.col}:</strong> {p.message}
+                                                                    </div>
+                                                                ))
+                                                            )}
+                                                            {(validationStats.warningDetails.length > 20 || problems.filter(p => p.type === 'duplicate' || p.type === 'too_long').length > 20) && (
+                                                                <div className="text-xs text-slate-500 italic">
+                                                                    ... and more warnings
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            <tr className="hover:bg-slate-50">
+                                                <td className="p-3 text-sm font-medium text-slate-700 border-r border-slate-200">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText className="w-4 h-4 text-blue-600" />
+                                                        Total Rows
+                                                    </div>
+                                                </td>
+                                                <td className="p-3 text-sm text-blue-600 font-semibold border-r border-slate-200">
+                                                    {validationStats.totalRows || rows.length}
+                                                </td>
+                                                <td className="p-3 text-sm text-slate-600">
+                                                    Rows parsed from CSV
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : null}
+                    </>
                 )}
 
                 {/* Data Table */}
