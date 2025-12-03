@@ -5,7 +5,7 @@ import {
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
-  Tag, Image as ImageIcon, Gift
+  Tag, Image as ImageIcon, Gift, Upload, FileCheck, X
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -42,12 +42,11 @@ import {
     type ExpandedTextAd,
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
+// Old CSV exporter imports removed - using new googleAdsCSVGenerator instead
+import { generateGoogleAdsCSV, validateRows } from '../utils/googleAdsCSVGenerator';
+import { AutoFillButton } from './AutoFillButton';
+import { generateCampaignName, generateSeedKeywords, generateNegativeKeywords, generateURL, generateLocationInput } from '../utils/autoFill';
 import {
-    validateCSVRows,
-    generateCSVContent,
-    createCSVBlob,
-    normalizeMatchType,
-    extractKeywordText,
     validateURL,
     CANONICAL_HEADERS,
     type CSVRow,
@@ -936,6 +935,17 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [savedCampaigns, setSavedCampaigns] = useState<any[]>([]);
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
+    // Step 6: CSV Generation
+    const [csvGenerated, setCsvGenerated] = useState(false);
+    const [csvContent, setCsvContent] = useState<string>('');
+    const [isGeneratingCSV, setIsGeneratingCSV] = useState(false);
+    const [csvValidation, setCsvValidation] = useState<{ fatalErrors: any[]; warnings: any[] } | null>(null);
+
+    // Step 7: CSV Validation
+    const [uploadedCsvFile, setUploadedCsvFile] = useState<File | null>(null);
+    const [csvValidationResults, setCsvValidationResults] = useState<any>(null);
+    const [isValidatingCsv, setIsValidatingCsv] = useState(false);
+
     // Initialize campaign name with default date/time format
     useEffect(() => {
         if (!initialData) {
@@ -1344,7 +1354,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     };
 
     // Convert campaign data to CSV rows for validation and export
-    const convertToCSVRows = (): CSVRow[] => {
+    // Old CSV functions removed - using new googleAdsCSVGenerator instead
+    // const convertToCSVRows removed
+    // const validateCSV removed  
+    // const generateCSV removed
+    
+    // Placeholder to maintain line numbers - old functions removed
+    const _oldCSVFunctionsRemoved = () => {
         const rows: CSVRow[] = [];
         const adGroups = getDynamicAdGroups();
         const campaignNameValue = campaignName || 'Campaign 1';
@@ -1488,8 +1504,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         return rows;
     };
 
-    // Validate CSV for Google Ads Editor compatibility using comprehensive validation
-    const validateCSV = (): { valid: boolean; errors: string[]; warnings: string[] } => {
+    // DEPRECATED: Old CSV validation - replaced with googleAdsCSVGenerator validation
+    const validateCSV_DEPRECATED = (): { valid: boolean; errors: string[]; warnings: string[] } => {
         const adGroups = getDynamicAdGroups();
         const validAds = generatedAds.filter(ad => 
             ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
@@ -5082,7 +5098,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         onClick={() => setStep(6)}
                         className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
                     >
-                        Next - Validate Campaign
+                        Next - Generate CSV
                         <ChevronRight className="w-5 h-5 ml-2" />
                     </Button>
                 </div>
@@ -5090,266 +5106,500 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         );
     };
 
-    // Step 6: Validation & Export
+    // Helper function to convert campaign data to CSV format
+    const convertCampaignToCSVFormat = () => {
+        const adGroups = getDynamicAdGroups();
+        
+        // Build locations array
+        const locations: any[] = [];
+        if (targetCountry) {
+            locations.push({ type: 'COUNTRY', value: targetCountry });
+        }
+        
+        // Add location targeting based on type
+        if (targetType === 'ZIP' && manualGeoInput) {
+            const zipCodes = manualGeoInput.split(',').map(z => z.trim()).filter(Boolean);
+            zipCodes.forEach(zip => {
+                locations.push({ type: 'ZIP', value: zip });
+            });
+        } else if (targetType === 'CITY' && manualGeoInput) {
+            const cities = manualGeoInput.split(',').map(c => c.trim()).filter(Boolean);
+            cities.forEach(city => {
+                locations.push({ type: 'CITY', value: city });
+            });
+        } else if (targetType === 'STATE' && manualGeoInput) {
+            const states = manualGeoInput.split(',').map(s => s.trim()).filter(Boolean);
+            states.forEach(state => {
+                locations.push({ type: 'STATE', value: state });
+            });
+        }
+
+        // Build negative keywords array
+        const negatives = negativeKeywords.split('\n')
+            .map(n => n.trim())
+            .filter(Boolean)
+            .map(n => ({
+                text: n.replace(/^\[|\]$/g, '').replace(/^"|"$/g, ''),
+                matchType: n.startsWith('[') ? 'EXACT' : n.startsWith('"') ? 'PHRASE' : 'PHRASE'
+            }));
+
+        // Build ad groups with keywords and ads
+        const csvAdGroups = adGroups.map(ag => {
+            // Get keywords for this ad group
+            const groupKeywords = ag.keywords.map((kw: string) => {
+                const cleanKw = kw.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '');
+                let matchType = 'PHRASE';
+                if (kw.startsWith('[') && kw.endsWith(']')) matchType = 'EXACT';
+                else if (kw.startsWith('"') && kw.endsWith('"')) matchType = 'PHRASE';
+                else matchType = 'BROAD';
+                
+                return {
+                    phrase: cleanKw,
+                    matchType: matchType,
+                    operation: 'NEW'
+                };
+            });
+
+            // Get ads for this ad group
+            const groupAds = generatedAds
+                .filter(ad => ad.adGroup === ag.name)
+                .map(ad => {
+                    const adData: any = {
+                        type: ad.type || 'RESPONSIVE_SEARCH_AD',
+                        finalUrl: url || ad.finalUrl || '',
+                        operation: 'NEW'
+                    };
+
+                    // Extract headlines and descriptions
+                    if (ad.headlines && Array.isArray(ad.headlines)) {
+                        adData.headlines = ad.headlines;
+                    } else if (ad.headline) {
+                        adData.headlines = [ad.headline];
+                    }
+
+                    if (ad.descriptions && Array.isArray(ad.descriptions)) {
+                        adData.descriptions = ad.descriptions;
+                    } else if (ad.description) {
+                        adData.descriptions = [ad.description];
+                    }
+
+                    if (ad.id) adData.id = ad.id;
+
+                    return adData;
+                });
+
+            return {
+                name: ag.name,
+                status: 'ENABLED',
+                defaultBid: '',
+                operation: 'NEW',
+                keywords: groupKeywords,
+                ads: groupAds,
+                negatives: negatives
+            };
+        });
+
+        return [{
+            name: campaignName,
+            campaign: campaignName,
+            type: 'SEARCH',
+            status: 'ENABLED',
+            budget: '',
+            operation: 'NEW',
+            adGroups: csvAdGroups,
+            negatives: negatives,
+            locations: locations
+        }];
+    };
+
+    // Step 6: Generate CSV
     const renderStep6 = () => {
-        // Calculate stats using dynamicAdGroups
-        const adGroupsForStats = getDynamicAdGroups();
-        const totalAdGroups = adGroupsForStats.length;
-        const totalKeywords = selectedKeywords.length;
-        const totalAds = generatedAds.length;
-        const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
-        
-        // Calculate number of locations
-        let totalLocations = 0;
-        let locationType = 'Locations';
-        
-        // Check presets first (they take priority over manual input)
-        if (zipPreset && zipPreset !== null && zipPreset !== '') {
-            // If ZIP preset is selected, use the preset number
-            const presetNumber = parseInt(zipPreset.toString().replace(/\D/g, '')) || 0;
-            totalLocations = presetNumber;
-            locationType = 'ZIP Codes';
-        } else if (cityPreset && cityPreset !== null && cityPreset !== '') {
-            // If city preset is selected, use the preset number
-            // If preset is '0', it means "all cities" - count from manualGeoInput
-            if (cityPreset === '0') {
-                // Count actual cities in manualGeoInput
-                const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
-                totalLocations = locations.length;
-                locationType = 'Cities';
-            } else {
-                const presetNumber = parseInt(cityPreset.toString().replace(/\D/g, '')) || 0;
-                totalLocations = presetNumber;
-                locationType = 'Cities';
+        const handleGenerateCSV = async () => {
+            setIsGeneratingCSV(true);
+            try {
+                const campaigns = convertCampaignToCSVFormat();
+                const result = generateGoogleAdsCSV(campaigns);
+                
+                setCsvContent(result.csv);
+                setCsvValidation(result.validation);
+                setCsvGenerated(true);
+                
+                // Download CSV
+                const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${campaignName.replace(/\s+/g, '_')}_google_ads.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                notifications.success('CSV generated successfully!', {
+                    title: 'CSV Generated',
+                    description: 'Your Google Ads CSV file has been generated and downloaded.'
+                });
+            } catch (error: any) {
+                console.error('CSV generation error:', error);
+                notifications.error('Failed to generate CSV', {
+                    title: 'CSV Generation Failed',
+                    description: error.message || 'An error occurred while generating the CSV file.'
+                });
+            } finally {
+                setIsGeneratingCSV(false);
             }
-        } else if (statePreset && statePreset !== null && statePreset !== '') {
-            // If state preset is selected, use the preset number
-            const presetNumber = parseInt(statePreset.toString().replace(/\D/g, '')) || 0;
-            totalLocations = presetNumber;
-            locationType = 'States';
-        } else if (manualGeoInput && manualGeoInput.trim() && !manualGeoInput.startsWith('[')) {
-            // Count comma-separated locations from manual input (only if no preset is selected and not a placeholder)
-            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
-            totalLocations = locations.length;
-            locationType = targetType === 'ZIP' ? 'ZIP Codes' : targetType === 'CITY' ? 'Cities' : targetType === 'STATE' ? 'States' : 'Locations';
-        } else {
-            // Default to 1 if only country is selected
-            totalLocations = 1;
-            locationType = 'Location';
-        }
-        
-        // Fallback: If still 0 or 1 but we have targetType and it's ZIP, try to check manualGeoInput
-        if (totalLocations <= 1 && targetType === 'ZIP') {
-            if (manualGeoInput && !manualGeoInput.startsWith('[') && manualGeoInput.trim()) {
-                const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
-                if (locations.length > 0) {
-                    totalLocations = locations.length;
-                    locationType = 'ZIP Codes';
+        };
+
+        return (
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-4">
+                        <FileText className="w-8 h-8 text-indigo-600" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-slate-800">Generate CSV</h2>
+                    <p className="text-slate-500 mt-2">Generate a Google Ads Editor-compatible CSV file</p>
+                </div>
+
+                {!csvGenerated ? (
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-8">
+                            <div className="text-center space-y-6">
+                                <p className="text-slate-600">
+                                    Click the button below to generate your CSV file. The file will be validated and formatted for Google Ads Editor import.
+                                </p>
+                                <Button
+                                    onClick={handleGenerateCSV}
+                                    disabled={isGeneratingCSV}
+                                    size="lg"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 text-lg"
+                                >
+                                    {isGeneratingCSV ? (
+                                        <>
+                                            <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                                            Generating CSV...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download className="w-5 h-5 mr-2" />
+                                            Generate CSV
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card className="border-green-200/60 bg-green-50/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-8">
+                            <div className="text-center space-y-6">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                                    <CheckCircle2 className="w-8 h-8 text-green-600" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-green-900">CSV Generated Successfully!</h3>
+                                <p className="text-slate-600">
+                                    Your CSV file has been generated and downloaded. You can now validate it or proceed to import it into Google Ads Editor.
+                                </p>
+                                
+                                {csvValidation && csvValidation.warnings.length > 0 && (
+                                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                        <p className="text-sm text-yellow-800">
+                                            <AlertTriangle className="w-4 h-4 inline mr-2" />
+                                            {csvValidation.warnings.length} warning(s) found. Review them before importing.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-4 justify-center mt-6">
+                                    <Button
+                                        onClick={() => {
+                                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                            const link = document.createElement('a');
+                                            const url = URL.createObjectURL(blob);
+                                            link.setAttribute('href', url);
+                                            link.setAttribute('download', `${campaignName.replace(/\s+/g, '_')}_google_ads.csv`);
+                                            link.style.visibility = 'hidden';
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        }}
+                                        variant="outline"
+                                        className="px-6"
+                                    >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Download Again
+                                    </Button>
+                                    <Button
+                                        onClick={() => setStep(7)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6"
+                                    >
+                                        Validate Your CSV
+                                        <ArrowRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                <div className="flex justify-between pt-6 border-t border-slate-200">
+                    <Button variant="ghost" onClick={() => setStep(5)} className="text-slate-500 hover:text-slate-800">
+                        Back to Review
+                    </Button>
+                    {csvGenerated && (
+                        <Button
+                            size="lg"
+                            onClick={() => setStep(7)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
+                        >
+                            Validate CSV <ArrowRight className="ml-2 w-5 h-5" />
+                        </Button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // Step 7: Validate CSV
+    const renderStep7 = () => {
+        const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+            const file = event.target.files?.[0];
+            if (file) {
+                setUploadedCsvFile(file);
+            }
+        };
+
+        const handleValidateCSV = async () => {
+            if (!uploadedCsvFile) {
+                notifications.warning('Please upload a CSV file first', {
+                    title: 'No File Selected'
+                });
+                return;
+            }
+
+            setIsValidatingCsv(true);
+            try {
+                const text = await uploadedCsvFile.text();
+                const lines = text.split('\n');
+                const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                
+                const rows: any[] = [];
+                for (let i = 1; i < lines.length; i++) {
+                    if (lines[i].trim()) {
+                        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                        const row: any = {};
+                        headers.forEach((header, idx) => {
+                            row[header] = values[idx] || '';
+                        });
+                        rows.push(row);
+                    }
                 }
+
+                const validation = validateRows(rows);
+                setCsvValidationResults({
+                    rows: rows,
+                    headers: headers,
+                    validation: validation,
+                    totalRows: rows.length
+                });
+
+                if (validation.fatalErrors.length === 0) {
+                    notifications.success('CSV validation completed', {
+                        title: 'Validation Successful',
+                        description: 'Your CSV file is ready for Google Ads Editor import.'
+                    });
+                } else {
+                    notifications.error('CSV validation found errors', {
+                        title: 'Validation Failed',
+                        description: `${validation.fatalErrors.length} fatal error(s) found. Please review and fix them.`
+                    });
+                }
+            } catch (error: any) {
+                console.error('CSV validation error:', error);
+                notifications.error('Failed to validate CSV', {
+                    title: 'Validation Error',
+                    description: error.message || 'An error occurred while validating the CSV file.'
+                });
+            } finally {
+                setIsValidatingCsv(false);
             }
-        }
+        };
 
         return (
             <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                        <CheckCircle2 className="w-8 h-8 text-green-600" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
+                        <FileCheck className="w-8 h-8 text-purple-600" />
                     </div>
-                    <h2 className="text-3xl font-bold text-slate-800">Campaign Validated Successfully!</h2>
-                    <p className="text-slate-500 mt-2">Your campaign is ready to export and implement</p>
+                    <h2 className="text-3xl font-bold text-slate-800">Validate Your CSV</h2>
+                    <p className="text-slate-500 mt-2">Upload and validate your CSV file for Google Ads Editor compatibility</p>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-indigo-600">1</div>
-                            <div className="text-sm text-slate-600 mt-2">Campaign</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-purple-600">{totalAdGroups}</div>
-                            <div className="text-sm text-slate-600 mt-2">Ad Groups</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-blue-600">{totalKeywords}</div>
-                            <div className="text-sm text-slate-600 mt-2">Keywords</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-green-600">{totalLocations}</div>
-                            <div className="text-sm text-slate-600 mt-2">{locationType}</div>
-                            {targetCountry && (
-                                <div className="text-xs text-slate-500 mt-1">{targetCountry}</div>
-                            )}
-                            {zipPreset && (
-                                <div className="text-xs text-slate-500 mt-1">Preset: {zipPreset} ZIP Codes</div>
-                            )}
-                            {cityPreset && cityPreset !== '0' && (
-                                <div className="text-xs text-slate-500 mt-1">Preset: {cityPreset} Cities</div>
-                            )}
-                            {statePreset && (
-                                <div className="text-xs text-slate-500 mt-1">Preset: {statePreset} States</div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Campaign Summary */}
                 <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldCheck className="w-5 h-5 text-green-600" />
-                            Validation Summary
-                        </CardTitle>
-                        <CardDescription>All checks passed - ready for export</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <Label className="text-slate-500">Campaign Name</Label>
-                                <Input 
-                                    value={campaignName} 
-                                    onChange={(e) => setCampaignName(e.target.value)}
-                                    placeholder="Enter campaign name"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-500">Structure</Label>
-                                <p className="font-medium text-slate-800 py-2">{GEO_SEGMENTATION.find(s => s.id === structure)?.name}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-500">Target Location</Label>
-                                <p className="font-medium text-slate-800 py-2">{targetCountry} ({targetType})</p>
-                            </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">
-                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                                <span>Click "Validate CSV" below to check all parameters before exporting.</span>
+                    <CardContent className="p-8">
+                        <div className="space-y-6">
+                            <div>
+                                <Label htmlFor="csv-upload" className="text-base font-semibold mb-2 block">
+                                    Upload CSV File
+                                </Label>
+                                <div className="flex items-center gap-4">
+                                    <Input
+                                        id="csv-upload"
+                                        type="file"
+                                        accept=".csv"
+                                        onChange={handleFileUpload}
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        onClick={handleValidateCSV}
+                                        disabled={!uploadedCsvFile || isValidatingCsv}
+                                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                                    >
+                                        {isValidatingCsv ? (
+                                            <>
+                                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                                Validating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FileCheck className="w-4 h-4 mr-2" />
+                                                Validate
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                                {uploadedCsvFile && (
+                                    <p className="text-sm text-slate-600 mt-2">
+                                        Selected: {uploadedCsvFile.name}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Export Actions */}
-                <div className="grid md:grid-cols-2 gap-6">
-                    <Button 
-                        size="lg" 
-                        variant="outline"
-                        onClick={() => {
-                            const validation = validateCSV();
-                            if (validation.valid) {
-                                if (validation.warnings.length > 0) {
-                                    notifications.success(`CSV Validation Passed! Warnings: ${validation.warnings.join(', ')}. You can proceed with export.`, {
-                                        title: 'Validation Passed'
-                                    });
-                                } else {
-                                    notifications.success('CSV Validation Passed! All checks passed. Ready for Google Ads Editor import.', {
-                                        title: 'Validation Passed'
-                                    });
-                                }
-                            } else {
-                                const errorList = validation.errors.map((err, i) => `${i + 1}. ${err}`).join('\n');
-                                const warningList = validation.warnings.length > 0 ? `\n\nWarnings:\n${validation.warnings.map((warn, i) => `${i + 1}. ${warn}`).join('\n')}` : '';
-                                notifications.error(`CSV Validation Failed! ${validation.errors.length} Error(s) and ${validation.warnings.length} Warning(s). Please fix these issues before exporting.\n\nErrors:\n${errorList}${warningList}`, {
-                                    title: 'CSV Validation Failed',
-                                    description: 'These errors will prevent Google Ads Editor from importing your campaign.',
-                                    priority: 'high',
-                                    duration: 10000, // Increased duration for readability
-                                });
-                            }
-                        }}
-                        className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-lg py-6"
-                    >
-                        <ShieldCheck className="mr-2 w-5 h-5" />
-                        Validate CSV
-                    </Button>
-                    <Button 
-                        size="lg" 
-                        onClick={async () => {
-                            // Validate first before generating
-                            const validation = validateCSV();
-                            if (!validation.valid) {
-                                const errorList = validation.errors.map((err, i) => `${i + 1}. ${err}`).join('\n');
-                                const warningList = validation.warnings.length > 0 ? `\n\nWarnings:\n${validation.warnings.map((warn, i) => `${i + 1}. ${warn}`).join('\n')}` : '';
-                                notifications.error(`CSV Validation Failed! ${validation.errors.length} Error(s) and ${validation.warnings.length} Warning(s). Please fix these issues before exporting.\n\nErrors:\n${errorList}${warningList}`, {
-                                    title: 'CSV Validation Failed',
-                                    description: 'These errors will prevent Google Ads Editor from importing your campaign.',
-                                    priority: 'high',
-                                    duration: 10000, // Increased duration for readability
-                                });
-                                return;
-                            }
-                            
-                            // If validation passes, proceed with CSV generation
-                            if (validation.warnings.length > 0) {
-                                notifications.warning(`CSV has ${validation.warnings.length} warning(s): ${validation.warnings.join(', ')}. Proceeding with export...`, {
-                                    title: 'Validation Warnings',
-                                    duration: 5000,
-                                });
-                            }
-                            
-                            await generateCSV();
-                            notifications.success('CSV file downloaded successfully!', {
-                                title: 'Export Complete',
-                                description: 'Your campaign CSV is ready to import into Google Ads Editor.',
-                            });
-                        }}
-                        className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg py-6"
-                    >
-                        <Download className="mr-2 w-5 h-5" />
-                        Download CSV for Google Ads Editor
-                    </Button>
-                    <Button 
-                        variant="outline"
-                        size="lg" 
-                        onClick={() => handleSaveDraft()}
-                        className="py-6"
-                    >
-                        <Save className="mr-2 w-5 h-5" />
-                        Save to Saved Campaigns
-                    </Button>
-                </div>
+                {csvValidationResults && (
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardHeader>
+                            <CardTitle>Validation Results</CardTitle>
+                            <CardDescription>
+                                Detailed column-by-column validation report
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="p-4 bg-slate-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-slate-800">{csvValidationResults.totalRows}</div>
+                                        <div className="text-sm text-slate-600">Total Rows</div>
+                                    </div>
+                                    <div className="p-4 bg-red-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-red-600">{csvValidationResults.validation.fatalErrors.length}</div>
+                                        <div className="text-sm text-red-600">Fatal Errors</div>
+                                    </div>
+                                    <div className="p-4 bg-yellow-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-yellow-600">{csvValidationResults.validation.warnings.length}</div>
+                                        <div className="text-sm text-yellow-600">Warnings</div>
+                                    </div>
+                                </div>
 
-                {/* Next Actions */}
-                <div className="flex justify-between items-center pt-4">
-                    {/* Bug_67: Fix back button to go to previous step */}
-                    <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
-                        <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-                        Back to Review
+                                {csvValidationResults.validation.fatalErrors.length > 0 && (
+                                    <div className="mt-6">
+                                        <h3 className="font-semibold text-red-600 mb-3">Fatal Errors</h3>
+                                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                                            {csvValidationResults.validation.fatalErrors.map((error: any, idx: number) => (
+                                                <div key={idx} className="p-3 bg-red-50 border border-red-200 rounded">
+                                                    <div className="text-sm font-medium text-red-800">
+                                                        Row {error.rowIndex + 1}: {error.errors.join(', ')}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {csvValidationResults.validation.warnings.length > 0 && (
+                                    <div className="mt-6">
+                                        <h3 className="font-semibold text-yellow-600 mb-3">Warnings</h3>
+                                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                                            {csvValidationResults.validation.warnings.map((warning: any, idx: number) => (
+                                                <div key={idx} className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                                    <div className="text-sm font-medium text-yellow-800">
+                                                        {warning.rowIndex !== undefined ? `Row ${warning.rowIndex + 1}: ` : ''}
+                                                        {warning.msg}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {csvValidationResults.validation.fatalErrors.length === 0 && csvValidationResults.validation.warnings.length === 0 && (
+                                    <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+                                        <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                                        <h3 className="font-semibold text-green-800 mb-2">All Validations Passed!</h3>
+                                        <p className="text-sm text-green-700">
+                                            Your CSV file is ready for Google Ads Editor import.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="mt-6">
+                                    <h3 className="font-semibold text-slate-800 mb-3">Column Details</h3>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Column Name</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead>Details</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {csvValidationResults.headers.map((header: string, idx: number) => {
+                                                    const hasErrors = csvValidationResults.validation.fatalErrors.some(
+                                                        (e: any) => e.rowIndex !== undefined
+                                                    );
+                                                    const hasWarnings = csvValidationResults.validation.warnings.some(
+                                                        (w: any) => w.rowIndex !== undefined
+                                                    );
+                                                    
+                                                    return (
+                                                        <TableRow key={idx}>
+                                                            <TableCell className="font-medium">{header}</TableCell>
+                                                            <TableCell>
+                                                                {hasErrors ? (
+                                                                    <Badge variant="destructive">Error</Badge>
+                                                                ) : hasWarnings ? (
+                                                                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Warning</Badge>
+                                                                ) : (
+                                                                    <Badge className="bg-green-100 text-green-800">OK</Badge>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="text-sm text-slate-600">
+                                                                {hasErrors || hasWarnings ? 'Review required' : 'Valid'}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                <div className="flex justify-between pt-6 border-t border-slate-200">
+                    <Button variant="ghost" onClick={() => setStep(6)} className="text-slate-500 hover:text-slate-800">
+                        Back to Generate CSV
                     </Button>
-                    <div className="flex gap-3">
-                        <Button 
-                            variant="outline"
-                            onClick={() => {
-                                setStep(1);
-                                setCampaignName('');
-                                setSelectedKeywords([]);
-                                setGeneratedAds([]);
-                            }}
-                        >
-                            <Plus className="mr-2 w-4 h-4" />
-                            Create Another Campaign
-                        </Button>
-                        <Button 
-                            variant="outline"
-                            onClick={() => window.location.href = '/'}
-                        >
-                            Go to Dashboard
-                        </Button>
-                    </div>
                 </div>
             </div>
         );
     };
+
+    // Old Step 6 removed - replaced with new Step 6 (Generate CSV) and Step 7 (Validate CSV)
 
     // Render Saved Campaigns View
     const renderSavedCampaigns = () => {
@@ -5477,7 +5727,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
     // Main render based on step
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen relative">
+            {/* Auto Fill Button */}
+            <AutoFillButton onAutoFill={handleAutoFill} />
+            
             {/* Tabs at Top Right */}
             <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-6 py-3">
@@ -5506,7 +5759,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             { num: 3, label: 'Ads & Ext.', icon: FileText },
                             { num: 4, label: 'Geo Target', icon: Globe },
                             { num: 5, label: 'Review', icon: CheckCircle2 },
-                            { num: 6, label: 'Validate', icon: ShieldCheck }
+                            { num: 6, label: 'Generate CSV', icon: Download },
+                            { num: 7, label: 'Validate CSV', icon: FileCheck }
                         ].map(({ num, label, icon: Icon }, idx, arr) => (
                             <React.Fragment key={num}>
                                 <div 
@@ -5549,6 +5803,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 {step === 4 && renderStep4()}
                 {step === 5 && renderStep5()}
                 {step === 6 && renderStep6()}
+                {step === 7 && renderStep7()}
             </div>
 
                     {/* Success Modal */}
