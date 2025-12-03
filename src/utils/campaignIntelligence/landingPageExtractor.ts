@@ -36,6 +36,25 @@ export async function extractLandingPageContent(
     timeout?: number;
   }
 ): Promise<LandingPageExtractionResult> {
+  // Validate input
+  if (!url || typeof url !== 'string') {
+    return {
+      domain: 'example.com',
+      title: null,
+      h1: null,
+      metaDescription: null,
+      services: [],
+      phones: [],
+      emails: [],
+      hours: null,
+      addresses: [],
+      schemas: {},
+      page_text_tokens: [],
+      extractionMethod: 'fallback',
+      extractedAt: new Date().toISOString(),
+    };
+  }
+
   const domain = extractDomain(url);
   const result: LandingPageExtractionResult = {
     domain,
@@ -63,10 +82,18 @@ export async function extractLandingPageContent(
     }
 
     // Fallback to client-side extraction
+    // This may fail due to CSP - that's expected and handled gracefully
     const clientResult = await extractViaClient(url);
     return { ...result, ...clientResult, extractionMethod: 'crawl' };
-  } catch (error) {
-    console.warn('Landing page extraction failed:', error);
+  } catch (error: any) {
+    // Silently handle CSP violations - they're expected
+    const isCSPError = error?.message?.includes('CSP') || 
+                      error?.message?.includes('Content Security Policy') ||
+                      error?.message?.includes('violates');
+    
+    if (!isCSPError) {
+      console.warn('Landing page extraction failed:', error);
+    }
     return { ...result, extractionMethod: 'fallback' };
   }
 }
@@ -75,11 +102,19 @@ export async function extractLandingPageContent(
  * Extract domain from URL
  */
 function extractDomain(url: string): string {
+  if (!url || typeof url !== 'string') {
+    return 'example.com';
+  }
   try {
     const urlObj = new URL(url);
     return urlObj.hostname.replace(/^www\./, '');
   } catch {
-    return url.split('/')[0].replace(/^www\./, '');
+    // Fallback: try to extract domain manually
+    const cleaned = url.trim();
+    if (cleaned.includes('/')) {
+      return cleaned.split('/')[0].replace(/^https?:\/\//, '').replace(/^www\./, '');
+    }
+    return cleaned.replace(/^https?:\/\//, '').replace(/^www\./, '');
   }
 }
 
@@ -97,7 +132,20 @@ async function extractViaHeadless(url: string, timeout = 10000): Promise<Partial
  */
 async function extractViaClient(url: string): Promise<Partial<LandingPageExtractionResult>> {
   try {
+    // Validate URL first
+    if (!url || typeof url !== 'string') {
+      return {};
+    }
+
+    // Check if URL is valid
+    try {
+      new URL(url);
+    } catch {
+      return {};
+    }
+
     // Use CORS proxy or direct fetch if same-origin
+    // Note: This may fail due to CSP restrictions - that's expected
     const response = await fetch(url, {
       mode: 'cors',
       headers: {
@@ -111,9 +159,17 @@ async function extractViaClient(url: string): Promise<Partial<LandingPageExtract
 
     const html = await response.text();
     return parseHTML(html);
-  } catch (error) {
-    // If CORS fails, return empty result (user can manually enter)
-    console.warn('Client-side extraction failed (CORS or network):', error);
+  } catch (error: any) {
+    // If CORS fails or CSP blocks, return empty result (user can manually enter)
+    // Don't log CSP violations as errors - they're expected
+    const isCSPError = error?.message?.includes('CSP') || 
+                      error?.message?.includes('Content Security Policy') ||
+                      error?.message?.includes('violates') ||
+                      error?.name === 'TypeError' && error?.message?.includes('fetch');
+    
+    if (!isCSPError) {
+      console.warn('Client-side extraction failed (CORS or network):', error);
+    }
     return {};
   }
 }
@@ -313,7 +369,7 @@ function extractHours(html: string, doc: Document): Record<string, string> | nul
  * Extract services from page content
  */
 function extractServices(html: string, doc: Document): string[] {
-  const services: string[] = new Set();
+  const services = new Set<string>();
   
   // Look for service lists (common patterns)
   const serviceKeywords = ['services', 'we do', 'we offer', 'our services', 'what we do'];

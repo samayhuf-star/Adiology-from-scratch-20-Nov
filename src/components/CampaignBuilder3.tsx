@@ -6,7 +6,7 @@ import {
   Target, Zap, Layers, TrendingUp, Building2, ShoppingBag,
   Phone, Mail, Calendar, Clock, Eye, FileSpreadsheet, Copy,
   MessageSquare, Gift, Image as ImageIcon, DollarSign, MapPin as MapPinIcon,
-  Star, RefreshCw
+  Star, RefreshCw, Smartphone
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -314,14 +314,44 @@ export const CampaignBuilder3: React.FC = () => {
 
     setLoading(true);
     try {
-      // Extract landing page content
-      const landingData = await extractLandingPageContent(campaignData.url);
+      // Extract landing page content (may fail due to CSP - that's OK)
+      let landingData: LandingPageExtractionResult;
+      try {
+        landingData = await extractLandingPageContent(campaignData.url || '');
+      } catch (extractError: any) {
+        // If extraction fails (e.g., CSP violation), use fallback
+        console.warn('Landing page extraction failed, using fallback:', extractError);
+        const extractDomain = (url: string): string => {
+          if (!url || typeof url !== 'string') return 'example.com';
+          try {
+            const urlObj = new URL(url);
+            return urlObj.hostname.replace(/^www\./, '');
+          } catch {
+            return url.split('/')[0].replace(/^https?:\/\//, '').replace(/^www\./, '') || 'example.com';
+          }
+        };
+        landingData = {
+          domain: extractDomain(campaignData.url || 'example.com'),
+          title: null,
+          h1: null,
+          metaDescription: null,
+          services: [],
+          phones: [],
+          emails: [],
+          hours: null,
+          addresses: [],
+          schemas: {},
+          page_text_tokens: [],
+          extractionMethod: 'fallback',
+          extractedAt: new Date().toISOString(),
+        };
+      }
       
-      // Detect intent, CTA, and vertical
+      // Detect intent, CTA, and vertical (with null checks)
       const intentResult = mapGoalToIntent(
-        landingData.title || landingData.h1 || '',
-        landingData as any,
-        landingData.phones?.[0]
+        (landingData?.title || landingData?.h1 || '').trim(),
+        landingData || {} as any,
+        landingData?.phones?.[0] || ''
       );
 
       // Determine vertical from content
