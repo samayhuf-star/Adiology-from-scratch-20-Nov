@@ -47,6 +47,7 @@ interface UserStats {
     myWebsites: number;
     myPresets: number;
     myDomains: number;
+    myNegativeKeywords: number;
   };
 }
 
@@ -215,6 +216,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       let myWebsites = 0;
       let myPresets = 0;
       let myDomains = 0;
+      let myNegativeKeywords = 0;
 
       try {
         // Get campaigns from history
@@ -231,6 +233,12 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           item.type === 'campaign-preset' ||
           item.type?.includes('preset') ||
           item.type?.includes('template')
+        ).length;
+
+        // Get saved negative keywords from history
+        myNegativeKeywords = allHistory.filter(item => 
+          item.type === 'negative-keywords' ||
+          item.type?.includes('negative')
         ).length;
 
         // Get published websites (gracefully handle missing table)
@@ -283,6 +291,7 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           myWebsites,
           myPresets,
           myDomains,
+          myNegativeKeywords,
         },
       });
 
@@ -753,7 +762,10 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
         </h2>
         <div className={`grid ${getResponsiveGridCols(screenSize)} ${getResponsiveGap(screenSize)}`}>
           {/* My Campaigns */}
-          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
+          <Card 
+            className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group cursor-pointer ${getResponsivePadding(screenSize)}`}
+            onClick={() => onNavigate('builder-2')}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
@@ -774,7 +786,10 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           </Card>
 
           {/* My Presets */}
-          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
+          <Card 
+            className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group cursor-pointer ${getResponsivePadding(screenSize)}`}
+            onClick={() => onNavigate('campaign-presets')}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
@@ -794,23 +809,26 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
             </div>
           </Card>
 
-          {/* My Domains */}
-          <Card className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group ${getResponsivePadding(screenSize)}`}>
+          {/* Negative Keywords Builder */}
+          <Card 
+            className={`relative overflow-hidden border-2 hover:shadow-xl transition-all duration-300 group cursor-pointer ${getResponsivePadding(screenSize)}`}
+            onClick={() => onNavigate('negative-keywords')}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 opacity-5 group-hover:opacity-10 transition-opacity"></div>
             <div className="relative space-y-6">
               <div className="flex items-center justify-between">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
-                  <Globe className="w-7 h-7 text-white" />
+                  <Target className="w-7 h-7 text-white" />
                 </div>
                 <Badge className="bg-amber-100 text-amber-700 border-amber-300 px-3 py-1">
-                  Active
+                  Saved
                 </Badge>
               </div>
               <div className="space-y-2">
                 <h3 className="text-3xl font-bold text-slate-800">
-                  {(stats?.userResources?.myDomains || 0).toLocaleString()}
+                  {(stats?.userResources?.myNegativeKeywords || 0).toLocaleString()}
                 </h3>
-                <p className="text-base text-slate-600">My Domains</p>
+                <p className="text-base text-slate-600">Negative Keywords Builder</p>
               </div>
             </div>
           </Card>
