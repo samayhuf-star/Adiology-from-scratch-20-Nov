@@ -32,7 +32,7 @@ import {
   type ExpandedTextAd,
   type CallOnlyAd
 } from '../utils/googleAdGenerator';
-import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
+import { exportCampaignToCSVV3, validateCSVBeforeExport, generateCSVV3 } from '../utils/csvGeneratorV3';
 import { historyService } from '../utils/historyService';
 import { api } from '../utils/api';
 import { AutoFillButton } from './AutoFillButton';
@@ -91,6 +91,21 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
   'office',
   'headquater',
   'brand',
+];
+
+// Extension types definition (used in handlers and render)
+const extensionTypes = [
+  { id: 'snippet', label: 'SNIPPET EXTENSION', icon: FileText },
+  { id: 'callout', label: 'CALLOUT EXTENSION', icon: MessageSquare },
+  { id: 'sitelink', label: 'SITELINK EXTENSION', icon: Link2 },
+  { id: 'call', label: 'CALL EXTENSION', icon: Phone },
+  { id: 'price', label: 'PRICE EXTENSION', icon: DollarSign },
+  { id: 'app', label: 'APP EXTENSION', icon: Phone },
+  { id: 'location', label: 'LOCATION EXTENSION', icon: MapPinIcon },
+  { id: 'message', label: 'MESSAGE EXTENSION', icon: MessageSquare },
+  { id: 'leadform', label: 'LEAD FORM EXTENSION', icon: FileText },
+  { id: 'promotion', label: 'PROMOTION EXTENSION', icon: Gift },
+  { id: 'image', label: 'IMAGE EXTENSION', icon: ImageIcon },
 ];
 
 // Location Presets - Top locations
@@ -474,17 +489,20 @@ export const CampaignBuilder3: React.FC = () => {
           useFallback = true;
         }
       } catch (apiError: any) {
-        // Check if it's an expected 404 (backend not deployed)
+        // Check if it's an expected 404 (backend not deployed) - silently fallback
         const isExpectedError = 
           apiError?.name === 'NotFoundError' ||
           apiError?.message?.includes('404') ||
-          apiError?.message?.includes('Request failed');
+          apiError?.message?.includes('Request failed') ||
+          apiError?.message?.includes('Network error');
         
         if (isExpectedError) {
-          console.log('Python API unavailable, using local keyword generation fallback');
+          // Silently use fallback - don't log as error
           useFallback = true;
         } else {
-          throw apiError; // Re-throw unexpected errors
+          // Only log unexpected errors
+          console.error('Unexpected API error:', apiError);
+          useFallback = true;
         }
       }
 
@@ -1010,9 +1028,82 @@ export const CampaignBuilder3: React.FC = () => {
   };
 
   const handleEditAd = (adId: string) => {
-    // TODO: Implement ad editing dialog
-    notifications.info('Ad editing feature coming soon', { title: 'Edit Ad' });
+    const ad = campaignData.ads.find(a => a.id === adId);
+    if (!ad) {
+      notifications.error('Ad not found', { title: 'Error' });
+      return;
+    }
+
+    // For now, open a simple edit dialog using prompt/confirm
+    // In the future, this can be replaced with a proper modal component
+    if (ad.type === 'rsa' || ad.adType === 'RSA') {
+      const newHeadline = prompt('Edit first headline:', ad.headlines?.[0] || '');
+      if (newHeadline !== null && newHeadline.trim()) {
+        setCampaignData(prev => ({
+          ...prev,
+          ads: prev.ads.map(a => 
+            a.id === adId 
+              ? { ...a, headlines: [newHeadline.trim(), ...(a.headlines?.slice(1) || [])] }
+              : a
+          ),
+        }));
+        notifications.success('Ad updated', { title: 'Updated' });
+      }
+    } else if (ad.type === 'dki' || ad.adType === 'DKI') {
+      const newHeadline = prompt('Edit headline 1:', ad.headline1 || '');
+      if (newHeadline !== null && newHeadline.trim()) {
+        setCampaignData(prev => ({
+          ...prev,
+          ads: prev.ads.map(a => 
+            a.id === adId 
+              ? { ...a, headline1: newHeadline.trim() }
+              : a
+          ),
+        }));
+        notifications.success('Ad updated', { title: 'Updated' });
+      }
+    } else if (ad.type === 'call' || ad.adType === 'CallOnly') {
+      const newHeadline = prompt('Edit headline 1:', ad.headline1 || '');
+      if (newHeadline !== null && newHeadline.trim()) {
+        setCampaignData(prev => ({
+          ...prev,
+          ads: prev.ads.map(a => 
+            a.id === adId 
+              ? { ...a, headline1: newHeadline.trim() }
+              : a
+          ),
+        }));
+        notifications.success('Ad updated', { title: 'Updated' });
+      }
+    }
   };
+
+  const handleDuplicateAd = React.useCallback((adId: string) => {
+    if (campaignData.ads.length >= 3) {
+      notifications.warning('Maximum 3 ads allowed. Please delete an ad first to duplicate.', {
+        title: 'Limit Reached'
+      });
+      return;
+    }
+
+    const ad = campaignData.ads.find(a => a.id === adId);
+    if (!ad) {
+      notifications.error('Ad not found', { title: 'Error' });
+      return;
+    }
+
+    const duplicatedAd = {
+      ...ad,
+      id: `ad-${Date.now()}-${Math.random()}`,
+    };
+
+    setCampaignData(prev => ({
+      ...prev,
+      ads: [...prev.ads, duplicatedAd].slice(0, 3), // Ensure max 3
+    }));
+
+    notifications.success('Ad duplicated', { title: 'Duplicated' });
+  }, [campaignData.ads]);
 
   const handleDeleteAd = (adId: string) => {
     setCampaignData(prev => ({
@@ -1032,30 +1123,289 @@ export const CampaignBuilder3: React.FC = () => {
   };
 
   const handleAddExtension = (adId: string, extensionType: string) => {
+    // Get extension label from extensionTypes
+    const extensionTypeInfo = extensionTypes.find(ext => ext.id === extensionType);
+    const extensionLabel = extensionTypeInfo?.label || extensionType;
+
+    // Create extension with proper format based on type
+    const createExtension = (type: string, label: string) => {
+      const baseExt = {
+        id: `ext-${Date.now()}-${Math.random()}`,
+        type: type,
+        extensionType: type,
+        text: label,
+        label: label,
+      };
+
+      if (type === 'sitelink') {
+        return {
+          ...baseExt,
+          links: [{ text: label, url: campaignData.url, description: '' }],
+        };
+      } else if (type === 'callout') {
+        return {
+          ...baseExt,
+          callouts: [label],
+          values: [label],
+        };
+      } else if (type === 'snippet') {
+        return {
+          ...baseExt,
+          header: 'Services',
+          values: [label],
+        };
+      } else if (type === 'call') {
+        return {
+          ...baseExt,
+          phone: '',
+          phoneNumber: '',
+          countryCode: 'US',
+        };
+      }
+      return baseExt;
+    };
+
+    setCampaignData(prev => {
+      const updated = {
+        ...prev,
+        ads: prev.ads.map(ad => {
+          if (ad.id === adId) {
+            const newExtension = createExtension(extensionType, extensionLabel);
+            return {
+              ...ad,
+              extensions: [...(ad.extensions || []), newExtension],
+            };
+          }
+          return ad;
+        }),
+      };
+      
+      // Auto-save after adding extension
+      setTimeout(() => autoSaveDraft(), 100);
+      
+      return updated;
+    });
+    
+    notifications.success(`${extensionLabel} added`, { title: 'Extension Added' });
+  };
+
+  const handleAddExtensionToAllAds = (extensionType: string) => {
+    if (campaignData.ads.length === 0) {
+      notifications.warning('Please create ads first before adding extensions', {
+        title: 'No Ads'
+      });
+      return;
+    }
+
+    // Get extension label from extensionTypes
+    const extensionTypeInfo = extensionTypes.find(ext => ext.id === extensionType);
+    const extensionLabel = extensionTypeInfo?.label || extensionType;
+
+    // Create extension with proper format based on type
+    const createExtension = (type: string, label: string) => {
+      const baseExt = {
+        id: `ext-${Date.now()}-${Math.random()}`,
+        type: type,
+        extensionType: type, // Also set extensionType for CSV compatibility
+        text: label,
+        label: label,
+      };
+
+      // Format based on extension type
+      if (type === 'sitelink') {
+        return {
+          ...baseExt,
+          links: [{ text: label, url: prev.url, description: '' }],
+        };
+      } else if (type === 'callout') {
+        return {
+          ...baseExt,
+          callouts: [label],
+          values: [label],
+        };
+      } else if (type === 'snippet') {
+        return {
+          ...baseExt,
+          header: 'Services',
+          values: [label],
+        };
+      } else if (type === 'call') {
+        return {
+          ...baseExt,
+          phone: '',
+          phoneNumber: '',
+          countryCode: 'US',
+        };
+      }
+      return baseExt;
+    };
+
+      const updatedAds = prev.ads.map(ad => {
+        const newExtension = createExtension(extensionType, extensionLabel);
+        return {
+          ...ad,
+          extensions: [...(ad.extensions || []), newExtension],
+        };
+      });
+      
+      const updated = {
+        ...prev,
+        ads: updatedAds,
+      };
+      
+      // Auto-save after adding extensions
+      setTimeout(() => autoSaveDraft(), 100);
+      
+      notifications.success(`${extensionLabel} added to all ${prev.ads.length} ad(s)`, {
+        title: 'Extensions Added'
+      });
+      
+      return updated;
+    });
+  };
+
+  const handleRemoveExtension = (adId: string, extensionId: string) => {
     setCampaignData(prev => ({
       ...prev,
       ads: prev.ads.map(ad => {
         if (ad.id === adId) {
-          const newExtension = {
-            id: `ext-${Date.now()}`,
-            type: extensionType,
-            text: '',
-          };
           return {
             ...ad,
-            extensions: [...(ad.extensions || []), newExtension],
+            extensions: (ad.extensions || []).filter(ext => ext.id !== extensionId),
           };
         }
         return ad;
       }),
     }));
+    notifications.success('Extension removed', { title: 'Removed' });
   };
 
+
+  // Helper function to convert ads to CSV-compatible format
+  const convertAdsForCSV = (ads: any[]): any[] => {
+    return ads.map(ad => {
+      // If RSA ad with headlines array, convert to headline1, headline2, headline3 format
+      if ((ad.type === 'rsa' || ad.adType === 'RSA') && ad.headlines && Array.isArray(ad.headlines)) {
+        // Ensure at least 3 headlines and 2 descriptions
+        const headlines = ad.headlines.length >= 3 ? ad.headlines : [
+          ...ad.headlines,
+          ...Array(3 - ad.headlines.length).fill('Professional Service')
+        ];
+        const descriptions = (ad.descriptions || []).length >= 2 ? ad.descriptions : [
+          ...(ad.descriptions || []),
+          ...Array(2 - (ad.descriptions?.length || 0)).fill('Get professional service you can trust.')
+        ];
+        
+        return {
+          ...ad,
+          type: 'rsa',
+          headline1: headlines[0] || 'Professional Service',
+          headline2: headlines[1] || 'Expert Solutions',
+          headline3: headlines[2] || 'Quality Guaranteed',
+          headline4: headlines[3] || '',
+          headline5: headlines[4] || '',
+          headline6: headlines[5] || '',
+          headline7: headlines[6] || '',
+          headline8: headlines[7] || '',
+          headline9: headlines[8] || '',
+          headline10: headlines[9] || '',
+          headline11: headlines[10] || '',
+          headline12: headlines[11] || '',
+          headline13: headlines[12] || '',
+          headline14: headlines[13] || '',
+          headline15: headlines[14] || '',
+          description1: descriptions[0] || 'Get professional service you can trust.',
+          description2: descriptions[1] || 'Contact us today for expert assistance.',
+          description3: descriptions[2] || '',
+          description4: descriptions[3] || '',
+          path1: ad.displayPath?.[0] || '',
+          path2: ad.displayPath?.[1] || '',
+          final_url: ad.finalUrl || campaignData.url,
+          extensions: convertExtensionsForCSV(ad.extensions || []),
+        };
+      }
+      // DKI ads - ensure they have required fields
+      if ((ad.type === 'dki' || ad.adType === 'DKI')) {
+        return {
+          ...ad,
+          type: 'dki',
+          headline1: ad.headline1 || 'Professional Service',
+          headline2: ad.headline2 || 'Expert Solutions',
+          headline3: ad.headline3 || 'Quality Guaranteed',
+          description1: ad.description1 || 'Get professional service you can trust.',
+          description2: ad.description2 || 'Contact us today for expert assistance.',
+          final_url: ad.finalUrl || ad.final_url || campaignData.url,
+          extensions: convertExtensionsForCSV(ad.extensions || []),
+        };
+      }
+      // Call ads - ensure they have required fields
+      if ((ad.type === 'call' || ad.adType === 'CallOnly')) {
+        return {
+          ...ad,
+          type: 'callonly',
+          headline1: ad.headline1 || 'Call Now',
+          headline2: ad.headline2 || '24/7 Service',
+          description1: ad.description1 || 'Get professional service you can trust.',
+          description2: ad.description2 || 'Contact us today for expert assistance.',
+          phoneNumber: ad.phoneNumber || '',
+          final_url: ad.finalUrl || ad.final_url || campaignData.url,
+          extensions: convertExtensionsForCSV(ad.extensions || []),
+        };
+      }
+      // Fallback - ensure extensions are included
+      return {
+        ...ad,
+        final_url: ad.finalUrl || ad.final_url || campaignData.url,
+        extensions: convertExtensionsForCSV(ad.extensions || []),
+      };
+    });
+  };
+
+  // Helper function to convert extensions to CSV-compatible format
+  const convertExtensionsForCSV = (extensions: any[]): any[] => {
+    return extensions.map(ext => {
+      // Convert our extension format to CSV generator expected format
+      const baseExt = {
+        ...ext,
+        extensionType: ext.type, // CSV generator expects extensionType
+      };
+
+      // Format extensions based on type
+      if (ext.type === 'sitelink') {
+        return {
+          ...baseExt,
+          links: ext.links || [{ text: ext.text || ext.label || 'Learn More', url: campaignData.url }],
+        };
+      } else if (ext.type === 'callout') {
+        return {
+          ...baseExt,
+          callouts: ext.callouts || [ext.text || ext.label || 'Professional Service'],
+        };
+      } else if (ext.type === 'snippet') {
+        return {
+          ...baseExt,
+          header: ext.header || ext.label || 'Services',
+          values: ext.values || [ext.text || 'Expert Solutions'],
+        };
+      } else if (ext.type === 'call') {
+        return {
+          ...baseExt,
+          phone: ext.phone || ext.phoneNumber || '',
+          phoneNumber: ext.phone || ext.phoneNumber || '',
+          countryCode: ext.countryCode || 'US',
+        };
+      }
+      return baseExt;
+    });
+  };
 
   // Step 6: CSV Generation & Validation
   const handleGenerateCSV = async () => {
     setLoading(true);
     try {
+      // Convert ads to CSV-compatible format
+      const convertedAds = convertAdsForCSV(campaignData.ads);
+      
       const structure = generateCampaignStructure(
         campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
         {
@@ -1068,15 +1418,20 @@ export const CampaignBuilder3: React.FC = () => {
             exact: campaignData.keywordTypes.exact,
           },
           url: campaignData.url,
-          ads: campaignData.ads,
+          ads: convertedAds, // Use converted ads
           negativeKeywords: campaignData.negativeKeywords, // Include negative keywords in structure
+          selectedStates: campaignData.locations.states, // Include states
+          selectedCities: campaignData.locations.cities, // Include cities
+          selectedZips: campaignData.locations.zipCodes, // Include zip codes
+          targetCountry: campaignData.targetCountry, // Include target country
         } as StructureSettings
       );
 
       const validation = validateCSVBeforeExport(structure);
       
       if (validation.isValid) {
-        const csvData = await exportCampaignToCSVV3(structure);
+        // Generate CSV content as string (not download)
+        const csvData = generateCSVV3(structure);
         setCampaignData(prev => ({
           ...prev,
           csvData,
@@ -1453,19 +1808,6 @@ export const CampaignBuilder3: React.FC = () => {
     const allAdGroups = ['ALL_AD_GROUPS', ...campaignData.adGroups.map(ag => ag.name)];
     // Limit display to maximum 3 ads
     const displayAds = campaignData.ads.length > 0 ? campaignData.ads.slice(0, 3) : [];
-    const extensionTypes = [
-      { id: 'snippet', label: 'SNIPPET EXTENSION', icon: FileText },
-      { id: 'callout', label: 'CALLOUT EXTENSION', icon: MessageSquare },
-      { id: 'sitelink', label: 'SITELINK EXTENSION', icon: Link2 },
-      { id: 'call', label: 'CALL EXTENSION', icon: Phone },
-      { id: 'price', label: 'PRICE EXTENSION', icon: DollarSign },
-      { id: 'app', label: 'APP EXTENSION', icon: Phone },
-      { id: 'location', label: 'LOCATION EXTENSION', icon: MapPinIcon },
-      { id: 'message', label: 'MESSAGE EXTENSION', icon: MessageSquare },
-      { id: 'leadform', label: 'LEAD FORM EXTENSION', icon: FileText },
-      { id: 'promotion', label: 'PROMOTION EXTENSION', icon: Gift },
-      { id: 'image', label: 'IMAGE EXTENSION', icon: ImageIcon },
-    ];
 
     return (
       <div className="max-w-7xl mx-auto p-6">
@@ -1709,14 +2051,13 @@ export const CampaignBuilder3: React.FC = () => {
                             {ad.extensions.map((ext: any) => (
                             <div key={ext.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
                               <div className="flex items-center gap-2">
-                                {ext.type === 'call' && <Phone className="w-4 h-4 text-green-600" />}
-                                {ext.type === 'price' && <DollarSign className="w-4 h-4 text-blue-600" />}
-                                {ext.type === 'message' && <MessageSquare className="w-4 h-4 text-purple-600" />}
-                                {ext.type === 'leadform' && <FileText className="w-4 h-4 text-orange-600" />}
-                                {ext.type === 'promotion' && <Gift className="w-4 h-4 text-pink-600" />}
-                                {ext.type === 'image' && <ImageIcon className="w-4 h-4 text-indigo-600" />}
+                                {(() => {
+                                  const extTypeInfo = extensionTypes.find(e => e.id === ext.type);
+                                  const Icon = extTypeInfo?.icon || FileText;
+                                  return <Icon className="w-4 h-4 text-indigo-600" />;
+                                })()}
                                 <span className="text-sm text-slate-700">
-                                  {ext.text || ext.label || ext.type}
+                                  {ext.text || ext.label || extensionTypes.find(e => e.id === ext.type)?.label || ext.type}
                                 </span>
                           </div>
                               <Button
@@ -1772,6 +2113,18 @@ export const CampaignBuilder3: React.FC = () => {
       autoSaveDraft();
     };
 
+    const handleStatePreset = (count: number) => {
+      const states = LOCATION_PRESETS.states.slice(0, count);
+      setCampaignData(prev => ({
+        ...prev,
+        locations: {
+          ...prev.locations,
+          states: [...new Set([...prev.locations.states, ...states])],
+        },
+      }));
+      autoSaveDraft();
+    };
+
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-8 flex items-center justify-between">
@@ -1820,117 +2173,226 @@ export const CampaignBuilder3: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {!hasSpecificLocations ? (
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <Globe className="w-8 h-8 text-green-600 mt-1" />
+              {/* Show info message if no specific locations selected */}
+              {!hasSpecificLocations && (
+                <Card className="bg-green-50 border-green-200 mb-6">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Globe className="w-5 h-5 text-green-600 mt-0.5" />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-green-800 mb-2">Whole Country Targeting</h3>
-                        <p className="text-sm text-green-700 mb-4">
-                          Your campaign will target the entire country selected above.
+                        <h3 className="font-semibold text-green-800 mb-1 text-sm">Whole Country Targeting (Default)</h3>
+                        <p className="text-xs text-green-700">
+                          Currently targeting entire {campaignData.targetCountry}. Add specific cities, states, or ZIP codes below to narrow targeting.
                         </p>
-                        <div className="bg-white rounded p-3 border border-green-200">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-green-800">
-                              Target Country: {campaignData.targetCountry}
-                            </span>
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          </div>
-                          <div className="flex items-center gap-2 mt-2 text-xs text-green-700">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Nationwide Coverage: All cities, states, and regions within {campaignData.targetCountry} will be included in your campaign targeting.</span>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-slate-600 pb-2 border-b">
-                    <div>Country</div>
-                    <div>Cities</div>
-                    <div>Zip Codes</div>
-                    <div>States/Provinces</div>
-                  </div>
-                  
-                  {/* City Presets */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Cities</Label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(20)}>
-                        Top 20 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(50)}>
-                        Top 50 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(100)}>
-                        Top 100 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(200)}>
-                        Top 200 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(LOCATION_PRESETS.cities.length)}>
-                        All Cities
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-blue-500 text-blue-600">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Manual Entry
-                      </Button>
-                    </div>
-                    <Textarea
-                      placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
-                      value={campaignData.locations.cities.join(', ')}
-                      onChange={(e) => {
-                        const cities = e.target.value.split(',').map(c => c.trim()).filter(c => c);
-                        setCampaignData(prev => ({
-                          ...prev,
-                          locations: { ...prev.locations, cities }
-                        }));
-                        autoSaveDraft();
-                      }}
-                      rows={3}
-                    />
-                  </div>
-
-                  {/* ZIP Code Presets */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Zip Codes</Label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(5000)}>
-                        5000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(10000)}>
-                        10000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(15000)}>
-                        15000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(30000)}>
-                        30000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-blue-500 text-blue-600">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Manual Entry
-                      </Button>
-                    </div>
-                    <Textarea
-                      placeholder="Enter ZIP codes manually (comma-separated, e.g., 10001, 10002, 90210)..."
-                      value={campaignData.locations.zipCodes.join(', ')}
-                      onChange={(e) => {
-                        const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z);
-                        setCampaignData(prev => ({
-                          ...prev,
-                          locations: { ...prev.locations, zipCodes: zips }
-                        }));
-                        autoSaveDraft();
-                      }}
-                      rows={3}
-                    />
-                    </div>
-                </div>
               )}
+
+              {/* Always show location input options */}
+              <div className="space-y-6">
+                {/* States Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-medium">States/Provinces</Label>
+                    <Badge variant="outline" className="text-xs">
+                      {campaignData.locations.states.length} selected
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(10)} className="bg-white">
+                      Top 10 States
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(20)} className="bg-white">
+                      Top 20 States
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(30)} className="bg-white">
+                      Top 30 States
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(LOCATION_PRESETS.states.length)} className="bg-white">
+                      All States ({LOCATION_PRESETS.states.length})
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Enter states/provinces manually (comma-separated, e.g., California, Texas, New York, Florida)..."
+                    value={campaignData.locations.states.join(', ')}
+                    onChange={(e) => {
+                      const states = e.target.value.split(',').map(s => s.trim()).filter(s => s);
+                      setCampaignData(prev => ({
+                        ...prev,
+                        locations: { ...prev.locations, states }
+                      }));
+                      autoSaveDraft();
+                    }}
+                    rows={3}
+                    className="mb-2"
+                  />
+                  {campaignData.locations.states.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {campaignData.locations.states.slice(0, 10).map((state, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {state}
+                          <X 
+                            className="w-3 h-3 ml-1 cursor-pointer" 
+                            onClick={() => {
+                              setCampaignData(prev => ({
+                                ...prev,
+                                locations: {
+                                  ...prev.locations,
+                                  states: prev.locations.states.filter((_, i) => i !== idx)
+                                }
+                              }));
+                              autoSaveDraft();
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                      {campaignData.locations.states.length > 10 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{campaignData.locations.states.length - 10} more
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* City Presets */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-medium">Cities</Label>
+                    <Badge variant="outline" className="text-xs">
+                      {campaignData.locations.cities.length} selected
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(20)} className="bg-white">
+                      Top 20 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(50)} className="bg-white">
+                      Top 50 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(100)} className="bg-white">
+                      Top 100 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(200)} className="bg-white">
+                      Top 200 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(LOCATION_PRESETS.cities.length)} className="bg-white">
+                      All Cities ({LOCATION_PRESETS.cities.length})
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
+                    value={campaignData.locations.cities.join(', ')}
+                    onChange={(e) => {
+                      const cities = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+                      setCampaignData(prev => ({
+                        ...prev,
+                        locations: { ...prev.locations, cities }
+                      }));
+                      autoSaveDraft();
+                    }}
+                    rows={3}
+                    className="mb-2"
+                  />
+                  {campaignData.locations.cities.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {campaignData.locations.cities.slice(0, 10).map((city, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {city}
+                          <X 
+                            className="w-3 h-3 ml-1 cursor-pointer" 
+                            onClick={() => {
+                              setCampaignData(prev => ({
+                                ...prev,
+                                locations: {
+                                  ...prev.locations,
+                                  cities: prev.locations.cities.filter((_, i) => i !== idx)
+                                }
+                              }));
+                              autoSaveDraft();
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                      {campaignData.locations.cities.length > 10 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{campaignData.locations.cities.length - 10} more
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* ZIP Code Presets */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-medium">Zip Codes</Label>
+                    <Badge variant="outline" className="text-xs">
+                      {campaignData.locations.zipCodes.length} selected
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(5000)} className="bg-white">
+                      5,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(10000)} className="bg-white">
+                      10,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(15000)} className="bg-white">
+                      15,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(30000)} className="bg-white">
+                      30,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(LOCATION_PRESETS.zipCodes.length)} className="bg-white">
+                      All ZIPs ({LOCATION_PRESETS.zipCodes.length.toLocaleString()})
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Enter ZIP codes manually (comma-separated, e.g., 10001, 10002, 90210)..."
+                    value={campaignData.locations.zipCodes.join(', ')}
+                    onChange={(e) => {
+                      const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z);
+                      setCampaignData(prev => ({
+                        ...prev,
+                        locations: { ...prev.locations, zipCodes: zips }
+                      }));
+                      autoSaveDraft();
+                    }}
+                    rows={3}
+                    className="mb-2"
+                  />
+                  {campaignData.locations.zipCodes.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {campaignData.locations.zipCodes.slice(0, 10).map((zip, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {zip}
+                          <X 
+                            className="w-3 h-3 ml-1 cursor-pointer" 
+                            onClick={() => {
+                              setCampaignData(prev => ({
+                                ...prev,
+                                locations: {
+                                  ...prev.locations,
+                                  zipCodes: prev.locations.zipCodes.filter((_, i) => i !== idx)
+                                }
+                              }));
+                              autoSaveDraft();
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                      {campaignData.locations.zipCodes.length > 10 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{campaignData.locations.zipCodes.length - 10} more
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

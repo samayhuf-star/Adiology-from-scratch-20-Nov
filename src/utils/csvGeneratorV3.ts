@@ -220,6 +220,37 @@ export function validateCampaignStructure(structure: CampaignStructure): CSVVali
                 errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Description 2 is required for Call-Only ads`);
               }
             }
+            
+            // Validate extensions/assets if present
+            if (ad.extensions && Array.isArray(ad.extensions) && ad.extensions.length > 0) {
+              ad.extensions.forEach((ext: any, extIdx: number) => {
+                const extType = ext.extensionType || ext.type;
+                
+                if (extType === 'sitelink') {
+                  const links = ext.links || ext.sitelinks || [];
+                  if (links.length === 0) {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Sitelink extension missing link data`);
+                  }
+                } else if (extType === 'callout') {
+                  const callouts = ext.callouts || ext.values || [];
+                  if (callouts.length === 0 || !callouts[0] || callouts[0].trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Callout extension missing text`);
+                  }
+                } else if (extType === 'snippet') {
+                  if (!ext.header || ext.header.trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Structured snippet extension missing header`);
+                  }
+                  const values = ext.values || [];
+                  if (values.length === 0 || !values[0] || values[0].trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Structured snippet extension missing values`);
+                  }
+                } else if (extType === 'call') {
+                  if (!ext.phone && !ext.phoneNumber || (ext.phone || ext.phoneNumber || '').trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Call extension missing phone number`);
+                  }
+                }
+              });
+            }
           });
         }
       });
