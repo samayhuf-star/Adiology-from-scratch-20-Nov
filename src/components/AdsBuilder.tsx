@@ -1063,7 +1063,23 @@ export const AdsBuilder = () => {
             }
         };
         
-        // Generate ad using new logic
+        // Try Python fallback first
+        try {
+            const fallbackAds = await generateAdsFallback(input);
+            if (fallbackAds && fallbackAds.length > 0) {
+                const callAd = fallbackAds[0] as CallOnlyAd;
+                if (callAd && callAd.headline1) {
+                    if (!callAd.phoneNumber) {
+                        callAd.phoneNumber = '+1-800-123-4567';
+                    }
+                    return convertCallOnlyToGeneratedAd(callAd, groupName);
+                }
+            }
+        } catch (pythonError) {
+            console.log('Python fallback unavailable for Call Only, using local generation');
+        }
+        
+        // Fall back to local generation
         const generatedAd = generateAdsUtility(input) as CallOnlyAd;
         
         // Set phone number if not provided
@@ -1071,7 +1087,6 @@ export const AdsBuilder = () => {
             generatedAd.phoneNumber = '+1-800-123-4567';
         }
         
-        // Convert to GeneratedAd format
         return convertCallOnlyToGeneratedAd(generatedAd, groupName);
     };
 

@@ -58,11 +58,24 @@ export const api = {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          // Silently handle 404s for expected missing endpoints (edge functions, tables)
+          // Handle 404s for expected missing endpoints (edge functions, tables)
           if (response.status === 404) {
-            const silentError = new Error('Request failed');
-            silentError.name = 'NotFoundError';
-            throw silentError;
+            // Check if this is an expected endpoint (backend not deployed)
+            const isExpectedEndpoint = 
+              endpoint.includes('/history/') ||
+              endpoint.includes('/generate-ads') ||
+              endpoint.includes('/published_websites');
+            
+            if (isExpectedEndpoint) {
+              // Log as warning instead of error
+              loggingService.addLog('warning', 'API', `POST ${endpoint} → 404 (Expected fallback - backend not deployed)`, { 
+                endpoint,
+                note: 'This is expected when backend endpoints are not deployed. The app will use fallback mechanisms.'
+              });
+              const silentError = new Error('Request failed');
+              silentError.name = 'NotFoundError';
+              throw silentError;
+            }
           }
           
           let errorMessage = 'Request failed';
@@ -111,13 +124,19 @@ export const api = {
         throw fetchError;
       }
     } catch (e) {
+      // Check if this is a NotFoundError (expected 404) - already logged as warning above
+      if (e instanceof Error && e.name === 'NotFoundError') {
+        throw e;
+      }
+      
       // Silently fail for expected server unavailability (Make.com endpoints)
       // The calling code will handle fallback to localStorage
       if (e instanceof TypeError && e.message.includes('fetch')) {
         const networkError = new Error('Network error: Unable to reach server');
-        loggingService.addLog('warning', 'API', `POST ${endpoint}: Network error`, { endpoint });
+        loggingService.addLog('warning', 'API', `POST ${endpoint}: Network error (Expected fallback)`, { endpoint });
         throw networkError;
       }
+      
       // Don't capture expected errors (404, network errors, or generic request failures)
       // These are expected when the server is unavailable
       const errorMessage = e instanceof Error ? e.message : String(e);
@@ -127,6 +146,7 @@ export const api = {
         errorMessage.includes('Request failed') ||
         errorMessage.includes('fetch');
       
+      // Only log as error if it's not an expected error
       if (!isExpectedError) {
         loggingService.addLog('error', 'API', `POST ${endpoint} error: ${errorMessage}`, { endpoint, error: errorMessage });
         captureError(e instanceof Error ? e : new Error(String(e)), {
@@ -134,6 +154,9 @@ export const api = {
           action: 'post',
           metadata: { endpoint },
         });
+      } else {
+        // Log expected errors as warnings
+        loggingService.addLog('warning', 'API', `POST ${endpoint}: ${errorMessage} (Expected fallback)`, { endpoint });
       }
       throw e;
     }
@@ -156,11 +179,24 @@ export const api = {
       });
 
       if (!response.ok) {
-        // Silently handle 404s for expected missing endpoints (edge functions, tables)
+        // Handle 404s for expected missing endpoints (edge functions, tables)
         if (response.status === 404) {
-          const silentError = new Error('Request failed');
-          silentError.name = 'NotFoundError';
-          throw silentError;
+          // Check if this is an expected endpoint (backend not deployed)
+          const isExpectedEndpoint = 
+            endpoint.includes('/history/') ||
+            endpoint.includes('/published_websites') ||
+            endpoint.includes('/generate-ads');
+          
+          if (isExpectedEndpoint) {
+            // Log as warning instead of error
+            loggingService.addLog('warning', 'API', `GET ${endpoint} → 404 (Expected fallback - backend not deployed)`, { 
+              endpoint,
+              note: 'This is expected when backend endpoints are not deployed. The app will use fallback mechanisms.'
+            });
+            const silentError = new Error('Request failed');
+            silentError.name = 'NotFoundError';
+            throw silentError;
+          }
         }
         
         let errorMessage = 'Request failed';
@@ -182,13 +218,20 @@ export const api = {
       loggingService.logTransaction('API', `GET ${endpoint} succeeded`, { endpoint, status: response.status });
       return data;
     } catch (e) {
+      // Check if this is a NotFoundError (expected 404)
+      if (e instanceof Error && e.name === 'NotFoundError') {
+        // Already logged as warning above, just re-throw
+        throw e;
+      }
+      
       // Silently fail for expected server unavailability (Make.com endpoints)
       // The calling code will handle fallback to localStorage
       if (e instanceof TypeError && e.message.includes('fetch')) {
         const networkError = new Error('Network error: Unable to reach server');
-        loggingService.addLog('warning', 'API', `GET ${endpoint}: Network error`, { endpoint });
+        loggingService.addLog('warning', 'API', `GET ${endpoint}: Network error (Expected fallback)`, { endpoint });
         throw networkError;
       }
+      
       // Don't capture expected errors (404, network errors, or generic request failures)
       // These are expected when the server is unavailable
       const errorMessage = e instanceof Error ? e.message : String(e);
@@ -198,6 +241,7 @@ export const api = {
         errorMessage.includes('Request failed') ||
         errorMessage.includes('fetch');
       
+      // Only log as error if it's not an expected error
       if (!isExpectedError) {
         loggingService.addLog('error', 'API', `GET ${endpoint} error: ${errorMessage}`, { endpoint, error: errorMessage });
         captureError(e instanceof Error ? e : new Error(String(e)), {
@@ -205,6 +249,9 @@ export const api = {
           action: 'get',
           metadata: { endpoint },
         });
+      } else {
+        // Log expected errors as warnings
+        loggingService.addLog('warning', 'API', `GET ${endpoint}: ${errorMessage} (Expected fallback)`, { endpoint });
       }
       throw e;
     }
