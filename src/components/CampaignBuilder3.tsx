@@ -267,6 +267,21 @@ export const CampaignBuilder3: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [campaignSaved, setCampaignSaved] = useState(false);
+
+  // Enforce 3 ads maximum limit
+  useEffect(() => {
+    if (campaignData.ads.length > 3) {
+      const excessAds = campaignData.ads.length - 3;
+      setCampaignData(prev => ({
+        ...prev,
+        ads: prev.ads.slice(0, 3), // Hard limit to 3 ads
+      }));
+      notifications.warning(`Ads limited to maximum of 3. ${excessAds} ad(s) removed.`, {
+        title: 'Limit Enforced',
+        description: 'Only the first 3 ads are kept. Please delete ads if you want to add different ones.'
+      });
+    }
+  }, [campaignData.ads.length]);
   const [locationSearchTerm, setLocationSearchTerm] = useState({ countries: '', states: '', cities: '', zipCodes: '' });
   const [campaignData, setCampaignData] = useState<CampaignData>({
     url: '',
@@ -800,114 +815,14 @@ export const CampaignBuilder3: React.FC = () => {
     return groups;
   };
 
-  // Step 4: Ads Generation - Generate 3 ads (RSA, DKI, Call)
+  // Step 4: Ads Generation - DEPRECATED: Use handleAddNewAd instead
+  // This function is kept for backward compatibility but should not be used
+  // Ads should be created one at a time using handleAddNewAd
   const handleGenerateAds = async () => {
-    if (campaignData.selectedKeywords.length === 0) {
-      notifications.error('Please select keywords first', { title: 'Keywords Required' });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const keywordTexts = campaignData.selectedKeywords.map(k => k.text || k.keyword || k).slice(0, 10);
-      const ads: any[] = [];
-
-      // Always generate 3 ads: RSA, DKI, and Call
-      const adTypesToGenerate = ['rsa', 'dki', 'call'];
-      
-      for (const adType of adTypesToGenerate) {
-        try {
-          const adInput: AdGenerationInput = {
-            keywords: keywordTexts,
-            baseUrl: campaignData.url,
-            adType: adType === 'rsa' ? 'RSA' : adType === 'dki' ? 'ETA' : 'CALL_ONLY',
-            industry: campaignData.vertical || 'general',
-            businessName: 'Your Business',
-            filters: {
-              matchType: campaignData.keywordTypes.phrase ? 'phrase' : campaignData.keywordTypes.exact ? 'exact' : 'broad',
-              campaignStructure: (campaignData.selectedStructure?.toUpperCase() || 'STAG') as 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta',
-              uniqueSellingPoints: [],
-              callToAction: campaignData.cta || undefined,
-            },
-          };
-
-          const ad = generateAdsUtility(adInput);
-          
-          // Convert to our ad format
-          if (adType === 'rsa' && 'headlines' in ad) {
-            const rsa = ad as ResponsiveSearchAd;
-            ads.push({
-              id: `ad-${Date.now()}-${Math.random()}`,
-              type: 'rsa',
-              adType: 'RSA',
-              headlines: rsa.headlines || [],
-              descriptions: rsa.descriptions || [],
-              displayPath: rsa.displayPath || [],
-              finalUrl: rsa.finalUrl || campaignData.url,
-              selected: false,
-              extensions: [],
-            });
-          } else if (adType === 'dki' && 'headline1' in ad) {
-            const dki = ad as ExpandedTextAd;
-            ads.push({
-              id: `ad-${Date.now()}-${Math.random()}`,
-              type: 'dki',
-              adType: 'DKI',
-              headline1: dki.headline1 || '',
-              headline2: dki.headline2 || '',
-              headline3: dki.headline3 || '',
-              description1: dki.description1 || '',
-              description2: dki.description2 || '',
-              displayPath: dki.displayPath || [],
-              finalUrl: dki.finalUrl || campaignData.url,
-              selected: false,
-              extensions: [],
-            });
-          } else if (adType === 'call' && 'phoneNumber' in ad) {
-            const call = ad as CallOnlyAd;
-            ads.push({
-              id: `ad-${Date.now()}-${Math.random()}`,
-              type: 'call',
-              adType: 'CallOnly',
-              headline1: call.headline1 || '',
-              headline2: call.headline2 || '',
-              description1: call.description1 || '',
-              description2: call.description2 || '',
-              phoneNumber: call.phoneNumber || '',
-              businessName: call.businessName || '',
-              finalUrl: call.verificationUrl || campaignData.url,
-              selected: false,
-              extensions: [],
-            });
-          }
-        } catch (adError) {
-          console.error(`Error generating ${adType} ad:`, adError);
-          // Continue with other ad types
-        }
-      }
-      
-      setCampaignData(prev => ({
-        ...prev,
-        ads: ads,
-        adTypes: adTypesToGenerate, // Update ad types to match generated ads
-      }));
-
-      notifications.success(`Generated ${ads.length} ads successfully`, {
-        title: 'Ads Generated',
-        description: 'RSA, DKI, and Call ads have been created for all ad groups.'
-      });
-      
-      // Auto-save draft
-      await autoSaveDraft();
-    } catch (error) {
-      console.error('Ad generation error:', error);
-      notifications.error('Failed to generate ads', {
-        title: 'Generation Error',
-        description: error instanceof Error ? error.message : 'Unknown error occurred'
-      });
-    } finally {
-      setLoading(false);
-    }
+    notifications.warning('Please use the ad type buttons to create ads individually', {
+      title: 'Manual Ad Creation',
+      description: 'Click on RESP. SEARCH AD, DKI TEXT AD, or CALL ONLY AD buttons to create ads (maximum 3 ads allowed).'
+    });
   };
 
   // Add a single ad of specified type (only if under 3 ads total)
@@ -1012,14 +927,19 @@ export const CampaignBuilder3: React.FC = () => {
       }
 
       if (newAd) {
-        setCampaignData(prev => ({
-          ...prev,
-          ads: [...prev.ads, newAd],
-        }));
+        // Ensure we don't exceed 3 ads limit
+        setCampaignData(prev => {
+          const currentAds = prev.ads.length >= 3 ? prev.ads.slice(0, 2) : prev.ads;
+          return {
+            ...prev,
+            ads: [...currentAds, newAd].slice(0, 3), // Hard limit to 3 ads
+          };
+        });
 
+        const finalAdCount = Math.min(campaignData.ads.length + 1, 3);
         notifications.success(`${adType.toUpperCase()} ad added successfully`, {
           title: 'Ad Added',
-          description: `${campaignData.ads.length + 1} / 3 ads created`
+          description: `${finalAdCount} / 3 ads created`
         });
         
         // Auto-save draft
@@ -1046,7 +966,7 @@ export const CampaignBuilder3: React.FC = () => {
   const handleDeleteAd = (adId: string) => {
     setCampaignData(prev => ({
       ...prev,
-      ads: prev.ads.filter(ad => ad.id !== adId),
+      ads: prev.ads.filter(ad => ad.id !== adId).slice(0, 3), // Ensure max 3 after deletion
     }));
     notifications.success('Ad deleted', { title: 'Deleted' });
   };
@@ -1462,7 +1382,8 @@ export const CampaignBuilder3: React.FC = () => {
 
   const renderStep4 = () => {
     const allAdGroups = ['ALL_AD_GROUPS', ...campaignData.adGroups.map(ag => ag.name)];
-    const displayAds = campaignData.ads.length > 0 ? campaignData.ads : [];
+    // Limit display to maximum 3 ads
+    const displayAds = campaignData.ads.length > 0 ? campaignData.ads.slice(0, 3) : [];
     const extensionTypes = [
       { id: 'snippet', label: 'SNIPPET EXTENSION', icon: FileText },
       { id: 'callout', label: 'CALLOUT EXTENSION', icon: MessageSquare },
@@ -1521,9 +1442,12 @@ export const CampaignBuilder3: React.FC = () => {
                 <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
                   <span>Total Ads:</span>
                   {loading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span className="text-xs text-slate-400">Generating...</span>
+                    </div>
                   ) : (
-                    <span className="font-semibold">{displayAds.length} / 3</span>
+                    <span className="font-semibold">{Math.min(displayAds.length, 3)} / 3</span>
                   )}
           </div>
         </CardContent>
@@ -1536,21 +1460,48 @@ export const CampaignBuilder3: React.FC = () => {
                 onClick={() => handleAddNewAd('rsa')}
                 disabled={loading || campaignData.ads.length >= 3 || campaignData.ads.some(ad => ad.type === 'rsa' || ad.adType === 'RSA')}
               >
-                <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
+                  </>
+                )}
               </Button>
               <Button 
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleAddNewAd('dki')}
                 disabled={loading || campaignData.ads.length >= 3 || campaignData.ads.some(ad => ad.type === 'dki' || ad.adType === 'DKI')}
               >
-                <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
+                  </>
+                )}
               </Button>
               <Button 
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleAddNewAd('call')}
                 disabled={loading || campaignData.ads.length >= 3 || campaignData.ads.some(ad => ad.type === 'call' || ad.adType === 'CallOnly')}
               >
-                <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
+                  </>
+                )}
               </Button>
             </div>
 
@@ -1580,7 +1531,16 @@ export const CampaignBuilder3: React.FC = () => {
                         </div>
 
           {/* Right Content - Ads Display */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-3 space-y-4 relative">
+            {loading && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                  <p className="text-sm font-medium text-slate-700">Generating ad...</p>
+                  <p className="text-xs text-slate-500">Please wait</p>
+                </div>
+              </div>
+            )}
             {displayAds.length === 0 ? (
               <Card>
                 <CardContent className="p-12 text-center">
@@ -1950,13 +1910,13 @@ export const CampaignBuilder3: React.FC = () => {
         {/* Ads */}
           <Card>
             <CardHeader>
-            <CardTitle>Ads ({campaignData.ads.length})</CardTitle>
-            <CardDescription>All ads that will be used across ad groups</CardDescription>
+            <CardTitle>Ads ({Math.min(campaignData.ads.length, 3)} / 3)</CardTitle>
+            <CardDescription>All ads that will be used across ad groups (Maximum 3 ads per ad group)</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-64">
               <div className="space-y-3">
-                {campaignData.ads.map((ad) => (
+                {campaignData.ads.slice(0, 3).map((ad) => (
                   <div key={ad.id} className="p-3 border rounded">
                     <div className="flex items-center justify-between mb-2">
                       <Badge>{ad.type?.toUpperCase() || ad.adType || 'RSA'}</Badge>
