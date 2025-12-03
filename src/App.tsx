@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Globe, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -14,10 +14,13 @@ import {
 } from './components/ui/dropdown-menu';
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
+import { CampaignBuilder3 } from './components/CampaignBuilder3';
 import { CSVValidator3 } from './components/CSVValidator3';
+import { GoogleAdsCSVExport } from './components/GoogleAdsCSVExport';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
 import { NegativeKeywordsBuilder } from './components/NegativeKeywordsBuilder';
+import { KeywordGeneratorV3 } from './components/KeywordGeneratorV3';
 import { KeywordSavedLists } from './components/KeywordSavedLists';
 import { AdsBuilder } from './components/AdsBuilder';
 import { BillingPanel } from './components/BillingPanel';
@@ -35,19 +38,22 @@ import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
-import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
 import { supabase } from './utils/supabase/client';
 import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from './utils/auth';
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
+import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
+import { LiveLogs } from './components/LiveLogs';
+import { notifications as notificationService } from './utils/notifications';
+import { AutoFillButton } from './components/AutoFillButton';
 
-type AppView = 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
+type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
 const App = () => {
   const { theme } = useTheme();
-  const [appView, setAppView] = useState<AppView>('auth');
+  const [appView, setAppView] = useState<AppView>('homepage');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -56,31 +62,11 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   
-  // Detect mobile viewport
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      // On mobile, close sidebar by default
-      if (window.innerWidth < 768 && sidebarOpen) {
-        setSidebarOpen(false);
-      }
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   // Load and apply user preferences on mount
   useEffect(() => {
     const prefs = getUserPreferences();
     applyUserPreferences(prefs);
-    // On mobile, ensure sidebar starts closed
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
     
     // Listen for storage changes to sync preferences across tabs/components
     const handleStorageChange = (e: StorageEvent) => {
@@ -128,13 +114,15 @@ const App = () => {
     'dashboard',
     'campaign-presets',
     'builder-2',
+    'builder-3',
     'campaign-history',
-    'website-templates',
     'keyword-planner',
     'keyword-mixer',
+    'keyword-generator-v3',
     'ads-builder',
     'negative-keywords',
     'csv-validator-3',
+    'google-ads-csv-export',
     'settings',
     'billing',
     'support',
@@ -181,6 +169,7 @@ const App = () => {
       'campaign': 'builder-2',
       'keyword-planner': 'keyword-planner',
       'keyword-mixer': 'keyword-mixer',
+      'keyword-generator-v3': 'keyword-generator-v3',
       'negative-keywords': 'negative-keywords'
     };
     
@@ -189,7 +178,7 @@ const App = () => {
     setActiveTabSafe(targetTab);
     
     // Show success notification
-    notifications.success('History item restored successfully', {
+    notificationService.success('History item restored successfully', {
       title: 'Restored',
       description: 'Your saved item has been loaded and is ready to use.'
     });
@@ -594,14 +583,14 @@ const App = () => {
         return;
       }
 
-      // Show auth screen on root path instead of home page
+      // Show auth on root path
       if (path === '/' || path === '') {
         // If user is logged in, go to user dashboard
         if (user) {
           setView('user');
           return;
         }
-        // If no user, show auth/login screen
+        // If no user, show auth
         setView('auth');
         return;
       }
@@ -610,12 +599,25 @@ const App = () => {
       setView(user ? 'user' : 'auth');
     };
 
-    handleRoute();
+    // Only run routing if not loading
+    if (!loading) {
+      handleRoute();
+    }
 
     return () => {
       isActive = false;
     };
   }, [loading, user?.id]);
+
+  // Additional effect to ensure homepage shows when loading completes and no user
+  useEffect(() => {
+    if (!loading && !user && (window.location.pathname === '/' || window.location.pathname === '')) {
+      // Only set to homepage if we're not already on a specific route
+      if (appView !== 'homepage' && appView !== 'auth' && appView !== 'reset-password' && appView !== 'verify-email' && appView !== 'payment' && appView !== 'payment-success') {
+        setAppView('homepage');
+      }
+    }
+  }, [loading, user, appView]);
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -653,7 +655,8 @@ const App = () => {
               setAppView('user');
           }
         } else {
-          setAppView('auth');
+          // Show homepage for all paths when not logged in
+          setAppView('homepage');
         }
       }
     };
@@ -669,7 +672,7 @@ const App = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
         setTimeout(() => {
-            setAppView('auth');
+            setAppView('homepage');
             setAuthMode('login');
           }, 1000);
         }
@@ -716,12 +719,12 @@ const App = () => {
       icon: Sparkles,
       submenu: [
         { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
-    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+        { id: 'builder-3', label: 'Builder 3.0', icon: Zap },
+        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
-    { id: 'website-templates', label: 'Web Templates', icon: Layout },
-    { 
+    {
       id: 'keyword-planner', 
       label: 'Keywords', 
       icon: Lightbulb,
@@ -729,11 +732,13 @@ const App = () => {
         { id: 'keyword-planner', label: 'Keyword Planner', icon: Lightbulb },
         { id: 'keyword-mixer', label: 'Keyword Mixer', icon: Shuffle },
         { id: 'negative-keywords', label: 'Negative Keywords', icon: MinusCircle },
+        { id: 'keyword-generator-v3', label: 'Keyword Generator v3.0', icon: Sparkles },
         { id: 'keyword-saved-lists', label: 'Saved Lists', icon: FolderOpen },
       ]
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'csv-validator-3', label: 'CSV Validator', icon: FileCheck },
+    { id: 'google-ads-csv-export', label: 'CSV Export', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -786,7 +791,7 @@ const App = () => {
       'keywords', 'keyword research', 'keyword planning',
       'ads', 'advertising', 'ad builder',
       'negative keywords', 'exclude keywords',
-      'csv', 'export', 'import', 'validator',
+      'csv', 'export', 'import', 'validator', 'csv export', 'google ads csv',
       'settings', 'billing', 'account',
       'help', 'support', 'documentation'
     ];
@@ -843,7 +848,9 @@ const App = () => {
         'advertising': 'ads-builder',
         'negative keywords': 'negative-keywords',
         'csv': 'csv-validator-3',
-        'export': 'csv-validator-3',
+        'export': 'google-ads-csv-export',
+        'csv export': 'google-ads-csv-export',
+        'google ads csv': 'google-ads-csv-export',
         'settings': 'settings',
         'billing': 'settings',
         'help': 'support-help',
@@ -926,7 +933,7 @@ const App = () => {
           setAuthMode('login');
           setAppView('auth');
         }}
-        onBackToHome={() => {
+          onBackToHome={() => {
           setAppView('auth');
           setAuthMode('login');
         }}
@@ -941,12 +948,28 @@ const App = () => {
           // Password reset successful, redirect to login
           window.history.pushState({}, '', '/');
           setAuthMode('login');
-          setAppView('auth');
+          setAppView('homepage');
         }}
-        onBackToHome={() => {
-          setAppView('auth');
+          onBackToHome={() => {
+          setAppView('homepage');
           setAuthMode('login');
         }}
+      />
+    );
+  }
+
+  if (appView === 'homepage') {
+    return (
+      <CreativeMinimalistHomepage
+        onGetStarted={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onLogin={() => {
+          setAuthMode('login');
+          setAppView('auth');
+        }}
+        onSelectPlan={handleSelectPlan}
       />
     );
   }
@@ -1002,7 +1025,7 @@ const App = () => {
             setAppView('user');
           }
         }}
-        onBackToHome={() => {
+          onBackToHome={() => {
           setAppView('auth');
           setAuthMode('login');
         }}
@@ -1085,6 +1108,14 @@ const App = () => {
     );
   }
 
+  // Fallback: If no user and not loading, ensure homepage is shown
+  if (!user && !loading && appView !== 'homepage' && appView !== 'auth' && appView !== 'reset-password' && appView !== 'verify-email' && appView !== 'payment' && appView !== 'payment-success' && !window.location.pathname.startsWith('/superadmin')) {
+    // Only redirect to homepage if we're on root path
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      setAppView('homepage');
+    }
+  }
+
   const renderContent = () => {
     // Reset history data if leaving the tab to prevent stale data injection
     // This is a simplification; for robust app, manage state more carefully
@@ -1097,22 +1128,26 @@ const App = () => {
         }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
+      case 'builder-3':
+        return <CampaignBuilder3 />;
       case 'campaign-history':
         // Campaign History - Show only saved campaigns, not all activity history
         return <CampaignHistoryView onLoadCampaign={(data) => {
           setHistoryData(data);
           setActiveTabSafe('builder-2');
         }} />;
-      case 'website-templates':
-        return <WebsiteTemplates />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
+      case 'google-ads-csv-export':
+        return <GoogleAdsCSVExport />;
       case 'keyword-planner':
         return <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />;
       case 'keyword-mixer':
         return <KeywordMixer initialData={activeTab === 'keyword-mixer' ? historyData : null} />;
       case 'negative-keywords':
         return <NegativeKeywordsBuilder initialData={activeTab === 'negative-keywords' ? historyData : null} />;
+      case 'keyword-generator-v3':
+        return <KeywordGeneratorV3 initialData={activeTab === 'keyword-generator-v3' ? historyData : null} />;
       case 'keyword-saved-lists':
         return <KeywordSavedLists />;
       case 'ads-builder':
@@ -1167,10 +1202,8 @@ const App = () => {
       {/* Sidebar */}
       <aside 
         className={`${
-          isMobile 
-            ? (sidebarOpen ? 'w-full fixed inset-0 z-50' : 'w-0 hidden')
-            : ((sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'w-64' : 'w-20')
-        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-indigo-100/60 shadow-2xl relative z-10 flex-shrink-0 overflow-y-auto flex flex-col`}
+          (sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? 'w-64' : 'w-20'
+        } transition-all duration-300 bg-white/80 backdrop-blur-xl border-r border-indigo-100/60 shadow-2xl relative z-10 flex-shrink-0 overflow-y-auto`}
         style={{
           background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(238, 242, 255, 0.95) 100%)'
         }}
@@ -1209,7 +1242,7 @@ const App = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
+        <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -1303,40 +1336,7 @@ const App = () => {
           sidebarHovered={userPrefs.sidebarAutoClose && sidebarHovered}
         />
 
-        {/* Manual Toggle Button at Bottom */}
-        <div className="p-4 border-t border-indigo-100/60 mt-auto">
-          <button
-            onClick={() => {
-              setSidebarOpen(!sidebarOpen);
-              setSidebarHovered(false);
-            }}
-            className={`w-full flex items-center gap-2 py-2.5 px-3 rounded-xl transition-all duration-200 ${
-              (sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered))
-                ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                : 'justify-center bg-slate-50 text-slate-700 hover:bg-slate-100'
-            }`}
-            title={sidebarOpen ? 'Close Menu' : 'Open Menu'}
-          >
-            {(sidebarOpen || (userPrefs.sidebarAutoClose && sidebarHovered)) ? (
-              <>
-                <X className="w-5 h-5 shrink-0" />
-                <span className="font-medium">Close Menu</span>
-              </>
-            ) : (
-              <Menu className="w-5 h-5 shrink-0" />
-            )}
-          </button>
-        </div>
-
       </aside>
-      
-      {/* Mobile Overlay */}
-      {isMobile && sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">
@@ -1553,10 +1553,17 @@ const App = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full min-w-0">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full min-w-0 relative">
+          {/* Auto Fill Button - appears on all pages */}
+          {appView === 'user' && <AutoFillButton />}
           {renderContent()}
         </main>
       </div>
+
+      {/* Live Logs - Only show in user view */}
+      {appView === 'user' && (
+        <LiveLogs />
+      )}
       
     </div>
   );

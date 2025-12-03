@@ -37,10 +37,19 @@ const COLUMN_RULES = {
     
     // LOCATION TARGETING FIELDS (Row Type: location)
     "Location":         { required: true, types: ['location'], rule: "City, ZIP Code, Region, or Country name." },
+    "Location Target":  { required: true, types: ['location'], rule: "Location name for targeting (City, ZIP, State, Country)." },
+    "Target Type":      { required: false, types: ['location'], rule: "Type of location target (e.g., 'Location of interest', 'City', 'State', 'Postal Code')." },
     "Bid Adjustment":   { required: false, types: ['location'], rule: "Percentage value (e.g., 10% or -50%)." },
     "Is Exclusion":     { required: false, types: ['location'], rule: "Set to Yes to exclude." },
     "Zip Codes":        { required: false, types: ['location'], rule: "List of zip codes (use Location column for core targeting)." },
     "Cities":           { required: false, types: ['location'], rule: "List of cities (use Location column for core targeting)." },
+    
+    // ADDITIONAL ASSET FIELDS
+    "Callout Text":     { required: true, types: ['callout'], rule: "Callout extension text. Max 25 characters." },
+    "Header":           { required: true, types: ['structured snippet'], rule: "Structured snippet header/category." },
+    "Values":           { required: true, types: ['structured snippet'], rule: "Comma-separated values for structured snippet." },
+    "Image URL":        { required: true, types: ['image'], rule: "URL of the image asset." },
+    "Alt Text":         { required: false, types: ['image'], rule: "Alternative text for the image." },
     "Call Extension":   { required: false, types: ['ad', 'sitelink'], rule: "Deprecated, use Call Asset (Call) instead." }
 };
 
@@ -48,16 +57,52 @@ const REQUIRED_HEADERS_FOR_AD = ["Campaign", "Ad Group", "Row Type", "Final URL"
 const REQUIRED_HEADERS_FOR_SITELINK = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Final URL", "Link Text"];
 const REQUIRED_HEADERS_FOR_CALL = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Phone Number", "Country Code"];
 const REQUIRED_HEADERS_FOR_LOCATION = ["Campaign", "Ad Group", "Row Type", "Location"];
+const REQUIRED_HEADERS_FOR_CALLOUT = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Callout Text"];
+const REQUIRED_HEADERS_FOR_SNIPPET = ["Campaign", "Ad Group", "Row Type", "Asset Type", "Header", "Values"];
 
 // --- Utility Functions ---
 function parseCSV(text: string) {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
+    // Handle both CRLF and LF line endings
+    const lines = text.split(/\r?\n/);
     if (lines.length === 0) return [];
 
-    let headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    
-    // Normalize headers
-    headers = headers.map(h => {
+    const result: any[] = [];
+    const allHeaders = new Set<string>();
+    let currentHeaders: string[] = [];
+    let i = 0;
+
+    // Helper to parse CSV line with proper quote handling
+    function parseCSVLine(line: string): string[] {
+        const values: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    // Escaped quote
+                    current += '"';
+                    i++; // Skip next quote
+                } else {
+                    // Toggle quote state
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                // End of field
+                values.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        // Add last field
+        values.push(current.trim());
+        return values;
+    }
+
+    // Helper to normalize header name
+    function normalizeHeader(h: string): string {
         const normalized = h.split(/\s+/).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
         
         for (const ruleKey in COLUMN_RULES) {
@@ -66,21 +111,73 @@ function parseCSV(text: string) {
             }
         }
         return h;
-    });
-
-    const result = [];
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
-        if (!values) continue;
-
-        const row: any = {};
-        for (let j = 0; j < headers.length; j++) {
-            const value = (values[j] || '').trim().replace(/^"|"$/g, '');
-            row[headers[j]] = value;
-        }
-        result.push(row);
     }
-    return { data: result, headers };
+
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        
+        // Skip empty lines (they separate blocks in V3 format)
+        if (!line) {
+            i++;
+            // Reset headers on empty line to allow new block headers
+            currentHeaders = [];
+            continue;
+        }
+
+        const values = parseCSVLine(line);
+        
+        // Check if this line looks like a header (contains common header words and is likely a header)
+        const isHeaderRow = values.some(v => {
+            const lower = v.toLowerCase().replace(/^"|"$/g, '');
+            return lower.includes('campaign') || lower.includes('ad group') || 
+                   lower.includes('headline') || lower.includes('description') ||
+                   lower.includes('sitelink') || lower.includes('callout') ||
+                   lower.includes('location') || lower.includes('target') ||
+                   lower.includes('keyword') || lower.includes('final url') ||
+                   lower.includes('phone number') || lower.includes('country code') ||
+                   lower.includes('callout text') || lower.includes('link text');
+        }) && values.length >= 2; // Headers typically have multiple columns
+
+        // If it looks like a header, update current headers
+        if (isHeaderRow) {
+            currentHeaders = values.map(h => {
+                const cleaned = h.trim().replace(/^"|"$/g, '');
+                const normalized = normalizeHeader(cleaned);
+                allHeaders.add(normalized);
+                return normalized;
+            });
+            i++;
+            continue;
+        }
+
+        // If we have headers, process this as a data row
+        if (currentHeaders.length > 0 && values.length > 0) {
+            const row: any = {};
+            // Check if this row has data (not just empty values)
+            const hasData = values.some(v => {
+                const cleaned = v.trim().replace(/^"|"$/g, '');
+                return cleaned !== '' && cleaned !== '""';
+            });
+            
+            if (hasData) {
+                for (let j = 0; j < Math.max(currentHeaders.length, values.length); j++) {
+                    const header = currentHeaders[j] || `Column${j + 1}`;
+                    const value = (values[j] || '').trim().replace(/^"|"$/g, '');
+                    if (value && value !== '""') {
+                        row[header] = value;
+                    }
+                }
+                // Only add row if it has at least one non-empty value
+                if (Object.keys(row).length > 0) {
+                    result.push(row);
+                }
+            }
+        }
+
+        i++;
+    }
+
+    return { data: result, headers: Array.from(allHeaders) };
 }
 
 function validateCell(header: string, value: string, rowType: string) {
@@ -119,51 +216,14 @@ function validateCell(header: string, value: string, rowType: string) {
             return { status: 'error', message: `Invalid URL format. Must start with http:// or https://.` };
         }
         
-        // Validate Phone Number format
-        if (header === "Phone Number" && trimmedValue) {
-            // Remove common formatting characters for validation
-            const cleanPhone = trimmedValue.replace(/[\s\-\(\)\.]/g, '');
-            if (!/^\d{10,15}$/.test(cleanPhone)) {
-                return { status: 'error', message: `Invalid phone number format. Should be 10-15 digits.` };
-            }
-        }
-        
-        // Validate Country Code format
-        if (header === "Country Code" && trimmedValue) {
-            if (!/^[A-Z]{2}$/i.test(trimmedValue)) {
-                return { status: 'error', message: `Invalid country code format. Must be 2-letter code (e.g., US, GB, IN).` };
-            }
-        }
-        
-        // Validate Asset Type
-        if (header === "Asset Type" && trimmedValue) {
-            const validAssetTypes = ['sitelink', 'call', 'callout', 'structured snippet', 'image'];
-            if (!validAssetTypes.includes(trimmedValue.toLowerCase())) {
-                return { status: 'error', message: `Invalid Asset Type: ${trimmedValue}. Must be one of: ${validAssetTypes.join(', ')}.` };
-            }
-        }
-        
-        // Validate Location field
-        if (header === "Location" && trimmedValue) {
-            // Location should not be empty for location rows
-            if (trimmedValue.length < 2) {
-                return { status: 'error', message: `Location must be at least 2 characters.` };
-            }
-        }
-        
-        // Validate Bid Adjustment format
-        if (header === "Bid Adjustment" && trimmedValue) {
-            // Remove % sign for validation
-            const cleanBid = trimmedValue.replace('%', '').trim();
-            const bidValue = parseFloat(cleanBid);
-            if (isNaN(bidValue) || bidValue < -90 || bidValue > 900) {
-                return { status: 'error', message: `Invalid Bid Adjustment. Must be a percentage between -90% and 900%.` };
-            }
-        }
-        
-        const validRowTypes = ['ad', 'sitelink', 'call', 'location', 'keyword', 'campaign', 'ad group'];
-        if (header === "Row Type" && !validRowTypes.includes(trimmedValue.toLowerCase())) {
+        const validRowTypes = ['ad', 'sitelink', 'call', 'location', 'location target', 'location targeting', 'keyword', 'campaign', 'ad group', 'callout', 'structured snippet', 'image', 'asset'];
+        if (header === "Row Type" && trimmedValue && !validRowTypes.includes(trimmedValue.toLowerCase())) {
             return { status: 'warning', message: `Unrecognized Row Type: ${trimmedValue}. Should be one of ${validRowTypes.join(', ')}.` };
+        }
+        
+        // Validate callout text length
+        if (header === "Callout Text" && trimmedValue.length > 25) {
+            return { status: 'error', message: `EXCEEDS LIMIT: Max 25 characters. Current: ${trimmedValue.length}.` };
         }
     }
 
@@ -202,51 +262,40 @@ export const CSVValidator = () => {
             results[rowIdx] = {};
             const rowType = (row["Row Type"] || "").trim().toLowerCase();
             
-            // Auto-detect row type if not explicitly set
-            let detectedRowType = rowType;
-            if (!detectedRowType) {
-                // Try to detect from other fields
-                if (row["Location"]) detectedRowType = 'location';
-                else if (row["Asset Type"]) {
-                    const assetType = (row["Asset Type"] || "").trim().toLowerCase();
-                    if (assetType === 'sitelink') detectedRowType = 'sitelink';
-                    else if (assetType === 'call') detectedRowType = 'call';
-                } else if (row["Link Text"]) detectedRowType = 'sitelink';
-                else if (row["Phone Number"]) detectedRowType = 'call';
-                else if (row["Headline 1"] || row["Final URL"]) detectedRowType = 'ad';
-            }
-            
             let requiredHeaders: string[] = [];
-            if (detectedRowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
-            else if (detectedRowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
-            else if (detectedRowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
-            else if (detectedRowType === 'location') requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
-            else if (detectedRowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
+            if (rowType === 'ad') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
+            else if (rowType === 'sitelink') requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
+            else if (rowType === 'call') requiredHeaders = REQUIRED_HEADERS_FOR_CALL;
+            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting') {
+                requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+            }
+            else if (rowType === 'callout') requiredHeaders = REQUIRED_HEADERS_FOR_CALLOUT;
+            else if (rowType === 'structured snippet') requiredHeaders = REQUIRED_HEADERS_FOR_SNIPPET;
+            // For rows without Row Type, try to detect by column presence
+            else if (!rowType && (row['Location Target'] || row['Location'])) {
+                requiredHeaders = REQUIRED_HEADERS_FOR_LOCATION;
+            }
+            else if (!rowType && (row['Sitelink Text'] || row['Link Text'])) {
+                requiredHeaders = REQUIRED_HEADERS_FOR_SITELINK;
+            }
+            else if (!rowType && row['Callout Text']) {
+                requiredHeaders = REQUIRED_HEADERS_FOR_CALLOUT;
+            }
+            else if (rowType !== '') requiredHeaders = REQUIRED_HEADERS_FOR_AD;
 
-            // Check for missing required headers
             requiredHeaders.forEach(reqHeader => {
                 if (!headers.includes(reqHeader)) {
                     results[rowIdx][reqHeader] = { 
                         status: 'warning', 
-                        message: `Required column '${reqHeader}' for '${detectedRowType}' is missing from file headers.` 
+                        message: `Required column '${reqHeader}' for '${rowType}' is missing from file headers.` 
                     };
                     warnings++;
-                } else {
-                    // Check if required field has value
-                    const value = (row[reqHeader] || "").trim();
-                    if (!value && detectedRowType !== '') {
-                        results[rowIdx][reqHeader] = {
-                            status: 'error',
-                            message: `Required field '${reqHeader}' is empty for Row Type: ${detectedRowType}.`
-                        };
-                        errors++;
-                    }
                 }
             });
             
             headers.forEach(header => {
                 const value = row[header];
-                const result = validateCell(header, value, detectedRowType);
+                const result = validateCell(header, value, rowType);
                 results[rowIdx][header] = result;
                 if (result.status === 'error') errors++;
                 if (result.status === 'warning') warnings++;
@@ -510,6 +559,7 @@ export const CSVValidator = () => {
         const keywords = { total: 0, negative: 0 };
         const ads = { RSA: 0, DKI: 0, CallOnly: 0, other: 0 };
         const assets = { sitelinks: 0, calls: 0, locations: 0, callouts: 0, structuredSnippets: 0, images: 0, other: 0 };
+        const locationSet = new Set<string>(); // Track unique locations
 
         uploadedData.forEach(row => {
             const campaign = row['Campaign'];
@@ -520,62 +570,131 @@ export const CSVValidator = () => {
             if (campaign) campaigns.add(campaign);
             if (adGroup) adGroups.add(`${campaign}|${adGroup}`);
 
-            // Count keywords
-            if (rowType === 'keyword') {
+            // Count keywords - check for Keyword column or Row Type
+            if (rowType === 'keyword' || row['Keyword']) {
                 keywords.total++;
-            } else if (rowType === 'negative keyword' || rowType === 'campaign negative keyword' || rowType === 'ad group negative keyword') {
+            } else if (rowType === 'negative keyword' || rowType === 'campaign negative keyword' || rowType === 'ad group negative keyword' || row['Negative Keyword']) {
                 keywords.negative++;
             }
 
-            // Count ads
-            if (rowType === 'ad' || rowType === 'responsive search ad' || rowType === 'expanded text ad') {
+            // Count ads - check for ad indicators
+            const hasHeadlines = row['Headline 1'] || row['Headline 2'] || row['Headline 3'];
+            const hasDescriptions = row['Description 1'] || row['Description 2'];
+            const hasPhone = row['Phone Number'];
+            
+            // Only count as ad if Row Type is 'ad' or has ad-specific fields
+            const isAdRow = rowType === 'ad' || rowType === 'responsive search ad' || rowType === 'expanded text ad';
+            
+            if (isAdRow || (hasHeadlines && hasDescriptions && !rowType)) {
                 // Check if it's RSA, DKI, or Call-Only based on available fields
-                if (row['Headline 1'] || row['Description 1']) {
-                    ads.RSA++;
-                } else if (row['Phone Number']) {
+                if (hasHeadlines || hasDescriptions) {
+                    // Check for DKI syntax
+                    const headline1 = (row['Headline 1'] || '').toString();
+                    if (headline1.includes('{KeyWord:') || headline1.includes('{Keyword:')) {
+                        ads.DKI++;
+                    } else {
+                        ads.RSA++;
+                    }
+                } else if (hasPhone) {
                     ads.CallOnly++;
                 } else {
                     ads.other++;
                 }
             }
 
-            // Count assets - more comprehensive tracking
-            // Auto-detect asset type if Row Type is not explicitly set
-            let detectedAssetType = assetType;
-            if (!detectedAssetType && row['Asset Type']) {
-                detectedAssetType = (row['Asset Type'] || '').toLowerCase().trim();
-            }
+            // Count locations - count each unique location value and each location row
+            const locationValue = row['Location'] || row['Location Target'] || '';
+            const citiesValue = row['Cities'] || '';
+            const zipCodesValue = row['Zip Codes'] || '';
+            const isLocationRow = rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' ||
+                                 locationValue || row['Target Type'];
             
-            // Detect sitelinks
-            if (rowType === 'sitelink' || detectedAssetType === 'sitelink' || row['Link Text']) {
-                assets.sitelinks++;
-            } 
-            // Detect call assets
-            else if (rowType === 'call' || detectedAssetType === 'call' || row['Phone Number']) {
-                assets.calls++;
-            } 
-            // Detect locations - check multiple ways
-            else if (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting' || 
-                     row['Location'] || row['Location Target'] || row['Zip Codes'] || row['Cities']) {
-                assets.locations++;
-            } 
-            // Detect callouts
-            else if (rowType === 'callout' || detectedAssetType === 'callout' || row['Callout Text']) {
-                assets.callouts++;
-            } 
-            // Detect structured snippets
-            else if (rowType === 'structured snippet' || detectedAssetType === 'structured snippet' || row['Header']) {
-                assets.structuredSnippets++;
-            } 
-            // Detect images
-            else if (rowType === 'image' || detectedAssetType === 'image' || row['Image URL']) {
-                assets.images++;
-            } 
-            // Other assets
-            else if (rowType.includes('asset') || detectedAssetType) {
-                assets.other++;
+            if (isLocationRow) {
+                // Count individual location rows - each row with location data counts as at least 1
+                if (locationValue) {
+                    // If location contains multiple values (comma-separated), split and count each
+                    const locations = locationValue.split(',').map(l => l.trim()).filter(l => l);
+                    if (locations.length > 0) {
+                        locations.forEach(loc => {
+                            if (loc) locationSet.add(loc.toLowerCase());
+                        });
+                    } else {
+                        // Single location value
+                        locationSet.add(locationValue.toLowerCase());
+                    }
+                }
+                // Also check Cities and Zip Codes columns for multiple locations
+                if (citiesValue) {
+                    const cities = citiesValue.split(',').map(c => c.trim()).filter(c => c);
+                    if (cities.length > 0) {
+                        cities.forEach(city => {
+                            if (city) locationSet.add(`city:${city.toLowerCase()}`);
+                        });
+                    } else {
+                        locationSet.add(`city:${citiesValue.toLowerCase()}`);
+                    }
+                }
+                if (zipCodesValue) {
+                    const zips = zipCodesValue.split(',').map(z => z.trim()).filter(z => z);
+                    if (zips.length > 0) {
+                        zips.forEach(zip => {
+                            if (zip) locationSet.add(`zip:${zip.toLowerCase()}`);
+                        });
+                    } else {
+                        locationSet.add(`zip:${zipCodesValue.toLowerCase()}`);
+                    }
+                }
+                // If no location value but row type is location, count as 1 location row
+                if (!locationValue && !citiesValue && !zipCodesValue && 
+                    (rowType === 'location' || rowType === 'location target' || rowType === 'location targeting')) {
+                    locationSet.add(`location_row_${locationSet.size}`);
+                }
+            }
+
+            // Count assets - prioritize Row Type, then check columns
+            // Only count as asset if NOT an ad row (unless explicitly an asset row type)
+            const isAssetRow = rowType === 'sitelink' || rowType === 'call' || rowType === 'callout' || 
+                              rowType === 'structured snippet' || rowType === 'image' || 
+                              assetType === 'sitelink' || assetType === 'call' || assetType === 'callout' ||
+                              assetType === 'structured snippet' || assetType === 'image';
+            
+            if (isAssetRow || (!isAdRow && !hasHeadlines && !hasDescriptions)) {
+                // Sitelinks - check Row Type first, then columns
+                if (rowType === 'sitelink' || assetType === 'sitelink' || 
+                    (row['Sitelink Text'] || row['Link Text']) && !hasHeadlines && !hasDescriptions) {
+                    assets.sitelinks++;
+                } 
+                // Callouts - check Row Type first, then columns
+                else if (rowType === 'callout' || assetType === 'callout' || 
+                        (row['Callout Text'] && !hasHeadlines && !hasDescriptions)) {
+                    assets.callouts++;
+                }
+                // Structured Snippets - check Row Type first, then columns
+                else if (rowType === 'structured snippet' || assetType === 'structured snippet' ||
+                        (row['Header'] && row['Values'] && !hasHeadlines && !hasDescriptions)) {
+                    assets.structuredSnippets++;
+                }
+                // Call assets - check Row Type first, then columns
+                else if (rowType === 'call' || assetType === 'call' ||
+                        (row['Phone Number'] && row['Country Code'] && !hasHeadlines && !hasDescriptions)) {
+                    assets.calls++;
+                }
+                // Images - check Row Type first, then columns
+                else if (rowType === 'image' || assetType === 'image' ||
+                        (row['Image URL'] || row['Alt Text'])) {
+                    assets.images++;
+                }
+                // Other assets
+                else if (rowType && (rowType.includes('asset') || assetType)) {
+                    assets.other++;
+                } else if (assetType || row['Asset Type']) {
+                    assets.other++;
+                }
             }
         });
+
+        // Set locations count to unique locations found, or count of location rows if no unique values
+        assets.locations = locationSet.size > 0 ? locationSet.size : assets.locations;
 
         return {
             campaigns: campaigns.size,
@@ -643,6 +762,153 @@ export const CSVValidator = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Parse & Validate Section */}
+                <div className="mt-6 flex flex-col sm:flex-row items-center gap-4 justify-center">
+                    <button
+                        onClick={() => {
+                            if (uploadedData.length === 0 && !uploadedFile) {
+                                setErrorMessage('Please upload a CSV file first');
+                                document.getElementById('csvFile')?.click();
+                            } else if (uploadedData.length > 0) {
+                                // Re-validate existing data
+                                validateData(uploadedData, uploadedHeaders);
+                                setSuccessMessage('Validation completed');
+                            } else if (uploadedFile) {
+                                // Re-parse the file
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    try {
+                                        const result = parseCSV(e.target?.result as string);
+                                        if (result.data.length === 0) {
+                                            throw new Error("The file is empty or could not be parsed.");
+                                        }
+                                        setUploadedData(result.data);
+                                        setUploadedHeaders(result.headers);
+                                        validateData(result.data, result.headers);
+                                        setSuccessMessage(`Successfully parsed and validated ${result.data.length} rows`);
+                                    } catch (error: any) {
+                                        setErrorMessage(`Error processing CSV: ${error.message}`);
+                                    }
+                                };
+                                reader.readAsText(uploadedFile);
+                            }
+                        }}
+                        disabled={isProcessing}
+                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {isProcessing ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                Processing...
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle className="w-5 h-5" />
+                                Parse & Validate
+                            </>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => {
+                            // Generate CSV template
+                            const template = [
+                                {
+                                    "Row Type": "CAMPAIGN",
+                                    "Campaign": "Local Plumbing",
+                                    "Campaign Type": "SEARCH",
+                                    "Campaign Status": "ENABLED",
+                                    "Budget": "30.00",
+                                    "Bidding Strategy": "MANUAL_CPC",
+                                    "Start Date": "2025-12-05",
+                                    "End Date": "2026-12-05",
+                                    "Location Type": "COUNTRY",
+                                    "Location Code": "US"
+                                },
+                                {
+                                    "Row Type": "ADGROUP",
+                                    "Campaign": "Local Plumbing",
+                                    "Ad Group": "Emergency Repairs",
+                                    "AdGroup Status": "ENABLED",
+                                    "Default Max CPC": "2.00"
+                                },
+                                {
+                                    "Row Type": "KEYWORD",
+                                    "Campaign": "Local Plumbing",
+                                    "Ad Group": "Emergency Repairs",
+                                    "Keyword": "plumber near me",
+                                    "Match Type": "PHRASE",
+                                    "Keyword Max CPC": "2.00"
+                                },
+                                {
+                                    "Row Type": "AD",
+                                    "Campaign": "Local Plumbing",
+                                    "Ad Group": "Emergency Repairs",
+                                    "Ad Type": "RESPONSIVE_SEARCH_AD",
+                                    "Headline 1": "Fast Plumbers Near You",
+                                    "Headline 2": "24/7 Emergency Service",
+                                    "Headline 3": "Licensed & Insured",
+                                    "Description 1": "We fix leaks fast. Available 24/7 for emergency plumbing services.",
+                                    "Description 2": "Trusted local plumbers. Same-day service available.",
+                                    "Final URL": "https://example.com/emergency"
+                                },
+                                {
+                                    "Row Type": "SITELINK",
+                                    "Campaign": "Local Plumbing",
+                                    "Ad Group": "Emergency Repairs",
+                                    "Asset Type": "Sitelink",
+                                    "Link Text": "Emergency Service",
+                                    "Description Line 1": "24/7 Emergency Plumbing",
+                                    "Final URL": "https://example.com/emergency"
+                                },
+                                {
+                                    "Row Type": "CALLOUT",
+                                    "Campaign": "Local Plumbing",
+                                    "Ad Group": "Emergency Repairs",
+                                    "Asset Type": "Callout",
+                                    "Callout Text": "Licensed & Insured"
+                                },
+                                {
+                                    "Row Type": "LOCATION",
+                                    "Campaign": "Local Plumbing",
+                                    "Ad Group": "Emergency Repairs",
+                                    "Location": "New York, NY",
+                                    "Location Target": "New York, NY",
+                                    "Target Type": "City"
+                                }
+                            ];
+
+                            const headers = Object.keys(template[0]);
+                            const headerRow = headers.join(',');
+                            const dataRows = template.map(row => {
+                                return headers.map(header => {
+                                    let cellValue = row[header] || '';
+                                    if (cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n')) {
+                                        cellValue = `"${cellValue.replace(/"/g, '""')}"`;
+                                    }
+                                    return cellValue;
+                                }).join(',');
+                            });
+
+                            const csvContent = [headerRow, ...dataRows].join('\n');
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = 'ads_csv_template.csv';
+                            link.click();
+                            URL.revokeObjectURL(url);
+                            setSuccessMessage('CSV template downloaded successfully!');
+                        }}
+                        className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 flex items-center gap-2"
+                    >
+                        <Download className="w-5 h-5" />
+                        Download CSV Template (Red)
+                    </button>
+                    <p className="text-sm text-slate-500 text-center sm:text-left">
+                        Upload your CSV exported from builder to check it before Google Ads Editor import.
+                    </p>
+                </div>
             </div>
 
             {/* Messages */}
@@ -665,145 +931,6 @@ export const CSVValidator = () => {
                 <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-3">
                     <Loader2 className="w-5 h-5 text-yellow-700 animate-spin" />
                     <p className="text-yellow-700">Processing data... Please wait.</p>
-                </div>
-            )}
-
-            {/* Loading Screen - Full Screen Overlay */}
-            {isProcessing && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center">
-                    <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 border-2 border-indigo-200">
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                                <Loader2 className="w-8 h-8 text-white animate-spin" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-slate-800">Processing CSV File</h3>
-                            <p className="text-slate-600 text-center text-sm">
-                                Reading and validating your CSV data. This may take a few moments...
-                            </p>
-                            <div className="w-full bg-slate-200 rounded-full h-2.5 mt-2 overflow-hidden">
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2.5 rounded-full animate-pulse" style={{ width: '70%' }}></div>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">Please wait while we process your file...</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Uploaded File Details */}
-            {uploadedData.length > 0 && uploadedHeaders.length > 0 && !isProcessing && (
-                <div className="mb-6 bg-white/80 backdrop-blur-xl rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden">
-                    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <FileText className="w-5 h-5" />
-                                    Uploaded File Details
-                                </h2>
-                                <p className="text-indigo-100 text-sm mt-1.5">
-                                    {fileName} • {uploadedData.length} rows • {uploadedHeaders.length} columns
-                                </p>
-                            </div>
-                            <div className="bg-white/20 rounded-lg px-3 py-1.5">
-                                <span className="text-white text-sm font-medium">✓ Loaded</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-6">
-                        {/* Column Headers */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                                <Hash className="w-5 h-5 text-indigo-600" />
-                                Detected Columns ({uploadedHeaders.length})
-                            </h3>
-                            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
-                                {uploadedHeaders.map((header, idx) => {
-                                    const rule = COLUMN_RULES[header];
-                                    const hasRule = !!rule;
-                                    return (
-                                        <span
-                                            key={idx}
-                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${
-                                                hasRule
-                                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                                    : 'bg-slate-100 text-slate-600 border-slate-300'
-                                            }`}
-                                            title={rule ? rule.rule : 'No validation rule defined'}
-                                        >
-                                            {header}
-                                            {hasRule && <span className="ml-1 text-indigo-500">✓</span>}
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">
-                                {uploadedHeaders.filter(h => COLUMN_RULES[h]).length} columns have validation rules
-                            </p>
-                        </div>
-
-                        {/* Sample Data Preview */}
-                        <div>
-                            <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                                <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
-                                Data Preview (First 5 Rows)
-                            </h3>
-                            <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left font-semibold text-slate-700 sticky left-0 bg-slate-100 z-10">#</th>
-                                            {uploadedHeaders.slice(0, 7).map((header, idx) => (
-                                                <th key={idx} className="px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap min-w-[120px]">
-                                                    {header}
-                                                </th>
-                                            ))}
-                                            {uploadedHeaders.length > 7 && (
-                                                <th className="px-4 py-3 text-left font-semibold text-slate-500">
-                                                    +{uploadedHeaders.length - 7} more columns
-                                                </th>
-                                            )}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-200 bg-white">
-                                        {uploadedData.slice(0, 5).map((row, rowIdx) => (
-                                            <tr key={rowIdx} className="hover:bg-indigo-50/30 transition-colors">
-                                                <td className="px-4 py-2.5 font-semibold text-slate-600 sticky left-0 bg-white z-10 border-r border-slate-200">
-                                                    {rowIdx + 1}
-                                                </td>
-                                                {uploadedHeaders.slice(0, 7).map((header, colIdx) => {
-                                                    const value = row[header] || '';
-                                                    const displayValue = value.length > 25 ? value.substring(0, 25) + '...' : value;
-                                                    const validation = validationResults[rowIdx]?.[header];
-                                                    const hasError = validation?.status === 'error';
-                                                    const hasWarning = validation?.status === 'warning';
-                                                    return (
-                                                        <td 
-                                                            key={colIdx} 
-                                                            className={`px-4 py-2.5 text-slate-700 whitespace-nowrap min-w-[120px] ${
-                                                                hasError ? 'bg-red-50 text-red-700' : hasWarning ? 'bg-yellow-50 text-yellow-700' : ''
-                                                            }`}
-                                                            title={value || 'Empty cell'}
-                                                        >
-                                                            {displayValue || <span className="text-slate-400 italic text-xs">empty</span>}
-                                                        </td>
-                                                    );
-                                                })}
-                                                {uploadedHeaders.length > 7 && (
-                                                    <td className="px-4 py-2.5 text-slate-400 text-xs italic">
-                                                        ...
-                                                    </td>
-                                                )}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            {uploadedData.length > 5 && (
-                                <p className="text-xs text-slate-500 mt-3 text-center bg-slate-50 py-2 rounded-lg">
-                                    Showing first 5 of {uploadedData.length} rows. View full data with validation in the table below.
-                                </p>
-                            )}
-                        </div>
-                    </div>
                 </div>
             )}
 
@@ -878,6 +1005,23 @@ export const CSVValidator = () => {
                             </div>
                         </div>
 
+                        {/* Extensions/Assets Total */}
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
+                                    <Sparkles className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Extensions/Assets</p>
+                                    <p className="text-2xl font-bold text-slate-800">
+                                        {summary.assets.sitelinks + summary.assets.calls + summary.assets.callouts + 
+                                         summary.assets.structuredSnippets + summary.assets.images + summary.assets.other}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400">Total extensions & assets</p>
+                        </div>
+
                         {/* Sitelinks */}
                         <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
                             <div className="flex items-center gap-3 mb-3">
@@ -934,25 +1078,47 @@ export const CSVValidator = () => {
                             <p className="text-xs text-slate-400">Callout extensions</p>
                         </div>
 
+                        {/* Structured Snippets */}
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                                    <FileText className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Snippets</p>
+                                    <p className="text-2xl font-bold text-slate-800">{summary.assets.structuredSnippets}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400">Structured snippets</p>
+                        </div>
+
+                        {/* Images */}
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center shadow-md">
+                                    <Sparkles className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-slate-500">Images</p>
+                                    <p className="text-2xl font-bold text-slate-800">{summary.assets.images}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400">Image assets</p>
+                        </div>
+
                         {/* Other Assets */}
-                        {(summary.assets.structuredSnippets + summary.assets.images + summary.assets.other) > 0 && (
+                        {summary.assets.other > 0 && (
                             <div className="bg-white/80 backdrop-blur-xl rounded-xl p-5 border border-slate-200/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center shadow-md">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-slate-600 rounded-lg flex items-center justify-center shadow-md">
                                         <Sparkles className="w-5 h-5 text-white" />
                                     </div>
                                     <div>
                                         <p className="text-sm text-slate-500">Other Assets</p>
-                                        <p className="text-2xl font-bold text-slate-800">
-                                            {summary.assets.structuredSnippets + summary.assets.images + summary.assets.other}
-                                        </p>
+                                        <p className="text-2xl font-bold text-slate-800">{summary.assets.other}</p>
                                     </div>
                                 </div>
-                                <div className="text-xs text-slate-500 space-y-1">
-                                    {summary.assets.structuredSnippets > 0 && <div>• {summary.assets.structuredSnippets} Snippets</div>}
-                                    {summary.assets.images > 0 && <div>• {summary.assets.images} Images</div>}
-                                    {summary.assets.other > 0 && <div>• {summary.assets.other} Other</div>}
-                                </div>
+                                <p className="text-xs text-slate-400">Additional assets</p>
                             </div>
                         )}
                     </div>
@@ -1088,4 +1254,5 @@ export const CSVValidator = () => {
             )}
         </div>
     );
+};
 };

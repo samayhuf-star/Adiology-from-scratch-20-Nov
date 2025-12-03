@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, Clock, Eye, Trash2, Search, AlertCircle,
-  CheckCircle2, Download, FolderOpen, Plus, Sparkles, List, Grid3x3
+  CheckCircle2, Download, FolderOpen, Plus, Sparkles, Grid3x3, List
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -36,7 +36,6 @@ interface SavedCampaign {
   timestamp: string;
   data: any;
   status?: 'draft' | 'completed' | 'in_progress';
-  lastModified?: string;
 }
 
 export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoadCampaign }) => {
@@ -44,8 +43,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'saved' | 'edited' | 'draft'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     loadSavedCampaigns();
@@ -82,8 +80,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
         name: item.name,
         timestamp: item.timestamp,
         data: item.data,
-        status: item.status || 'completed',
-        lastModified: item.lastModified
+        status: item.status || 'completed'
       }));
 
       console.log('✅ Filtered campaigns:', campaigns);
@@ -114,34 +111,17 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
     }
   };
 
-  const getCampaignStatus = (campaign: SavedCampaign): 'saved' | 'draft' | 'edited' => {
-    if (campaign.status === 'draft') {
-      return 'draft';
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-700 border-green-300">Completed</Badge>;
+      case 'in_progress':
+        return <Badge className="bg-blue-100 text-blue-700 border-blue-300">In Progress</Badge>;
+      case 'draft':
+        return <Badge className="bg-amber-100 text-amber-700 border-amber-300">Draft</Badge>;
+      default:
+        return <Badge className="bg-slate-100 text-slate-700 border-slate-300">Unknown</Badge>;
     }
-    // Check if campaign was edited (has lastModified and it's different from timestamp)
-    if (campaign.lastModified && campaign.timestamp) {
-      const lastModified = new Date(campaign.lastModified).getTime();
-      const created = new Date(campaign.timestamp).getTime();
-      if (lastModified > created + 1000) { // At least 1 second difference
-        return 'edited';
-      }
-    }
-    return 'saved';
-  };
-
-  const getStatusBadge = (campaign: SavedCampaign) => {
-    const status = getCampaignStatus(campaign);
-    const statusColors = {
-      saved: 'bg-green-100 text-green-700 border-green-300',
-      edited: 'bg-blue-100 text-blue-700 border-blue-300',
-      draft: 'bg-amber-100 text-amber-700 border-amber-300'
-    };
-    const statusLabels = {
-      saved: 'Saved',
-      edited: 'Edited',
-      draft: 'Draft'
-    };
-    return <Badge className={statusColors[status]}>{statusLabels[status]}</Badge>;
   };
 
   const getStepLabel = (stepNum: number) => {
@@ -150,19 +130,10 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
   };
 
   const filteredCampaigns = savedCampaigns.filter(campaign => {
-    // Search filter
     const name = campaign.name || campaign.data?.campaignName || '';
     const structure = campaign.data?.structureType || '';
-    const matchesSearch = 
-      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      structure.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (!matchesSearch) return false;
-    
-    // Status filter
-    if (statusFilter === 'all') return true;
-    const campaignStatus = getCampaignStatus(campaign);
-    return campaignStatus === statusFilter;
+    return name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           structure.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -170,85 +141,53 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            Campaign History
-          </h1>
-          <p className="text-slate-600">
-            View and manage your saved campaigns. Continue where you left off or start a new one.
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
+                Saved Campaigns
+              </h1>
+              <p className="text-slate-600">
+                All your campaigns are automatically saved. Continue where you left off or start a new one.
+              </p>
+            </div>
+            {/* View Toggle */}
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className={viewMode === 'grid' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}
+                title="Grid view"
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className={viewMode === 'list' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}
+                title="List view"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
 
-        {/* Search and Controls */}
+        {/* Search */}
         <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl mb-6">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
-                <Input
-                  placeholder="Search campaigns..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-11 bg-white border-slate-200"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('list')}
-                  className={viewMode === 'list' ? 'bg-indigo-600 text-white' : ''}
-                >
-                  <List className="w-4 h-4 mr-2" />
-                  List
-                </Button>
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className={viewMode === 'grid' ? 'bg-indigo-600 text-white' : ''}
-                >
-                  <Grid3x3 className="w-4 h-4 mr-2" />
-                  Grid
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-200">
-              <span className="text-sm font-medium text-slate-700">Filter by status:</span>
-              <Button
-                variant={statusFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('all')}
-                className={statusFilter === 'all' ? 'bg-indigo-600 text-white' : ''}
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === 'saved' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('saved')}
-                className={statusFilter === 'saved' ? 'bg-green-600 text-white' : ''}
-              >
-                Saved
-              </Button>
-              <Button
-                variant={statusFilter === 'edited' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('edited')}
-                className={statusFilter === 'edited' ? 'bg-blue-600 text-white' : ''}
-              >
-                Edited
-              </Button>
-              <Button
-                variant={statusFilter === 'draft' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setStatusFilter('draft')}
-                className={statusFilter === 'draft' ? 'bg-amber-600 text-white' : ''}
-              >
-                Draft
-              </Button>
+          <CardContent className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 z-10" />
+              <Input
+                placeholder="Search campaigns..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-11 bg-white border-slate-200"
+              />
             </div>
             {!loading && (
-              <div className="pt-2 border-t border-slate-200">
+              <div className="mt-4 pt-4 border-t border-slate-200">
                 <p className="text-sm text-slate-600">
                   <span className="font-semibold text-slate-800">{filteredCampaigns.length}</span> {filteredCampaigns.length === 1 ? 'campaign' : 'campaigns'} found
                 </p>
@@ -291,7 +230,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                     window.location.hash = '#builder-2';
                     window.location.reload();
                   }}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create New Campaign
@@ -299,154 +238,95 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
               )}
             </CardContent>
           </Card>
-        ) : viewMode === 'list' ? (
-          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-            <CardContent className="p-0">
-              <div className="divide-y divide-slate-200">
-                {filteredCampaigns.map((campaign) => {
-                  const data = campaign.data || campaign;
-                  const stepNum = data.step || 1;
-                  const timestamp = new Date(campaign.timestamp || data.timestamp);
-                  
-                  return (
-                    <div
-                      key={campaign.id}
-                      className="p-6 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-4 mb-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-lg font-semibold text-slate-900 truncate">
-                                  {campaign.name || data.campaignName || 'Unnamed Campaign'}
-                                </h3>
-                                {getStatusBadge(campaign)}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-slate-500 mb-3">
-                                <Clock className="w-4 h-4 flex-shrink-0" />
-                                <span>Created: {timestamp.toLocaleDateString()} at {timestamp.toLocaleTimeString()}</span>
-                                {campaign.lastModified && getCampaignStatus(campaign) === 'edited' && (
-                                  <>
-                                    <span>•</span>
-                                    <span>Last edited: {new Date(campaign.lastModified).toLocaleDateString()} at {new Date(campaign.lastModified).toLocaleTimeString()}</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-                            <div>
-                              <span className="text-xs text-slate-500">Structure</span>
-                              <p className="text-sm font-medium text-slate-700">
-                                {STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-xs text-slate-500">Current Step</span>
-                              <p className="text-sm font-medium text-slate-700">{getStepLabel(stepNum)}</p>
-                            </div>
-                            {data.selectedKeywords && data.selectedKeywords.length > 0 && (
-                              <div>
-                                <span className="text-xs text-slate-500">Keywords</span>
-                                <p className="text-sm font-medium text-slate-700">{data.selectedKeywords.length}</p>
-                              </div>
-                            )}
-                            {data.generatedAds && data.generatedAds.length > 0 && (
-                              <div>
-                                <span className="text-xs text-slate-500">Ads</span>
-                                <p className="text-sm font-medium text-slate-700">{data.generatedAds.length}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Button 
-                            onClick={() => onLoadCampaign(data)}
-                            className="bg-gradient-to-r from-indigo-600 to-purple-600"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Continue
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            onClick={() => deleteCampaign(campaign.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={viewMode === 'grid' 
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+            : 'space-y-4'
+          }>
             {filteredCampaigns.map((campaign) => {
               const data = campaign.data || campaign;
+              const status = campaign.status || data.status || 'completed';
               const stepNum = data.step || 1;
               const timestamp = new Date(campaign.timestamp || data.timestamp);
+              const campaignName = campaign.name || data.campaignName || 'Unnamed Campaign';
+              
+              // Extract base name and remove "(Draft - DATE)" or "(Completed - DATE)" from title
+              const baseName = campaignName.replace(/\s*\(Draft\s*-\s*[^)]+\)/gi, '').replace(/\s*\(Completed\s*-\s*[^)]+\)/gi, '');
+              const isDraft = /\(Draft\s*-/i.test(campaignName);
               
               return (
                 <Card 
                   key={campaign.id} 
-                  className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all"
+                  className={`border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all ${
+                    viewMode === 'list' ? 'flex flex-row' : 'flex flex-col'
+                  } overflow-hidden`}
                 >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg mb-2 truncate" title={campaign.name || data.campaignName || 'Unnamed Campaign'}>
-                          {campaign.name || data.campaignName || 'Unnamed Campaign'}
+                  <CardHeader className={`pb-3 ${viewMode === 'list' ? 'flex-shrink-0 w-64 border-r border-slate-200' : ''}`}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <CardTitle 
+                          className="text-base sm:text-lg font-semibold leading-tight line-clamp-2 mb-2 break-words" 
+                          title={campaignName}
+                        >
+                          {baseName}
                         </CardTitle>
-                        <CardDescription className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">{timestamp.toLocaleString()}</span>
-                        </CardDescription>
                       </div>
-                      {getStatusBadge(campaign)}
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getStatusBadge(status)}
+                      </div>
                     </div>
+                    <CardDescription className="flex items-center gap-1.5 text-xs sm:text-sm">
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                      <span className="truncate text-slate-500">{timestamp.toLocaleString('en-GB', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</span>
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">Structure:</span>
-                        <span className="font-medium text-slate-700">
+                  <CardContent className={`flex-1 flex ${viewMode === 'list' ? 'flex-row items-center justify-between gap-4' : 'flex-col space-y-3'}`}>
+                    <div className={`flex-1 ${viewMode === 'list' ? 'flex flex-row gap-6 items-center' : 'space-y-2.5'}`}>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-500 flex-shrink-0">Structure:</span>
+                        <span className="font-medium text-slate-700" title={STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}>
                           {STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">Current Step:</span>
-                        <span className="font-medium text-slate-700">{getStepLabel(stepNum)}</span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-500 flex-shrink-0">Current Step:</span>
+                        <span className="font-medium text-slate-700" title={getStepLabel(stepNum)}>
+                          {getStepLabel(stepNum)}
+                        </span>
                       </div>
                       {data.selectedKeywords && data.selectedKeywords.length > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Keywords:</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-slate-500 flex-shrink-0">Keywords:</span>
                           <span className="font-medium text-slate-700">{data.selectedKeywords.length}</span>
                         </div>
                       )}
                       {data.generatedAds && data.generatedAds.length > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Ads:</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-slate-500 flex-shrink-0">Ads:</span>
                           <span className="font-medium text-slate-700">{data.generatedAds.length}</span>
                         </div>
                       )}
                     </div>
-                    <Separator />
-                    <div className="flex gap-2">
+                    {viewMode === 'grid' && <Separator className="my-3" />}
+                    <div className={`flex gap-2 ${viewMode === 'list' ? 'flex-shrink-0' : 'pt-1'}`}>
                       <Button 
                         onClick={() => onLoadCampaign(data)}
-                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600"
+                        className={`${viewMode === 'list' ? '' : 'flex-1'} bg-indigo-600 hover:bg-indigo-700 text-white min-w-0`}
                       >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Continue
+                        <Eye className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">Continue</span>
                       </Button>
                       <Button 
                         variant="outline"
                         onClick={() => deleteCampaign(campaign.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0 px-3"
+                        title="Delete campaign"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

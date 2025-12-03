@@ -167,17 +167,89 @@ export function validateCampaignStructure(structure: CampaignStructure): CSVVali
             }
             
             if (ad.type === 'rsa' || ad.type === 'dki') {
+              // Validate headlines - at least 3 required for RSA
+              const headlines = [ad.headline1, ad.headline2, ad.headline3].filter(h => h && h.trim());
+              if (headlines.length < 3) {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: RSA/DKI ads require at least 3 headlines (currently has ${headlines.length})`);
+              }
+              
+              // Validate individual headlines
               if (!ad.headline1 || ad.headline1.trim() === '') {
                 errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Headline 1 is required for RSA/DKI ads`);
               } else if (ad.headline1.length > 30) {
-                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Headline 1 exceeds 30 characters`);
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Headline 1 exceeds 30 characters (${ad.headline1.length} chars)`);
+              }
+              
+              if (ad.headline2 && ad.headline2.length > 30) {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Headline 2 exceeds 30 characters (${ad.headline2.length} chars)`);
+              }
+              
+              if (ad.headline3 && ad.headline3.length > 30) {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Headline 3 exceeds 30 characters (${ad.headline3.length} chars)`);
+              }
+              
+              // Validate descriptions - at least 2 required for RSA
+              const descriptions = [ad.description1, ad.description2].filter(d => d && d.trim());
+              if (descriptions.length < 2) {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: RSA/DKI ads require at least 2 descriptions (currently has ${descriptions.length})`);
               }
               
               if (!ad.description1 || ad.description1.trim() === '') {
                 errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Description 1 is required for RSA/DKI ads`);
               } else if (ad.description1.length > 90) {
-                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Description 1 exceeds 90 characters`);
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Description 1 exceeds 90 characters (${ad.description1.length} chars)`);
               }
+              
+              if (ad.description2 && ad.description2.length > 90) {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Description 2 exceeds 90 characters (${ad.description2.length} chars)`);
+              }
+            }
+            
+            if (ad.type === 'callonly') {
+              // Call-only ads need headline1, headline2, description1, description2, and phone
+              if (!ad.headline1 || ad.headline1.trim() === '') {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Headline 1 is required for Call-Only ads`);
+              }
+              if (!ad.headline2 || ad.headline2.trim() === '') {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Headline 2 is required for Call-Only ads`);
+              }
+              if (!ad.description1 || ad.description1.trim() === '') {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Description 1 is required for Call-Only ads`);
+              }
+              if (!ad.description2 || ad.description2.trim() === '') {
+                errors.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}: Description 2 is required for Call-Only ads`);
+              }
+            }
+            
+            // Validate extensions/assets if present
+            if (ad.extensions && Array.isArray(ad.extensions) && ad.extensions.length > 0) {
+              ad.extensions.forEach((ext: any, extIdx: number) => {
+                const extType = ext.extensionType || ext.type;
+                
+                if (extType === 'sitelink') {
+                  const links = ext.links || ext.sitelinks || [];
+                  if (links.length === 0) {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Sitelink extension missing link data`);
+                  }
+                } else if (extType === 'callout') {
+                  const callouts = ext.callouts || ext.values || [];
+                  if (callouts.length === 0 || !callouts[0] || callouts[0].trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Callout extension missing text`);
+                  }
+                } else if (extType === 'snippet') {
+                  if (!ext.header || ext.header.trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Structured snippet extension missing header`);
+                  }
+                  const values = ext.values || [];
+                  if (values.length === 0 || !values[0] || values[0].trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Structured snippet extension missing values`);
+                  }
+                } else if (extType === 'call') {
+                  if (!ext.phone && !ext.phoneNumber || (ext.phone || ext.phoneNumber || '').trim() === '') {
+                    warnings.push(`Campaign "${campaign.campaign_name}", Ad Group "${adGroup.adgroup_name}", Ad ${adIdx + 1}, Extension ${extIdx + 1}: Call extension missing phone number`);
+                  }
+                }
+              });
             }
           });
         }
@@ -201,7 +273,15 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // Validate structure first
   const validation = validateCampaignStructure(structure);
   if (!validation.isValid) {
-    throw new Error(`CSV validation failed:\n${validation.errors.join('\n')}`);
+    const errorMessage = validation.errors.length > 0 
+      ? validation.errors.join('\n')
+      : 'Unknown validation error';
+    throw new Error(`CSV validation failed:\n${errorMessage}`);
+  }
+  
+  // Additional safety check
+  if (!structure || !structure.campaigns || structure.campaigns.length === 0) {
+    throw new Error('Campaign structure is empty. Please ensure you have at least one campaign with ad groups and ads.');
   }
   
   const blocks: string[] = [];
@@ -839,6 +919,19 @@ export function adsToCampaignStructure(
   campaignName: string = 'Ads Campaign',
   finalUrl: string = 'https://www.example.com'
 ): CampaignStructure {
+  // Helper function to ensure URL is valid
+  const ensureValidUrl = (url: string | undefined | null): string => {
+    if (!url || url.trim() === '') {
+      return finalUrl || 'https://www.example.com';
+    }
+    const trimmed = url.trim();
+    // If URL doesn't start with http:// or https://, add https://
+    if (!trimmed.match(/^https?:\/\//i)) {
+      return `https://${trimmed}`;
+    }
+    return trimmed;
+  };
+  
   // Group ads by ad group
   const adGroupsMap = new Map<string, any[]>();
   ads.forEach(ad => {
@@ -850,26 +943,79 @@ export function adsToCampaignStructure(
   });
   
   const adGroups: AdGroup[] = Array.from(adGroupsMap.entries()).map(([groupName, groupAds]) => {
-    const convertedAds: Ad[] = groupAds.map(ad => ({
-      type: (ad.adType === 'CallOnly' ? 'callonly' : ad.adType === 'DKI' ? 'dki' : 'rsa') as 'rsa' | 'dki' | 'callonly',
-      headline1: ad.headline1 || '',
-      headline2: ad.headline2 || '',
-      headline3: ad.headline3 || '',
-      headline4: ad.headline4 || '',
-      headline5: ad.headline5 || '',
-      description1: ad.description1 || '',
-      description2: ad.description2 || '',
-      final_url: ad.finalUrl || finalUrl,
-      path1: ad.path1 || '',
-      path2: ad.path2 || ''
-    }));
+    // Collect location data from first ad in group (if available)
+    const firstAd = groupAds[0];
+    const locationTarget = firstAd?.location_target || firstAd?.locationTarget;
+    const zipCodes = firstAd?.zip_codes || firstAd?.zipCodes || [];
+    const cities = firstAd?.cities || [];
+    const states = firstAd?.states || [];
+    
+    const convertedAds: Ad[] = groupAds.map(ad => {
+      // Ensure required fields are present and valid
+      // Convert Call-Only ads to RSA format for CSV export (Google Ads Editor doesn't support Call-Only in CSV)
+      const adType = (ad.adType === 'CallOnly' ? 'rsa' : ad.adType === 'DKI' ? 'dki' : 'rsa') as 'rsa' | 'dki' | 'callonly';
+      
+      // For RSA/DKI, ensure we have at least 3 headlines and 2 descriptions
+      let headline1 = (ad.headline1 || '').trim();
+      let headline2 = (ad.headline2 || '').trim();
+      let headline3 = (ad.headline3 || '').trim();
+      
+      // If missing headlines, use fallbacks
+      if (!headline1) headline1 = 'Professional Service';
+      if (!headline2) headline2 = 'Expert Solutions';
+      if (!headline3) headline3 = 'Quality Guaranteed';
+      
+      let description1 = (ad.description1 || '').trim();
+      let description2 = (ad.description2 || '').trim();
+      
+      // If missing descriptions, use fallbacks
+      if (!description1) description1 = 'Get professional service you can trust.';
+      if (!description2) description2 = 'Contact us today for expert assistance.';
+      
+      // Truncate if too long (Google Ads limits)
+      headline1 = headline1.length > 30 ? headline1.substring(0, 30) : headline1;
+      headline2 = headline2.length > 30 ? headline2.substring(0, 30) : headline2;
+      headline3 = headline3.length > 30 ? headline3.substring(0, 30) : headline3;
+      description1 = description1.length > 90 ? description1.substring(0, 90) : description1;
+      description2 = description2.length > 90 ? description2.substring(0, 90) : description2;
+      
+      // Ensure final URL is valid
+      const validFinalUrl = ensureValidUrl(ad.finalUrl || finalUrl);
+      
+      // Ensure path1 and path2 are within limits (15 chars each)
+      const path1 = (ad.path1 || '').trim().substring(0, 15);
+      const path2 = (ad.path2 || '').trim().substring(0, 15);
+      
+      // Preserve extensions if they exist
+      const extensions = ad.extensions && Array.isArray(ad.extensions) ? ad.extensions : [];
+      
+      return {
+        type: adType,
+        headline1,
+        headline2,
+        headline3,
+        headline4: (ad.headline4 || '').trim().substring(0, 30),
+        headline5: (ad.headline5 || '').trim().substring(0, 30),
+        description1,
+        description2,
+        final_url: validFinalUrl,
+        path1,
+        path2,
+        extensions: extensions // Preserve extensions
+      };
+    });
     
     return {
       adgroup_name: groupName,
       keywords: [], // Ads-only export has no keywords
       match_types: [],
       ads: convertedAds,
-      negative_keywords: []
+      negative_keywords: [],
+      // Preserve location data
+      location_target: locationTarget,
+      zip_codes: zipCodes.length > 0 ? zipCodes : undefined,
+      cities: cities.length > 0 ? cities : undefined,
+      states: states.length > 0 ? states : undefined
     };
   });
   
@@ -894,7 +1040,7 @@ export async function exportCSVWithValidation(
     adGroupName?: string;
     finalUrl?: string;
   }
-): Promise<{ warnings?: string[] }> {
+): Promise<{ isValid: boolean; errors?: string[]; warnings?: string[]; structure?: CampaignStructure }> {
   let structure: CampaignStructure;
   
   // Convert data to CampaignStructure format based on type
@@ -934,18 +1080,14 @@ export async function exportCSVWithValidation(
   
   // Validate before export
   const validation = validateCSVBeforeExport(structure);
-  if (!validation.isValid) {
-    throw new Error(`CSV validation failed:\n${validation.errors.join('\n')}`);
-  }
   
-  // Export using V3 format
-  exportCampaignToCSVV3(structure, filename);
-  
-  // Return warnings if any (caller can display them)
-  if (validation.warnings.length > 0) {
-    return { warnings: validation.warnings };
-  }
-  
-  return {};
+  // Return validation results - let the caller decide whether to proceed
+  // The caller should check validation.isValid before calling exportCampaignToCSVV3
+  return {
+    isValid: validation.isValid,
+    errors: validation.errors,
+    warnings: validation.warnings,
+    structure: structure
+  };
 }
 

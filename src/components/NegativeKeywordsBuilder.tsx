@@ -27,13 +27,6 @@ import {
     type NegativeKeyword,
     type NegativeKeywordCategory
 } from '../utils/negativeKeywordsGenerator';
-import { 
-    generateRandomUrl, 
-    generateRandomCoreKeywords, 
-    generateRandomUserGoal, 
-    generateRandomLocation, 
-    generateRandomCompetitorBrands 
-} from '../utils/randomDataGenerator';
 
 interface GeneratedKeyword {
     id: number;
@@ -43,6 +36,85 @@ interface GeneratedKeyword {
     subcategory?: string;
     matchType?: 'exact' | 'phrase' | 'broad';
 }
+
+type NegativeFillPreset = {
+    url: string;
+    paths: string[];
+    coreKeywords: string[];
+    userGoal: 'leads' | 'calls' | 'signups' | 'branding' | 'ecommerce' | 'other';
+    targetLocation?: string;
+    competitorBrands?: string[];
+    excludeCompetitors?: boolean;
+    keywordCountRange?: [number, number];
+};
+
+const NEGATIVE_FILL_INFO_PRESETS: NegativeFillPreset[] = [
+    {
+        url: 'https://www.fleetguardian.io',
+        paths: ['enterprise-demo', 'fleet-audit', 'solutions'],
+        coreKeywords: [
+            'enterprise fleet tracking',
+            'gps telematics platform',
+            'dot compliance software',
+            'vehicle camera monitoring',
+            'driver safety coaching'
+        ],
+        userGoal: 'leads',
+        targetLocation: 'Dallas, TX',
+        competitorBrands: ['Fleetio', 'Samsara', 'Verizon Connect'],
+        excludeCompetitors: true,
+        keywordCountRange: [850, 1100]
+    },
+    {
+        url: 'https://www.horizonplasticsurgery.com',
+        paths: ['consult', 'vip', 'sculptra', 'body-contouring'],
+        coreKeywords: [
+            'tummy tuck specialist',
+            'mommy makeover surgeon',
+            'body contouring center',
+            'board certified plastic surgeon',
+            'liposuction revisions'
+        ],
+        userGoal: 'calls',
+        targetLocation: 'Miami, FL',
+        competitorBrands: ['Athenique', 'Vivid Body MD'],
+        excludeCompetitors: false,
+        keywordCountRange: [900, 1050]
+    },
+    {
+        url: 'https://www.atlascyberdefense.com',
+        paths: ['zero-trust', 'mssp', 'threat-lab', 'demo'],
+        coreKeywords: [
+            'managed soc service',
+            'zero trust deployment',
+            'cloud incident response',
+            'b2b cyber security experts',
+            'threat hunting retainer'
+        ],
+        userGoal: 'leads',
+        targetLocation: 'Austin, TX',
+        competitorBrands: ['Expel', 'CrowdStrike', 'Arctic Wolf'],
+        excludeCompetitors: true,
+        keywordCountRange: [780, 1000]
+    }
+];
+
+const pickNegativePreset = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
+
+const randomInt = (min: number, max: number) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const joinKeywords = (keywords: string[]) => {
+    if (keywords.length === 0) return '';
+    return [...keywords].sort(() => Math.random() - 0.5).join(', ');
+};
+
+const buildUrlWithPath = (baseUrl: string, slug: string) => {
+    const sanitized = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    if (!slug) return sanitized;
+    return `${sanitized}/${slug}`;
+};
 
 export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) => {
     // Input State
@@ -66,6 +138,26 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
     const [selectedCategories, setSelectedCategories] = useState<Set<NegativeKeywordCategory>>(new Set());
     const [exportFormat, setExportFormat] = useState<'exact' | 'phrase' | 'broad' | 'all'>('all');
     const [showStats, setShowStats] = useState(true);
+
+    const handleFillInfo = () => {
+        const preset = pickNegativePreset(NEGATIVE_FILL_INFO_PRESETS);
+        if (!preset) return;
+
+        const slug = pickNegativePreset(preset.paths) || '';
+        setUrl(buildUrlWithPath(preset.url, slug));
+        setCoreKeywords(joinKeywords(preset.coreKeywords));
+        setUserGoal(preset.userGoal);
+        setTargetLocation(preset.targetLocation || '');
+        setCompetitorBrands((preset.competitorBrands || []).join(', '));
+        setExcludeCompetitors(Boolean(preset.excludeCompetitors));
+
+        if (preset.keywordCountRange) {
+            setKeywordCount(randomInt(preset.keywordCountRange[0], preset.keywordCountRange[1]));
+        } else {
+            setKeywordCount(1000);
+        }
+        setUrlError('');
+    };
 
     // Load form data from localStorage on mount (Bug_34: Persist form fields)
     useEffect(() => {
@@ -472,7 +564,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
             const irrelevantBase = ['review', 'reviews', 'rating', 'ratings', 'comparison', 'compare', 'vs', 'versus', 'alternative', 'alternatives', 'best', 'top', 'worst', 'scam', 'complaint', 'complaints', 'problem', 'problems', 'issue', 'issues', 'competitors', 'similar to', 'like', 'better than', 'pros and cons', 'what is better', 'which is better', 'what is the best', 'which is the best', 'what is the top', 'which is the top', 'what is the worst', 'which is the worst', 'what is better than', 'which is better than', 'what is worse than', 'which is worse than', 'what is similar to', 'which is similar to', 'what is like', 'which is like', 'what is different from', 'which is different from', 'what is different than', 'which is different than', 'what is unlike', 'which is unlike', 'what is not like', 'which is not like', 'what is not similar', 'which is not similar', 'what is not same', 'which is not same', 'what is not identical', 'which is not identical', 'what is not equivalent', 'which is not equivalent', 'what is not equal', 'which is not equal', 'what is not comparable', 'which is not comparable', 'what is not comparable to', 'which is not comparable to', 'what is not comparable with', 'which is not comparable with', 'what is not comparable against', 'which is not comparable against', 'what is not comparable versus', 'which is not comparable versus', 'what is not comparable vs', 'which is not comparable vs', 'what is not comparable like', 'which is not comparable like', 'what is not comparable similar', 'which is not comparable similar', 'what is not comparable same', 'which is not comparable same', 'what is not comparable identical', 'which is not comparable identical', 'what is not comparable equivalent', 'which is not comparable equivalent', 'what is not comparable equal', 'which is not comparable equal', 'what is not comparable different', 'which is not comparable different', 'what is not comparable unlike', 'which is not comparable unlike', 'what is not comparable opposite', 'which is not comparable opposite', 'what is not comparable opposite of', 'which is not comparable opposite of', 'what is not comparable different from', 'which is not comparable different from', 'what is not comparable different than', 'which is not comparable different than', 'what is not comparable unlike', 'which is not comparable unlike', 'what is not comparable not like', 'which is not comparable not like', 'what is not comparable not similar', 'which is not comparable not similar', 'what is not comparable not same', 'which is not comparable not same', 'what is not comparable not identical', 'which is not comparable not identical', 'what is not comparable not equivalent', 'which is not comparable not equivalent', 'what is not comparable not equal', 'which is not comparable not equal'];
             
             irrelevantBase.forEach(kw => {
-                addUniqueKeyword(kw, 'Filters review, comparison, and informational searches', NEGATIVE_KEYWORD_CATEGORIES['Price-Comparison'].label);
+                addUniqueKeyword(kw, 'Filters review, comparison, and informational searches', NEGATIVE_KEYWORD_CATEGORIES['Irrelevant-Product'].label);
             });
             
             // Informational (150+ variations)
@@ -542,12 +634,24 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         if (selectedCategories.size === 0) return generatedKeywords;
         
         return generatedKeywords.filter(kw => {
-            // Find category key from label
+            // Find category key from label - handle both exact match and normalized match
             const categoryKey = Object.keys(NEGATIVE_KEYWORD_CATEGORIES).find(
-                key => NEGATIVE_KEYWORD_CATEGORIES[key as NegativeKeywordCategory].label === kw.category
-            ) as NegativeKeywordCategory;
+                key => {
+                    const categoryLabel = NEGATIVE_KEYWORD_CATEGORIES[key as NegativeKeywordCategory].label;
+                    // Exact match
+                    if (categoryLabel === kw.category) return true;
+                    // Normalized match (trim whitespace, case-insensitive)
+                    if (categoryLabel.trim().toLowerCase() === kw.category.trim().toLowerCase()) return true;
+                    return false;
+                }
+            ) as NegativeKeywordCategory | undefined;
             
-            return categoryKey && selectedCategories.has(categoryKey);
+            // If category key found and it's in selected categories, include this keyword
+            if (categoryKey && selectedCategories.has(categoryKey)) {
+                return true;
+            }
+            
+            return false;
         });
     }, [generatedKeywords, selectedCategories]);
 
@@ -589,27 +693,23 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
         let filename: string;
 
         try {
-            const { exportCSVWithValidation } = await import('../utils/csvGeneratorV3');
-            
             if (format === 'google-ads-editor') {
-                // Use V3 format for Google Ads Editor
+                // Use new Google Ads Editor format
+                const { exportNegativeKeywordsToCSV } = await import('../utils/googleAdsEditorCSVExporter');
                 filename = `negative_keywords_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
-                const result = await exportCSVWithValidation(
+                
+                const validation = exportNegativeKeywordsToCSV(
                     negativeKeywords,
-                    filename,
-                    'negativeKeywords',
-                    {
-                        campaignName: 'Negative Keywords Campaign',
-                        adGroupName: 'All Ad Groups',
-                        finalUrl: 'https://www.example.com'
-                    }
+                    'Negative Keywords Campaign',
+                    'All Ad Groups',
+                    filename
                 );
                 
-                if (result.warnings && result.warnings.length > 0) {
+                if (validation.warnings && validation.warnings.length > 0) {
+                    const warningMessage = validation.warnings.slice(0, 5).join('\n') + 
+                      (validation.warnings.length > 5 ? `\n... and ${validation.warnings.length - 5} more warnings` : '');
                     notifications.warning(
-                        <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
-                            {result.warnings.join('\n')}
-                        </div>,
+                        warningMessage,
                         { 
                             title: '⚠️  CSV Validation Warnings',
                             description: 'Your campaign will export, but consider fixing these warnings.',
@@ -618,7 +718,8 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                     );
                 } else {
                     notifications.success('Negative keywords exported successfully!', {
-                        title: 'Export Complete'
+                        title: 'Export Complete',
+                        description: `Exported ${negativeKeywords.length} negative keyword(s) to CSV.`
                     });
                 }
             } else {
@@ -679,11 +780,11 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                 </TabsList>
 
                 <TabsContent value="builder">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Panel: Inputs */}
                 <Card className="lg:col-span-1 border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl h-fit">
-                    <CardHeader className="p-4 sm:p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="flex items-center gap-2">
                                     <ShieldAlert className="h-5 w-5 text-indigo-600" />
@@ -696,16 +797,7 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    setUrl(generateRandomUrl());
-                                    setCoreKeywords(generateRandomCoreKeywords());
-                                    setUserGoal(generateRandomUserGoal());
-                                    setTargetLocation(generateRandomLocation());
-                                    setCompetitorBrands(generateRandomCompetitorBrands());
-                                    setExcludeCompetitors(Math.random() > 0.5);
-                                    setKeywordCount(500 + Math.floor(Math.random() * 1000)); // 500-1500
-                                    setGeneratedKeywords([]); // Clear previous results
-                                }}
+                                onClick={handleFillInfo}
                                 className="flex items-center gap-2"
                             >
                                 <RefreshCw className="h-4 w-4" />

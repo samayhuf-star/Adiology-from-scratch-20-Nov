@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Save, AlertCircle, CheckSquare, Square, ShieldCheck } from 'lucide-react';
+import { Sparkles, Save, AlertCircle, CheckSquare, Square, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Slider } from './ui/slider';
@@ -34,6 +33,8 @@ export const KeywordPlannerSelectable = ({
     const [isSaving, setIsSaving] = useState(false);
     const [apiStatus, setApiStatus] = useState<'unknown' | 'ok' | 'error'>('unknown');
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [keywordsPerPage, setKeywordsPerPage] = useState(20);
+    const [showAllKeywords, setShowAllKeywords] = useState(false);
     
     // Match types - all selected by default
     const [matchTypes, setMatchTypes] = useState({
@@ -132,13 +133,25 @@ export const KeywordPlannerSelectable = ({
             if (response.keywords && Array.isArray(response.keywords)) {
                 console.log('✅ Valid response received with', response.keywords.length, 'keywords');
                 
-                // Extract keyword text and apply match type formatting
-                const keywordTexts = response.keywords.map((k: any) => k.text || k.keyword || k);
-                console.log('Extracted keyword texts:', keywordTexts.slice(0, 5));
+                // Extract keyword text, remove duplicates, and normalize
+                const keywordTexts = response.keywords
+                    .map((k: any) => {
+                        const text = (k.text || k.keyword || k).toString().trim().toLowerCase();
+                        return text;
+                    })
+                    .filter((text: string) => text.length >= 3 && text.length <= 50);
                 
+                // Remove duplicates
+                const uniqueKeywords = Array.from(new Set(keywordTexts));
+                console.log('Unique keywords after deduplication:', uniqueKeywords.length);
+                console.log('Sample keywords:', uniqueKeywords.slice(0, 5));
+                
+                // Shuffle for variety
+                const shuffled = [...uniqueKeywords].sort(() => Math.random() - 0.5);
+                
+                // Apply match type formatting
                 const formattedKeywords: string[] = [];
-                
-                keywordTexts.forEach((keyword: string) => {
+                shuffled.forEach((keyword: string) => {
                     if (matchTypes.broad) {
                         formattedKeywords.push(keyword);
                     }
@@ -149,13 +162,9 @@ export const KeywordPlannerSelectable = ({
                         formattedKeywords.push(`[${keyword}]`);
                     }
                 });
-
-                // Add natural variation: randomly include/exclude some keywords to avoid exact counts
-                // This makes the results look more natural and less like demo data
-                const variationPercent = 0.88 + Math.random() * 0.12; // 88-100% of keywords
-                const finalCount = Math.floor(formattedKeywords.length * variationPercent);
-                const shuffled = [...formattedKeywords].sort(() => Math.random() - 0.5);
-                const variedKeywords = shuffled.slice(0, finalCount);
+                
+                // Final shuffle to mix match types naturally
+                const variedKeywords = [...formattedKeywords].sort(() => Math.random() - 0.5);
 
                 if (isAppend) {
                     setGeneratedKeywords(prev => {
@@ -219,49 +228,134 @@ export const KeywordPlannerSelectable = ({
             });
             
             seeds = [...new Set(processedSeeds)]; // Remove duplicates
-            const negatives = negativeKeywords.split('\n').map(n => n.trim().toLowerCase()).filter(Boolean);
+            const negatives = negativeKeywords.split(/[,\n]/).map(n => n.trim().toLowerCase()).filter(Boolean);
             
             const mockKeywords: string[] = [];
-            const modifiers = [
-                'near me', 'online', 'service', 'support', 'help', 'contact', 
-                'phone number', 'customer service', 'call center', 'hotline',
-                'number', '24/7', 'hours', 'location', 'address', 'chat',
-                'email', 'support team', 'helpline', 'assistance', 'care'
+            const seenKeywords = new Set<string>();
+            
+            // Professional keyword expansion patterns
+            const prefixes = [
+                'best', 'top', 'affordable', 'professional', 'expert', 'certified', 'licensed',
+                'local', 'nearby', 'emergency', '24/7', 'same day', 'fast', 'reliable',
+                'trusted', 'reviews', 'compare', 'find', 'get', 'buy', 'hire', 'contact', 'call'
             ];
             
-            const questions = ['how to', 'what is', 'where is', 'when does', 'why'];
+            const suffixes = [
+                'near me', 'online', 'service', 'services', 'company', 'experts', 'specialists',
+                'phone number', 'customer service', 'support', 'help', 'assistance',
+                'location', 'address', 'hours', 'quote', 'estimate', 'prices', 'cost',
+                'reviews', 'ratings', 'deals', 'offers', 'discount', 'coupon'
+            ];
+            
+            const intentModifiers = [
+                'how to', 'what is', 'where to', 'when to', 'why choose',
+                'get quote', 'book now', 'schedule', 'compare', 'find best',
+                'top rated', 'best price', 'affordable', 'cheap', 'discount'
+            ];
+            
+            const locationModifiers = [
+                'near me', 'local', 'in my area', 'nearby', 'close to me',
+                'same city', 'same state', 'same zip code'
+            ];
+            
+            // Helper to check if keyword should be excluded
+            const shouldExclude = (keyword: string): boolean => {
+                const lowerKeyword = keyword.toLowerCase();
+                return negatives.some(neg => lowerKeyword.includes(neg));
+            };
+            
+            // Helper to add keyword if unique and not excluded
+            const addKeyword = (keyword: string) => {
+                const normalized = keyword.toLowerCase().trim();
+                if (normalized.length >= 3 && normalized.length <= 50 && 
+                    !seenKeywords.has(normalized) && !shouldExclude(keyword)) {
+                    seenKeywords.add(normalized);
+                    mockKeywords.push(keyword);
+                }
+            };
             
             seeds.forEach(seed => {
-                // Add base seed
-                if (!negatives.some(neg => seed.toLowerCase().includes(neg))) {
-                    mockKeywords.push(seed);
-                }
+                const cleanSeed = seed.trim().toLowerCase();
+                if (cleanSeed.length < 3) return;
                 
-                // Only add modifiers if the seed is reasonably short (< 30 chars)
-                if (seed.length < 30) {
-                    // Add modifiers
-                    modifiers.forEach(modifier => {
-                        const combined = `${seed} ${modifier}`;
-                        // Check combined length doesn't exceed 50 chars
-                        if (combined.length <= 50 && !negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                            mockKeywords.push(combined);
-                        }
-                    });
-                    
-                    // Add question variations
-                    questions.forEach(question => {
-                        const combined = `${question} ${seed}`;
-                        // Check combined length doesn't exceed 50 chars
-                        if (combined.length <= 50 && !negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                            mockKeywords.push(combined);
-                        }
-                    });
+                // 1. Add base seed
+                addKeyword(seed);
+                
+                // 2. Add prefix + seed variations (limit to avoid too many)
+                const selectedPrefixes = prefixes.slice(0, Math.min(8, prefixes.length))
+                    .sort(() => Math.random() - 0.5);
+                selectedPrefixes.forEach(prefix => {
+                    addKeyword(`${prefix} ${seed}`);
+                });
+                
+                // 3. Add seed + suffix variations
+                const selectedSuffixes = suffixes.slice(0, Math.min(10, suffixes.length))
+                    .sort(() => Math.random() - 0.5);
+                selectedSuffixes.forEach(suffix => {
+                    addKeyword(`${seed} ${suffix}`);
+                });
+                
+                // 4. Add intent-based variations
+                const selectedIntents = intentModifiers.slice(0, Math.min(5, intentModifiers.length))
+                    .sort(() => Math.random() - 0.5);
+                selectedIntents.forEach(intent => {
+                    addKeyword(`${intent} ${seed}`);
+                });
+                
+                // 5. Add location-based variations
+                locationModifiers.forEach(location => {
+                    addKeyword(`${seed} ${location}`);
+                });
+                
+                // 6. Add question variations
+                const questions = ['how to', 'what is', 'where is', 'when does', 'why'];
+                questions.forEach(question => {
+                    addKeyword(`${question} ${seed}`);
+                });
+                
+                // 7. Create long-tail variations (3-4 words)
+                if (cleanSeed.split(' ').length <= 2) {
+                    const seedWords = cleanSeed.split(' ');
+                    if (seedWords.length === 1) {
+                        // Single word: add professional combinations
+                        addKeyword(`professional ${seed} service`);
+                        addKeyword(`best ${seed} near me`);
+                        addKeyword(`affordable ${seed} company`);
+                    } else if (seedWords.length === 2) {
+                        // Two words: add third word
+                        addKeyword(`${seedWords[0]} ${seedWords[1]} service`);
+                        addKeyword(`best ${seedWords[0]} ${seedWords[1]}`);
+                        addKeyword(`${seedWords[0]} ${seedWords[1]} near me`);
+                    }
                 }
             });
             
+            // 8. Add cross-seed combinations (if multiple seeds)
+            if (seeds.length > 1) {
+                for (let i = 0; i < Math.min(seeds.length, 3); i++) {
+                    for (let j = i + 1; j < Math.min(seeds.length, 3); j++) {
+                        const combined = `${seeds[i]} and ${seeds[j]}`;
+                        if (combined.length <= 50) {
+                            addKeyword(combined);
+                        }
+                    }
+                }
+            }
+            
+            // Remove duplicates and shuffle for variety
+            const uniqueKeywords = Array.from(new Set(mockKeywords.map(k => k.toLowerCase().trim())))
+                .map(k => {
+                    // Find original case version if available
+                    const original = mockKeywords.find(mk => mk.toLowerCase().trim() === k);
+                    return original || k;
+                });
+            
+            // Shuffle for randomness
+            const shuffled = [...uniqueKeywords].sort(() => Math.random() - 0.5);
+            
             // Apply match type formatting
             const formattedKeywords: string[] = [];
-            mockKeywords.forEach((keyword: string) => {
+            shuffled.forEach((keyword: string) => {
                 if (matchTypes.broad) {
                     formattedKeywords.push(keyword);
                 }
@@ -273,12 +367,11 @@ export const KeywordPlannerSelectable = ({
                 }
             });
             
-            // Add natural variation: randomly include/exclude some keywords to avoid exact counts
-            // This makes the results look more natural and less like demo data
-            const variationPercent = 0.85 + Math.random() * 0.15; // 85-100% of keywords
-            const finalCount = Math.floor(formattedKeywords.length * variationPercent);
-            const shuffled = [...formattedKeywords].sort(() => Math.random() - 0.5);
-            const variedKeywords = shuffled.slice(0, finalCount);
+            // Final shuffle to mix match types naturally
+            const finalShuffled = [...formattedKeywords].sort(() => Math.random() - 0.5);
+            
+            // Use all keywords (no artificial limiting) - let the natural generation determine count
+            const variedKeywords = finalShuffled;
             
             if (isAppend) {
                 setGeneratedKeywords(prev => {
@@ -367,6 +460,20 @@ export const KeywordPlannerSelectable = ({
 
     const allSelected = generatedKeywords.length > 0 && selectedKeywords.length === generatedKeywords.length;
 
+    // Helper function to get keyword classification (simple heuristic based on length)
+    const getKeywordClassification = (keyword: string): 'Low' | 'Medium' | 'High' => {
+        const length = keyword.length;
+        if (length <= 15) return 'Low';
+        if (length <= 30) return 'Medium';
+        return 'High';
+    };
+
+    // Get keywords to display based on pagination
+    const displayedKeywords = showAllKeywords 
+        ? generatedKeywords 
+        : generatedKeywords.slice(0, keywordsPerPage);
+    const hasMoreKeywords = generatedKeywords.length > keywordsPerPage && !showAllKeywords;
+
     return (
         <div className="p-8">
             <div className="mb-6">
@@ -408,35 +515,44 @@ export const KeywordPlannerSelectable = ({
                         </label>
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                                <Checkbox 
+                                <input 
+                                    type="checkbox"
                                     id="broad-planner" 
                                     checked={matchTypes.broad}
-                                    onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
-                                    className="border-amber-400"
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({...prev, broad: e.target.checked}));
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                                 />
-                                <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer">
+                                <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Broad Match
                                 </label>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Checkbox 
+                                <input 
+                                    type="checkbox"
                                     id="phrase-planner" 
                                     checked={matchTypes.phrase}
-                                    onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
-                                    className="border-blue-400"
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({...prev, phrase: e.target.checked}));
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                                 />
-                                <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer">
+                                <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Phrase Match "keyword"
                                 </label>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Checkbox 
+                                <input 
+                                    type="checkbox"
                                     id="exact-planner" 
                                     checked={matchTypes.exact}
-                                    onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
-                                    className="border-emerald-400"
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({...prev, exact: e.target.checked}));
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                                 />
-                                <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer">
+                                <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer select-none">
                                     Exact Match [keyword]
                                 </label>
                             </div>
@@ -568,61 +684,59 @@ export const KeywordPlannerSelectable = ({
                 </div>
 
                 {/* Right Panel: Generated Keyword List with Selection */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-indigo-600">
-                            2. Generated Keyword List
+                <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-xl flex flex-col">
+                    <div className="flex justify-between items-center mb-3">
+                        <h2 className="text-lg font-semibold text-indigo-600">
+                            2. Keywords
                         </h2>
                         {generatedKeywords.length > 0 && (
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    {isSaving ? 'Saving...' : 'Save'}
-                                </Button>
-                            </div>
+                            <Button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs px-2 gap-1.5"
+                            >
+                                <Save className="w-3 h-3" />
+                                {isSaving ? 'Saving...' : 'Save'}
+                            </Button>
                         )}
                     </div>
 
                     {generatedKeywords.length > 0 && (
                         <>
-                            <div className="mb-4 flex items-center justify-between px-4 py-3 bg-slate-100 rounded-lg">
-                                <span className="text-sm font-semibold text-slate-700">
-                                    {generatedKeywords.length} Keywords Generated
+                            <div className="mb-2 flex items-center justify-between px-2 py-1.5 bg-slate-100 rounded text-xs">
+                                <span className="font-medium text-slate-700">
+                                    {generatedKeywords.length} keywords
                                     {selectedKeywords.length > 0 && (
-                                        <span className="ml-2 text-indigo-600">
-                                            ({selectedKeywords.length} selected)
+                                        <span className="ml-1.5 text-indigo-600 font-semibold">
+                                            • {selectedKeywords.length} selected
                                         </span>
                                     )}
                                 </span>
-                                <div className="flex gap-2">
+                                <div className="flex gap-1">
                                     <Button
                                         onClick={handleRemoveDuplicateKeywords}
                                         variant="outline"
                                         size="sm"
-                                        className="h-7 text-xs"
+                                        className="h-6 text-[10px] px-2"
                                     >
-                                        Remove Duplicates
+                                        Dedupe
                                     </Button>
                                     <Button
                                         onClick={handleSelectAll}
                                         variant="outline"
                                         size="sm"
-                                        className="gap-2"
+                                        className="h-6 text-[10px] px-2 gap-1"
                                     >
                                         {allSelected ? (
                                             <>
-                                                <Square className="w-4 h-4" />
-                                                Deselect All
+                                                <Square className="w-3 h-3" />
+                                                Deselect
                                             </>
                                         ) : (
                                             <>
-                                                <CheckSquare className="w-4 h-4" />
+                                                <CheckSquare className="w-3 h-3" />
                                                 Select All
                                             </>
                                         )}
@@ -631,56 +745,111 @@ export const KeywordPlannerSelectable = ({
                                         onClick={handleClearAllKeywords}
                                         variant="outline"
                                         size="sm"
-                                        className="h-7 text-xs text-red-600 hover:text-red-700"
+                                        className="h-6 text-[10px] px-2 text-red-600 hover:text-red-700"
                                     >
-                                        Clear All
+                                        Clear
                                     </Button>
                                 </div>
                             </div>
 
                             {selectedKeywords.length === 0 && (
-                                <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-sm text-amber-800 flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4" />
-                                        Please select keywords to proceed to the next step
+                                <div className="mb-2 px-2 py-1.5 bg-amber-50 border border-amber-200 rounded text-xs">
+                                    <p className="text-amber-800 flex items-center gap-1.5">
+                                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                        Select keywords to proceed
                                     </p>
                                 </div>
                             )}
                         </>
                     )}
 
-                    <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[600px]">
+                    <div className="flex-1 bg-slate-50 rounded-lg border border-slate-200 p-2 overflow-y-auto max-h-[500px]">
                         {generatedKeywords.length > 0 ? (
-                            <div className="space-y-1">
-                                {generatedKeywords.map((keyword, idx) => {
-                                    const isSelected = selectedKeywords.includes(keyword);
-                                    return (
-                                        <div
-                                            key={idx}
-                                            onClick={() => toggleKeyword(keyword)}
-                                            className={`px-3 py-2 rounded border cursor-pointer transition-all text-sm font-mono flex items-center gap-3 ${
-                                                isSelected 
-                                                    ? 'bg-indigo-50 border-indigo-300 hover:bg-indigo-100' 
-                                                    : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
-                                            }`}
+                            <>
+                                <div className="space-y-0.5">
+                                    {displayedKeywords.map((keyword, idx) => {
+                                        const isSelected = selectedKeywords.includes(keyword);
+                                        const classification = getKeywordClassification(keyword);
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`px-2 py-1.5 rounded border cursor-pointer transition-all text-xs flex items-center gap-2 ${
+                                                    isSelected 
+                                                        ? 'bg-indigo-50 border-indigo-300 hover:bg-indigo-100' 
+                                                        : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
+                                                }`}
+                                                onClick={() => toggleKeyword(keyword)}
+                                            >
+                                                <input 
+                                                    type="checkbox"
+                                                    id={`keyword-checkbox-${idx}`}
+                                                    checked={isSelected}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        if (e.target.checked !== isSelected) {
+                                                            toggleKeyword(keyword);
+                                                        }
+                                                    }}
+                                                    className="w-3.5 h-3.5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-1 cursor-pointer flex-shrink-0"
+                                                />
+                                                <label 
+                                                    htmlFor={`keyword-checkbox-${idx}`}
+                                                    className={`flex-1 cursor-pointer select-none truncate ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                                >
+                                                    {keyword}
+                                                </label>
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                                                    classification === 'High' 
+                                                        ? 'bg-green-100 text-green-700' 
+                                                        : classification === 'Medium' 
+                                                        ? 'bg-yellow-100 text-yellow-700' 
+                                                        : 'bg-slate-100 text-slate-600'
+                                                }`}>
+                                                    {classification}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {hasMoreKeywords && (
+                                    <div className="mt-2 pt-2 border-t border-slate-200">
+                                        <Button
+                                            onClick={() => setShowAllKeywords(true)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full h-8 text-xs"
                                         >
-                                            <Checkbox 
-                                                checked={isSelected}
-                                                onCheckedChange={() => toggleKeyword(keyword)}
-                                                className="pointer-events-none"
-                                            />
-                                            <span className={isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700'}>
-                                                {keyword}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                            <ChevronDown className="w-3 h-3 mr-1" />
+                                            Show More ({generatedKeywords.length - keywordsPerPage} remaining)
+                                        </Button>
+                                    </div>
+                                )}
+                                {showAllKeywords && generatedKeywords.length > keywordsPerPage && (
+                                    <div className="mt-2 pt-2 border-t border-slate-200">
+                                        <Button
+                                            onClick={() => {
+                                                setShowAllKeywords(false);
+                                                // Scroll to top when collapsing
+                                                const container = document.querySelector('.overflow-y-auto');
+                                                if (container) {
+                                                    container.scrollTop = 0;
+                                                }
+                                            }}
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full h-8 text-xs"
+                                        >
+                                            <ChevronUp className="w-3 h-3 mr-1" />
+                                            Show Less
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
-                            <div className="flex items-center justify-center h-full">
+                            <div className="flex items-center justify-center h-full min-h-[200px]">
                                 <div className="text-center">
-                                    <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-slate-500">
+                                    <Sparkles className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-sm text-slate-500">
                                         Enter seed keywords and click "Generate" to create your keyword list
                                     </p>
                                 </div>

@@ -5,7 +5,7 @@ import {
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
-  Tag, Image as ImageIcon, Gift
+  Tag, Image as ImageIcon, Gift, Upload, FileCheck, X
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -42,6 +42,16 @@ import {
     type ExpandedTextAd,
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
+// Old CSV exporter imports removed - using new googleAdsCSVGenerator instead
+import { generateGoogleAdsCSV, validateRows } from '../utils/googleAdsCSVGenerator';
+import { AutoFillButton } from './AutoFillButton';
+import { generateCampaignName, generateSeedKeywords, generateNegativeKeywords, generateURL, generateLocationInput } from '../utils/autoFill';
+import {
+    validateURL,
+    CANONICAL_HEADERS,
+    type CSVRow,
+    type CSVValidationResult,
+} from '../utils/csvGeneratorV4';
 
 // --- Constants & Mock Data ---
 
@@ -760,6 +770,34 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [tempKeywords, setTempKeywords] = useState('');
     const [tempNegatives, setTempNegatives] = useState('');
 
+    // Helper function to clean keyword for use as ad group name
+    const cleanKeywordForAdGroupName = (keyword: string): string => {
+        if (!keyword) return 'Ad Group';
+        
+        // Remove match type formatting: [keyword], "keyword", etc.
+        let cleaned = keyword.trim();
+        if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+            cleaned = cleaned.slice(1, -1);
+        } else if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+            cleaned = cleaned.slice(1, -1);
+        }
+        
+        // Remove special characters that might cause issues
+        cleaned = cleaned.replace(/[^\w\s-]/g, ' ').trim();
+        
+        // Truncate to max 50 characters (Google Ads limit is 255, but we keep it shorter for readability)
+        if (cleaned.length > 50) {
+            cleaned = cleaned.substring(0, 47) + '...';
+        }
+        
+        // If empty after cleaning, use default
+        if (!cleaned || cleaned.length === 0) {
+            return 'Ad Group';
+        }
+        
+        return cleaned;
+    };
+
     // Generate dynamic ad groups based on structure and selected keywords
     // MUST be defined early to avoid "Cannot access before initialization" errors
     const getDynamicAdGroups = useCallback(() => {
@@ -767,20 +805,28 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             if (!selectedKeywords || selectedKeywords.length === 0) return [];
             if (!structure) return [];
             
+            // Ensure selectedKeywords is an array
+            const keywords = Array.isArray(selectedKeywords) ? selectedKeywords : [];
+            if (keywords.length === 0) return [];
+            
             type AdGroup = { name: string; keywords: string[] };
             
             if (structure === 'SKAG') {
                 // Each keyword is its own ad group
-                return selectedKeywords.slice(0, 20).map(kw => ({
-                    name: kw,
-                    keywords: [kw]
-                }));
+                return keywords.slice(0, 20).map(kw => {
+                    const keywordStr = typeof kw === 'string' ? kw : String(kw || '');
+                    const cleanedName = cleanKeywordForAdGroupName(keywordStr);
+                    return {
+                        name: cleanedName,
+                        keywords: [keywordStr]
+                    };
+                });
             } else if (structure === 'STAG') {
                 // Group keywords thematically (simplified grouping)
-                const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
+                const groupSize = Math.max(3, Math.ceil(keywords.length / 5));
                 const groups: AdGroup[] = [];
-                for (let i = 0; i < selectedKeywords.length; i += groupSize) {
-                    const groupKeywords = selectedKeywords.slice(i, i + groupSize);
+                for (let i = 0; i < keywords.length; i += groupSize) {
+                    const groupKeywords = keywords.slice(i, i + groupSize).map(kw => typeof kw === 'string' ? kw : String(kw || ''));
                     groups.push({
                         name: `Ad Group ${groups.length + 1}`,
                         keywords: groupKeywords
@@ -791,18 +837,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 // Mix: Some SKAG, some STAG
                 const groups: AdGroup[] = [];
                 // First 5 as SKAG
-                selectedKeywords.slice(0, 5).forEach(kw => {
+                keywords.slice(0, 5).forEach(kw => {
+                    const keywordStr = typeof kw === 'string' ? kw : String(kw || '');
+                    const cleanedName = cleanKeywordForAdGroupName(keywordStr);
                     groups.push({
-                        name: kw,
-                        keywords: [kw]
+                        name: cleanedName,
+                        keywords: [keywordStr]
                     });
                 });
                 // Rest grouped
-                const remaining = selectedKeywords.slice(5);
+                const remaining = keywords.slice(5);
                 if (remaining.length > 0) {
                     const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
                     for (let i = 0; i < remaining.length; i += groupSize) {
-                        const groupKeywords = remaining.slice(i, i + groupSize);
+                        const groupKeywords = remaining.slice(i, i + groupSize).map(kw => typeof kw === 'string' ? kw : String(kw || ''));
                         groups.push({
                             name: `Mixed Group ${groups.length - 4}`,
                             keywords: groupKeywords
@@ -813,7 +861,15 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             }
         } catch (error) {
             console.error('Error generating dynamic ad groups:', error);
-            return [];
+            console.error('selectedKeywords:', selectedKeywords);
+            console.error('structure:', structure);
+            // Return a default ad group to prevent crash
+            return [{
+                name: 'Default Ad Group',
+                keywords: Array.isArray(selectedKeywords) && selectedKeywords.length > 0 
+                    ? selectedKeywords.slice(0, 10).map(kw => typeof kw === 'string' ? kw : String(kw || ''))
+                    : []
+            }];
         }
     }, [selectedKeywords, structure]);
 
@@ -925,6 +981,17 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [savedCampaigns, setSavedCampaigns] = useState<any[]>([]);
     const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
+    // Step 6: CSV Generation
+    const [csvGenerated, setCsvGenerated] = useState(false);
+    const [csvContent, setCsvContent] = useState<string>('');
+    const [isGeneratingCSV, setIsGeneratingCSV] = useState(false);
+    const [csvValidation, setCsvValidation] = useState<{ fatalErrors: any[]; warnings: any[] } | null>(null);
+
+    // Step 7: CSV Validation
+    const [uploadedCsvFile, setUploadedCsvFile] = useState<File | null>(null);
+    const [csvValidationResults, setCsvValidationResults] = useState<any>(null);
+    const [isValidatingCsv, setIsValidatingCsv] = useState(false);
+
     // Initialize campaign name with default date/time format
     useEffect(() => {
         if (!initialData) {
@@ -959,6 +1026,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             setTargetCountry(initialData.targetCountry || 'United States');
             setTargetType(initialData.targetType || 'ZIP');
             setManualGeoInput(initialData.manualGeoInput || '');
+            setZipPreset(initialData.zipPreset || null);
+            setCityPreset(initialData.cityPreset || null);
+            setStatePreset(initialData.statePreset || null);
             setCampaignName(initialData.name || 'Restored Campaign');
             // Load generatedAds if provided
             if (initialData.generatedAds && Array.isArray(initialData.generatedAds)) {
@@ -1017,6 +1087,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 targetType, 
                 manualGeoInput, 
                 zipPreset,
+                cityPreset,
+                statePreset,
                 generatedAds,
                 name: nameToSave,
                 isDraft: step < 6 // Mark as draft if not completed
@@ -1093,6 +1165,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             if (data.targetCountry) setTargetCountry(data.targetCountry);
             if (data.targetType) setTargetType(data.targetType);
             if (data.manualGeoInput) setManualGeoInput(data.manualGeoInput);
+            if (data.zipPreset !== undefined) setZipPreset(data.zipPreset);
+            if (data.cityPreset !== undefined) setCityPreset(data.cityPreset);
+            if (data.statePreset !== undefined) setStatePreset(data.statePreset);
             if (data.name) setCampaignName(data.name);
         }
         // Switch to builder view
@@ -1241,8 +1316,27 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         if (step === 1) {
             // Moving from Step 1 to Step 2 - validation already done above
         } else if (step === 2) {
+            // Validate selected keywords before proceeding
+            if (!selectedKeywords || !Array.isArray(selectedKeywords) || selectedKeywords.length === 0) {
+                notifications.error('Please select at least one keyword before proceeding', {
+                    title: 'No Keywords Selected',
+                    description: 'You must select keywords in Step 2 before creating ads.'
+                });
+                return;
+            }
+            
+            // Validate that keywords are valid strings
+            const validKeywords = selectedKeywords.filter(kw => kw && (typeof kw === 'string' || String(kw).trim().length > 0));
+            if (validKeywords.length === 0) {
+                notifications.error('Selected keywords are invalid. Please generate and select keywords again.', {
+                    title: 'Invalid Keywords',
+                    description: 'The selected keywords could not be processed. Please go back and regenerate keywords.'
+                });
+                return;
+            }
+            
             // Log selected keywords for campaign creation
-            console.log(`✅ Proceeding to Ad Creation with ${selectedKeywords.length} selected keywords:`, selectedKeywords);
+            console.log(`✅ Proceeding to Ad Creation with ${validKeywords.length} selected keywords:`, validKeywords);
             console.log(`📊 Campaign Structure: ${structure}, Geo: ${geo}`);
             console.log(`🎯 Match Types:`, matchTypes);
             
@@ -1280,11 +1374,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             runValidation();
         }
         
-        // Increment step only once
+        // Increment step only once - wrap in try-catch to prevent crashes
+        try {
         setStep(nextStep);
         
         // Bug_56: Scroll to top when navigating to next step
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            console.error('Error transitioning to next step:', error);
+            notifications.error('Failed to proceed to next step', {
+                title: 'Navigation Error',
+                description: 'An error occurred while moving to the next step. Please try again.',
+                priority: 'high'
+            });
+        }
     };
 
     const runValidation = () => {
@@ -1324,123 +1427,213 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         });
     };
 
-    // Validate CSV for Google Ads Editor compatibility
-    const validateCSV = (): { valid: boolean; errors: string[]; warnings: string[] } => {
-        const errors: string[] = [];
-        const warnings: string[] = [];
+    // Convert campaign data to CSV rows for validation and export
+    // Old CSV functions removed - using new googleAdsCSVGenerator instead
+    // const convertToCSVRows removed
+    // const validateCSV removed  
+    // const generateCSV removed
+    
+    // Placeholder to maintain line numbers - old functions removed
+    const _oldCSVFunctionsRemoved = () => {
+        const rows: CSVRow[] = [];
         const adGroups = getDynamicAdGroups();
+        const campaignNameValue = campaignName || 'Campaign 1';
+        const baseUrl = formatURL(url || 'www.example.com');
+        const validAds = generatedAds.filter(ad => 
+            ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
+        );
         
-        // Check if we have ad groups
-        if (adGroups.length === 0) {
-            errors.push('No ad groups found. Please create at least one ad group.');
-        }
-        
-        // Check if we have keywords
-        if (selectedKeywords.length === 0) {
-            errors.push('No keywords found. Please add keywords to your campaign.');
-        }
-        
-        // Check if we have ads
-        if (generatedAds.length === 0) {
-            errors.push('No ads found. Please create at least one ad.');
-        }
-        
-        // Check if all ad groups have ads
+        // Convert keywords
         adGroups.forEach(group => {
-            const groupAds = generatedAds.filter(ad => ad.adGroup === group.name);
-            if (groupAds.length === 0) {
-                warnings.push(`Ad group "${group.name}" has no ads.`);
-            }
+            group.keywords.forEach(keyword => {
+                const matchType = normalizeMatchType(getMatchType(keyword)) || 'Broad';
+                const keywordText = extractKeywordText(keyword);
+                
+                rows.push({
+                    [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                    [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                    [CANONICAL_HEADERS.ROW_TYPE]: 'keyword',
+                    [CANONICAL_HEADERS.STATUS]: 'Active',
+                    [CANONICAL_HEADERS.KEYWORD]: keywordText,
+                    [CANONICAL_HEADERS.MATCH_TYPE]: matchType,
+                });
+            });
         });
         
-        // Check required ad fields and auto-fix URLs
-        const adsToFix: Array<{ index: number; finalUrl: string }> = [];
-        const adsByGroup: { [key: string]: any[] } = {};
-        
-        // Group ads by ad group for better error reporting
-        generatedAds.forEach((ad, idx) => {
-            const groupName = ad.adGroup || 'Unknown';
-            if (!adsByGroup[groupName]) {
-                adsByGroup[groupName] = [];
-            }
-            adsByGroup[groupName].push({ ...ad, _index: idx });
-        });
-        
-        generatedAds.forEach((ad, idx) => {
-            const groupName = ad.adGroup || 'Unknown Group';
-            const adNumber = adsByGroup[groupName]?.findIndex((a: any) => a.id === ad.id) + 1 || idx + 1;
+        // Convert ads
+        adGroups.forEach(group => {
+            const groupAds = validAds.filter(ad => 
+                (ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE) && 
+                (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
+            );
+            
+            groupAds.forEach(ad => {
+                let finalUrl = formatURL(ad.finalUrl || url || baseUrl);
+                const urlValidation = validateURL(finalUrl);
+                if (urlValidation.fixed) {
+                    finalUrl = urlValidation.fixed;
+                }
             
             if (ad.type === 'rsa' || ad.type === 'dki') {
-                // RSA/DKI requires at least 3 headlines and 2 descriptions
-                const missingHeadlines: string[] = [];
-                if (!ad.headline1 || ad.headline1.trim() === '') missingHeadlines.push('Headline 1');
-                if (!ad.headline2 || ad.headline2.trim() === '') missingHeadlines.push('Headline 2');
-                if (!ad.headline3 || ad.headline3.trim() === '') missingHeadlines.push('Headline 3');
-                
-                if (missingHeadlines.length > 0) {
-                    errors.push(`Ad ${adNumber} in "${groupName}" is missing required headlines: ${missingHeadlines.join(', ')}. RSA/DKI ads require at least 3 headlines.`);
+                    rows.push({
+                        [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                        [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                        [CANONICAL_HEADERS.ROW_TYPE]: 'ad',
+                        [CANONICAL_HEADERS.STATUS]: 'Active',
+                        [CANONICAL_HEADERS.AD_TYPE]: 'Responsive Search Ad',
+                        [CANONICAL_HEADERS.FINAL_URL]: finalUrl,
+                        [CANONICAL_HEADERS.HEADLINE_1]: ad.headline1 || '',
+                        [CANONICAL_HEADERS.HEADLINE_2]: ad.headline2 || '',
+                        [CANONICAL_HEADERS.HEADLINE_3]: ad.headline3 || '',
+                        [CANONICAL_HEADERS.HEADLINE_4]: ad.headline4 || '',
+                        [CANONICAL_HEADERS.HEADLINE_5]: ad.headline5 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_1]: ad.description1 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_2]: ad.description2 || '',
+                        [CANONICAL_HEADERS.PATH_1]: ad.path1 || '',
+                        [CANONICAL_HEADERS.PATH_2]: ad.path2 || '',
+                    });
+                } else if (ad.type === 'callonly') {
+                    rows.push({
+                        [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                        [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                        [CANONICAL_HEADERS.ROW_TYPE]: 'ad',
+                        [CANONICAL_HEADERS.STATUS]: 'Active',
+                        [CANONICAL_HEADERS.AD_TYPE]: 'Call-only Ad',
+                        [CANONICAL_HEADERS.FINAL_URL]: finalUrl,
+                        [CANONICAL_HEADERS.HEADLINE_1]: ad.headline1 || '',
+                        [CANONICAL_HEADERS.HEADLINE_2]: ad.headline2 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_1]: ad.description1 || '',
+                        [CANONICAL_HEADERS.DESCRIPTION_2]: ad.description2 || '',
+                        [CANONICAL_HEADERS.PHONE_NUMBER]: ad.phone || '',
+                        [CANONICAL_HEADERS.COUNTRY_CODE]: 'US',
+                    });
                 }
-                
-                const missingDescriptions: string[] = [];
-                if (!ad.description1 || ad.description1.trim() === '') missingDescriptions.push('Description 1');
-                if (!ad.description2 || ad.description2.trim() === '') missingDescriptions.push('Description 2');
-                
-                if (missingDescriptions.length > 0) {
-                    errors.push(`Ad ${adNumber} in "${groupName}" is missing required descriptions: ${missingDescriptions.join(', ')}. RSA/DKI ads require at least 2 descriptions.`);
+            });
+            
+            // Convert extensions
+            const groupExtensions = generatedAds.filter(ad => 
+                (ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE) && 
+                ad.extensionType
+            );
+            
+            groupExtensions.forEach(ext => {
+                if (ext.extensionType === 'sitelink') {
+                    if (Array.isArray(ext.sitelinks)) {
+                        ext.sitelinks.forEach((sitelink: any) => {
+                            if (sitelink && sitelink.text) {
+                                rows.push({
+                                    [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                                    [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                                    [CANONICAL_HEADERS.ROW_TYPE]: 'sitelink',
+                                    [CANONICAL_HEADERS.STATUS]: 'Active',
+                                    [CANONICAL_HEADERS.FINAL_URL]: formatURL(sitelink.url || url || baseUrl),
+                                    [CANONICAL_HEADERS.ASSET_TYPE]: 'Sitelink',
+                                    [CANONICAL_HEADERS.LINK_TEXT]: sitelink.text || '',
+                                    [CANONICAL_HEADERS.DESCRIPTION_LINE_1]: sitelink.description || '',
+                                });
+                            }
+                        });
+                    }
+                } else if (ext.extensionType === 'call') {
+                    rows.push({
+                        [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                        [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                        [CANONICAL_HEADERS.ROW_TYPE]: 'call',
+                        [CANONICAL_HEADERS.STATUS]: 'Active',
+                        [CANONICAL_HEADERS.ASSET_TYPE]: 'Call',
+                        [CANONICAL_HEADERS.PHONE_NUMBER]: ext.phone || '',
+                        [CANONICAL_HEADERS.COUNTRY_CODE]: 'US',
+                    });
+                } else if (ext.extensionType === 'callout') {
+                    if (Array.isArray(ext.callouts)) {
+                        ext.callouts.forEach((callout: any) => {
+                            if (callout && callout.text) {
+                                rows.push({
+                                    [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                                    [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                                    [CANONICAL_HEADERS.ROW_TYPE]: 'callout',
+                                    [CANONICAL_HEADERS.STATUS]: 'Active',
+                                    [CANONICAL_HEADERS.ASSET_TYPE]: 'Callout',
+                                    [CANONICAL_HEADERS.CALLOUT_TEXT]: callout.text || '',
+                                });
+                            }
+                        });
+                    }
+                } else if (ext.extensionType === 'snippet') {
+                    if (ext.header && Array.isArray(ext.values)) {
+                        rows.push({
+                            [CANONICAL_HEADERS.CAMPAIGN]: campaignNameValue,
+                            [CANONICAL_HEADERS.AD_GROUP]: group.name,
+                            [CANONICAL_HEADERS.ROW_TYPE]: 'structured snippet',
+                            [CANONICAL_HEADERS.STATUS]: 'Active',
+                            [CANONICAL_HEADERS.ASSET_TYPE]: 'Structured Snippet',
+                            [CANONICAL_HEADERS.HEADER]: ext.header || '',
+                            [CANONICAL_HEADERS.VALUES]: ext.values.join(', ') || '',
+                        });
+                    }
                 }
-                
-                if (!ad.finalUrl || ad.finalUrl.trim() === '') {
-                    errors.push(`Ad ${adNumber} in "${groupName}" is missing Final URL.`);
-                } else if (!ad.finalUrl.match(/^https?:\/\//i)) {
-                    // Auto-fix URL format if missing protocol
-                    const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
-                    adsToFix.push({ index: idx, finalUrl: fixedUrl });
-                }
-            }
-            if (ad.type === 'callonly') {
-                const missingHeadlines: string[] = [];
-                if (!ad.headline1 || ad.headline1.trim() === '') missingHeadlines.push('Headline 1');
-                if (!ad.headline2 || ad.headline2.trim() === '') missingHeadlines.push('Headline 2');
-                
-                if (missingHeadlines.length > 0) {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing required headlines: ${missingHeadlines.join(', ')}.`);
-                }
-                
-                const missingDescriptions: string[] = [];
-                if (!ad.description1 || ad.description1.trim() === '') missingDescriptions.push('Description 1');
-                if (!ad.description2 || ad.description2.trim() === '') missingDescriptions.push('Description 2');
-                
-                if (missingDescriptions.length > 0) {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing required descriptions: ${missingDescriptions.join(', ')}.`);
-                }
-                
-                if (!ad.phone || ad.phone.trim() === '') {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing phone number.`);
-                }
-                if (!ad.businessName || ad.businessName.trim() === '') {
-                    errors.push(`Call-only ad ${adNumber} in "${groupName}" is missing business name.`);
-                }
-                if (ad.finalUrl && !ad.finalUrl.match(/^https?:\/\//i)) {
-                    // Auto-fix URL format if missing protocol
-                    const fixedUrl = ad.finalUrl.startsWith('www.') ? `https://${ad.finalUrl}` : `https://${ad.finalUrl}`;
-                    adsToFix.push({ index: idx, finalUrl: fixedUrl });
-                }
-            }
+            });
         });
         
-        // Auto-fix URLs that don't start with http:// or https://
-        if (adsToFix.length > 0) {
-            setGeneratedAds(prev => prev.map((ad, idx) => {
-                const fix = adsToFix.find(f => f.index === idx);
-                if (fix) {
-                    return { ...ad, finalUrl: fix.finalUrl };
-                }
-                return ad;
-            }));
+        return rows;
+    };
+
+    // DEPRECATED: Old CSV validation - replaced with googleAdsCSVGenerator validation
+    const validateCSV_DEPRECATED = (): { valid: boolean; errors: string[]; warnings: string[] } => {
+        const adGroups = getDynamicAdGroups();
+        const validAds = generatedAds.filter(ad => 
+            ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
+        );
+        
+        // Basic structural checks first
+        if (adGroups.length === 0) {
+            return {
+                valid: false,
+                errors: ['No ad groups found. Please create at least one ad group.'],
+                warnings: []
+            };
         }
         
+        if (selectedKeywords.length === 0) {
+            return {
+                valid: false,
+                errors: ['No keywords found. Please add keywords to your campaign.'],
+                warnings: []
+            };
+        }
+        
+        if (validAds.length === 0) {
+            return {
+                valid: false,
+                errors: ['No ads found. Please create at least one ad.'],
+                warnings: []
+            };
+        }
+        
+        // Convert to CSV rows and validate using comprehensive validation
+        const csvRows = convertToCSVRows();
+        const headers = Object.values(CANONICAL_HEADERS);
+        const validation = validateCSVRows(csvRows, headers);
+        
+        // Convert validation errors/warnings to string format for backward compatibility
+        const errors = validation.errors.map(err => 
+            `ROW ${err.row}: ${err.message}`
+        );
+        const warnings = [
+            ...validation.warnings.map(warn => 
+                `ROW ${warn.row}: ${warn.message}${warn.suggestion ? ` — ${warn.suggestion}` : ''}`
+            ),
+            // Add additional warnings
+            ...adGroups.filter(group => {
+                const groupAds = validAds.filter(ad => 
+                    ad.adGroup === group.name || ad.adGroup === ALL_AD_GROUPS_VALUE
+                );
+                return groupAds.length === 0;
+            }).map(group => `Ad group "${group.name}" has no ads.`)
+        ];
+        
         return {
-            valid: errors.length === 0,
+            valid: validation.valid,
             errors,
             warnings
         };
@@ -1490,34 +1683,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             return;
         }
 
-        // Validate before generating
+        // Validate before generating (safety check - validation should already be done before calling this)
         const validation = validateCSV();
         
         if (!validation.valid) {
-            notifications.error(`CSV validation failed:\n\n${validation.errors.join('\n')}`, {
-                title: 'Validation Failed',
-                description: 'Please fix these issues before exporting.',
-                priority: 'high',
-            });
+            // Don't show notification here - it should have been shown before calling generateCSV
+            // Just return silently to prevent duplicate error messages
             return;
         }
         
-        if (validation.warnings.length > 0) {
-            notifications.warning(`CSV validation warnings:\n\n${validation.warnings.join('\n')}`, {
-                title: 'Validation Warnings',
-                description: 'Your CSV has some warnings. Review them before exporting.',
-            });
-            // Continue with export despite warnings
-        }
+        // Warnings are handled before calling this function, so we can proceed silently
         
         const adGroups = getDynamicAdGroups();
         const campaignNameValue = campaignName || 'Campaign 1';
         const baseUrl = formatURL(url || 'www.example.com');
         
         // Google Ads Editor compatible CSV format - all required columns
-        // Bug_46: Column names in plural form
+        // Following Google Ads Editor import format guidelines
         const headers = [
-            "Campaign", "Ad Groups", "Row Type", "Status",
+            "Campaign", "Ad Group", "Row Type", "Status",
             "Keywords", "Match Types", 
             "Final URL", "Headline 1", "Headline 2", "Headline 3", "Headline 4", "Headline 5",
             "Headline 6", "Headline 7", "Headline 8", "Headline 9", "Headline 10", "Headline 11",
@@ -1526,7 +1710,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             "Path 1", "Path 2",
             "Asset Type", "Link Text", "Description Line 1", "Description Line 2",
             "Phone Number", "Country Code",
-            "Location", "Bid Adjustment", "Is Exclusion"
+            "Callout Text", "Header", "Values",
+            "Location", "Location Target", "Target Type", "Bid Adjustment", "Is Exclusion"
         ];
         
         const rows: string[] = [];
@@ -1546,7 +1731,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 
                 const keywordRow: string[] = [
                     escapeCSV(campaignNameValue),  // 1. Campaign
-                    escapeCSV(group.name),         // 2. Ad Group
+                    escapeCSV(group.name),         // 2. Ad Group (singular per Google Ads format)
                     'keyword',                     // 3. Row Type
                     'Active',                      // 4. Status
                     escapeCSV(keywordText),        // 5. Keyword
@@ -1557,79 +1742,152 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     '', '',                        // 27-28. Paths 1-2 (2 empties)
                     '', '', '', '',                // 29-32. Asset fields (4 empties)
                     '', '',                        // 33-34. Phone fields (2 empties)
-                    '', '', ''                     // 35-37. Location fields (3 empties)
+                    '', '', '',                    // 35-37. Asset text fields (Callout Text, Header, Values)
+                    '', '', '', '', ''             // 38-42. Location fields (Location, Location Target, Target Type, Bid Adjustment, Is Exclusion) - 5 fields
                 ];
                 rows.push(keywordRow.join(','));
             });
             
             // Export Ads as separate rows (Row Type: "ad") - only export valid ads with required fields
             groupAds.forEach(ad => {
-                // Skip ads missing required fields (validation should catch these, but double-check)
-                        if (ad.type === 'rsa' || ad.type === 'dki') {
-                    if (!ad.headline1 || !ad.headline2 || !ad.headline3 || !ad.description1 || !ad.description2) {
-                        console.warn(`Skipping ad in "${group.name}" - missing required fields`);
+                // Ensure Final URL is properly formatted first
+                let finalUrl = formatURL(ad.finalUrl || url || baseUrl);
+                if (!finalUrl || !finalUrl.match(/^https?:\/\//i)) {
+                    // Fallback to baseUrl if ad.finalUrl is invalid
+                    finalUrl = baseUrl;
+                }
+                
+                // Validate required fields before exporting
+                if (ad.type === 'rsa' || ad.type === 'dki') {
+                    const hasRequiredFields = 
+                        ad.headline1 && ad.headline1.trim() &&
+                        ad.headline2 && ad.headline2.trim() &&
+                        (ad.headline3 && ad.headline3.trim() || ad.headline2 && ad.headline2.trim()) &&
+                        ad.description1 && ad.description1.trim() &&
+                        ad.description2 && ad.description2.trim() &&
+                        finalUrl && finalUrl.match(/^https?:\/\//i);
+                    
+                    if (!hasRequiredFields) {
+                        console.warn(`Skipping RSA/DKI ad in "${group.name}" - missing required fields`);
                         return; // Skip this ad
                     }
-                        } else if (ad.type === 'callonly') {
-                    if (!ad.headline1 || !ad.headline2 || !ad.description1 || !ad.description2) {
+                } else if (ad.type === 'callonly') {
+                    const hasRequiredFields = 
+                        ad.headline1 && ad.headline1.trim() &&
+                        ad.headline2 && ad.headline2.trim() &&
+                        (ad.headline3 && ad.headline3.trim() || ad.headline2 && ad.headline2.trim()) &&
+                        ad.description1 && ad.description1.trim() &&
+                        ad.description2 && ad.description2.trim() &&
+                        finalUrl && finalUrl.match(/^https?:\/\//i);
+                    
+                    if (!hasRequiredFields) {
                         console.warn(`Skipping call-only ad in "${group.name}" - missing required fields`);
                         return; // Skip this ad
                     }
                 }
                 
-                let finalUrl = formatURL(ad.finalUrl || url || baseUrl);
-                
                 if (ad.type === 'rsa' || ad.type === 'dki') {
+                    // Ensure all required fields are present
+                    const headline1 = (ad.headline1 || '').trim();
+                    const headline2 = (ad.headline2 || '').trim();
+                    const headline3 = (ad.headline3 || headline2 || headline1 || '').trim(); // Fallback to headline2 or headline1
+                    const description1 = (ad.description1 || '').trim();
+                    const description2 = (ad.description2 || '').trim();
+                    
+                    // Skip if missing critical required fields
+                    if (!headline1 || !headline2 || !headline3 || !description1 || !description2 || !finalUrl) {
+                        console.warn(`Skipping ad in "${group.name}" - missing required fields`);
+                        return;
+                    }
+                    
                     const adRow: string[] = [
                         escapeCSV(campaignNameValue),                    // Campaign
-                        escapeCSV(group.name),                          // Ad Group
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
                         'ad',                                            // Row Type
                         'Active',                                        // Status
                         '',                                              // Keyword (empty for ad rows)
                         '',                                              // Match Type (empty for ad rows)
-                        escapeCSV(finalUrl),                            // Final URL
-                        escapeCSV(ad.headline1 || ''),                  // Headline 1
-                        escapeCSV(ad.headline2 || ''),                  // Headline 2
-                        escapeCSV(ad.headline3 || ''),                  // Headline 3
+                        escapeCSV(finalUrl),                            // Final URL (required)
+                        escapeCSV(headline1),                            // Headline 1 (required)
+                        escapeCSV(headline2),                            // Headline 2 (required)
+                        escapeCSV(headline3),                            // Headline 3 (required)
                         escapeCSV(ad.headline4 || ''),                  // Headline 4
                         escapeCSV(ad.headline5 || ''),                  // Headline 5
                         '', '', '', '', '', '', '', '', '', '', '', '', // Headlines 6-15 (empty)
-                        escapeCSV(ad.description1 || ''),               // Description 1
-                        escapeCSV(ad.description2 || ''),               // Description 2
-                        '',                                            // Description 3 (not in interface)
-                        '',                                            // Description 4 (not in interface)
+                        escapeCSV(description1),                         // Description 1 (required)
+                        escapeCSV(description2),                         // Description 2 (required)
+                        escapeCSV(ad.description3 || ''),                // Description 3
+                        escapeCSV(ad.description4 || ''),               // Description 4
                         escapeCSV(ad.path1 || ''),                      // Path 1
                         escapeCSV(ad.path2 || ''),                      // Path 2
                         '', '', '', '',                                 // Asset fields (empty)
                         '', '',                                         // Phone fields (empty)
-                        '', '', ''                                      // Location fields (empty)
+                        '', '', '',                                     // Asset text fields (empty) - 3 fields
+                        '', '', '', '', ''                              // Location fields (empty) - 5 fields
                     ];
                     rows.push(adRow.join(','));
                 } else if (ad.type === 'callonly') {
+                    // Call-only ads still use Row Type "ad" but need all required ad fields
+                    // Ensure all required fields are present
+                    const headline1 = (ad.headline1 || '').trim();
+                    const headline2 = (ad.headline2 || '').trim();
+                    const headline3 = (ad.headline3 || headline2 || headline1 || '').trim(); // Fallback to headline2 or headline1
+                    const description1 = (ad.description1 || '').trim();
+                    const description2 = (ad.description2 || '').trim();
+                    
+                    // Skip if missing critical required fields
+                    if (!headline1 || !headline2 || !headline3 || !description1 || !description2 || !finalUrl) {
+                        console.warn(`Skipping call-only ad in "${group.name}" - missing required fields`);
+                        return;
+                    }
+                    
+                    // Call-only ads still use Row Type "ad" but need all required ad fields
                     const adRow: string[] = [
                         escapeCSV(campaignNameValue),                    // Campaign
-                        escapeCSV(group.name),                          // Ad Group
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
                         'ad',                                            // Row Type
                         'Active',                                        // Status
                         '',                                              // Keyword (empty for ad rows)
                         '',                                              // Match Type (empty for ad rows)
-                        escapeCSV(finalUrl),                            // Final URL
-                        escapeCSV(ad.headline1 || ''),                  // Headline 1
-                        escapeCSV(ad.headline2 || ''),                  // Headline 2
-                        '',                                              // Headline 3 (call-only doesn't need 3rd headline)
+                        escapeCSV(finalUrl),                            // Final URL (required for ad)
+                        escapeCSV(headline1),                            // Headline 1 (required)
+                        escapeCSV(headline2),                            // Headline 2 (required)
+                        escapeCSV(headline3),                            // Headline 3 (required for ad)
                         '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines 4-15 (empty)
-                        escapeCSV(ad.description1 || ''),               // Description 1
-                        escapeCSV(ad.description2 || ''),               // Description 2
+                        escapeCSV(description1),                         // Description 1 (required)
+                        escapeCSV(description2),                         // Description 2 (required)
                         '',                                              // Description 3 (empty)
                         '',                                              // Description 4 (empty)
                         '',                                              // Path 1 (empty)
                         '',                                              // Path 2 (empty)
                         '', '', '', '',                                 // Asset fields (empty)
-                        escapeCSV(ad.phone || ''),                      // Phone Number
-                        'US',                                            // Country Code (default)
-                        '', '', ''                                      // Location fields (empty)
+                        '', '',                                          // Phone fields (empty - phone goes in call extension)
+                        '', '', '',                                     // Asset text fields (empty) - 3 fields
+                        '', '', '', '', ''                              // Location fields (empty) - 5 fields
                     ];
                     rows.push(adRow.join(','));
+                    
+                    // For call-only ads, also create a call extension row with the phone number
+                    if (ad.phone && ad.phone.trim()) {
+                        const callExtensionRow: string[] = [
+                            escapeCSV(campaignNameValue),                // Campaign
+                            escapeCSV(group.name),                      // Ad Group
+                            'call',                                      // Row Type
+                            'Active',                                    // Status
+                            '', '',                                      // Keyword fields (empty)
+                            '',                                          // Final URL (empty for call)
+                            '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                            '', '', '', '',                              // Descriptions (empty)
+                            '', '',                                      // Paths (empty)
+                            'Call',                                      // Asset Type
+                            '', '', '',                                  // Sitelink fields (empty)
+                            escapeCSV(ad.phone.trim()),                  // Phone Number (required)
+                            'US',                                        // Country Code (required)
+                            '', '', '',                                  // Asset text fields (empty)
+                            '', '', '', '', ''                           // Location fields (empty)
+                        ];
+                        rows.push(callExtensionRow.join(','));
+                    }
                 }
             });
             
@@ -1648,7 +1906,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             if (sitelink && sitelink.text) {
                                 const sitelinkRow: string[] = [
                                     escapeCSV(campaignNameValue),        // Campaign
-                                    escapeCSV(group.name),              // Ad Group
+                                    escapeCSV(group.name),              // Ad Group (singular per Google Ads format)
                                     'sitelink',                          // Row Type
                                     'Active',                            // Status
                                     '', '',                              // Keyword fields (empty)
@@ -1661,7 +1919,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                     escapeCSV(sitelink.description || ''), // Description Line 1
                                     '',                                  // Description Line 2
                                     '', '',                              // Phone fields (empty)
-                                    '', '', ''                           // Location fields (empty)
+                                    '', '', '',                          // Asset text fields (empty) - 3 fields
+                                    '', '', '', '', ''                   // Location fields (empty) - 5 fields
                                 ];
                                 rows.push(sitelinkRow.join(','));
                             }
@@ -1670,7 +1929,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 } else if (ext.extensionType === 'call') {
                     const callRow: string[] = [
                         escapeCSV(campaignNameValue),                    // Campaign
-                        escapeCSV(group.name),                          // Ad Group
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
                         'call',                                          // Row Type
                         'Active',                                        // Status
                         '', '',                                          // Keyword fields (empty)
@@ -1681,18 +1940,270 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         'Call',                                          // Asset Type
                         '', '', '',                                      // Sitelink fields (empty)
                         escapeCSV(ext.phone || ''),                     // Phone Number
-                        'US',                                            // Country Code (default)
-                        '', '', ''                                      // Location fields (empty)
+                        escapeCSV(ext.callTrackingEnabled ? 'US' : 'US'), // Country Code
+                        '', '', '',                                     // Asset text fields (empty) - 3 fields
+                        '', '', '', '', ''                              // Location fields (empty) - 5 fields
                     ];
                     rows.push(callRow.join(','));
+                } else if (ext.extensionType === 'callout') {
+                    // Each callout is a separate row
+                    if (Array.isArray(ext.callouts)) {
+                        ext.callouts.forEach((callout: string) => {
+                            if (callout && callout.trim()) {
+                                const calloutRow: string[] = [
+                                    escapeCSV(campaignNameValue),        // Campaign
+                                    escapeCSV(group.name),              // Ad Group (singular per Google Ads format)
+                                    'callout',                           // Row Type
+                                    'Active',                            // Status
+                                    '', '',                              // Keyword fields (empty)
+                                    '',                                  // Final URL (empty)
+                                    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                                    '', '', '', '',                      // Descriptions (empty)
+                                    '', '',                              // Paths (empty)
+                                    'Callout',                           // Asset Type
+                                    '', '', '',                          // Sitelink fields (empty)
+                                    '', '',                              // Phone fields (empty)
+                                    escapeCSV(callout),                 // Callout Text
+                                    '', '',                              // Header, Values (empty)
+                                    '', '', '', '', ''                   // Location fields (empty)
+                                ];
+                                rows.push(calloutRow.join(','));
+                            }
+                        });
+                    }
+                } else if (ext.extensionType === 'snippet') {
+                    // Structured snippet - one row per header/value combination
+                    if (ext.header && Array.isArray(ext.values)) {
+                        ext.values.forEach((value: string) => {
+                            if (value && value.trim()) {
+                                const snippetRow: string[] = [
+                                    escapeCSV(campaignNameValue),        // Campaign
+                                    escapeCSV(group.name),              // Ad Group (singular per Google Ads format)
+                                    'structured snippet',               // Row Type
+                                    'Active',                            // Status
+                                    '', '',                              // Keyword fields (empty)
+                                    '',                                  // Final URL (empty)
+                                    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                                    '', '', '', '',                      // Descriptions (empty)
+                                    '', '',                              // Paths (empty)
+                                    'Structured Snippet',               // Asset Type
+                                    '', '', '',                          // Sitelink fields (empty)
+                                    '', '',                              // Phone fields (empty)
+                                    '',                                  // Callout Text (empty)
+                                    escapeCSV(ext.header || ''),        // Header
+                                    escapeCSV(value),                   // Values
+                                    '', '', '', '', ''                   // Location fields (empty)
+                                ];
+                                rows.push(snippetRow.join(','));
+                            }
+                        });
+                    }
+                } else if (ext.extensionType === 'price') {
+                    // Price extensions are typically managed at campaign level in Google Ads
+                    // Export as asset with price information in description or custom field
+                    const priceRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
+                        'price',                                         // Row Type
+                        'Active',                                        // Status
+                        '', '',                                          // Keyword fields (empty)
+                        '',                                              // Final URL (empty)
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                        escapeCSV(`${ext.priceQualifier || 'From'} ${ext.price || ''} ${ext.currency || 'USD'} ${ext.unit || ''}`), // Description 1 (price info)
+                        '', '', '',                                      // Descriptions 2-4 (empty)
+                        '', '',                                          // Paths (empty)
+                        'Price',                                         // Asset Type
+                        '', '', '',                                      // Sitelink fields (empty)
+                        '', '',                                          // Phone fields (empty)
+                        '', '', '',                                      // Asset text fields (empty)
+                        '', '', '', '', ''                               // Location fields (empty)
+                    ];
+                    rows.push(priceRow.join(','));
+                } else if (ext.extensionType === 'promotion') {
+                    const promotionRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
+                        'promotion',                                      // Row Type
+                        'Active',                                        // Status
+                        '', '',                                          // Keyword fields (empty)
+                        '',                                              // Final URL (empty)
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                        '', '', '', '',                                  // Descriptions (empty)
+                        '', '',                                          // Paths (empty)
+                        'Promotion',                                     // Asset Type
+                        '', '', '',                                      // Sitelink fields (empty)
+                        '', '',                                          // Phone fields (empty)
+                        escapeCSV(ext.promotionText || ''),            // Callout Text (using for promotion text)
+                        '', '',                                          // Header, Values (empty)
+                        '', '', '', '', ''                               // Location fields (empty)
+                    ];
+                    rows.push(promotionRow.join(','));
+                } else if (ext.extensionType === 'message') {
+                    const messageRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
+                        'message',                                       // Row Type
+                        'Active',                                        // Status
+                        '', '',                                          // Keyword fields (empty)
+                        '',                                              // Final URL (empty)
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                        '', '', '', '',                                  // Descriptions (empty)
+                        '', '',                                          // Paths (empty)
+                        'Message',                                       // Asset Type
+                        '', '', '',                                      // Sitelink fields (empty)
+                        escapeCSV(ext.phone || ''),                     // Phone Number
+                        'US',                                            // Country Code
+                        escapeCSV(ext.messageText || ''),              // Callout Text (using for message text)
+                        '', '',                                          // Header, Values (empty)
+                        '', '', '', '', ''                               // Location fields (empty)
+                    ];
+                    rows.push(messageRow.join(','));
+                } else if (ext.extensionType === 'leadform') {
+                    const leadformRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
+                        'leadform',                                      // Row Type
+                        'Active',                                        // Status
+                        '', '',                                          // Keyword fields (empty)
+                        '',                                              // Final URL (empty)
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                        '', '', '', '',                                  // Descriptions (empty)
+                        '', '',                                          // Paths (empty)
+                        'Lead Form',                                     // Asset Type
+                        '', '', '',                                      // Sitelink fields (empty)
+                        '', '',                                          // Phone fields (empty)
+                        escapeCSV(ext.formName || ''),                  // Callout Text (using for form name)
+                        '', '',                                          // Header, Values (empty)
+                        '', '', '', '', ''                               // Location fields (empty)
+                    ];
+                    rows.push(leadformRow.join(','));
+                } else if (ext.extensionType === 'location') {
+                    // Location extension - business location info
+                    // Note: Location extensions are typically managed separately in Google Ads
+                    // Export basic location info
+                    const locationExtRow: string[] = [
+                        escapeCSV(campaignNameValue),                    // Campaign
+                        escapeCSV(group.name),                          // Ad Group (singular per Google Ads format)
+                        'location extension',                            // Row Type
+                        'Active',                                        // Status
+                        '', '',                                          // Keyword fields (empty)
+                        '',                                              // Final URL (empty)
+                        '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                        '', '', '', '',                                  // Descriptions (empty)
+                        '', '',                                          // Paths (empty)
+                        'Location Extension',                            // Asset Type
+                        '', '', '',                                      // Sitelink fields (empty)
+                        escapeCSV(ext.phone || ''),                     // Phone Number
+                        'US',                                            // Country Code
+                        '', '', '',                                      // Asset text fields (empty)
+                        escapeCSV(ext.businessName || ext.addressLine1 || ext.city || ''), // Location
+                        escapeCSV(`${ext.addressLine1 || ''}, ${ext.city || ''}, ${ext.state || ''} ${ext.postalCode || ''}`), // Location Target
+                        'Business Location',                             // Target Type
+                        '',                                              // Bid Adjustment
+                        ''                                               // Is Exclusion
+                    ];
+                    rows.push(locationExtRow.join(','));
                 }
-                // Note: Other extension types (callout, snippet, etc.) are typically asset-level and 
-                // handled differently in Google Ads Editor - may need separate handling
             });
         });
         
+        // Export Location Targeting Rows (Row Type: "location")
+        // These are campaign-level location targets, not location extensions
+        if (manualGeoInput && manualGeoInput.trim()) {
+            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
+            const targetTypeName = targetType === 'ZIP' ? 'Postal Code' : targetType === 'CITY' ? 'City' : targetType === 'STATE' ? 'State' : 'Location of interest';
+            
+            locations.forEach(location => {
+                const locationRow: string[] = [
+                    escapeCSV(campaignNameValue),                        // Campaign
+                    '',                                                  // Ad Group (empty for campaign-level location targeting)
+                    'location',                                          // Row Type
+                    'Active',                                            // Status
+                    '', '',                                              // Keyword fields (empty)
+                    '',                                                  // Final URL (empty)
+                    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                    '', '', '', '',                                      // Descriptions (empty)
+                    '', '',                                              // Paths (empty)
+                    '', '', '', '',                                      // Asset fields (empty)
+                    '', '',                                              // Phone fields (empty)
+                    '', '', '',                                          // Asset text fields (empty)
+                    escapeCSV(location),                                 // Location
+                    escapeCSV(location),                                 // Location Target
+                    escapeCSV(targetTypeName),                           // Target Type
+                    '',                                                  // Bid Adjustment (empty)
+                    ''                                                   // Is Exclusion (empty, default is inclusion)
+                ];
+                rows.push(locationRow.join(','));
+            });
+        } else if (zipPreset || cityPreset || statePreset) {
+            // For presets, we still need to export at least one location row indicating the targeting type
+            const presetType = zipPreset ? 'Postal Code' : cityPreset ? 'City' : 'State';
+            const presetCount = zipPreset ? parseInt(zipPreset.replace(/\D/g, '')) || 0 :
+                               cityPreset ? (cityPreset === '0' ? 0 : parseInt(cityPreset.replace(/\D/g, '')) || 0) :
+                               parseInt(statePreset?.replace(/\D/g, '') || '0') || 0;
+            
+            const locationRow: string[] = [
+                escapeCSV(campaignNameValue),                            // Campaign
+                '',                                                      // Ad Group (empty for campaign-level)
+                'location',                                              // Row Type
+                'Active',                                                // Status
+                '', '',                                                  // Keyword fields (empty)
+                '',                                                      // Final URL (empty)
+                '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                '', '', '', '',                                          // Descriptions (empty)
+                '', '',                                                  // Paths (empty)
+                '', '', '', '',                                          // Asset fields (empty)
+                '', '',                                                  // Phone fields (empty)
+                '', '', '',                                              // Asset text fields (empty)
+                escapeCSV(`${targetCountry || 'United States'} - ${presetCount} ${presetType}s`), // Location
+                escapeCSV(`${targetCountry || 'United States'}`),       // Location Target
+                escapeCSV(presetType),                                   // Target Type
+                '',                                                      // Bid Adjustment
+                ''                                                       // Is Exclusion
+            ];
+            rows.push(locationRow.join(','));
+        } else if (targetCountry) {
+            // At minimum, export the country as a location target
+            const locationRow: string[] = [
+                escapeCSV(campaignNameValue),                            // Campaign
+                '',                                                      // Ad Group (empty for campaign-level)
+                'location',                                              // Row Type
+                'Active',                                                // Status
+                '', '',                                                  // Keyword fields (empty)
+                '',                                                      // Final URL (empty)
+                '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', // Headlines (empty)
+                '', '', '', '',                                          // Descriptions (empty)
+                '', '',                                                  // Paths (empty)
+                '', '', '', '',                                          // Asset fields (empty)
+                '', '',                                                  // Phone fields (empty)
+                '', '', '',                                              // Asset text fields (empty)
+                escapeCSV(targetCountry),                               // Location
+                escapeCSV(targetCountry),                               // Location Target
+                'Country',                                                // Target Type
+                '',                                                      // Bid Adjustment
+                ''                                                       // Is Exclusion
+            ];
+            rows.push(locationRow.join(','));
+        }
+        
+        // Validate all rows have the correct number of fields (42)
+        const headerCount = headers.length;
+        const validatedRows = rows.filter(row => {
+            // Count fields in row (handling CSV escaping)
+            const fieldCount = (row.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g) || []).length;
+            if (fieldCount !== headerCount) {
+                console.warn(`Row has ${fieldCount} fields, expected ${headerCount}. Row: ${row.substring(0, 100)}...`);
+                return false;
+            }
+            return true;
+        });
+        
+        if (validatedRows.length !== rows.length) {
+            console.warn(`Filtered out ${rows.length - validatedRows.length} invalid rows`);
+        }
+        
         // Combine headers and rows
-        const csvContent = [headers.join(','), ...rows].join('\n');
+        const csvContent = [headers.join(','), ...validatedRows].join('\n');
         
         // Create and download CSV
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1701,6 +2212,9 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         link.download = `${campaignNameValue.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
         URL.revokeObjectURL(link.href);
+        
+        // Log success
+        console.log(`✅ CSV exported successfully: ${validatedRows.length} rows, ${headerCount} columns`);
     };
     
     const getMatchType = (keyword: string): string => {
@@ -1846,20 +2360,73 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             <Hash className="w-4 h-4 text-blue-600" />
                             Match Types
                         </Label>
+                        <p className="text-sm text-slate-600">Select which keyword match types to include in your campaign</p>
                         <div className="flex flex-wrap items-center gap-6 p-5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-xl border-2 border-blue-200/50">
-                            {MATCH_TYPES.map(type => (
-                                <div key={type.id} className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all">
-                                    <Checkbox 
-                                        id={type.id} 
-                                        checked={matchTypes[type.id as keyof typeof matchTypes]}
-                                        onCheckedChange={(c) => setMatchTypes(prev => ({ ...prev, [type.id]: !!c }))}
-                                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                                    />
-                                    <Label htmlFor={type.id} className="cursor-pointer font-medium text-slate-700">
-                                        {type.label} <span className="text-blue-500 font-mono text-xs ml-1">{type.example}</span>
-                                    </Label>
-                                </div>
-                            ))}
+                            {/* Broad Match */}
+                            <div className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all">
+                                <input 
+                                    type="checkbox"
+                                    id="match-type-broad"
+                                    checked={matchTypes.broad}
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({
+                                            ...prev,
+                                            broad: e.target.checked
+                                        }));
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
+                                />
+                                <Label 
+                                    htmlFor="match-type-broad"
+                                    className="cursor-pointer font-medium text-slate-700 select-none"
+                                >
+                                    Broad Match <span className="text-blue-500 font-mono text-xs ml-1">keyword</span>
+                                </Label>
+                            </div>
+
+                            {/* Phrase Match */}
+                            <div className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all">
+                                <input 
+                                    type="checkbox"
+                                    id="match-type-phrase"
+                                    checked={matchTypes.phrase}
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({
+                                            ...prev,
+                                            phrase: e.target.checked
+                                        }));
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
+                                />
+                                <Label 
+                                    htmlFor="match-type-phrase"
+                                    className="cursor-pointer font-medium text-slate-700 select-none"
+                                >
+                                    Phrase Match <span className="text-blue-500 font-mono text-xs ml-1">&quot;keyword&quot;</span>
+                                </Label>
+                            </div>
+
+                            {/* Exact Match */}
+                            <div className="flex items-center space-x-2 px-3 py-2 bg-white rounded-lg hover:shadow-md transition-all">
+                                <input 
+                                    type="checkbox"
+                                    id="match-type-exact"
+                                    checked={matchTypes.exact}
+                                    onChange={(e) => {
+                                        setMatchTypes(prev => ({
+                                            ...prev,
+                                            exact: e.target.checked
+                                        }));
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
+                                />
+                                <Label 
+                                    htmlFor="match-type-exact"
+                                    className="cursor-pointer font-medium text-slate-700 select-none"
+                                >
+                                    Exact Match <span className="text-blue-500 font-mono text-xs ml-1">[keyword]</span>
+                                </Label>
+                            </div>
                         </div>
                     </div>
 
@@ -1923,7 +2490,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         negativeKeywords,
                         matchTypes
                     }}
-                    onKeywordsSelected={(keywords) => setSelectedKeywords(keywords)}
+                    onKeywordsSelected={(keywords) => {
+                        // Ensure keywords are always strings and valid
+                        const validKeywords = Array.isArray(keywords) 
+                            ? keywords.map(kw => typeof kw === 'string' ? kw : String(kw || '')).filter(Boolean)
+                            : [];
+                        setSelectedKeywords(validKeywords);
+                    }}
                     selectedKeywords={selectedKeywords}
                     onNegativeKeywordsChange={(newNegativeKeywords) => setNegativeKeywords(newNegativeKeywords)}
                 />
@@ -2298,18 +2871,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [showExtensionDialog, setShowExtensionDialog] = useState(false);
     const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
     
+    // Google Search Ads compatible extensions only
     const extensionTypes = [
         { id: 'callout', label: 'Callout Extension', description: 'Highlight key benefits' },
         { id: 'sitelink', label: 'Sitelink Extension', description: 'Add links to important pages' },
         { id: 'call', label: 'Call Extension', description: 'Add phone number' },
-        { id: 'snippet', label: 'Snippet Extension', description: 'Show structured information' },
+        { id: 'snippet', label: 'Structured Snippet Extension', description: 'Show structured information' },
         { id: 'price', label: 'Price Extension', description: 'Display pricing' },
         { id: 'location', label: 'Location Extension', description: 'Show business location' },
         { id: 'message', label: 'Message Extension', description: 'Enable messaging' },
         { id: 'promotion', label: 'Promotion Extension', description: 'Show special offers' },
+        { id: 'leadform', label: 'Lead Form Extension', description: 'Add lead form' },
     ];
 
-    const handleConfirmAIExtensions = () => {
+    const handleConfirmAIExtensions = async () => {
         if (selectedExtensions.length === 0) {
             notifications.warning('Please select at least one extension', {
                 title: 'No Extensions Selected',
@@ -2319,94 +2894,184 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
         const currentDynamicAdGroups = getDynamicAdGroups();
         const currentGroup = currentDynamicAdGroups.find(g => g.name === selectedAdGroup) || currentDynamicAdGroups[0];
-        const mainKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
+        const keywords = currentGroup?.keywords || selectedKeywords || [];
         const baseUrl = url || 'www.example.com';
         const formattedUrl = baseUrl.match(/^https?:\/\//i) ? baseUrl : (baseUrl.startsWith('www.') ? `https://${baseUrl}` : `https://${baseUrl}`);
 
-        const newExtensions: any[] = [];
+        // Get ad context for better extension generation
+        const firstAd = generatedAds.find(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
+        const adHeadline = firstAd?.headline1 || '';
+        const adDescription = firstAd?.description1 || '';
 
-        selectedExtensions.forEach(extType => {
-            const extId = Date.now() + Math.random();
-            let extension: any = {
-                id: extId,
-                extensionType: extType,
-                adGroup: selectedAdGroup
-            };
+        // Show loading notification
+        const loadingToast = notifications.loading('Generating AI extensions...', {
+            title: 'AI Generation',
+            description: 'Creating unique extensions based on your keywords and ad content.'
+        });
 
-            // Generate AI-powered content based on keywords and business context
-            if (extType === 'callout') {
-                extension.callouts = [
-                    `Free ${mainKeyword} Consultation`,
-                    '24/7 Expert Support',
-                    'Best Price Guarantee',
-                    'Fast & Reliable Service'
-                ];
-            } else if (extType === 'sitelink') {
-                extension.sitelinks = [
-                    { text: `Shop ${mainKeyword}`, description: 'Browse our collection', url: `${formattedUrl}/shop` },
-                    { text: 'About Us', description: 'Learn more about us', url: `${formattedUrl}/about` },
-                    { text: 'Contact', description: 'Get in touch', url: `${formattedUrl}/contact` },
-                    { text: 'Support', description: 'Customer support', url: `${formattedUrl}/support` }
-                ];
-            } else if (extType === 'call') {
-                extension.phone = '(555) 123-4567';
-                extension.callTrackingEnabled = true;
-            } else if (extType === 'snippet') {
-                extension.header = 'Services';
-                extension.values = currentGroup?.keywords.slice(0, 4) || [mainKeyword, 'Expert Service', 'Quality Products', 'Fast Delivery'];
-            } else if (extType === 'price') {
-                extension.priceQualifier = 'From';
-                extension.price = '$99';
-                extension.currency = 'USD';
-                extension.unit = 'per service';
-                extension.description = 'Competitive pricing';
-            } else if (extType === 'location') {
-                extension.businessName = 'Your Business Name';
-                extension.addressLine1 = '123 Main St';
-                extension.city = 'City';
-                extension.state = 'State';
-                extension.postalCode = '12345';
-                extension.phone = '(555) 123-4567';
-            } else if (extType === 'message') {
-                extension.messageText = `Message us about ${mainKeyword}`;
-                extension.businessName = 'Your Business';
-                extension.phone = '(555) 123-4567';
-            } else if (extType === 'promotion') {
-                extension.promotionText = 'Special Offer';
-                extension.promotionDescription = `Get 20% off ${mainKeyword}`;
-                extension.occasion = 'SALE';
-                extension.startDate = new Date().toISOString().split('T')[0];
-                extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        try {
+            const response = await api.post('/generate-extensions', {
+                keywords: keywords.slice(0, 10).map((k: string) => k.replace(/^\[|\]$|^"|"$/g, '')),
+                extensionTypes: selectedExtensions,
+                adHeadline,
+                adDescription,
+                baseUrl: formattedUrl
+            });
+
+            if (response.extensions && Array.isArray(response.extensions)) {
+                const newExtensions: any[] = response.extensions.map((extData: any) => {
+                    const extId = Date.now() + Math.random() * 1000;
+                    let extension: any = {
+                        id: extId,
+                        extensionType: extData.extensionType,
+                        adGroup: selectedAdGroup,
+                        ...extData.data
+                    };
+
+                    // Ensure URLs are properly formatted for sitelinks
+                    if (extension.sitelinks && Array.isArray(extension.sitelinks)) {
+                        extension.sitelinks = extension.sitelinks.map((link: any) => ({
+                            ...link,
+                            url: link.url || `${formattedUrl}/${link.text?.toLowerCase().replace(/\s+/g, '-') || 'page'}`
+                        }));
+                    }
+
+                    return extension;
+                });
+
+                // Attach extensions to the first regular ad
+                if (firstAd) {
+                    const updatedAds = generatedAds.map(ad => {
+                        if (ad.id === firstAd.id) {
+                            return {
+                                ...ad,
+                                extensions: [...(ad.extensions || []), ...newExtensions]
+                            };
+                        }
+                        return ad;
+                    });
+                    setGeneratedAds(updatedAds);
+                } else {
+                    // If no ad exists, add extensions as standalone items
+                    setGeneratedAds([...generatedAds, ...newExtensions]);
+                }
+
+                setShowExtensionDialog(false);
+                setSelectedExtensions([]);
+                
+                if (loadingToast) loadingToast();
+                notifications.success(`Generated ${newExtensions.length} unique AI extensions`, {
+                    title: 'Extensions Created',
+                    description: 'Your AI-generated extensions have been added and will appear in ad previews.',
+                });
+            } else {
+                throw new Error('Invalid response format from server');
+            }
+        } catch (error: any) {
+            console.log('ℹ️ Backend unavailable - using fallback extension generation');
+            
+            if (loadingToast) loadingToast();
+            
+            // Fallback to basic generation with more variety
+            const mainKeyword = keywords[0]?.replace(/^\[|\]$|^"|"$/g, '') || 'your service';
+            const newExtensions: any[] = [];
+
+            selectedExtensions.forEach((extType, index) => {
+                const extId = Date.now() + Math.random() * 1000 + index;
+                let extension: any = {
+                    id: extId,
+                    extensionType: extType,
+                    adGroup: selectedAdGroup
+                };
+
+                // Generate varied fallback content
+                if (extType === 'callout') {
+                    const calloutVariations = [
+                        [`Expert ${mainKeyword} Service`, 'Licensed Professionals', '24/7 Available', 'Free Estimate'],
+                        [`Professional ${mainKeyword}`, 'Trusted & Reliable', 'Same Day Service', 'Quality Guaranteed'],
+                        [`Certified ${mainKeyword}`, 'Fast Response Time', 'Satisfaction Guaranteed', 'Emergency Service']
+                    ];
+                    extension.callouts = calloutVariations[index % calloutVariations.length];
+                } else if (extType === 'sitelink') {
+                    const sitelinkVariations = [
+                        [
+                            { text: `${mainKeyword} Services`, description: 'Professional service options', url: `${formattedUrl}/services` },
+                            { text: 'Get Quote', description: 'Request a free estimate', url: `${formattedUrl}/quote` },
+                            { text: 'Contact Us', description: 'Speak with our team', url: `${formattedUrl}/contact` },
+                            { text: 'About', description: 'Learn about our company', url: `${formattedUrl}/about` }
+                        ],
+                        [
+                            { text: 'Our Services', description: 'View all service offerings', url: `${formattedUrl}/services` },
+                            { text: 'Schedule Service', description: 'Book an appointment', url: `${formattedUrl}/schedule` },
+                            { text: 'Customer Support', description: 'Get help and support', url: `${formattedUrl}/support` },
+                            { text: 'Resources', description: 'Helpful information', url: `${formattedUrl}/resources` }
+                        ]
+                    ];
+                    extension.sitelinks = sitelinkVariations[index % sitelinkVariations.length];
+                } else if (extType === 'call') {
+                    extension.phone = '(555) 123-4567';
+                    extension.callTrackingEnabled = true;
+                } else if (extType === 'snippet') {
+                    const snippetVariations = [
+                        { header: 'Services', values: keywords.slice(0, 4).map((k: string) => k.replace(/^\[|\]$|^"|"$/g, '')) },
+                        { header: 'What We Offer', values: [mainKeyword, 'Expert Service', 'Quality Work', 'Fast Response'] },
+                        { header: 'Benefits', values: ['Licensed', 'Insured', 'Experienced', 'Reliable'] }
+                    ];
+                    const snippet = snippetVariations[index % snippetVariations.length];
+                    extension.header = snippet.header;
+                    extension.values = snippet.values;
+                } else if (extType === 'price') {
+                    extension.priceQualifier = 'From';
+                    extension.price = '$99';
+                    extension.currency = 'USD';
+                    extension.unit = 'per service';
+                    extension.description = 'Competitive pricing';
+                } else if (extType === 'location') {
+                    extension.businessName = 'Your Business Name';
+                    extension.addressLine1 = '123 Main St';
+                    extension.city = 'City';
+                    extension.state = 'State';
+                    extension.postalCode = '12345';
+                    extension.phone = '(555) 123-4567';
+                } else if (extType === 'message') {
+                    extension.messageText = `Message us about ${mainKeyword}`;
+                    extension.businessName = 'Your Business';
+                    extension.phone = '(555) 123-4567';
+                } else if (extType === 'promotion') {
+                    extension.promotionText = 'Special Offer';
+                    extension.promotionDescription = `Free consultation for ${mainKeyword}`;
+                    extension.occasion = 'PROMOTION';
+                    extension.startDate = new Date().toISOString().split('T')[0];
+                    extension.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                }
+
+                newExtensions.push(extension);
+            });
+
+            // Attach extensions to the first regular ad
+            if (firstAd) {
+                const updatedAds = generatedAds.map(ad => {
+                    if (ad.id === firstAd.id) {
+                        return {
+                            ...ad,
+                            extensions: [...(ad.extensions || []), ...newExtensions]
+                        };
+                    }
+                    return ad;
+                });
+                setGeneratedAds(updatedAds);
+            } else {
+                setGeneratedAds([...generatedAds, ...newExtensions]);
             }
 
-            newExtensions.push(extension);
-        });
-
-        // Attach extensions to the first regular ad
-        const firstAd = generatedAds.find(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
-        if (firstAd) {
-            const updatedAds = generatedAds.map(ad => {
-                if (ad.id === firstAd.id) {
-                    return {
-                        ...ad,
-                        extensions: [...(ad.extensions || []), ...newExtensions]
-                    };
-                }
-                return ad;
+            setShowExtensionDialog(false);
+            setSelectedExtensions([]);
+            
+            notifications.info(`Generated ${newExtensions.length} extensions (offline mode)`, {
+                title: 'Extensions Created',
+                description: 'Using fallback generation. Some variety may be limited.',
             });
-            setGeneratedAds(updatedAds);
-        } else {
-            // If no ad exists, add extensions as standalone items
-            setGeneratedAds([...generatedAds, ...newExtensions]);
         }
-
-        setShowExtensionDialog(false);
-        setSelectedExtensions([]);
-        
-        notifications.success(`Generated ${selectedExtensions.length} AI extensions`, {
-            title: 'Extensions Created',
-            description: 'Your AI-generated extensions have been added and will appear in ad previews.',
-        });
     };
     
     const handleDeleteAd = (adId: number) => {
@@ -3129,8 +3794,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const adGroups = ['Refrigerators', 'Ovens', 'Microwaves'];
     
     const renderStep3 = () => {
-        const dynamicAdGroups = getDynamicAdGroups();
-        const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
+        // Safely get dynamic ad groups with error handling
+        let dynamicAdGroups: Array<{ name: string; keywords: string[] }> = [];
+        let adGroupList: string[] = adGroups;
+        
+        try {
+            dynamicAdGroups = getDynamicAdGroups();
+            if (dynamicAdGroups && dynamicAdGroups.length > 0) {
+                adGroupList = dynamicAdGroups.map(g => g.name).filter(Boolean);
+            }
+        } catch (error) {
+            console.error('Error getting dynamic ad groups in renderStep3:', error);
+            console.error('selectedKeywords:', selectedKeywords);
+            notifications.warning('Could not load ad groups. Using default groups.', {
+                title: 'Ad Groups Error',
+                description: 'There was an issue loading ad groups. You can still create ads.'
+            });
+            // Use default ad groups as fallback
+            adGroupList = adGroups;
+        }
         
         // Filter ads for the selected ad group
         const filteredAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
@@ -3152,28 +3834,45 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             return 'https://example.com';
         };
         
-        // Format headline for display
+        // Format headline for display - show all headlines
         const formatHeadline = (ad: any) => {
             if (ad.type === 'rsa' || ad.type === 'dki') {
+                // Collect all headlines (RSA can have up to 15, DKI typically 3-5)
                 const headlines = [
                     ad.headline1,
                     ad.headline2,
                     ad.headline3,
                     ad.headline4,
-                    ad.headline5
+                    ad.headline5,
+                    ad.headline6,
+                    ad.headline7,
+                    ad.headline8,
+                    ad.headline9,
+                    ad.headline10,
+                    ad.headline11,
+                    ad.headline12,
+                    ad.headline13,
+                    ad.headline14,
+                    ad.headline15
                 ].filter(Boolean);
-                return headlines.join(' | ');
+                return headlines.length > 0 ? headlines.join(' | ') : 'No headlines';
             } else if (ad.type === 'callonly') {
                 return ad.headline1 || 'Call Only Ad';
             }
             return ad.headline1 || 'Ad';
         };
         
-        // Format description for display
+        // Format description for display - show all descriptions
         const formatDescription = (ad: any) => {
             if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
-                const descs = [ad.description1, ad.description2].filter(Boolean);
-                return descs.join(' ');
+                // Collect all descriptions (RSA can have up to 4)
+                const descs = [
+                    ad.description1,
+                    ad.description2,
+                    ad.description3,
+                    ad.description4
+                ].filter(Boolean);
+                return descs.length > 0 ? descs.join(' ') : 'No description';
             }
             return ad.description1 || '';
         };
@@ -3261,7 +3960,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             const description = formatDescription(ad);
                             
                             return (
-                                <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow min-h-[200px]">
                                     {/* Badge - Top Left */}
                                     <div className="mb-3">
                                 <Badge className={
@@ -3278,7 +3977,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </div>
                                     
                                     {/* Ad Preview with Extensions */}
-                                    <div className="mb-4">
+                                    <div className="mb-4 min-h-[120px]">
                                         {ad.extensionType ? (
                                             // Show extension preview
                                             <div className="bg-slate-50 p-3 rounded border border-slate-200">
@@ -3939,6 +4638,16 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         const mainKeyword = group.keywords[0] || 'your service';
                         const keywordText = mainKeyword.replace(/^\[|\]$|^"|"$/g, ''); // Remove brackets/quotes
                         
+                        // Detect if keyword is service-based
+                        const serviceKeywords = ['plumber', 'plumbing', 'carpenter', 'carpentry', 'electrician', 'electric', 
+                            'contractor', 'handyman', 'roofer', 'roofing', 'painter', 'painting', 'mechanic', 'repair',
+                            'lawyer', 'attorney', 'doctor', 'dentist', 'accountant', 'consultant', 'therapist', 'coach',
+                            'service', 'services', 'installation', 'maintenance', 'cleaning', 'landscaping',
+                            'hvac', 'heating', 'cooling', 'tutoring', 'training', 'coaching', 'consulting', 'call',
+                            'contact', 'phone', 'number', 'emergency', '24/7', 'near me', 'local'];
+                        const keywordLower = keywordText.toLowerCase();
+                        const isServiceBased = serviceKeywords.some(sk => keywordLower.includes(sk));
+                        
                         // Create multiple ads for this group to match the max
                         for (let i = 0; i < adsNeeded; i++) {
                             const adTypes = ['rsa', 'dki', 'callonly'].filter(type => enabledAdTypes.includes(type));
@@ -3953,37 +4662,62 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 type: adType,
                                 adGroup: group.name,
                                 finalUrl: formattedUrl,
-                                path1: 'shop',
-                                path2: 'now'
+                                path1: isServiceBased ? 'service' : 'shop',
+                                path2: isServiceBased ? 'quote' : 'now'
                             };
                             
                             if (adType === 'rsa') {
-                                defaultAd = {
-                                    ...defaultAd,
-                                    headline1: `${keywordText} - Best Deals`,
-                                    headline2: 'Shop Now & Save',
-                                    headline3: i === 0 ? 'Fast Delivery Available' : i === 1 ? 'Free Shipping' : '24/7 Support',
-                                    description1: `Looking for ${keywordText}? We offer competitive prices and excellent service.`,
-                                    description2: `Get your ${keywordText} today with free shipping on orders over $50.`,
-                                    finalUrl: formattedUrl
-                                };
+                                if (isServiceBased) {
+                                    defaultAd = {
+                                        ...defaultAd,
+                                        headline1: `${keywordText} - Expert Service`,
+                                        headline2: i === 0 ? 'Licensed Professionals' : i === 1 ? 'Available 24/7' : 'Free Estimate',
+                                        headline3: i === 0 ? 'Same Day Service' : i === 1 ? 'Trusted & Reliable' : 'Quality Work Guaranteed',
+                                        description1: `Looking for ${keywordText}? We offer professional service and expert quality.`,
+                                        description2: `Get your ${keywordText} today with fast response and satisfaction guaranteed.`,
+                                        finalUrl: formattedUrl
+                                    };
+                                } else {
+                                    defaultAd = {
+                                        ...defaultAd,
+                                        headline1: `${keywordText} - Best Deals`,
+                                        headline2: 'Shop Now & Save',
+                                        headline3: i === 0 ? 'Fast Delivery Available' : i === 1 ? 'Free Shipping' : '24/7 Support',
+                                        description1: `Looking for ${keywordText}? We offer competitive prices and excellent service.`,
+                                        description2: `Get your ${keywordText} today with free shipping on orders over $50.`,
+                                        finalUrl: formattedUrl
+                                    };
+                                }
                             } else if (adType === 'dki') {
-                                defaultAd = {
-                                    ...defaultAd,
-                                    // Bug_77b: Fix DKI format
-                                    headline1: `{Keyword:${keywordText}} - Official Site`,
-                                    headline2: `Best {Keyword:${keywordText}} Deals`,
-                                    headline3: i === 0 ? `Order {Keyword:${keywordText}} Online` : `Shop {Keyword:${keywordText}} Now`,
-                                    description1: `Find quality {Keyword:${keywordText}} at great prices. Shop our selection today.`,
-                                    description2: `Get your {Keyword:${keywordText}} with fast shipping and expert support.`,
-                                    finalUrl: formattedUrl
-                                };
+                                if (isServiceBased) {
+                                    defaultAd = {
+                                        ...defaultAd,
+                                        headline1: `{Keyword:${keywordText}} - Expert Service`,
+                                        headline2: `Professional {Keyword:${keywordText}}`,
+                                        headline3: i === 0 ? `24/7 {Keyword:${keywordText}}` : `Trusted {Keyword:${keywordText}}`,
+                                        description1: `Expert {Keyword:${keywordText}} service. Licensed professionals ready to help.`,
+                                        description2: `Get quality {Keyword:${keywordText}} with fast response and satisfaction guaranteed.`,
+                                        finalUrl: formattedUrl
+                                    };
+                                } else {
+                                    defaultAd = {
+                                        ...defaultAd,
+                                        headline1: `{Keyword:${keywordText}} - Official Site`,
+                                        headline2: `Best {Keyword:${keywordText}} Deals`,
+                                        headline3: i === 0 ? `Order {Keyword:${keywordText}} Online` : `Shop {Keyword:${keywordText}} Now`,
+                                        description1: `Find quality {Keyword:${keywordText}} at great prices. Shop our selection today.`,
+                                        description2: `Get your {Keyword:${keywordText}} with fast shipping and expert support.`,
+                                        finalUrl: formattedUrl
+                                    };
+                                }
                             } else if (adType === 'callonly') {
                                 defaultAd = {
                                     ...defaultAd,
                                     headline1: `Call for ${keywordText}`,
                                     headline2: i === 0 ? 'Available 24/7 - Speak to Expert' : 'Get Expert Advice Now',
-                                    description1: `Need ${keywordText}? Call us now for expert advice and the best pricing.`,
+                                    description1: isServiceBased 
+                                        ? `Need ${keywordText}? Call us now for expert service and free estimate.`
+                                        : `Need ${keywordText}? Call us now for expert advice and the best pricing.`,
                                     description2: 'Get immediate assistance. Our specialists are ready to help!',
                                     phone: '(555) 123-4567',
                                     businessName: 'Your Business',
@@ -4092,7 +4826,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         return (
             <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
                         <CardContent className="p-4 text-center">
                             <div className="text-3xl font-bold text-indigo-600">{totalAdGroups}</div>
@@ -4115,6 +4849,48 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         <CardContent className="p-4 text-center">
                             <div className="text-3xl font-bold text-green-600">{totalNegatives}</div>
                             <div className="text-xs text-slate-600 mt-1">Negative Keywords</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-4 text-center">
+                            <div className="text-3xl font-bold text-orange-600">
+                                {(() => {
+                                    let locCount = 0;
+                                    if (zipPreset) {
+                                        const presetNumber = parseInt(zipPreset.replace(/\D/g, '')) || 0;
+                                        locCount = presetNumber;
+                                    } else if (cityPreset) {
+                                        if (cityPreset === '0') {
+                                            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
+                                            locCount = locations.length;
+                                        } else {
+                                            const presetNumber = parseInt(cityPreset.replace(/\D/g, '')) || 0;
+                                            locCount = presetNumber;
+                                        }
+                                    } else if (statePreset) {
+                                        const presetNumber = parseInt(statePreset.replace(/\D/g, '')) || 0;
+                                        locCount = presetNumber;
+                                    } else if (manualGeoInput && manualGeoInput.trim()) {
+                                        const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
+                                        locCount = locations.length;
+                                    } else {
+                                        locCount = 1; // Country only
+                                    }
+                                    return locCount;
+                                })()}
+                            </div>
+                            <div className="text-xs text-slate-600 mt-1">
+                                {targetType === 'ZIP' ? 'ZIP Codes' : targetType === 'CITY' ? 'Cities' : targetType === 'STATE' ? 'States' : 'Locations'}
+                            </div>
+                            {targetCountry && (
+                                <div className="text-[10px] text-slate-500 mt-0.5">{targetCountry}</div>
+                            )}
+                            {manualGeoInput && manualGeoInput.trim() && !zipPreset && !cityPreset && !statePreset && (
+                                <div className="text-[10px] text-slate-500 mt-1 max-w-full truncate" title={manualGeoInput.split(',').slice(0, 5).join(', ')}>
+                                    {manualGeoInput.split(',').slice(0, 3).map(loc => loc.trim()).filter(Boolean).join(', ')}
+                                    {manualGeoInput.split(',').length > 3 ? '...' : ''}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -4436,7 +5212,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         onClick={() => setStep(6)}
                         className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
                     >
-                        Next - Validate Campaign
+                        Next - Generate CSV
                         <ChevronRight className="w-5 h-5 ml-2" />
                     </Button>
                 </div>
@@ -4444,190 +5220,500 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         );
     };
 
-    // Step 6: Validation & Export
-    const renderStep6 = () => {
-        // Calculate stats using dynamicAdGroups
-        const adGroupsForStats = getDynamicAdGroups();
-        const totalAdGroups = adGroupsForStats.length;
-        const totalKeywords = selectedKeywords.length;
-        const totalAds = generatedAds.length;
-        const totalNegatives = negativeKeywords.split('\n').filter(n => n.trim()).length;
+    // Helper function to convert campaign data to CSV format
+    const convertCampaignToCSVFormat = () => {
+        const adGroups = getDynamicAdGroups();
         
-        // Calculate number of locations
-        let totalLocations = 0;
-        if (manualGeoInput && manualGeoInput.trim()) {
-            // Count comma-separated locations
-            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
-            totalLocations = locations.length;
-        } else if (zipPreset) {
-            // If ZIP preset is selected, use the preset number
-            const presetNumber = parseInt(zipPreset.replace(/\D/g, '')) || 0;
-            totalLocations = presetNumber;
-        } else if (cityPreset) {
-            // If city preset is selected, use the preset number
-            const presetNumber = parseInt(cityPreset.replace(/\D/g, '')) || 0;
-            totalLocations = presetNumber;
-        } else {
-            // Default to 1 if only country is selected
-            totalLocations = 1;
+        // Build locations array
+        const locations: any[] = [];
+        if (targetCountry) {
+            locations.push({ type: 'COUNTRY', value: targetCountry });
         }
+        
+        // Add location targeting based on type
+        if (targetType === 'ZIP' && manualGeoInput) {
+            const zipCodes = manualGeoInput.split(',').map(z => z.trim()).filter(Boolean);
+            zipCodes.forEach(zip => {
+                locations.push({ type: 'ZIP', value: zip });
+            });
+        } else if (targetType === 'CITY' && manualGeoInput) {
+            const cities = manualGeoInput.split(',').map(c => c.trim()).filter(Boolean);
+            cities.forEach(city => {
+                locations.push({ type: 'CITY', value: city });
+            });
+        } else if (targetType === 'STATE' && manualGeoInput) {
+            const states = manualGeoInput.split(',').map(s => s.trim()).filter(Boolean);
+            states.forEach(state => {
+                locations.push({ type: 'STATE', value: state });
+            });
+        }
+
+        // Build negative keywords array
+        const negatives = negativeKeywords.split('\n')
+            .map(n => n.trim())
+            .filter(Boolean)
+            .map(n => ({
+                text: n.replace(/^\[|\]$/g, '').replace(/^"|"$/g, ''),
+                matchType: n.startsWith('[') ? 'EXACT' : n.startsWith('"') ? 'PHRASE' : 'PHRASE'
+            }));
+
+        // Build ad groups with keywords and ads
+        const csvAdGroups = adGroups.map(ag => {
+            // Get keywords for this ad group
+            const groupKeywords = ag.keywords.map((kw: string) => {
+                const cleanKw = kw.replace(/^\[|\]$/g, '').replace(/^"|"$/g, '');
+                let matchType = 'PHRASE';
+                if (kw.startsWith('[') && kw.endsWith(']')) matchType = 'EXACT';
+                else if (kw.startsWith('"') && kw.endsWith('"')) matchType = 'PHRASE';
+                else matchType = 'BROAD';
+                
+                return {
+                    phrase: cleanKw,
+                    matchType: matchType,
+                    operation: 'NEW'
+                };
+            });
+
+            // Get ads for this ad group
+            const groupAds = generatedAds
+                .filter(ad => ad.adGroup === ag.name)
+                .map(ad => {
+                    const adData: any = {
+                        type: ad.type || 'RESPONSIVE_SEARCH_AD',
+                        finalUrl: url || ad.finalUrl || '',
+                        operation: 'NEW'
+                    };
+
+                    // Extract headlines and descriptions
+                    if (ad.headlines && Array.isArray(ad.headlines)) {
+                        adData.headlines = ad.headlines;
+                    } else if (ad.headline) {
+                        adData.headlines = [ad.headline];
+                    }
+
+                    if (ad.descriptions && Array.isArray(ad.descriptions)) {
+                        adData.descriptions = ad.descriptions;
+                    } else if (ad.description) {
+                        adData.descriptions = [ad.description];
+                    }
+
+                    if (ad.id) adData.id = ad.id;
+
+                    return adData;
+                });
+
+            return {
+                name: ag.name,
+                status: 'ENABLED',
+                defaultBid: '',
+                operation: 'NEW',
+                keywords: groupKeywords,
+                ads: groupAds,
+                negatives: negatives
+            };
+        });
+
+        return [{
+            name: campaignName,
+            campaign: campaignName,
+            type: 'SEARCH',
+            status: 'ENABLED',
+            budget: '',
+            operation: 'NEW',
+            adGroups: csvAdGroups,
+            negatives: negatives,
+            locations: locations
+        }];
+    };
+
+    // Step 6: Generate CSV
+    const renderStep6 = () => {
+        const handleGenerateCSV = async () => {
+            setIsGeneratingCSV(true);
+            try {
+                const campaigns = convertCampaignToCSVFormat();
+                const result = generateGoogleAdsCSV(campaigns);
+                
+                setCsvContent(result.csv);
+                setCsvValidation(result.validation);
+                setCsvGenerated(true);
+                
+                // Download CSV
+                const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `${campaignName.replace(/\s+/g, '_')}_google_ads.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                notifications.success('CSV generated successfully!', {
+                    title: 'CSV Generated',
+                    description: 'Your Google Ads CSV file has been generated and downloaded.'
+                });
+            } catch (error: any) {
+                console.error('CSV generation error:', error);
+                notifications.error('Failed to generate CSV', {
+                    title: 'CSV Generation Failed',
+                    description: error.message || 'An error occurred while generating the CSV file.'
+                });
+            } finally {
+                setIsGeneratingCSV(false);
+            }
+        };
+
+        return (
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-4">
+                        <FileText className="w-8 h-8 text-indigo-600" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-slate-800">Generate CSV</h2>
+                    <p className="text-slate-500 mt-2">Generate a Google Ads Editor-compatible CSV file</p>
+                </div>
+
+                {!csvGenerated ? (
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-8">
+                            <div className="text-center space-y-6">
+                                <p className="text-slate-600">
+                                    Click the button below to generate your CSV file. The file will be validated and formatted for Google Ads Editor import.
+                                </p>
+                                <Button
+                                    onClick={handleGenerateCSV}
+                                    disabled={isGeneratingCSV}
+                                    size="lg"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 text-lg"
+                                >
+                                    {isGeneratingCSV ? (
+                                        <>
+                                            <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                                            Generating CSV...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Download className="w-5 h-5 mr-2" />
+                                            Generate CSV
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card className="border-green-200/60 bg-green-50/80 backdrop-blur-xl shadow-xl">
+                        <CardContent className="p-8">
+                            <div className="text-center space-y-6">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                                    <CheckCircle2 className="w-8 h-8 text-green-600" />
+                </div>
+                                <h3 className="text-2xl font-bold text-green-900">CSV Generated Successfully!</h3>
+                                <p className="text-slate-600">
+                                    Your CSV file has been generated and downloaded. You can now validate it or proceed to import it into Google Ads Editor.
+                                </p>
+                                
+                                {csvValidation && csvValidation.warnings.length > 0 && (
+                                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                        <p className="text-sm text-yellow-800">
+                                            <AlertTriangle className="w-4 h-4 inline mr-2" />
+                                            {csvValidation.warnings.length} warning(s) found. Review them before importing.
+                                        </p>
+                            </div>
+                                )}
+
+                                <div className="flex gap-4 justify-center mt-6">
+                                    <Button
+                                        onClick={() => {
+                                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                            const link = document.createElement('a');
+                                            const url = URL.createObjectURL(blob);
+                                            link.setAttribute('href', url);
+                                            link.setAttribute('download', `${campaignName.replace(/\s+/g, '_')}_google_ads.csv`);
+                                            link.style.visibility = 'hidden';
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        }}
+                                        variant="outline"
+                                        className="px-6"
+                                    >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Download Again
+                                    </Button>
+                                    <Button
+                                        onClick={() => setStep(7)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-6"
+                                    >
+                                        Validate Your CSV
+                                        <ArrowRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                )}
+
+                <div className="flex justify-between pt-6 border-t border-slate-200">
+                    <Button variant="ghost" onClick={() => setStep(5)} className="text-slate-500 hover:text-slate-800">
+                        Back to Review
+                    </Button>
+                    {csvGenerated && (
+                    <Button 
+                        size="lg" 
+                            onClick={() => setStep(7)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
+                        >
+                            Validate CSV <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // Step 7: Validate CSV
+    const renderStep7 = () => {
+        const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+            const file = event.target.files?.[0];
+            if (file) {
+                setUploadedCsvFile(file);
+            }
+        };
+
+        const handleValidateCSV = async () => {
+            if (!uploadedCsvFile) {
+                notifications.warning('Please upload a CSV file first', {
+                    title: 'No File Selected'
+                                });
+                                return;
+                            }
+                            
+            setIsValidatingCsv(true);
+            try {
+                const text = await uploadedCsvFile.text();
+                const lines = text.split('\n');
+                const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                
+                const rows: any[] = [];
+                for (let i = 1; i < lines.length; i++) {
+                    if (lines[i].trim()) {
+                        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                        const row: any = {};
+                        headers.forEach((header, idx) => {
+                            row[header] = values[idx] || '';
+                        });
+                        rows.push(row);
+                    }
+                }
+
+                const validation = validateRows(rows);
+                setCsvValidationResults({
+                    rows: rows,
+                    headers: headers,
+                    validation: validation,
+                    totalRows: rows.length
+                });
+
+                if (validation.fatalErrors.length === 0) {
+                    notifications.success('CSV validation completed', {
+                        title: 'Validation Successful',
+                        description: 'Your CSV file is ready for Google Ads Editor import.'
+                    });
+                } else {
+                    notifications.error('CSV validation found errors', {
+                        title: 'Validation Failed',
+                        description: `${validation.fatalErrors.length} fatal error(s) found. Please review and fix them.`
+                    });
+                }
+            } catch (error: any) {
+                console.error('CSV validation error:', error);
+                notifications.error('Failed to validate CSV', {
+                    title: 'Validation Error',
+                    description: error.message || 'An error occurred while validating the CSV file.'
+                });
+            } finally {
+                setIsValidatingCsv(false);
+            }
+        };
 
         return (
             <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                        <CheckCircle2 className="w-8 h-8 text-green-600" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
+                        <FileCheck className="w-8 h-8 text-purple-600" />
                     </div>
-                    <h2 className="text-3xl font-bold text-slate-800">Campaign Validated Successfully!</h2>
-                    <p className="text-slate-500 mt-2">Your campaign is ready to export and implement</p>
+                    <h2 className="text-3xl font-bold text-slate-800">Validate Your CSV</h2>
+                    <p className="text-slate-500 mt-2">Upload and validate your CSV file for Google Ads Editor compatibility</p>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-indigo-600">1</div>
-                            <div className="text-sm text-slate-600 mt-2">Campaign</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-purple-600">{totalAdGroups}</div>
-                            <div className="text-sm text-slate-600 mt-2">Ad Groups</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-blue-600">{totalKeywords}</div>
-                            <div className="text-sm text-slate-600 mt-2">Keywords</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardContent className="p-6 text-center">
-                            <div className="text-4xl font-bold text-green-600">{totalLocations}</div>
-                            <div className="text-sm text-slate-600 mt-2">Locations</div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Campaign Summary */}
                 <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldCheck className="w-5 h-5 text-green-600" />
-                            Validation Summary
-                        </CardTitle>
-                        <CardDescription>All checks passed - ready for export</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <Label className="text-slate-500">Campaign Name</Label>
-                                <Input 
-                                    value={campaignName} 
-                                    onChange={(e) => setCampaignName(e.target.value)}
-                                    placeholder="Enter campaign name"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-500">Structure</Label>
-                                <p className="font-medium text-slate-800 py-2">{GEO_SEGMENTATION.find(s => s.id === structure)?.name}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-slate-500">Target Location</Label>
-                                <p className="font-medium text-slate-800 py-2">{targetCountry} ({targetType})</p>
-                            </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">
-                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                                <span>Click "Validate CSV" below to check all parameters before exporting.</span>
+                    <CardContent className="p-8">
+                        <div className="space-y-6">
+                            <div>
+                                <Label htmlFor="csv-upload" className="text-base font-semibold mb-2 block">
+                                    Upload CSV File
+                                </Label>
+                                <div className="flex items-center gap-4">
+                                    <Input
+                                        id="csv-upload"
+                                        type="file"
+                                        accept=".csv"
+                                        onChange={handleFileUpload}
+                                        className="flex-1"
+                                    />
+                        <Button 
+                                        onClick={handleValidateCSV}
+                                        disabled={!uploadedCsvFile || isValidatingCsv}
+                                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                                    >
+                                        {isValidatingCsv ? (
+                                            <>
+                                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                                Validating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FileCheck className="w-4 h-4 mr-2" />
+                                                Validate
+                                            </>
+                                        )}
+                        </Button>
+                    </div>
+                                {uploadedCsvFile && (
+                                    <p className="text-sm text-slate-600 mt-2">
+                                        Selected: {uploadedCsvFile.name}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Export Actions */}
-                <div className="grid md:grid-cols-2 gap-6">
-                    <Button 
-                        size="lg" 
-                        variant="outline"
-                        onClick={() => {
-                            const validation = validateCSV();
-                            if (validation.valid) {
-                                if (validation.warnings.length > 0) {
-                                    notifications.success(`CSV Validation Passed! Warnings: ${validation.warnings.join(', ')}. You can proceed with export.`, {
-                                        title: 'Validation Passed'
-                                    });
-                                } else {
-                                    notifications.success('CSV Validation Passed! All checks passed. Ready for Google Ads Editor import.', {
-                                        title: 'Validation Passed'
-                                    });
-                                }
-                            } else {
-                                notifications.error(`CSV Validation Failed! Errors: ${validation.errors.join(', ')}. Warnings: ${validation.warnings.join(', ')}. Please fix these issues before exporting.`, {
-                                    title: 'Validation Failed'
-                                });
-                            }
-                        }}
-                        className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 shadow-lg py-6"
-                    >
-                        <ShieldCheck className="mr-2 w-5 h-5" />
-                        Validate CSV
-                    </Button>
-                    <Button 
-                        size="lg" 
-                        onClick={() => generateCSV()}
-                        className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg py-6"
-                    >
-                        <Download className="mr-2 w-5 h-5" />
-                        Download CSV for Google Ads Editor
-                    </Button>
-                    <Button 
-                        variant="outline"
-                        size="lg" 
-                        onClick={() => handleSaveDraft()}
-                        className="py-6"
-                    >
-                        <Save className="mr-2 w-5 h-5" />
-                        Save to Saved Campaigns
-                    </Button>
-                </div>
+                {csvValidationResults && (
+                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                        <CardHeader>
+                            <CardTitle>Validation Results</CardTitle>
+                            <CardDescription>
+                                Detailed column-by-column validation report
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="p-4 bg-slate-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-slate-800">{csvValidationResults.totalRows}</div>
+                                        <div className="text-sm text-slate-600">Total Rows</div>
+                                    </div>
+                                    <div className="p-4 bg-red-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-red-600">{csvValidationResults.validation.fatalErrors.length}</div>
+                                        <div className="text-sm text-red-600">Fatal Errors</div>
+                                    </div>
+                                    <div className="p-4 bg-yellow-50 rounded-lg">
+                                        <div className="text-2xl font-bold text-yellow-600">{csvValidationResults.validation.warnings.length}</div>
+                                        <div className="text-sm text-yellow-600">Warnings</div>
+                                    </div>
+                                </div>
 
-                {/* Next Actions */}
-                <div className="flex justify-between items-center pt-4">
-                    {/* Bug_67: Fix back button to go to previous step */}
-                    <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)}>
-                        <ChevronRight className="w-4 h-4 mr-2 rotate-180" />
-                        Back to Review
+                                {csvValidationResults.validation.fatalErrors.length > 0 && (
+                                    <div className="mt-6">
+                                        <h3 className="font-semibold text-red-600 mb-3">Fatal Errors</h3>
+                                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                                            {csvValidationResults.validation.fatalErrors.map((error: any, idx: number) => (
+                                                <div key={idx} className="p-3 bg-red-50 border border-red-200 rounded">
+                                                    <div className="text-sm font-medium text-red-800">
+                                                        Row {error.rowIndex + 1}: {error.errors.join(', ')}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {csvValidationResults.validation.warnings.length > 0 && (
+                                    <div className="mt-6">
+                                        <h3 className="font-semibold text-yellow-600 mb-3">Warnings</h3>
+                                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                                            {csvValidationResults.validation.warnings.map((warning: any, idx: number) => (
+                                                <div key={idx} className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                                    <div className="text-sm font-medium text-yellow-800">
+                                                        {warning.rowIndex !== undefined ? `Row ${warning.rowIndex + 1}: ` : ''}
+                                                        {warning.msg}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {csvValidationResults.validation.fatalErrors.length === 0 && csvValidationResults.validation.warnings.length === 0 && (
+                                    <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+                                        <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                                        <h3 className="font-semibold text-green-800 mb-2">All Validations Passed!</h3>
+                                        <p className="text-sm text-green-700">
+                                            Your CSV file is ready for Google Ads Editor import.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="mt-6">
+                                    <h3 className="font-semibold text-slate-800 mb-3">Column Details</h3>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Column Name</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead>Details</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {csvValidationResults.headers.map((header: string, idx: number) => {
+                                                    const hasErrors = csvValidationResults.validation.fatalErrors.some(
+                                                        (e: any) => e.rowIndex !== undefined
+                                                    );
+                                                    const hasWarnings = csvValidationResults.validation.warnings.some(
+                                                        (w: any) => w.rowIndex !== undefined
+                                                    );
+                                                    
+                                                    return (
+                                                        <TableRow key={idx}>
+                                                            <TableCell className="font-medium">{header}</TableCell>
+                                                            <TableCell>
+                                                                {hasErrors ? (
+                                                                    <Badge variant="destructive">Error</Badge>
+                                                                ) : hasWarnings ? (
+                                                                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Warning</Badge>
+                                                                ) : (
+                                                                    <Badge className="bg-green-100 text-green-800">OK</Badge>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="text-sm text-slate-600">
+                                                                {hasErrors || hasWarnings ? 'Review required' : 'Valid'}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                <div className="flex justify-between pt-6 border-t border-slate-200">
+                    <Button variant="ghost" onClick={() => setStep(6)} className="text-slate-500 hover:text-slate-800">
+                        Back to Generate CSV
                     </Button>
-                    <div className="flex gap-3">
-                        <Button 
-                            variant="outline"
-                            onClick={() => {
-                                setStep(1);
-                                setCampaignName('');
-                                setSelectedKeywords([]);
-                                setGeneratedAds([]);
-                            }}
-                        >
-                            <Plus className="mr-2 w-4 h-4" />
-                            Create Another Campaign
-                        </Button>
-                        <Button 
-                            variant="outline"
-                            onClick={() => window.location.href = '/'}
-                        >
-                            Go to Dashboard
-                        </Button>
-                    </div>
                 </div>
             </div>
         );
     };
+
+    // Old Step 6 removed - replaced with new Step 6 (Generate CSV) and Step 7 (Validate CSV)
 
     // Render Saved Campaigns View
     const renderSavedCampaigns = () => {
@@ -4755,7 +5841,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
     // Main render based on step
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen relative">
+            {/* Auto Fill Button */}
+            <AutoFillButton onAutoFill={handleAutoFill} />
+            
             {/* Tabs at Top Right */}
             <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-6 py-3">
@@ -4784,7 +5873,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             { num: 3, label: 'Ads & Ext.', icon: FileText },
                             { num: 4, label: 'Geo Target', icon: Globe },
                             { num: 5, label: 'Review', icon: CheckCircle2 },
-                            { num: 6, label: 'Validate', icon: ShieldCheck }
+                            { num: 6, label: 'Generate CSV', icon: Download },
+                            { num: 7, label: 'Validate CSV', icon: FileCheck }
                         ].map(({ num, label, icon: Icon }, idx, arr) => (
                             <React.Fragment key={num}>
                                 <div 
@@ -4827,6 +5917,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 {step === 4 && renderStep4()}
                 {step === 5 && renderStep5()}
                 {step === 6 && renderStep6()}
+                {step === 7 && renderStep7()}
             </div>
 
                     {/* Success Modal */}
