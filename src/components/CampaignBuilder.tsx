@@ -770,6 +770,34 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [tempKeywords, setTempKeywords] = useState('');
     const [tempNegatives, setTempNegatives] = useState('');
 
+    // Helper function to clean keyword for use as ad group name
+    const cleanKeywordForAdGroupName = (keyword: string): string => {
+        if (!keyword) return 'Ad Group';
+        
+        // Remove match type formatting: [keyword], "keyword", etc.
+        let cleaned = keyword.trim();
+        if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+            cleaned = cleaned.slice(1, -1);
+        } else if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+            cleaned = cleaned.slice(1, -1);
+        }
+        
+        // Remove special characters that might cause issues
+        cleaned = cleaned.replace(/[^\w\s-]/g, ' ').trim();
+        
+        // Truncate to max 50 characters (Google Ads limit is 255, but we keep it shorter for readability)
+        if (cleaned.length > 50) {
+            cleaned = cleaned.substring(0, 47) + '...';
+        }
+        
+        // If empty after cleaning, use default
+        if (!cleaned || cleaned.length === 0) {
+            return 'Ad Group';
+        }
+        
+        return cleaned;
+    };
+
     // Generate dynamic ad groups based on structure and selected keywords
     // MUST be defined early to avoid "Cannot access before initialization" errors
     const getDynamicAdGroups = useCallback(() => {
@@ -777,20 +805,28 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             if (!selectedKeywords || selectedKeywords.length === 0) return [];
             if (!structure) return [];
             
+            // Ensure selectedKeywords is an array
+            const keywords = Array.isArray(selectedKeywords) ? selectedKeywords : [];
+            if (keywords.length === 0) return [];
+            
             type AdGroup = { name: string; keywords: string[] };
             
             if (structure === 'SKAG') {
                 // Each keyword is its own ad group
-                return selectedKeywords.slice(0, 20).map(kw => ({
-                    name: kw,
-                    keywords: [kw]
-                }));
+                return keywords.slice(0, 20).map(kw => {
+                    const keywordStr = typeof kw === 'string' ? kw : String(kw || '');
+                    const cleanedName = cleanKeywordForAdGroupName(keywordStr);
+                    return {
+                        name: cleanedName,
+                        keywords: [keywordStr]
+                    };
+                });
             } else if (structure === 'STAG') {
                 // Group keywords thematically (simplified grouping)
-                const groupSize = Math.max(3, Math.ceil(selectedKeywords.length / 5));
+                const groupSize = Math.max(3, Math.ceil(keywords.length / 5));
                 const groups: AdGroup[] = [];
-                for (let i = 0; i < selectedKeywords.length; i += groupSize) {
-                    const groupKeywords = selectedKeywords.slice(i, i + groupSize);
+                for (let i = 0; i < keywords.length; i += groupSize) {
+                    const groupKeywords = keywords.slice(i, i + groupSize).map(kw => typeof kw === 'string' ? kw : String(kw || ''));
                     groups.push({
                         name: `Ad Group ${groups.length + 1}`,
                         keywords: groupKeywords
@@ -801,18 +837,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 // Mix: Some SKAG, some STAG
                 const groups: AdGroup[] = [];
                 // First 5 as SKAG
-                selectedKeywords.slice(0, 5).forEach(kw => {
+                keywords.slice(0, 5).forEach(kw => {
+                    const keywordStr = typeof kw === 'string' ? kw : String(kw || '');
+                    const cleanedName = cleanKeywordForAdGroupName(keywordStr);
                     groups.push({
-                        name: kw,
-                        keywords: [kw]
+                        name: cleanedName,
+                        keywords: [keywordStr]
                     });
                 });
                 // Rest grouped
-                const remaining = selectedKeywords.slice(5);
+                const remaining = keywords.slice(5);
                 if (remaining.length > 0) {
                     const groupSize = Math.max(3, Math.ceil(remaining.length / 3));
                     for (let i = 0; i < remaining.length; i += groupSize) {
-                        const groupKeywords = remaining.slice(i, i + groupSize);
+                        const groupKeywords = remaining.slice(i, i + groupSize).map(kw => typeof kw === 'string' ? kw : String(kw || ''));
                         groups.push({
                             name: `Mixed Group ${groups.length - 4}`,
                             keywords: groupKeywords
@@ -823,7 +861,15 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             }
         } catch (error) {
             console.error('Error generating dynamic ad groups:', error);
-            return [];
+            console.error('selectedKeywords:', selectedKeywords);
+            console.error('structure:', structure);
+            // Return a default ad group to prevent crash
+            return [{
+                name: 'Default Ad Group',
+                keywords: Array.isArray(selectedKeywords) && selectedKeywords.length > 0 
+                    ? selectedKeywords.slice(0, 10).map(kw => typeof kw === 'string' ? kw : String(kw || ''))
+                    : []
+            }];
         }
     }, [selectedKeywords, structure]);
 
@@ -1270,8 +1316,27 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         if (step === 1) {
             // Moving from Step 1 to Step 2 - validation already done above
         } else if (step === 2) {
+            // Validate selected keywords before proceeding
+            if (!selectedKeywords || !Array.isArray(selectedKeywords) || selectedKeywords.length === 0) {
+                notifications.error('Please select at least one keyword before proceeding', {
+                    title: 'No Keywords Selected',
+                    description: 'You must select keywords in Step 2 before creating ads.'
+                });
+                return;
+            }
+            
+            // Validate that keywords are valid strings
+            const validKeywords = selectedKeywords.filter(kw => kw && (typeof kw === 'string' || String(kw).trim().length > 0));
+            if (validKeywords.length === 0) {
+                notifications.error('Selected keywords are invalid. Please generate and select keywords again.', {
+                    title: 'Invalid Keywords',
+                    description: 'The selected keywords could not be processed. Please go back and regenerate keywords.'
+                });
+                return;
+            }
+            
             // Log selected keywords for campaign creation
-            console.log(`✅ Proceeding to Ad Creation with ${selectedKeywords.length} selected keywords:`, selectedKeywords);
+            console.log(`✅ Proceeding to Ad Creation with ${validKeywords.length} selected keywords:`, validKeywords);
             console.log(`📊 Campaign Structure: ${structure}, Geo: ${geo}`);
             console.log(`🎯 Match Types:`, matchTypes);
             
@@ -1309,11 +1374,20 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             runValidation();
         }
         
-        // Increment step only once
+        // Increment step only once - wrap in try-catch to prevent crashes
+        try {
         setStep(nextStep);
         
         // Bug_56: Scroll to top when navigating to next step
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            console.error('Error transitioning to next step:', error);
+            notifications.error('Failed to proceed to next step', {
+                title: 'Navigation Error',
+                description: 'An error occurred while moving to the next step. Please try again.',
+                priority: 'high'
+            });
+        }
     };
 
     const runValidation = () => {
@@ -2416,7 +2490,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         negativeKeywords,
                         matchTypes
                     }}
-                    onKeywordsSelected={(keywords) => setSelectedKeywords(keywords)}
+                    onKeywordsSelected={(keywords) => {
+                        // Ensure keywords are always strings and valid
+                        const validKeywords = Array.isArray(keywords) 
+                            ? keywords.map(kw => typeof kw === 'string' ? kw : String(kw || '')).filter(Boolean)
+                            : [];
+                        setSelectedKeywords(validKeywords);
+                    }}
                     selectedKeywords={selectedKeywords}
                     onNegativeKeywordsChange={(newNegativeKeywords) => setNegativeKeywords(newNegativeKeywords)}
                 />
@@ -3714,8 +3794,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const adGroups = ['Refrigerators', 'Ovens', 'Microwaves'];
     
     const renderStep3 = () => {
-        const dynamicAdGroups = getDynamicAdGroups();
-        const adGroupList = dynamicAdGroups.length > 0 ? dynamicAdGroups.map(g => g.name) : adGroups;
+        // Safely get dynamic ad groups with error handling
+        let dynamicAdGroups: Array<{ name: string; keywords: string[] }> = [];
+        let adGroupList: string[] = adGroups;
+        
+        try {
+            dynamicAdGroups = getDynamicAdGroups();
+            if (dynamicAdGroups && dynamicAdGroups.length > 0) {
+                adGroupList = dynamicAdGroups.map(g => g.name).filter(Boolean);
+            }
+        } catch (error) {
+            console.error('Error getting dynamic ad groups in renderStep3:', error);
+            console.error('selectedKeywords:', selectedKeywords);
+            notifications.warning('Could not load ad groups. Using default groups.', {
+                title: 'Ad Groups Error',
+                description: 'There was an issue loading ad groups. You can still create ads.'
+            });
+            // Use default ad groups as fallback
+            adGroupList = adGroups;
+        }
         
         // Filter ads for the selected ad group
         const filteredAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
@@ -3737,28 +3834,45 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             return 'https://example.com';
         };
         
-        // Format headline for display
+        // Format headline for display - show all headlines
         const formatHeadline = (ad: any) => {
             if (ad.type === 'rsa' || ad.type === 'dki') {
+                // Collect all headlines (RSA can have up to 15, DKI typically 3-5)
                 const headlines = [
                     ad.headline1,
                     ad.headline2,
                     ad.headline3,
                     ad.headline4,
-                    ad.headline5
+                    ad.headline5,
+                    ad.headline6,
+                    ad.headline7,
+                    ad.headline8,
+                    ad.headline9,
+                    ad.headline10,
+                    ad.headline11,
+                    ad.headline12,
+                    ad.headline13,
+                    ad.headline14,
+                    ad.headline15
                 ].filter(Boolean);
-                return headlines.join(' | ');
+                return headlines.length > 0 ? headlines.join(' | ') : 'No headlines';
             } else if (ad.type === 'callonly') {
                 return ad.headline1 || 'Call Only Ad';
             }
             return ad.headline1 || 'Ad';
         };
         
-        // Format description for display
+        // Format description for display - show all descriptions
         const formatDescription = (ad: any) => {
             if (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly') {
-                const descs = [ad.description1, ad.description2].filter(Boolean);
-                return descs.join(' ');
+                // Collect all descriptions (RSA can have up to 4)
+                const descs = [
+                    ad.description1,
+                    ad.description2,
+                    ad.description3,
+                    ad.description4
+                ].filter(Boolean);
+                return descs.length > 0 ? descs.join(' ') : 'No description';
             }
             return ad.description1 || '';
         };
@@ -3846,7 +3960,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             const description = formatDescription(ad);
                             
                             return (
-                                <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div key={ad.id} className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow min-h-[200px]">
                                     {/* Badge - Top Left */}
                                     <div className="mb-3">
                                 <Badge className={
@@ -3863,7 +3977,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         </div>
                                     
                                     {/* Ad Preview with Extensions */}
-                                    <div className="mb-4">
+                                    <div className="mb-4 min-h-[120px]">
                                         {ad.extensionType ? (
                                             // Show extension preview
                                             <div className="bg-slate-50 p-3 rounded border border-slate-200">
@@ -5294,7 +5408,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             <div className="text-center space-y-6">
                                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
                                     <CheckCircle2 className="w-8 h-8 text-green-600" />
-                                </div>
+                </div>
                                 <h3 className="text-2xl font-bold text-green-900">CSV Generated Successfully!</h3>
                                 <p className="text-slate-600">
                                     Your CSV file has been generated and downloaded. You can now validate it or proceed to import it into Google Ads Editor.
@@ -5306,7 +5420,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                             <AlertTriangle className="w-4 h-4 inline mr-2" />
                                             {csvValidation.warnings.length} warning(s) found. Review them before importing.
                                         </p>
-                                    </div>
+                            </div>
                                 )}
 
                                 <div className="flex gap-4 justify-center mt-6">
@@ -5335,10 +5449,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         Validate Your CSV
                                         <ArrowRight className="w-4 h-4 ml-2" />
                                     </Button>
-                                </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </CardContent>
+                </Card>
                 )}
 
                 <div className="flex justify-between pt-6 border-t border-slate-200">
@@ -5346,13 +5460,13 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         Back to Review
                     </Button>
                     {csvGenerated && (
-                        <Button
-                            size="lg"
+                    <Button 
+                        size="lg" 
                             onClick={() => setStep(7)}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
                         >
                             Validate CSV <ArrowRight className="ml-2 w-5 h-5" />
-                        </Button>
+                    </Button>
                     )}
                 </div>
             </div>
@@ -5372,10 +5486,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             if (!uploadedCsvFile) {
                 notifications.warning('Please upload a CSV file first', {
                     title: 'No File Selected'
-                });
-                return;
-            }
-
+                                });
+                                return;
+                            }
+                            
             setIsValidatingCsv(true);
             try {
                 const text = await uploadedCsvFile.text();
@@ -5449,7 +5563,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                         onChange={handleFileUpload}
                                         className="flex-1"
                                     />
-                                    <Button
+                        <Button 
                                         onClick={handleValidateCSV}
                                         disabled={!uploadedCsvFile || isValidatingCsv}
                                         className="bg-purple-600 hover:bg-purple-700 text-white"
@@ -5465,8 +5579,8 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                 Validate
                                             </>
                                         )}
-                                    </Button>
-                                </div>
+                        </Button>
+                    </div>
                                 {uploadedCsvFile && (
                                     <p className="text-sm text-slate-600 mt-2">
                                         Selected: {uploadedCsvFile.name}

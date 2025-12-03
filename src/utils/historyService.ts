@@ -49,6 +49,7 @@ export const historyService = {
 
   /**
    * Update an existing item (for drafts)
+   * If item doesn't exist, creates a new one (upsert behavior)
    */
   async update(id: string, data: any, name?: string): Promise<void> {
     try {
@@ -67,7 +68,16 @@ export const historyService = {
         error?.message?.includes('Request failed');
       
       // Always fallback silently - don't log expected errors
-      await localStorageHistory.update(id, data, name);
+      // localStorageHistory.update now handles "item not found" gracefully
+      try {
+        await localStorageHistory.update(id, data, name);
+      } catch (localError: any) {
+        // Silently handle localStorage errors - they're already handled internally
+        // Only log if it's an unexpected error
+        if (localError instanceof Error && !localError.message.includes('Item not found')) {
+          console.warn('localStorage update had an issue, but continuing:', localError.message);
+        }
+      }
     }
   },
 
