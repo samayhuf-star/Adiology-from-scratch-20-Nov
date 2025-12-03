@@ -50,20 +50,49 @@ app.post("/generate-keywords", async (c) => {
         return c.json({ error: "Seeds are required" }, 400);
     }
 
+    // Parse seed keywords to determine count
+    const seedArray = seeds.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    const seedCount = seedArray.length;
+    
+    // Calculate target keyword count: 80-120 keywords for better variety
+    // More seeds = more keywords, but with variety
+    const targetCount = Math.min(Math.max(80, seedCount * 15), 120);
+    
     const prompt = `
-      Act as a Google Ads expert. Generate 15-20 relevant keywords based on these Seed Keywords:
+      Act as a Google Ads expert specializing in keyword research and expansion.
+      
+      Generate ${targetCount} unique, relevant, and high-quality keywords based on these Seed Keywords:
       ${seeds}
 
-      STRICTLY EXCLUDE any keywords related to these Negative Keywords:
-      ${negatives || ''}
+      IMPORTANT REQUIREMENTS:
+      1. Generate EXACTLY ${targetCount} unique keywords - no duplicates, no variations of the same phrase
+      2. Create diverse keyword variations including:
+         - Exact seed keyword variations
+         - Long-tail variations (3-5 words)
+         - Question-based keywords (how, what, where, when, why)
+         - Intent-based keywords (buy, find, get, contact, call, hire)
+         - Location-based variations (near me, local, city names)
+         - Service/product modifiers (best, top, affordable, professional, expert, certified)
+         - Action-oriented phrases (get quote, book now, schedule, compare)
+      3. Each keyword must be unique and different from others
+      4. Keywords should be 2-5 words long (avoid single words unless highly relevant)
+      5. Focus on commercial and transactional intent keywords
+      6. Include a mix of search volumes: High (30%), Medium (50%), Low (20%)
+      7. Include a mix of competition levels: High (40%), Medium (40%), Low (20%)
+      8. CPC should vary realistically: $0.50-$5.00 range
 
-      Return a pure JSON array of objects (no markdown, no backticks) with these keys:
-      - id: string (unique id like 'k-1', 'k-2')
-      - text: string (the keyword)
-      - volume: string (e.g., 'High', 'Medium', 'Low', or range '1K-10K')
-      - cpc: string (e.g., '$1.50')
-      - type: string ('Broad', 'Phrase', or 'Exact')
+      STRICTLY EXCLUDE any keywords related to these Negative Keywords:
+      ${negatives || 'None'}
+
+      Return a pure JSON array of objects (no markdown, no backticks, no code fences) with these keys:
+      - id: string (unique id like 'k-1', 'k-2', 'k-3'...)
+      - text: string (the keyword phrase, lowercase)
+      - volume: string (e.g., 'High', 'Medium', 'Low', or specific range like '1K-10K', '10K-100K', '100K+')
+      - cpc: string (e.g., '$1.50', '$2.75', '$0.80')
+      - type: string (always 'Broad' - match types will be applied by frontend)
       - competition: string ('High', 'Medium', 'Low')
+
+      CRITICAL: Return ONLY the JSON array, no explanations, no markdown, no backticks. Start with [ and end with ].
     `;
 
     console.log("Calling Gemini API...");
@@ -233,16 +262,45 @@ app.post("/generate-ads", async (c) => {
 
     const keywordList = keywords.join(', ');
     
+    // Analyze keywords to determine if they're service-based or product-based
+    const serviceKeywords = ['plumber', 'plumbing', 'carpenter', 'carpentry', 'electrician', 'electric', 
+      'contractor', 'handyman', 'roofer', 'roofing', 'painter', 'painting', 'mechanic', 'auto repair',
+      'lawyer', 'attorney', 'doctor', 'dentist', 'accountant', 'consultant', 'therapist', 'coach',
+      'service', 'services', 'repair', 'installation', 'maintenance', 'cleaning', 'landscaping',
+      'hvac', 'heating', 'cooling', 'tutoring', 'training', 'coaching', 'consulting', 'call',
+      'contact', 'phone', 'number', 'emergency', '24/7', 'near me', 'local'];
+    
+    const productKeywords = ['buy', 'purchase', 'shop', 'store', 'product', 'item', 'sale', 'deal',
+      'discount', 'price', 'cost', 'shipping', 'delivery', 'order', 'cart', 'checkout'];
+    
+    const keywordText = keywordList.toLowerCase();
+    const isServiceBased = serviceKeywords.some(sk => keywordText.includes(sk)) && 
+                          !productKeywords.some(pk => keywordText.includes(pk));
+    
     let prompt = '';
     
     if (adType === 'RSA') {
+      const serviceGuidance = isServiceBased ? `
+CRITICAL: These keywords are SERVICE-BASED (e.g., plumbing, carpentry, legal, medical, repair services).
+DO NOT use product-focused language like "Best Deals", "Sale", "Shop Now", "Buy Now", "Discount", "Prices", etc.
+Instead, use SERVICE-FOCUSED language:
+- Professional expertise: "Expert Service", "Licensed Professionals", "Certified", "Experienced"
+- Availability: "24/7 Available", "Same Day Service", "Emergency Service", "Fast Response"
+- Trust & Quality: "Trusted", "Reliable", "Quality Work", "Satisfaction Guaranteed"
+- Action: "Call Now", "Get Quote", "Schedule Service", "Contact Us", "Free Estimate"
+- Location: "Local", "Near You", "In Your Area"
+- Urgency: "Available Now", "Immediate Service", "Quick Response"` : `
+These keywords are PRODUCT-BASED.
+You can use product-focused language like "Best Deals", "Shop Now", "Buy Online", "Free Shipping", "Best Prices", etc.`;
+      
       prompt = `You are a Google Ads expert specializing in creating high-performing Responsive Search Ads (RSA) that maximize Ad Rank and Quality Score.
 
 Create ${count || 5} unique Responsive Search Ad variations for these keywords: ${keywordList}
+${serviceGuidance}
 
 Each ad should be optimized for maximum Google Ad Rank with:
 - Compelling, click-worthy headlines that include keywords naturally
-- Clear value propositions and calls-to-action
+- Clear value propositions and calls-to-action appropriate for the business type
 - Description text that reinforces the headlines
 - Excellent keyword relevance
 - Strong expected CTR signals
@@ -251,7 +309,7 @@ RSA Requirements:
 - Headlines should be 30 characters or less
 - Descriptions should be 90 characters or less
 - Include the main keyword in at least one headline
-- Use power words and urgency when appropriate
+- Use power words and urgency when appropriate (but appropriate for service vs product)
 - Add path1 and path2 (each 15 characters max) that are relevant to keywords
 
 Return a pure JSON array (no markdown, no backticks) with these exact keys for each ad:
@@ -270,9 +328,22 @@ Return a pure JSON array (no markdown, no backticks) with these exact keys for e
 
 Important: Return ONLY the JSON array, no other text or formatting.`;
     } else if (adType === 'DKI') {
+      const serviceGuidance = isServiceBased ? `
+CRITICAL: These keywords are SERVICE-BASED (e.g., plumbing, carpentry, legal, medical, repair services).
+DO NOT use product-focused language like "Best Deals", "Sale", "Shop Now", "Buy Now", "Discount", "Prices", etc.
+Instead, use SERVICE-FOCUSED language:
+- Professional expertise: "Expert {KeyWord:Service}", "Licensed {KeyWord:Professional}", "Certified {KeyWord:Service}"
+- Availability: "24/7 {KeyWord:Service}", "Same Day {KeyWord:Service}", "Emergency {KeyWord:Service}"
+- Trust & Quality: "Trusted {KeyWord:Service}", "Reliable {KeyWord:Service}", "Quality {KeyWord:Service}"
+- Action: "Call for {KeyWord:Service}", "Get {KeyWord:Service} Quote", "Schedule {KeyWord:Service}"
+- Location: "Local {KeyWord:Service}", "{KeyWord:Service} Near You"` : `
+These keywords are PRODUCT-BASED.
+You can use product-focused language like "Best {KeyWord:Product} Deals", "Shop {KeyWord:Product}", "Buy {KeyWord:Product} Online", etc.`;
+      
       prompt = `You are a Google Ads expert specializing in Dynamic Keyword Insertion (DKI) ads that maximize relevance and Quality Score.
 
 Create ${count || 5} unique DKI ad variations for these keywords: ${keywordList}
+${serviceGuidance}
 
 DKI ads should:
 - Use {KeyWord:DefaultText} syntax to dynamically insert the user's search query
@@ -280,6 +351,7 @@ DKI ads should:
 - Maximize relevance and expected CTR
 - Include the keyword placeholder in headlines and descriptions strategically
 - Work well across all the provided keywords
+- Use language appropriate for service-based vs product-based businesses
 
 Each DKI ad headline/description should be 30/90 characters or less including the DKI syntax.
 
@@ -297,9 +369,22 @@ Return a pure JSON array (no markdown, no backticks) with these exact keys for e
 
 Important: Return ONLY the JSON array, no other text or formatting.`;
     } else if (adType === 'CallOnly') {
+      const serviceGuidance = isServiceBased ? `
+CRITICAL: These keywords are SERVICE-BASED (e.g., plumbing, carpentry, legal, medical, repair services).
+DO NOT use product-focused language like "Best Deals", "Sale", "Shop Now", "Buy Now", "Discount", "Prices", etc.
+Instead, use SERVICE-FOCUSED language:
+- Professional expertise: "Expert Service", "Licensed Professionals", "Certified", "Experienced"
+- Availability: "24/7 Available", "Same Day Service", "Emergency Service", "Fast Response"
+- Trust & Quality: "Trusted", "Reliable", "Quality Work", "Satisfaction Guaranteed"
+- Action: "Call Now", "Get Quote", "Schedule Service", "Free Estimate"
+- Urgency: "Available Now", "Immediate Service", "Quick Response"` : `
+These keywords are PRODUCT-BASED.
+You can use product-focused language like "Best Deals", "Shop Now", "Buy Online", "Free Shipping", etc.`;
+      
       prompt = `You are a Google Ads expert specializing in Call-Only ads that drive phone calls and maximize conversion rates.
 
 Create ${count || 5} unique Call-Only ad variations for these keywords: ${keywordList}
+${serviceGuidance}
 
 Call-Only ads should:
 - Encourage immediate phone calls with strong CTAs
@@ -307,6 +392,7 @@ Call-Only ads should:
 - Create urgency and trust
 - Be optimized for mobile users
 - Include compelling reasons to call NOW
+- Use language appropriate for service-based vs product-based businesses
 
 Requirements:
 - Headline 1: 30 characters or less
@@ -391,6 +477,184 @@ Important: Return ONLY the JSON array, no other text or formatting.`;
   } catch (error: any) {
     console.error("Error in generate-ads endpoint:", error);
     return c.json({ error: error.message || "Failed to generate ads" }, 500);
+  }
+});
+
+// Generate AI-powered extensions
+app.post("/generate-extensions", async (c) => {
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const { keywords, extensionTypes, adHeadline, adDescription, baseUrl } = body;
+    
+    console.log("Received generate-extensions request:", { 
+      extensionTypes, 
+      keywordsCount: keywords?.length,
+      hasAdContent: !!adHeadline 
+    });
+    
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is missing");
+      return c.json({ error: "Server misconfiguration: API Key missing" }, 500);
+    }
+
+    if (!extensionTypes || !Array.isArray(extensionTypes) || extensionTypes.length === 0) {
+      return c.json({ error: "Extension types array is required" }, 400);
+    }
+
+    // Detect if service-based
+    const keywordText = (keywords?.join(' ') || adHeadline || '').toLowerCase();
+    const serviceKeywords = ['plumber', 'plumbing', 'carpenter', 'carpentry', 'electrician', 'electric', 
+      'contractor', 'handyman', 'roofer', 'roofing', 'painter', 'painting', 'mechanic', 'repair',
+      'lawyer', 'attorney', 'doctor', 'dentist', 'accountant', 'consultant', 'therapist', 'coach',
+      'service', 'services', 'installation', 'maintenance', 'cleaning', 'landscaping',
+      'hvac', 'heating', 'cooling', 'tutoring', 'training', 'coaching', 'consulting', 'call',
+      'contact', 'phone', 'number', 'emergency', '24/7', 'near me', 'local'];
+    const isServiceBased = serviceKeywords.some(sk => keywordText.includes(sk));
+
+    const serviceGuidance = isServiceBased ? `
+CRITICAL: These keywords are SERVICE-BASED. Use SERVICE-FOCUSED language:
+- Professional expertise: "Expert Service", "Licensed Professionals", "Certified", "Experienced"
+- Availability: "24/7 Available", "Same Day Service", "Emergency Service", "Fast Response"
+- Trust & Quality: "Trusted", "Reliable", "Quality Work", "Satisfaction Guaranteed"
+- Action: "Call Now", "Get Quote", "Schedule Service", "Free Estimate"
+- DO NOT use product language like "Best Deals", "Shop Now", "Buy", "Sale", "Discount", "Free Shipping"
+` : `
+These keywords are PRODUCT-BASED. You can use product-focused language like "Best Deals", "Shop Now", "Buy Online", etc.
+`;
+
+    const prompt = `You are a Google Ads expert specializing in creating high-performing ad extensions.
+
+Generate unique, varied, and professional ad extensions for these extension types: ${extensionTypes.join(', ')}
+
+Context:
+- Keywords: ${keywords?.slice(0, 10).join(', ') || 'Not provided'}
+- Ad Headline: ${adHeadline || 'Not provided'}
+- Ad Description: ${adDescription || 'Not provided'}
+- Base URL: ${baseUrl || 'www.example.com'}
+${serviceGuidance}
+
+IMPORTANT REQUIREMENTS:
+1. Generate UNIQUE content for each extension type - avoid generic templates
+2. Make each extension DIFFERENT from previous generations - vary the wording, structure, and content
+3. Content should be relevant to the keywords and ad context provided
+4. For services: Focus on expertise, availability, trust, quality, professional service
+5. For products: Can use deals, prices, shipping, offers
+6. Each extension should have multiple variations/options where applicable
+
+Extension Requirements:
+
+CALLOUT Extension:
+- Generate 4-6 unique callout phrases (max 25 characters each)
+- Each should highlight different benefits or value propositions
+- Make them specific to the business/keywords, not generic
+
+SITELINK Extension:
+- Generate 4-6 unique sitelinks
+- Each with unique text (max 25 chars), description (max 35 chars), and relevant URL path
+- Vary the link purposes: services, about, contact, support, resources, etc.
+
+SNIPPET Extension:
+- Generate a relevant header and 3-5 unique value items
+- Make them specific to the business, not generic
+
+PRICE Extension (if applicable):
+- Generate realistic pricing with qualifier, price, currency, unit, and description
+- Make it relevant to the service/product
+
+LOCATION Extension:
+- Generate realistic business location details
+- Include business name, address, city, state, postal code, phone
+
+MESSAGE Extension:
+- Generate compelling message text and business details
+- Make it action-oriented
+
+PROMOTION Extension (if applicable):
+- Generate unique promotion text, description, occasion, and dates
+- For services: Use "Free Consultation", "Free Estimate" instead of "Sale"
+- For products: Can use "Sale", "Discount", etc.
+
+Return a pure JSON array (no markdown, no backticks) with one object per extension type requested.
+Each object should have:
+{
+  "extensionType": "callout|sitelink|snippet|price|location|message|promotion",
+  "data": { ... extension-specific data ... }
+}
+
+For callout: { "callouts": ["phrase1", "phrase2", ...] }
+For sitelink: { "sitelinks": [{"text": "...", "description": "...", "url": "..."}, ...] }
+For snippet: { "header": "...", "values": ["...", ...] }
+For price: { "priceQualifier": "...", "price": "...", "currency": "...", "unit": "...", "description": "..." }
+For location: { "businessName": "...", "addressLine1": "...", "city": "...", "state": "...", "postalCode": "...", "phone": "..." }
+For message: { "messageText": "...", "businessName": "...", "phone": "..." }
+For promotion: { "promotionText": "...", "promotionDescription": "...", "occasion": "...", "startDate": "...", "endDate": "..." }
+
+CRITICAL: Return ONLY the JSON array, no other text or formatting. Make each generation UNIQUE and VARIED.`;
+
+    console.log("Calling Gemini API for extension generation...");
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API error:", errorText);
+      return c.json({ error: `Gemini API error: ${errorText}` }, response.status);
+    }
+
+    const data = await response.json();
+    console.log("Gemini API response received");
+
+    const textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!textContent) {
+      console.error("No text content in Gemini response");
+      return c.json({ error: "Invalid response from AI" }, 500);
+    }
+
+    console.log("Raw AI response:", textContent.substring(0, 200));
+
+    // Parse the JSON from the response
+    let cleanedText = textContent.trim();
+    if (cleanedText.startsWith('```json')) {
+      cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+    } else if (cleanedText.startsWith('```')) {
+      cleanedText = cleanedText.replace(/^```\s*/, '').replace(/```\s*$/, '');
+    }
+
+    let extensions;
+    try {
+      extensions = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      console.error("Attempted to parse:", cleanedText);
+      return c.json({ error: "Failed to parse AI response as JSON" }, 500);
+    }
+
+    if (!Array.isArray(extensions)) {
+      console.error("Response is not an array");
+      return c.json({ error: "Invalid response format from AI" }, 500);
+    }
+
+    console.log(`✅ Successfully generated ${extensions.length} extensions`);
+
+    return c.json({ 
+      extensions,
+      count: extensions.length
+    });
+
+  } catch (error: any) {
+    console.error("Error in generate-extensions endpoint:", error);
+    return c.json({ error: error.message || "Failed to generate extensions" }, 500);
   }
 });
 
@@ -504,22 +768,21 @@ app.post("/billing/subscribe", async (c) => {
 // ============================================
 
 // Helper to verify super admin
-async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: string }> {
+async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: string; error?: string }> {
   try {
     const authHeader = c.req.header("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return { valid: false };
+      console.error("No Authorization header or invalid format");
+      return { valid: false, error: "Missing or invalid Authorization header" };
     }
 
     const token = authHeader.substring(7);
-    // In production, verify JWT token with Supabase
-    // For now, we'll use a simple check - in production use Supabase Admin API
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Supabase credentials missing");
-      return { valid: false };
+      return { valid: false, error: "Server configuration error" };
     }
 
     // Verify token and check user role
@@ -528,25 +791,33 @@ async function verifySuperAdmin(c: any): Promise<{ valid: boolean; userId?: stri
       auth: { persistSession: false }
     });
 
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user) {
-      return { valid: false };
+    const { data: { user }, error: getUserError } = await supabase.auth.getUser(token);
+    if (getUserError || !user) {
+      console.error("Error getting user from token:", getUserError);
+      return { valid: false, error: "Invalid or expired token" };
     }
 
-    const { data: userData } = await supabase
+    const { data: userData, error: userDataError } = await supabase
       .from("users")
       .select("role")
       .eq("id", user.id)
       .single();
 
+    if (userDataError) {
+      console.error("Error fetching user data:", userDataError);
+      return { valid: false, error: "Error checking user role" };
+    }
+
     if (!userData || userData.role !== "superadmin") {
-      return { valid: false };
+      console.error(`User ${user.id} does not have superadmin role. Current role: ${userData?.role || 'none'}`);
+      return { valid: false, error: "User does not have superadmin role" };
     }
 
     return { valid: true, userId: user.id };
   } catch (err) {
     console.error("Super admin verification error:", err);
-    return { valid: false };
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return { valid: false, error: `Verification error: ${errorMessage}` };
   }
 }
 
@@ -1035,7 +1306,10 @@ app.post("/admin/users", async (c) => {
   try {
     const auth = await verifySuperAdmin(c);
     if (!auth.valid || !auth.userId) {
-      return c.json({ error: "Unauthorized" }, 401);
+      console.error("Super admin verification failed:", auth.error);
+      return c.json({ 
+        error: `Unauthorized: ${auth.error || "Super admin access required"}` 
+      }, 401);
     }
 
     const body = await c.req.json();
@@ -1047,6 +1321,12 @@ app.post("/admin/users", async (c) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Supabase credentials missing");
+      return c.json({ error: "Server configuration error: Supabase credentials missing" }, 500);
+    }
+
     const { createClient } = await import("npm:@supabase/supabase-js@2");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -1063,7 +1343,14 @@ app.post("/admin/users", async (c) => {
 
     if (authError) {
       console.error("Error creating auth user:", authError);
-      return c.json({ error: "Failed to create user: " + authError.message }, 500);
+      return c.json({ 
+        error: `Failed to create auth user: ${authError.message || JSON.stringify(authError)}` 
+      }, 500);
+    }
+
+    if (!authUser || !authUser.user) {
+      console.error("Auth user creation returned no user data");
+      return c.json({ error: "Failed to create auth user: No user data returned" }, 500);
     }
 
     // Create user record in users table
@@ -1083,23 +1370,36 @@ app.post("/admin/users", async (c) => {
     if (userError) {
       console.error("Error creating user record:", userError);
       // Try to clean up auth user if user record creation fails
-      await supabase.auth.admin.deleteUser(authUser.user.id);
-      return c.json({ error: "Failed to create user record" }, 500);
+      try {
+        await supabase.auth.admin.deleteUser(authUser.user.id);
+      } catch (cleanupError) {
+        console.error("Error cleaning up auth user:", cleanupError);
+      }
+      return c.json({ 
+        error: `Failed to create user record: ${userError.message || JSON.stringify(userError)}` 
+      }, 500);
     }
 
-    // Log audit
-    await supabase.from("audit_logs").insert({
-      user_id: auth.userId,
-      action: "create_user",
-      resource_type: "user",
-      resource_id: authUser.user.id,
-      metadata: { email, subscription_plan },
-    });
+    // Log audit (non-blocking - don't fail if this fails)
+    try {
+      await supabase.from("audit_logs").insert({
+        user_id: auth.userId,
+        action: "create_user",
+        resource_type: "user",
+        resource_id: authUser.user.id,
+        metadata: { email, subscription_plan },
+      });
+    } catch (auditError) {
+      console.error("Error logging audit (non-critical):", auditError);
+    }
 
     return c.json({ user: userData });
   } catch (err) {
     console.error("Create user error:", err);
-    return c.json({ error: "Internal server error" }, 500);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return c.json({ 
+      error: `Internal server error: ${errorMessage}` 
+    }, 500);
   }
 });
 
@@ -2451,6 +2751,77 @@ app.post("/stripe/webhook", async (c) => {
       { error: err instanceof Error ? err.message : "Webhook processing failed" },
       500
     );
+  }
+});
+
+// Send feedback email endpoint
+app.post("/send-feedback-email", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { to, subject, body: emailBody, feedbackType, rating, userEmail } = body;
+
+    if (!to || !subject || !emailBody) {
+      return c.json({ error: "Missing required fields: to, subject, body" }, 400);
+    }
+
+    // Use a simple email service (you can replace this with SendGrid, Resend, etc.)
+    // For now, we'll use a basic fetch to an email API
+    // Note: You'll need to configure an email service like Resend, SendGrid, or similar
+    
+    // Example using a generic email service (replace with your actual email service)
+    const emailServiceUrl = Deno.env.get("EMAIL_SERVICE_URL");
+    const emailApiKey = Deno.env.get("EMAIL_API_KEY");
+
+    if (!emailServiceUrl || !emailApiKey) {
+      // If no email service configured, just log it
+      console.log("Feedback Email (Email service not configured):");
+      console.log("To:", to);
+      console.log("Subject:", subject);
+      console.log("Body:", emailBody);
+      console.log("Type:", feedbackType);
+      console.log("Rating:", rating);
+      console.log("User:", userEmail);
+      
+      // Return success even without email service (feedback is saved to DB)
+      return c.json({ 
+        success: true, 
+        message: "Feedback saved. Email service not configured - check logs for details." 
+      });
+    }
+
+    // Send email via configured service
+    const emailResponse = await fetch(emailServiceUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${emailApiKey}`,
+      },
+      body: JSON.stringify({
+        to,
+        subject,
+        html: emailBody.replace(/\n/g, "<br>"),
+        text: emailBody,
+      }),
+    });
+
+    if (!emailResponse.ok) {
+      const errorText = await emailResponse.text();
+      console.error("Email service error:", errorText);
+      // Still return success since feedback is saved to DB
+      return c.json({ 
+        success: true, 
+        message: "Feedback saved. Email sending failed - check logs." 
+      });
+    }
+
+    return c.json({ success: true, message: "Feedback saved and email sent" });
+  } catch (err) {
+    console.error("Send feedback email error:", err);
+    // Return success since feedback is saved to DB even if email fails
+    return c.json({ 
+      success: true, 
+      message: "Feedback saved. Email error - check logs." 
+    });
   }
 });
 

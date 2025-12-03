@@ -12,7 +12,7 @@ export async function isPaidUser(): Promise<boolean> {
   try {
     const userProfile = await getCurrentUserProfile();
     if (!userProfile) return false;
-    
+      
     const plan = userProfile.subscription_plan || 'free';
     return plan !== 'free' && plan !== null && plan !== undefined;
   } catch (e) {
@@ -42,7 +42,7 @@ export async function getUserPlan(): Promise<string> {
       'monthly_limited': 'Monthly Limited',
       'monthly_unlimited': 'Monthly Unlimited',
     };
-    
+      
     return planMap[plan] || plan.charAt(0).toUpperCase() + plan.slice(1);
   } catch (e) {
     console.error('Error getting user plan:', e);

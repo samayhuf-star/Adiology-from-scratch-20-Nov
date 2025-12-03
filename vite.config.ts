@@ -50,10 +50,22 @@
         '@': path.resolve(__dirname, './src'),
       },
     },
-    build: {
-      target: 'esnext',
-      outDir: 'build',
+  build: {
+    target: 'es2015',
+    outDir: 'build',
+    minify: 'esbuild',
+    sourcemap: false,
+    modulePreload: {
+      polyfill: false,
     },
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`,
+      },
+    },
+  },
     server: {
       port: 3000,
       open: true,

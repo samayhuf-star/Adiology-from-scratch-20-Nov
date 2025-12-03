@@ -190,8 +190,8 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onBackT
               Enter your new password below
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="relative">
+            <form onSubmit={handleSubmit} className="space-y-4 relative">
               {error && (
                 <Alert variant="destructive" className="border-red-500 bg-red-50">
                   <AlertCircle className="w-4 h-4 text-red-600" />
@@ -202,21 +202,21 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onBackT
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-slate-900 font-semibold">New Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500 z-10" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your new password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                    className="pl-11 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                     required
                     minLength={6}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 z-10"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -226,21 +226,21 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess, onBackT
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-slate-900 font-semibold">Confirm Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500 z-10" />
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="Confirm your new password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
+                    className="pl-11 pr-10 bg-white border-slate-300 text-slate-900 placeholder:text-slate-400"
                     required
                     minLength={6}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 z-10"
                   >
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>

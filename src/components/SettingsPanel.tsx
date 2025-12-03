@@ -3,9 +3,10 @@ import { getCurrentUserProfile } from '../utils/auth';
 import { supabase } from '../utils/supabase/client';
 import { 
   User, Mail, Lock, Bell, Globe, Shield, 
-  Save, Eye, EyeOff, Trash2, Download, Upload,
-  CheckCircle2, AlertCircle, CreditCard
+  Save, Eye, EyeOff, Download, Upload,
+  CheckCircle2, AlertCircle, CreditCard, Palette
 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -23,6 +24,7 @@ interface SettingsPanelProps {
 
 export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) => {
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -32,23 +34,19 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Notification settings
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [campaignAlerts, setCampaignAlerts] = useState(true);
-  const [exportAlerts, setExportAlerts] = useState(true);
-  const [weeklyReports, setWeeklyReports] = useState(false);
-  
   // Privacy settings
   const [dataSharing, setDataSharing] = useState(false);
   const [analytics, setAnalytics] = useState(true);
   
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
 
   useEffect(() => {
     // Load user data from Supabase
     const loadUserData = async () => {
       try {
+        setLoading(true);
         const userProfile = await getCurrentUserProfile();
         if (userProfile) {
           setUser(userProfile);
@@ -57,6 +55,8 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
         }
       } catch (e) {
         console.error('Failed to load user data', e);
+      } finally {
+        setLoading(false);
       }
     };
     
@@ -67,10 +67,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
-        setEmailNotifications(settings.emailNotifications ?? true);
-        setCampaignAlerts(settings.campaignAlerts ?? true);
-        setExportAlerts(settings.exportAlerts ?? true);
-        setWeeklyReports(settings.weeklyReports ?? false);
         setDataSharing(settings.dataSharing ?? false);
         setAnalytics(settings.analytics ?? true);
       } catch (e) {
@@ -78,6 +74,11 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
       }
     }
   }, []);
+
+  // Update active tab when defaultTab prop changes
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
 
   const handleSaveProfile = async () => {
     setIsSaving(true);
@@ -207,10 +208,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
 
   const handleSaveSettings = () => {
     const settings = {
-      emailNotifications,
-      campaignAlerts,
-      exportAlerts,
-      weeklyReports,
       dataSharing,
       analytics
     };
@@ -224,10 +221,6 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     const userData = {
       profile: user,
       settings: {
-        emailNotifications,
-        campaignAlerts,
-        exportAlerts,
-        weeklyReports,
         dataSharing,
         analytics
       },
@@ -243,40 +236,34 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
     URL.revokeObjectURL(url);
   };
 
-  const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      if (confirm('This will permanently delete all your data. Type DELETE to confirm.')) {
-        // Remove user from localStorage
-        const savedUsers = JSON.parse(localStorage.getItem('adiology_users') || '[]');
-        const filteredUsers = savedUsers.filter((u: any) => u.email !== user?.email);
-        localStorage.setItem('adiology_users', JSON.stringify(filteredUsers));
-        
-        // Remove auth
-        localStorage.removeItem('auth_user');
-        localStorage.removeItem('user_settings');
-        
-        // Redirect to home
-        window.location.reload();
-      }
-    }
-  };
+
+  if (loading) {
+    return (
+      <div className="p-8 lg:p-10 max-w-7xl mx-auto w-full flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+          <p className="text-slate-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+    <div className="p-8 lg:p-10 max-w-7xl mx-auto w-full">
+      <div className="mb-10">
+        <h1 className="text-4xl font-bold text-slate-900 mb-3">
           Settings
         </h1>
-        <p className="text-slate-500 mt-1">Manage your account settings, billing, and preferences</p>
+        <p className="text-slate-600 text-lg">Manage your account settings, billing, and preferences</p>
       </div>
 
-      <Tabs key={defaultTab} defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-10 p-2 bg-slate-100 rounded-lg">
+          <TabsTrigger value="settings" className="text-base py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Settings</TabsTrigger>
+          <TabsTrigger value="billing" className="text-base py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm">Billing</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="settings" className="space-y-8 mt-0">
+        <TabsContent value="settings" className="space-y-10 mt-0">
 
       {saveMessage && (
         <Alert 
@@ -295,311 +282,289 @@ export const SettingsPanel = ({ defaultTab = 'settings' }: SettingsPanelProps) =
       )}
 
       {/* Profile Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5 text-indigo-600" />
+      <Card className="p-8">
+        <CardHeader className="pb-6 mb-6 border-b border-slate-200">
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <User className="w-6 h-6 text-blue-600" />
             Profile Information
           </CardTitle>
-          <CardDescription>Update your personal information and account details</CardDescription>
+          <CardDescription className="text-base mt-2">Update your personal information and account details</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+        <CardContent className="space-y-8 pt-6">
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <Label htmlFor="name" className="text-base font-semibold">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 pr-4 h-12 text-base"
                   placeholder="Enter your full name"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+            <div className="space-y-3">
+              <Label htmlFor="email" className="text-base font-semibold">Email Address</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 pr-4 h-12 text-base"
                   placeholder="Enter your email"
                 />
               </div>
             </div>
           </div>
-          <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
-            <Save className="w-4 h-4 mr-2" />
-            Save Profile Changes
-          </Button>
+          <div className="flex justify-start pt-4">
+            <Button onClick={handleSaveProfile} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 h-12 text-base">
+              <Save className="w-5 h-5 mr-2" />
+              Save Profile Changes
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Password Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-indigo-600" />
+      <Card className="p-8">
+        <CardHeader className="pb-6 mb-6 border-b border-slate-200">
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <Lock className="w-6 h-6 text-blue-600" />
             Change Password
           </CardTitle>
-          <CardDescription>Update your password to keep your account secure</CardDescription>
+          <CardDescription className="text-base mt-2">Update your password to keep your account secure</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current Password</Label>
+        <CardContent className="space-y-8 pt-6">
+          <div className="space-y-3">
+            <Label htmlFor="currentPassword" className="text-base font-semibold">Current Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
               <Input
                 id="currentPassword"
                 type={showPassword ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-12 pr-12 h-12 text-base"
                 placeholder="Enter current password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <Label htmlFor="newPassword" className="text-base font-semibold">New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="newPassword"
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-12 pr-12 h-12 text-base"
                   placeholder="Enter new password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                 >
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <div className="space-y-3">
+              <Label htmlFor="confirmPassword" className="text-base font-semibold">Confirm New Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className="pl-12 pr-12 h-12 text-base"
                   placeholder="Confirm new password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
           </div>
-          <Button onClick={handleChangePassword} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
-            <Lock className="w-4 h-4 mr-2" />
-            Change Password
-          </Button>
+          <div className="flex justify-start pt-4">
+            <Button onClick={handleChangePassword} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 h-12 text-base">
+              <Lock className="w-5 h-5 mr-2" />
+              Change Password
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-indigo-600" />
-            Notification Preferences
-          </CardTitle>
-          <CardDescription>Choose how you want to be notified about your campaigns</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Email Notifications</Label>
-              <p className="text-sm text-slate-500">Receive email updates about your account</p>
-            </div>
-            <Switch 
-              checked={emailNotifications} 
-              onCheckedChange={(checked) => {
-                setEmailNotifications(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications: checked,
-                  campaignAlerts,
-                  exportAlerts,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Campaign Alerts</Label>
-              <p className="text-sm text-slate-500">Get notified when campaigns are created or updated</p>
-            </div>
-            <Switch 
-              checked={campaignAlerts} 
-              onCheckedChange={(checked) => {
-                setCampaignAlerts(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts: checked,
-                  exportAlerts,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Export Alerts</Label>
-              <p className="text-sm text-slate-500">Notify when CSV exports are ready</p>
-            </div>
-            <Switch 
-              checked={exportAlerts} 
-              onCheckedChange={(checked) => {
-                setExportAlerts(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts,
-                  exportAlerts: checked,
-                  weeklyReports,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Weekly Reports</Label>
-              <p className="text-sm text-slate-500">Receive weekly summary reports</p>
-            </div>
-            <Switch 
-              checked={weeklyReports} 
-              onCheckedChange={(checked) => {
-                setWeeklyReports(checked);
-                // Bug_11: Save immediately to prevent toggle from disappearing
-                const settings = {
-                  emailNotifications,
-                  campaignAlerts,
-                  exportAlerts,
-                  weeklyReports: checked,
-                  dataSharing,
-                  analytics
-                };
-                localStorage.setItem('user_settings', JSON.stringify(settings));
-              }} 
-            />
-          </div>
-          <Button onClick={handleSaveSettings} className="bg-indigo-600 hover:bg-indigo-700">
-            <Save className="w-4 h-4 mr-2" />
-            Save Notification Settings
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Theme Settings */}
+      <ThemeSelector />
 
       {/* Privacy Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-indigo-600" />
+      <Card className="p-8">
+        <CardHeader className="pb-6 mb-6 border-b border-slate-200">
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <Shield className="w-6 h-6 text-blue-600" />
             Privacy & Data
           </CardTitle>
-          <CardDescription>Control how your data is used and shared</CardDescription>
+          <CardDescription className="text-base mt-2">Control how your data is used and shared</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Data Sharing</Label>
-              <p className="text-sm text-slate-500">Allow sharing of anonymized data for product improvement</p>
+        <CardContent className="space-y-8 pt-6">
+          <div className="flex items-center justify-between py-4">
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Data Sharing</Label>
+              <p className="text-base text-slate-600">Allow sharing of anonymized data for product improvement</p>
             </div>
             <Switch checked={dataSharing} onCheckedChange={setDataSharing} />
           </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Analytics</Label>
-              <p className="text-sm text-slate-500">Help us improve by sharing usage analytics</p>
+          <Separator className="my-6" />
+          <div className="flex items-center justify-between py-4">
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Analytics</Label>
+              <p className="text-base text-slate-600">Help us improve by sharing usage analytics</p>
             </div>
             <Switch checked={analytics} onCheckedChange={setAnalytics} />
           </div>
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-2">
-              <Button onClick={handleExportData} variant="outline" title="Exports your data in JSON format">
-                <Download className="w-4 h-4 mr-2" />
+          <div className="flex gap-6 pt-4">
+            <div className="flex flex-col gap-3">
+              <Button onClick={handleExportData} variant="outline" title="Exports your data in JSON format" className="px-6 py-3 h-12 text-base">
+                <Download className="w-5 h-5 mr-2" />
                 Export My Data (JSON)
               </Button>
-              <p className="text-xs text-slate-500">Downloads your account data in JSON format</p>
+              <p className="text-sm text-slate-500">Downloads your account data in JSON format</p>
             </div>
-            <Button onClick={handleSaveSettings} className="bg-indigo-600 hover:bg-indigo-700">
-              <Save className="w-4 h-4 mr-2" />
+            <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 h-12 text-base">
+              <Save className="w-5 h-5 mr-2" />
               Save Privacy Settings
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Danger Zone */}
-      <Card className="border-red-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="w-5 h-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription>Irreversible and destructive actions</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-            <div>
-              <h3 className="font-semibold text-red-900">Delete Account</h3>
-              <p className="text-sm text-red-700">Permanently delete your account and all associated data</p>
-            </div>
-            <Button onClick={handleDeleteAccount} variant="destructive">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Account
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
         </TabsContent>
         
-        <TabsContent value="billing" className="mt-0">
+        <TabsContent value="billing" className="mt-0 w-full">
           <BillingPanel />
         </TabsContent>
       </Tabs>
     </div>
+  );
+};
+
+// Theme Selector Component
+const ThemeSelector = () => {
+  const { theme, setTheme, availableThemes } = useTheme();
+
+  // Color mapping for theme previews
+  const getColorClass = (colorName: string) => {
+    const colorMap: Record<string, string> = {
+      'indigo-600': 'bg-indigo-600',
+      'indigo-50': 'bg-indigo-50',
+      'purple-600': 'bg-purple-600',
+      'pink-600': 'bg-pink-600',
+      'blue-600': 'bg-blue-600',
+      'blue-50': 'bg-blue-50',
+      'cyan-600': 'bg-cyan-600',
+      'cyan-50': 'bg-cyan-50',
+      'teal-600': 'bg-teal-600',
+      'teal-50': 'bg-teal-50',
+      'emerald-600': 'bg-emerald-600',
+      'emerald-50': 'bg-emerald-50',
+      'green-600': 'bg-green-600',
+      'green-50': 'bg-green-50',
+      'lime-600': 'bg-lime-600',
+      'lime-50': 'bg-lime-50',
+      'orange-600': 'bg-orange-600',
+      'orange-50': 'bg-orange-50',
+      'amber-600': 'bg-amber-600',
+      'amber-50': 'bg-amber-50',
+      'red-600': 'bg-red-600',
+      'red-50': 'bg-red-50',
+    };
+    return colorMap[colorName] || 'bg-slate-400';
+  };
+
+  return (
+    <Card className="p-8">
+      <CardHeader className="pb-6 mb-6 border-b border-slate-200">
+        <CardTitle className="flex items-center gap-3 text-2xl">
+          <Palette className="w-6 h-6 text-blue-600" />
+          Color Theme
+        </CardTitle>
+        <CardDescription className="text-base mt-2">Choose your preferred color scheme for the dashboard</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {availableThemes.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id)}
+              className={`relative p-6 rounded-xl border-2 transition-all hover:scale-105 ${
+                theme.id === t.id
+                  ? 'border-blue-500 bg-blue-50 shadow-lg'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              }`}
+            >
+              {/* Theme Preview */}
+              <div className="mb-4">
+                <div className="flex gap-2 mb-3">
+                  <div className={`w-full h-10 rounded-lg bg-gradient-to-r ${t.colors.primaryGradient}`}></div>
+                </div>
+                <div className="flex gap-2">
+                  <div className={`flex-1 h-5 rounded ${getColorClass(t.colors.primary)}`}></div>
+                  <div className={`flex-1 h-5 rounded ${getColorClass(t.colors.secondary)}`}></div>
+                  <div className={`flex-1 h-5 rounded ${getColorClass(t.colors.accent)}`}></div>
+                </div>
+              </div>
+
+              {/* Theme Info */}
+              <div className="text-left space-y-2">
+                <h3 className="font-semibold text-base text-slate-900">{t.name}</h3>
+                <p className="text-sm text-slate-600">{t.description}</p>
+              </div>
+
+              {/* Selected Badge */}
+              {theme.id === t.id && (
+                <div className="absolute top-3 right-3">
+                  <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex gap-3 items-start">
+            <Globe className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
+            <div className="space-y-2">
+              <p className="text-base font-semibold text-blue-900">Theme Applied Globally</p>
+              <p className="text-sm text-blue-700">
+                Your selected theme will be applied across all pages including Dashboard, Builder 2.0, and all tools.
+              </p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -25,11 +25,41 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-src 'self' *.stripe.com https://vercel.live; script-src 'self' 'unsafe-eval' https://js.stripe.com https://vercel.live; script-src-elem 'self' https://vercel.live https://js.stripe.com; connect-src 'self' *.stripe.com https://*.supabase.co https://googleads.googleapis.com https://generativelanguage.googleapis.com https://vercel.live; style-src 'self' 'unsafe-inline';"
         }
       ]
     },
     {
       "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate, max-age=0"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        },
+        {
+          "key": "Expires",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.js|.*\\.css)",
       "headers": [
         {
           "key": "Cache-Control",

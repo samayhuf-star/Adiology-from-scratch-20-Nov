@@ -2,6 +2,7 @@ export interface CampaignPreset {
   slug: string;
   title: string;
   campaign_name: string;
+  structure: 'SKAG' | 'STAG' | 'IBAG' | 'GEO' | 'MIX'; // Campaign structure type
   ad_groups: Array<{ name: string }>;
   keywords: string[];
   negative_keywords: string[];
@@ -20,19 +21,68 @@ export interface CampaignPreset {
     description2: string;
   }>;
   final_url: string;
+  landing_page_url?: string;
   cta: string;
   phone?: string;
 }
+
+// Campaign structure descriptions
+export const structureDescriptions = {
+  SKAG: {
+    name: 'SKAG (Single Keyword Ad Group)',
+    description: 'Maximum relevance - One keyword per ad group for highest Quality Score',
+    icon: '⚡',
+  },
+  STAG: {
+    name: 'STAG (Single Theme Ad Group)',
+    description: 'Balanced approach - Related keywords grouped by common theme',
+    icon: '📊',
+  },
+  IBAG: {
+    name: 'IBAG (Intent-Based Ad Group)',
+    description: 'Intent-focused - Keywords grouped by user search intent',
+    icon: '🎯',
+  },
+  GEO: {
+    name: 'GEO-Segmented',
+    description: 'Location-based - Campaigns organized by geographic targeting',
+    icon: '📍',
+  },
+  MIX: {
+    name: 'Hybrid Structure',
+    description: 'Best of both worlds - Combines multiple strategies for optimal performance',
+    icon: '🔄',
+  },
+};
 
 export const campaignPresets: CampaignPreset[] = [
   {
     slug: "electrician",
     title: "Electrician",
     campaign_name: "Electrician - PPC Calls",
+    structure: "SKAG",
+    landing_page_url: "/landing-pages/landing_page_1.html",
     ad_groups: [
-      { name: "Emergency Electrician" },
-      { name: "Residential Electrician" },
-      { name: "Commercial Electrician" }
+      { name: "electrician near me" },
+      { name: "24 hour electrician near me" },
+      { name: "emergency electrician near me" },
+      { name: "local electrician" },
+      { name: "ceiling fan installation near me" },
+      { name: "electrical repair near me" },
+      { name: "electrician call now" },
+      { name: "licensed electrician near me" },
+      { name: "same day electrician" },
+      { name: "electric wiring repair" },
+      { name: "electric panel replacement near me" },
+      { name: "outlet repair near me" },
+      { name: "home electrician near me" },
+      { name: "troubleshoot electrical" },
+      { name: "electrician quote near me" },
+      { name: "breaker replacement near me" },
+      { name: "EV charger installation near me" },
+      { name: "smoke detector installation near me" },
+      { name: "lighting installation near me" },
+      { name: "circuit breaker repair near me" }
     ],
     keywords: [
       "electrician near me",
@@ -74,10 +124,29 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "plumber",
     title: "Plumber",
     campaign_name: "Plumber - PPC Calls",
+    structure: "SKAG",
+    landing_page_url: "/landing-pages/landing_page_2.html",
     ad_groups: [
-      { name: "Emergency Plumber" },
-      { name: "Drain & Leak Repair" },
-      { name: "Installation & Replacement" }
+      { name: "plumber near me" },
+      { name: "emergency plumber near me" },
+      { name: "24 hour plumber" },
+      { name: "leak repair near me" },
+      { name: "blocked drain service" },
+      { name: "burst pipe repair near me" },
+      { name: "toilet repair near me" },
+      { name: "local plumber call now" },
+      { name: "gas line plumber near me" },
+      { name: "hot water repair near me" },
+      { name: "water heater repair near me" },
+      { name: "sewer line repair near me" },
+      { name: "plumbing services near me" },
+      { name: "same day plumber" },
+      { name: "install shower door" },
+      { name: "sink installation near me" },
+      { name: "water leak detection near me" },
+      { name: "pipe replacement near me" },
+      { name: "plumber quote near me" },
+      { name: "plumbing emergency service" }
     ],
     keywords: [
       "plumber near me",
@@ -119,10 +188,29 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "carpenter",
     title: "Carpenter",
     campaign_name: "Carpenter - PPC Calls",
+    structure: "SKAG",
+    landing_page_url: "/landing-pages/landing_page_3.html",
     ad_groups: [
-      { name: "Emergency Repairs" },
-      { name: "Custom Carpentry" },
-      { name: "Cabinetry & Trim" }
+      { name: "carpenter near me" },
+      { name: "emergency carpenter near me" },
+      { name: "cabinet maker near me" },
+      { name: "deck repair near me" },
+      { name: "door repair near me" },
+      { name: "wood flooring repair near me" },
+      { name: "trim carpenter near me" },
+      { name: "carpentry services near me" },
+      { name: "local carpenter quote" },
+      { name: "carpenter small jobs near me" },
+      { name: "furniture repair near me" },
+      { name: "stair repair near me" },
+      { name: "framing carpenter near me" },
+      { name: "sash window repair near me" },
+      { name: "shed repair near me" },
+      { name: "custom cabinets near me" },
+      { name: "closet installation near me" },
+      { name: "kitchen cabinet repair near me" },
+      { name: "wood floor install near me" },
+      { name: "porch repair near me" }
     ],
     keywords: [
       "carpenter near me",
@@ -164,10 +252,29 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "roofing",
     title: "Roofing",
     campaign_name: "Roofing - PPC Calls",
+    structure: "SKAG",
+    landing_page_url: "/landing-pages/landing_page_4.html",
     ad_groups: [
-      { name: "Roof Repair" },
-      { name: "Roof Replacement" },
-      { name: "Storm Damage" }
+      { name: "roofing contractor near me" },
+      { name: "roof repair near me" },
+      { name: "roof replacement near me" },
+      { name: "emergency roof repair near me" },
+      { name: "leak in roof repair" },
+      { name: "roof inspection near me" },
+      { name: "hail damage roof repair" },
+      { name: "shingle replacement near me" },
+      { name: "metal roof repair near me" },
+      { name: "flat roof repair near me" },
+      { name: "roofing company near me" },
+      { name: "roof quote near me" },
+      { name: "same day roof repair" },
+      { name: "wind damage roof repair" },
+      { name: "gutter repair near me" },
+      { name: "roof leak fix" },
+      { name: "new roof cost near me" },
+      { name: "roofing contractor call now" },
+      { name: "tar roof repair near me" },
+      { name: "roof patch near me" }
     ],
     keywords: [
       "roofing contractor near me",
@@ -209,10 +316,24 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "flooring",
     title: "Flooring",
     campaign_name: "Flooring - PPC Calls",
+    structure: "SKAG",
+    landing_page_url: "/landing-pages/landing_page_5.html",
     ad_groups: [
-      { name: "Installation" },
-      { name: "Repair" },
-      { name: "Hardwood Refinishing" }
+      { name: "flooring installation near me" },
+      { name: "hardwood floor repair near me" },
+      { name: "tile installation near me" },
+      { name: "vinyl plank install near me" },
+      { name: "floor sanding near me" },
+      { name: "flooring contractor near me" },
+      { name: "floor repair near me" },
+      { name: "laminate floor install near me" },
+      { name: "flooring company near me" },
+      { name: "floor installers near me" },
+      { name: "engineered hardwood install near me" },
+      { name: "commercial flooring near me" },
+      { name: "floor quote near me" },
+      { name: "floor replacement near me" },
+      { name: "flooring store install near me" }
     ],
     keywords: [
       "flooring installation near me",
@@ -249,6 +370,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "solar",
     title: "Solar Installation",
     campaign_name: "Solar - PPC Calls",
+    structure: "STAG",
+    landing_page_url: "/landing-pages/landing_page_6.html",
     ad_groups: [
       { name: "Residential Solar" },
       { name: "Commercial Solar" },
@@ -290,6 +413,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "pest-control",
     title: "Pest Control",
     campaign_name: "Pest Control - PPC Calls",
+    structure: "STAG",
+    landing_page_url: "/landing-pages/landing_page_7.html",
     ad_groups: [
       { name: "Exterminator" },
       { name: "Rodent Control" },
@@ -330,6 +455,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "lawn-care",
     title: "Lawn Care",
     campaign_name: "Lawn Care - PPC Calls",
+    structure: "STAG",
+    landing_page_url: "/landing-pages/landing_page_8.html",
     ad_groups: [
       { name: "Lawn Mowing" },
       { name: "Lawn Maintenance" },
@@ -368,6 +495,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "movers-domestic",
     title: "Movers & Packers - Domestic",
     campaign_name: "Movers - Domestic PPC Calls",
+    structure: "STAG",
+    landing_page_url: "/landing-pages/landing_page_9.html",
     ad_groups: [
       { name: "Local Movers" },
       { name: "Interstate Moving" },
@@ -405,6 +534,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "movers-international",
     title: "Movers & Packers - International",
     campaign_name: "Movers - International PPC Calls",
+    structure: "STAG",
+    landing_page_url: "/landing-pages/landing_page_10.html",
     ad_groups: [
       { name: "International Shipping" },
       { name: "Customs Clearance" },
@@ -440,6 +571,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "hvac",
     title: "HVAC / AC Repair",
     campaign_name: "HVAC - PPC Calls",
+    structure: "IBAG",
+    landing_page_url: "/landing-pages/landing_page_11.html",
     ad_groups: [
       { name: "Emergency AC Repair" },
       { name: "Furnace Repair" },
@@ -477,6 +610,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "locksmith",
     title: "Locksmith",
     campaign_name: "Locksmith - PPC Calls",
+    structure: "IBAG",
+    landing_page_url: "/landing-pages/landing_page_12.html",
     ad_groups: [
       { name: "Emergency Lockout" },
       { name: "Lock Replacement" },
@@ -512,6 +647,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "water-damage",
     title: "Water Damage Restoration",
     campaign_name: "Water Damage - PPC Calls",
+    structure: "IBAG",
+    landing_page_url: "/landing-pages/landing_page_13.html",
     ad_groups: [
       { name: "Emergency Drying" },
       { name: "Flood Cleanup" },
@@ -547,6 +684,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "pool-repair",
     title: "Pool Repair",
     campaign_name: "Pool Repair - PPC Calls",
+    structure: "IBAG",
+    landing_page_url: "/landing-pages/landing_page_14.html",
     ad_groups: [
       { name: "Pool Pump Repair" },
       { name: "Leak Detection" },
@@ -582,6 +721,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "appliance-repair",
     title: "Appliance Repair",
     campaign_name: "Appliance Repair - PPC Calls",
+    structure: "IBAG",
+    landing_page_url: "/landing-pages/landing_page_15.html",
     ad_groups: [
       { name: "Washer & Dryer" },
       { name: "Fridge & Oven" },
@@ -617,6 +758,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "window-cleaning",
     title: "Window Cleaning",
     campaign_name: "Window Cleaning - PPC Calls",
+    structure: "GEO",
+    landing_page_url: "/landing-pages/landing_page_16.html",
     ad_groups: [
       { name: "Residential Window Cleaning" },
       { name: "Commercial Window Cleaning" },
@@ -650,6 +793,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "tree-removal",
     title: "Tree Removal",
     campaign_name: "Tree Removal - PPC Calls",
+    structure: "GEO",
+    landing_page_url: "/landing-pages/landing_page_17.html",
     ad_groups: [
       { name: "Emergency Tree Removal" },
       { name: "Tree Trimming" },
@@ -682,6 +827,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "painting",
     title: "Painting (Interior/Exterior)",
     campaign_name: "Painting - PPC Calls",
+    structure: "GEO",
+    landing_page_url: "/landing-pages/landing_page_18.html",
     ad_groups: [
       { name: "Interior Painting" },
       { name: "Exterior Painting" },
@@ -715,6 +862,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "concrete",
     title: "Concrete / Driveway Contractor",
     campaign_name: "Concrete - PPC Calls",
+    structure: "GEO",
+    landing_page_url: "/landing-pages/landing_page_19.html",
     ad_groups: [
       { name: "Driveway Repair" },
       { name: "Concrete Pouring" },
@@ -748,6 +897,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "security-systems",
     title: "Security System Installation",
     campaign_name: "Security - PPC Calls",
+    structure: "MIX",
+    landing_page_url: "/landing-pages/landing_page_20.html",
     ad_groups: [
       { name: "Alarm Installation" },
       { name: "CCTV Installation" },
@@ -781,6 +932,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "garage-door",
     title: "Garage Door Repair",
     campaign_name: "Garage Door - PPC Calls",
+    structure: "MIX",
+    landing_page_url: "/landing-pages/landing_page_21.html",
     ad_groups: [
       { name: "Emergency Garage Repair" },
       { name: "Opener Repair" },
@@ -813,6 +966,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "septic",
     title: "Septic Service",
     campaign_name: "Septic - PPC Calls",
+    structure: "STAG",
+    landing_page_url: "/landing-pages/landing_page_22.html",
     ad_groups: [
       { name: "Septic Pumping" },
       { name: "Septic Repair" },
@@ -846,6 +1001,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "landscaping",
     title: "Landscaping",
     campaign_name: "Landscaping - PPC Calls",
+    structure: "MIX",
+    landing_page_url: "/landing-pages/landing_page_23.html",
     ad_groups: [
       { name: "Landscape Design" },
       { name: "Hardscaping" },
@@ -879,6 +1036,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "chimney",
     title: "Chimney Sweep & Repair",
     campaign_name: "Chimney - PPC Calls",
+    structure: "STAG",
+    landing_page_url: "/landing-pages/landing_page_24.html",
     ad_groups: [
       { name: "Chimney Cleaning" },
       { name: "Chimney Repair" },
@@ -911,6 +1070,8 @@ export const campaignPresets: CampaignPreset[] = [
     slug: "gutters",
     title: "Gutter Cleaning & Repair",
     campaign_name: "Gutters - PPC Calls",
+    structure: "MIX",
+    landing_page_url: "/landing-pages/landing_page_25.html",
     ad_groups: [
       { name: "Gutter Cleaning" },
       { name: "Gutter Repair" },

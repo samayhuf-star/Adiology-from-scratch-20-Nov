@@ -124,24 +124,7 @@
     @apply border-border outline-ring/50;
   }
 
-  /* Ensure all clickable elements have pointer cursor */
-button:not(:disabled),
-a,
-[role="button"],
-[onclick],
-.cursor-pointer,
-input[type="button"],
-input[type="submit"],
-input[type="reset"],
-select {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
-
-body {
+  body {
     @apply bg-background text-foreground;
   }
 }
@@ -203,4 +186,29 @@ body {
 
 html {
   font-size: var(--font-size);
+}
+
+/* Custom scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.5);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b82f6, #9333ea);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #2563eb, #7e22ce);
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 rgba(229, 231, 235, 0.5);
 }

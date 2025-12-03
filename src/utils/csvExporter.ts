@@ -19,12 +19,11 @@ import { CampaignStructure, Campaign, AdGroup, Ad } from './campaignStructureGen
 
 export interface CSVRow {
   Campaign: string;
-  'Campaign Type': string;
-  'Ad Groups': string; // Bug_46: Changed to plural
-  'Row Type': string;
+  'Ad group': string; // Google Ads Editor uses singular "Ad group"
+  'Keyword': string; // Google Ads Editor uses singular "Keyword"
+  'Criterion Type': string; // Match type in Google Ads Editor
   Status: string;
-  'Keywords': string; // Bug_46: Changed to plural
-  'Match Types': string; // Bug_46: Changed to plural
+  'Max CPC': string;
   'Final URL': string;
   'Headline 1': string;
   'Headline 2': string;
@@ -47,72 +46,80 @@ export interface CSVRow {
   'Description 4': string;
   'Path 1': string;
   'Path 2': string;
-  'Asset Type': string;
-  'Link Text': string;
-  'Description Line 1': string;
-  'Description Line 2': string;
-  'Phone Number': string;
-  'Country Code': string;
-  'Location': string;
-  'Bid Adjustment': string;
-  'Is Exclusion': string;
-  'Negative Keyword': string;
+  'Sitelink': string;
+  'Sitelink description 1': string;
+  'Sitelink description 2': string;
+  'Sitelink final URL': string;
+  'Callout text': string;
+  'Structured snippet header': string;
+  'Structured snippet values': string;
+  'Call phone number': string;
+  'Call country code': string;
+  Location: string;
+  'Location bid adjustment': string;
+  'Is negative': string;
 }
 
 /**
  * Convert campaign structure to CSV rows
- * Google Ads Editor requires explicit rows for each entity type in correct order
+ * Google Ads Editor format: Campaign, Ad group, Keywords, Ads
  */
 export function structureToCSV(structure: CampaignStructure): CSVRow[] {
   const rows: CSVRow[] = [];
-  const processedCampaigns = new Set<string>();
-  const processedAdGroups = new Map<string, Set<string>>(); // campaign -> set of ad groups
 
   structure.campaigns.forEach((campaign) => {
-    // 1. Create Campaign row (only once per campaign)
-    if (!processedCampaigns.has(campaign.campaign_name)) {
-      rows.push(createCampaignRow(campaign));
-      processedCampaigns.add(campaign.campaign_name);
-      processedAdGroups.set(campaign.campaign_name, new Set());
-    }
-
-    campaign.adgroups.forEach((adGroup) => {
-      const adGroupSet = processedAdGroups.get(campaign.campaign_name)!;
-      
-      // 2. Create Ad Group row (only once per ad group)
-      if (!adGroupSet.has(adGroup.adgroup_name)) {
-        rows.push(createAdGroupRow(campaign, adGroup));
-        adGroupSet.add(adGroup.adgroup_name);
+    // Get default URL from first ad group's first ad, or use a fallback
+    let defaultUrl = 'https://www.example.com';
+    if (campaign.adgroups && campaign.adgroups.length > 0) {
+      const firstAdGroup = campaign.adgroups[0];
+      if (firstAdGroup.ads && firstAdGroup.ads.length > 0 && firstAdGroup.ads[0].final_url) {
+        defaultUrl = firstAdGroup.ads[0].final_url;
       }
-
-      // 3. Create Keyword rows FIRST (before ads)
+    }
+    
+    campaign.adgroups.forEach((adGroup) => {
+      // Ensure ad group has at least one ad with valid final_url
+      let ads = adGroup.ads && adGroup.ads.length > 0 ? adGroup.ads : [];
+      
+      // If no ads, create a default ad
+      if (ads.length === 0) {
+        ads = [getDefaultAd(campaign, defaultUrl)];
+      } else {
+        // Ensure all ads have final_url
+        ads = ads.map(ad => ({
+          ...ad,
+          final_url: ad.final_url || defaultUrl
+        }));
+      }
+      
+      // Create keyword rows with the first ad's info
       adGroup.keywords.forEach((keyword) => {
         const matchType = getMatchType(keyword);
         const cleanKeyword = cleanKeywordText(keyword);
-        rows.push(createKeywordRow(campaign, adGroup, cleanKeyword, matchType));
+        const firstAd = ads[0];
+        rows.push(createKeywordRow(campaign, adGroup, cleanKeyword, matchType, firstAd));
       });
 
-      // 4. Create Ad rows AFTER keywords
-      const ads = adGroup.ads.length > 0 ? adGroup.ads : [getDefaultAd(campaign)];
+      // Create ad rows
       ads.forEach((ad) => {
         rows.push(createAdRow(campaign, adGroup, ad));
         
-        // 5. Create Extension rows immediately after each ad
+        // Create Extension rows for each ad
         if (ad.extensions && Array.isArray(ad.extensions)) {
           ad.extensions.forEach((ext: any) => {
-            const extensionRows = createExtensionRows(campaign, adGroup, ext);
+            const extensionRows = createExtensionRows(campaign, adGroup, ext, ad);
             rows.push(...extensionRows);
           });
         }
       });
 
-      // 6. Create Location targeting rows (if location_target is set)
+      // Create Location targeting rows
       if (adGroup.location_target) {
         const locationRows = createLocationRows(campaign, adGroup, adGroup.location_target);
         rows.push(...locationRows);
       }
 
-      // 7. Create Negative Keyword rows LAST
+      // Create Negative Keyword rows
       if (adGroup.negative_keywords && adGroup.negative_keywords.length > 0) {
         adGroup.negative_keywords.forEach((negativeKw) => {
           rows.push(createNegativeKeywordRow(campaign, adGroup, negativeKw));
@@ -125,43 +132,23 @@ export function structureToCSV(structure: CampaignStructure): CSVRow[] {
 }
 
 /**
- * Create a Campaign row
- */
-function createCampaignRow(campaign: Campaign): CSVRow {
-  const row = createEmptyRow(campaign.campaign_name, '', 'Campaign', 'Active');
-  row['Campaign Type'] = 'Search';
-  return row;
-}
-
-/**
- * Create an Ad Group row
- */
-function createAdGroupRow(campaign: Campaign, adGroup: AdGroup): CSVRow {
-  const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Ad group', 'Active');
-  return row;
-}
-
-/**
  * Create a Keyword row
  */
 function createKeywordRow(
   campaign: Campaign,
   adGroup: AdGroup,
   keyword: string,
-  matchType: string
+  matchType: string,
+  ad: Ad
 ): CSVRow {
-  const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Keyword', 'Active');
-  row.Keywords = keyword; // Bug_46: Changed to plural
-  row['Match Types'] = matchType; // Bug_46: Changed to plural
-  // Get final URL from first ad in the ad group
-  const firstAd = adGroup.ads && adGroup.ads.length > 0 ? adGroup.ads[0] : null;
-  if (firstAd && firstAd.final_url) {
-    let finalUrl = firstAd.final_url || '';
-    if (firstAd.path1) {
-      finalUrl = finalUrl.replace(/\/$/, '') + '/' + firstAd.path1.replace(/^\//, '');
-    }
-    row['Final URL'] = finalUrl;
-  }
+  const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+  row.Keyword = keyword;
+  row['Criterion Type'] = matchType;
+  row.Status = 'Active';
+  
+  // Add final URL from ad (required field)
+  row['Final URL'] = (ad && ad.final_url) ? ad.final_url : 'https://www.example.com';
+  
   return row;
 }
 
@@ -169,25 +156,32 @@ function createKeywordRow(
  * Create an Ad row (Responsive Search Ad)
  */
 function createAdRow(campaign: Campaign, adGroup: AdGroup, ad: Ad): CSVRow {
-  const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Ad', 'Active');
+  const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+  row.Status = 'Active';
   
-  // Build final URL with paths
-  let finalUrl = ad.final_url || '';
-  if (ad.path1) {
-    finalUrl = finalUrl.replace(/\/$/, '') + '/' + ad.path1.replace(/^\//, '');
-  }
-  if (ad.path2) {
-    finalUrl = finalUrl.replace(/\/$/, '') + '/' + ad.path2.replace(/^\//, '');
-  }
+  // Ensure final_url is always set (required field)
+  row['Final URL'] = ad.final_url || 'https://www.example.com';
   
-  row['Final URL'] = finalUrl;
-  row['Headline 1'] = ad.headline1 || '';
+  // Ensure at least headline1 and description1 are set (required fields)
+  row['Headline 1'] = ad.headline1 || 'Your Service Here';
   row['Headline 2'] = ad.headline2 || '';
   row['Headline 3'] = ad.headline3 || '';
   row['Headline 4'] = ad.headline4 || '';
   row['Headline 5'] = ad.headline5 || '';
-  row['Description 1'] = ad.description1 || '';
+  row['Headline 6'] = ad.headline6 || '';
+  row['Headline 7'] = ad.headline7 || '';
+  row['Headline 8'] = ad.headline8 || '';
+  row['Headline 9'] = ad.headline9 || '';
+  row['Headline 10'] = ad.headline10 || '';
+  row['Headline 11'] = ad.headline11 || '';
+  row['Headline 12'] = ad.headline12 || '';
+  row['Headline 13'] = ad.headline13 || '';
+  row['Headline 14'] = ad.headline14 || '';
+  row['Headline 15'] = ad.headline15 || '';
+  row['Description 1'] = ad.description1 || 'Get the best service today.';
   row['Description 2'] = ad.description2 || '';
+  row['Description 3'] = ad.description3 || '';
+  row['Description 4'] = ad.description4 || '';
   row['Path 1'] = ad.path1 || '';
   row['Path 2'] = ad.path2 || '';
   
@@ -197,53 +191,52 @@ function createAdRow(campaign: Campaign, adGroup: AdGroup, ad: Ad): CSVRow {
 /**
  * Create extension rows based on extension type
  */
-function createExtensionRows(campaign: Campaign, adGroup: AdGroup, ext: any): CSVRow[] {
+function createExtensionRows(campaign: Campaign, adGroup: AdGroup, ext: any, ad: Ad): CSVRow[] {
   const rows: CSVRow[] = [];
   
   switch (ext.extensionType || ext.type) {
     case 'sitelink':
       if (ext.links && Array.isArray(ext.links)) {
         ext.links.forEach((link: any) => {
-          const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Sitelink', 'Active');
-          row['Asset Type'] = 'Sitelink';
-          row['Link Text'] = link.text || link.linkText || '';
-          row['Description Line 1'] = link.description || link.descriptionLine1 || '';
-          row['Description Line 2'] = link.descriptionLine2 || '';
-          row['Final URL'] = link.url || link.finalUrl || ext.finalUrl || '';
+          const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+          row.Status = 'Active';
+          row.Sitelink = link.text || link.linkText || '';
+          row['Sitelink description 1'] = link.description || link.descriptionLine1 || '';
+          row['Sitelink description 2'] = link.descriptionLine2 || '';
+          row['Sitelink final URL'] = link.url || link.finalUrl || ext.finalUrl || '';
           rows.push(row);
         });
       } else if (ext.text || ext.linkText) {
-        // Single sitelink
-        const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Sitelink', 'Active');
-        row['Asset Type'] = 'Sitelink';
-        row['Link Text'] = ext.text || ext.linkText || '';
-        row['Description Line 1'] = ext.description || ext.descriptionLine1 || '';
-        row['Description Line 2'] = ext.descriptionLine2 || '';
-        row['Final URL'] = ext.url || ext.finalUrl || '';
+        const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+        row.Status = 'Active';
+        row.Sitelink = ext.text || ext.linkText || '';
+        row['Sitelink description 1'] = ext.description || ext.descriptionLine1 || '';
+        row['Sitelink description 2'] = ext.descriptionLine2 || '';
+        row['Sitelink final URL'] = ext.url || ext.finalUrl || '';
         rows.push(row);
       }
       break;
       
     case 'call':
-      const callRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Call', 'Active');
-      callRow['Asset Type'] = 'Call';
-      callRow['Phone Number'] = ext.phone || ext.phoneNumber || '';
-      callRow['Country Code'] = ext.countryCode || ext.country || 'US';
+      const callRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+      callRow.Status = 'Active';
+      callRow['Call phone number'] = ext.phone || ext.phoneNumber || '';
+      callRow['Call country code'] = ext.countryCode || ext.country || 'US';
       rows.push(callRow);
       break;
       
     case 'callout':
       if (ext.values && Array.isArray(ext.values)) {
         ext.values.forEach((value: string) => {
-          const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Callout', 'Active');
-          row['Asset Type'] = 'Callout';
-          row['Link Text'] = value;
+          const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+          row.Status = 'Active';
+          row['Callout text'] = value;
           rows.push(row);
         });
       } else if (ext.text || ext.value) {
-        const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Callout', 'Active');
-        row['Asset Type'] = 'Callout';
-        row['Link Text'] = ext.text || ext.value || '';
+        const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+        row.Status = 'Active';
+        row['Callout text'] = ext.text || ext.value || '';
         rows.push(row);
       }
       break;
@@ -251,78 +244,19 @@ function createExtensionRows(campaign: Campaign, adGroup: AdGroup, ext: any): CS
     case 'snippet':
       if (ext.values && Array.isArray(ext.values)) {
         ext.values.forEach((value: string) => {
-          const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Snippet', 'Active');
-          row['Asset Type'] = 'Snippet';
-          row['Link Text'] = value;
-          row['Description Line 1'] = ext.header || ext.title || '';
+          const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+          row.Status = 'Active';
+          row['Structured snippet header'] = ext.header || ext.title || '';
+          row['Structured snippet values'] = value;
           rows.push(row);
         });
       } else if (ext.text || ext.value) {
-        const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Snippet', 'Active');
-        row['Asset Type'] = 'Snippet';
-        row['Link Text'] = ext.text || ext.value || '';
-        row['Description Line 1'] = ext.header || ext.title || '';
+        const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+        row.Status = 'Active';
+        row['Structured snippet header'] = ext.header || ext.title || '';
+        row['Structured snippet values'] = ext.text || ext.value || '';
         rows.push(row);
       }
-      break;
-      
-    case 'price':
-      const priceRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Price', 'Active');
-      priceRow['Asset Type'] = 'Price';
-      const priceText = `${ext.priceQualifier || ext.qualifier || 'From'} ${ext.price || ''} ${ext.unit || ''}`.trim();
-      priceRow['Link Text'] = priceText;
-      rows.push(priceRow);
-      break;
-      
-    case 'app':
-      const appRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'App', 'Active');
-      appRow['Asset Type'] = 'App';
-      appRow['Link Text'] = ext.appLinkText || ext.text || '';
-      appRow['Final URL'] = ext.appFinalUrl || ext.url || '';
-      rows.push(appRow);
-      break;
-      
-    case 'location':
-      const locationExtRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Location', 'Active');
-      locationExtRow['Asset Type'] = 'Location';
-      locationExtRow['Link Text'] = ext.businessName || ext.name || '';
-      locationExtRow['Description Line 1'] = `${ext.addressLine1 || ''}, ${ext.city || ''}, ${ext.state || ''} ${ext.postalCode || ''}`.trim().replace(/^,\s*|,\s*$/g, '');
-      locationExtRow['Phone Number'] = ext.phone || ext.phoneNumber || '';
-      locationExtRow['Country Code'] = ext.country || ext.countryCode || 'US';
-      rows.push(locationExtRow);
-      break;
-      
-    case 'message':
-      const messageRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Message', 'Active');
-      messageRow['Asset Type'] = 'Message';
-      messageRow['Link Text'] = ext.messageText || ext.text || '';
-      messageRow['Phone Number'] = ext.phone || ext.phoneNumber || '';
-      rows.push(messageRow);
-      break;
-      
-    case 'leadform':
-    case 'lead_form':
-      const leadFormRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Lead form', 'Active');
-      leadFormRow['Asset Type'] = 'Lead form';
-      leadFormRow['Link Text'] = ext.formName || ext.name || '';
-      leadFormRow['Description Line 1'] = ext.formDescription || ext.description || '';
-      rows.push(leadFormRow);
-      break;
-      
-    case 'promotion':
-      const promotionRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Promotion', 'Active');
-      promotionRow['Asset Type'] = 'Promotion';
-      promotionRow['Link Text'] = ext.promotionText || ext.text || '';
-      promotionRow['Description Line 1'] = ext.promotionDescription || ext.description || '';
-      rows.push(promotionRow);
-      break;
-      
-    case 'image':
-      const imageRow = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Image', 'Active');
-      imageRow['Asset Type'] = 'Image';
-      imageRow['Link Text'] = ext.imageName || ext.name || '';
-      imageRow['Description Line 1'] = ext.imageAltText || ext.altText || '';
-      rows.push(imageRow);
       break;
   }
   
@@ -339,10 +273,10 @@ function createLocationRows(campaign: Campaign, adGroup: AdGroup, locationTarget
   const locations = locationTarget.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
   
   locations.forEach((location) => {
-    const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Location', 'Active');
-    row['Location'] = location;
-    row['Bid Adjustment'] = ''; // Can be set if needed
-    row['Is Exclusion'] = ''; // Can be set to "Yes" to exclude
+    const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+    row.Status = 'Active';
+    row.Location = location;
+    row['Location bid adjustment'] = '';
     rows.push(row);
   });
   
@@ -358,10 +292,11 @@ function createNegativeKeywordRow(
   negativeKw: string
 ): CSVRow {
   const cleanNegative = cleanKeywordText(negativeKw);
-  const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name, 'Keyword', 'Active');
-  row.Keywords = cleanNegative; // Bug_46: Changed to plural
-  row['Match Types'] = 'Negative'; // Bug_46: Changed to plural
-  row['Negative Keyword'] = 'Yes';
+  const row = createEmptyRow(campaign.campaign_name, adGroup.adgroup_name);
+  row.Keyword = cleanNegative;
+  row['Criterion Type'] = 'Negative ' + getMatchType(negativeKw);
+  row.Status = 'Active';
+  row['Is negative'] = 'True';
   return row;
 }
 
@@ -370,18 +305,15 @@ function createNegativeKeywordRow(
  */
 function createEmptyRow(
   campaignName: string,
-  adGroupName: string,
-  rowType: string,
-  status: string = 'Active'
+  adGroupName: string
 ): CSVRow {
   return {
     Campaign: campaignName,
-    'Campaign Type': '',
-    'Ad Groups': adGroupName, // Bug_46: Changed to plural
-    'Row Type': rowType,
-    Status: status,
-    'Keywords': '', // Bug_46: Changed to plural
-    'Match Types': '', // Bug_46: Changed to plural
+    'Ad group': adGroupName,
+    'Keyword': '',
+    'Criterion Type': '',
+    Status: '',
+    'Max CPC': '',
     'Final URL': '',
     'Headline 1': '',
     'Headline 2': '',
@@ -404,16 +336,18 @@ function createEmptyRow(
     'Description 4': '',
     'Path 1': '',
     'Path 2': '',
-    'Asset Type': '',
-    'Link Text': '',
-    'Description Line 1': '',
-    'Description Line 2': '',
-    'Phone Number': '',
-    'Country Code': '',
+    'Sitelink': '',
+    'Sitelink description 1': '',
+    'Sitelink description 2': '',
+    'Sitelink final URL': '',
+    'Callout text': '',
+    'Structured snippet header': '',
+    'Structured snippet values': '',
+    'Call phone number': '',
+    'Call country code': '',
     'Location': '',
-    'Bid Adjustment': '',
-    'Is Exclusion': '',
-    'Negative Keyword': ''
+    'Location bid adjustment': '',
+    'Is negative': ''
   };
 }
 
@@ -441,12 +375,12 @@ function cleanKeywordText(keyword: string): string {
 /**
  * Get default ad if none exist
  */
-function getDefaultAd(campaign: Campaign): Ad {
+function getDefaultAd(campaign: Campaign, defaultUrl: string = 'https://www.example.com'): Ad {
   return {
     type: 'rsa',
     headline1: 'Default Headline',
     description1: 'Default Description',
-    final_url: ''
+    final_url: defaultUrl
   };
 }
 
@@ -456,16 +390,14 @@ function getDefaultAd(campaign: Campaign): Ad {
 export function rowsToCSVString(rows: CSVRow[]): string {
   if (rows.length === 0) return '';
 
-  // Get headers in correct order
-  // Bug_46: Column names in plural form
+  // Get headers in correct order for Google Ads Editor
   const headers: (keyof CSVRow)[] = [
     'Campaign',
-    'Campaign Type',
-    'Ad Groups',
-    'Row Type',
+    'Ad group',
+    'Keyword',
+    'Criterion Type',
     'Status',
-    'Keywords',
-    'Match Types',
+    'Max CPC',
     'Final URL',
     'Headline 1',
     'Headline 2',
@@ -488,25 +420,24 @@ export function rowsToCSVString(rows: CSVRow[]): string {
     'Description 4',
     'Path 1',
     'Path 2',
-    'Asset Type',
-    'Link Text',
-    'Description Line 1',
-    'Description Line 2',
-    'Phone Number',
-    'Country Code',
+    'Sitelink',
+    'Sitelink description 1',
+    'Sitelink description 2',
+    'Sitelink final URL',
+    'Callout text',
+    'Structured snippet header',
+    'Structured snippet values',
+    'Call phone number',
+    'Call country code',
     'Location',
-    'Bid Adjustment',
-    'Is Exclusion',
-    'Negative Keyword'
+    'Location bid adjustment',
+    'Is negative'
   ];
 
   // Create CSV content
   const csvLines: string[] = [];
   
-  // Add BOM for UTF-8 encoding (helps Excel recognize UTF-8)
-  csvLines.push('\ufeff');
-  
-  // Add header row
+  // Add header row (no BOM as Google Ads Editor doesn't need it)
   csvLines.push(headers.map(h => escapeCSV(h)).join(','));
 
   // Add data rows
@@ -514,7 +445,7 @@ export function rowsToCSVString(rows: CSVRow[]): string {
     csvLines.push(headers.map(header => escapeCSV(row[header] || '')).join(','));
   });
 
-  return csvLines.join('\r\n'); // Use \r\n for Windows compatibility
+  return csvLines.join('\n'); // Use \n for Google Ads Editor compatibility
 }
 
 /**

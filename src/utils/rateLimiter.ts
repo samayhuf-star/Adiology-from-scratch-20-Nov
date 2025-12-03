@@ -35,7 +35,7 @@ class RateLimiter {
     try {
       const userProfile = await getCurrentUserProfile();
       if (!userProfile) return false;
-      
+        
       const plan = userProfile.subscription_plan || 'free';
       return plan !== 'free' && plan !== null && plan !== undefined;
     } catch (e) {

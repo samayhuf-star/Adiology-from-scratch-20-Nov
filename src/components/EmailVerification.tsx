@@ -25,25 +25,26 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     // Check URL for email parameter
     const urlParams = new URLSearchParams(window.location.search);
     const emailParam = urlParams.get('email');
-    
+
     if (emailParam) {
       setEmail(emailParam);
     }
 
     // Handle email verification from Supabase
-    supabase.auth.onAuthStateChange((event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         // User has verified their email
         if (session.user.email_confirmed_at) {
-          setIsVerified(true);
-          notifications.success('Email verified successfully!', {
-            title: 'Verification Complete',
-            description: 'Your email has been verified. Redirecting to pricing...',
-          });
+            setIsVerified(true);
+          // Bug_74: Show success message and redirect to login
+            notifications.success('Email verified successfully!', {
+              title: 'Verification Complete',
+            description: 'Your email has been verified. Redirecting to login...',
+            });
 
-          setTimeout(() => {
-            onVerificationSuccess();
-          }, 1500);
+            setTimeout(() => {
+              onVerificationSuccess();
+          }, 2000);
         }
       }
     });
@@ -60,6 +61,11 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     };
 
     checkVerification();
+
+    // Cleanup: unsubscribe from auth state changes
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [onVerificationSuccess]);
 
   const handleResendEmail = async () => {
@@ -74,17 +80,17 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
     try {
       await resendVerificationEmail(email);
 
-      notifications.success('Verification email sent!', {
-        title: 'Email Sent',
-        description: 'Please check your email inbox (and spam folder) for the verification link.',
-      });
+        notifications.success('Verification email sent!', {
+          title: 'Email Sent',
+          description: 'Please check your email inbox (and spam folder) for the verification link.',
+        });
     } catch (err: any) {
       let errorMessage = 'Failed to resend verification email. Please try again.';
       
       if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setIsVerifying(false);
@@ -105,7 +111,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
               Email Verified!
             </CardTitle>
             <CardDescription className="text-slate-600 mt-2">
-              Your email has been successfully verified. Redirecting to pricing...
+              Email verified successfully. Redirecting to login screen...
             </CardDescription>
           </CardHeader>
         </Card>
@@ -158,16 +164,16 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
               </div>
             )}
 
-            <div className="space-y-4">
-              <p className="text-sm text-slate-600 text-center">
-                Didn't receive the email? Check your spam folder or resend.
-              </p>
-              <Button
-                onClick={handleResendEmail}
-                disabled={isVerifying || !email}
-                variant="outline"
-                className="w-full"
-              >
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600 text-center">
+                  Didn't receive the email? Check your spam folder or resend.
+                </p>
+                <Button
+                  onClick={handleResendEmail}
+                  disabled={isVerifying || !email}
+                  variant="outline"
+                  className="w-full"
+                >
                 {isVerifying ? (
                   <span className="flex items-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -179,8 +185,8 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
                 ) : (
                   'Resend Verification Email'
                 )}
-              </Button>
-            </div>
+                </Button>
+              </div>
 
             <div className="pt-4 border-t border-slate-200">
               <Button

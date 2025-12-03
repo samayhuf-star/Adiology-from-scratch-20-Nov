@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Copy, Save, AlertCircle, Download, FolderOpen, Trash2, FileDown, ShieldCheck } from 'lucide-react';
+import { Sparkles, Copy, Save, AlertCircle, Download, FolderOpen, Trash2, FileDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
@@ -7,12 +7,12 @@ import { Textarea } from './ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Label } from './ui/label';
-import { api } from '../utils/api';
 import { generateKeywords as generateKeywordsFromGoogleAds } from '../utils/api/googleAds';
 import { historyService } from '../utils/historyService';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { copyToClipboard } from '../utils/clipboard';
 import { notifications } from '../utils/notifications';
+import { DEFAULT_SEED_KEYWORDS, DEFAULT_NEGATIVE_KEYWORDS as DEFAULT_NEG_KW } from '../utils/defaultExamples';
 
 interface SavedList {
     id: string;
@@ -46,6 +46,79 @@ const DEFAULT_NEGATIVE_KEYWORDS = [
     'feedback'
 ].join('\n');
 
+type KeywordPlannerFillPreset = {
+    seeds: string[];
+    negatives: string[];
+    matchTypes?: {
+        broad: boolean;
+        phrase: boolean;
+        exact: boolean;
+    };
+};
+
+const KEYWORD_PLANNER_FILL_INFO: KeywordPlannerFillPreset[] = [
+    {
+        seeds: [
+            'airline cancellation help',
+            'flight credit assistance',
+            'speak to airline agent',
+            '24/7 airline hotline',
+            'upgrade my flight'
+        ],
+        negatives: ['jobs', 'salary', 'complaint', 'cheap', 'diy', 'review', 'reddit', 'wiki', 'map'],
+        matchTypes: { broad: true, phrase: true, exact: true }
+    },
+    {
+        seeds: [
+            'emergency plumber',
+            'water heater repair',
+            'slab leak detection',
+            'licensed plumbing company',
+            'same day plumber'
+        ],
+        negatives: ['training', 'course', 'manual', 'parts', 'supplies', 'job', 'free', 'discount', 'review'],
+        matchTypes: { broad: true, phrase: false, exact: true }
+    },
+    {
+        seeds: [
+            'b2b saas security',
+            'zero trust platform',
+            'managed soc service',
+            'cloud compliance audit',
+            'endpoint hardening'
+        ],
+        negatives: ['open source', 'github', 'template', 'internship', 'career', 'cheap', 'free download', 'wikipedia'],
+        matchTypes: { broad: false, phrase: true, exact: true }
+    }
+];
+
+const pickRandomPreset = <T,>(items: T[]): T => {
+    return items[Math.floor(Math.random() * items.length)];
+};
+
+const formatSeeds = (seeds: string[]) => {
+    if (seeds.length === 0) return '';
+    const shuffled = [...seeds].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(5, shuffled.length)).join(', ');
+};
+
+const formatNegatives = (negatives: string[]) => {
+    if (negatives.length === 0) return '';
+    const shuffled = [...negatives].sort(() => Math.random() - 0.5);
+    const count = Math.min(15, shuffled.length);
+    return shuffled.slice(0, count).join('\n');
+};
+
+function normalizeListInput(value: string): string[] {
+    if (!value) {
+        return [];
+    }
+    return value
+        .split(/[\n\r,]+/)
+        .map(entry => entry.trim())
+        .filter(Boolean);
+}
+
 export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     const [seedKeywords, setSeedKeywords] = useState('');
     const [negativeKeywords, setNegativeKeywords] = useState(DEFAULT_NEGATIVE_KEYWORDS);
@@ -64,6 +137,15 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
         phrase: true,
         exact: true
     });
+
+    const handleFillInfo = () => {
+        const preset = pickRandomPreset(KEYWORD_PLANNER_FILL_INFO);
+        if (!preset) return;
+
+        setSeedKeywords(formatSeeds(preset.seeds));
+        setNegativeKeywords(formatNegatives(preset.negatives));
+        setMatchTypes(preset.matchTypes || { broad: true, phrase: true, exact: true });
+    };
 
     useEffect(() => {
         if (initialData) {
@@ -99,17 +181,34 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             return;
         }
 
+        const normalizedNegativeKeywords = normalizeListInput(negativeKeywords);
+
         setIsGenerating(true);
 
+        // Calculate number of match types selected
+        const matchTypeCount = [matchTypes.broad, matchTypes.phrase, matchTypes.exact].filter(Boolean).length || 1;
+        
+        // Generate random target count between 730 and 890 (final count after match type formatting)
+        const targetCount = Math.floor(Math.random() * (890 - 730 + 1)) + 730;
+        
+        // Calculate base keyword count needed (divide by match type count, add some buffer)
+        // We add 10% buffer to account for variations, then we'll trim to target
+        const baseKeywordCount = Math.ceil((targetCount / matchTypeCount) * 1.1);
+
         try {
-            console.log('Calling Google Ads API with:', { seeds: seedKeywords, negatives: negativeKeywords });                                                             
+            console.log('Calling Google Ads API with:', { 
+                seeds: seedKeywords, 
+                negatives: normalizedNegativeKeywords,
+                targetCount,
+                matchTypeCount,
+                baseKeywordCount
+            });                                                             
             
             // Use Google Ads API with AI fallback
-            const seedKeywordsArray = seedKeywords.split(',').map(k => k.trim()).filter(Boolean);
             const response = await generateKeywordsFromGoogleAds({
                 seedKeywords: seedKeywordsArray,
-                negativeKeywords: negativeKeywords.split(',').map(k => k.trim()).filter(Boolean),
-                maxResults: 500
+                negativeKeywords: normalizedNegativeKeywords,
+                maxResults: baseKeywordCount
             });
 
             console.log('Google Ads API Response:', response);
@@ -131,10 +230,13 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                     }
                 });
 
+                // Trim to target count if we exceeded it
+                const trimmedKeywords = formattedKeywords.slice(0, targetCount);
+
                 if (isAppend) {
-                    setGeneratedKeywords(prev => [...prev, ...formattedKeywords]);                                                                              
+                    setGeneratedKeywords(prev => [...prev, ...trimmedKeywords]);                                                                              
                 } else {
-                    setGeneratedKeywords(formattedKeywords);
+                    setGeneratedKeywords(trimmedKeywords);
                 }
                 setApiStatus('ok');
             } else {
@@ -149,7 +251,7 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             
             // FALLBACK: Generate mock keywords locally when API is unavailable
             const seeds = seedKeywords.split(',').map(s => s.trim()).filter(Boolean);
-            const negatives = negativeKeywords.split('\n').map(n => n.trim().toLowerCase()).filter(Boolean);
+            const negatives = normalizedNegativeKeywords.map(n => n.toLowerCase());
             
             const mockKeywords: string[] = [];
             const modifiers = [
@@ -197,121 +299,15 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                     formattedKeywords.push(`[${keyword}]`);
                 }
             });
+            
+            // Trim to target count (random between 730-890)
+            const trimmedKeywords = formattedKeywords.slice(0, targetCount);
             
             if (isAppend) {
-                setGeneratedKeywords(prev => [...prev, ...formattedKeywords]);
+                setGeneratedKeywords(prev => [...prev, ...trimmedKeywords]);
             } else {
-                setGeneratedKeywords(formattedKeywords);
+                setGeneratedKeywords(trimmedKeywords);
             }
-            
-            setApiStatus('error');
-            console.log('Generated mock keywords:', formattedKeywords.length);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const handleGenerateNegatives = async () => {
-        if (!seedKeywords.trim()) {
-            notifications.warning('Please enter seed keywords', {
-                title: 'Seed Keywords Required'
-            });
-            return;
-        }
-
-        setIsGenerating(true);
-
-        try {
-            console.log('Calling API with:', { seeds: seedKeywords, negatives: negativeKeywords });
-            
-            const response = await api.post('/generate-negatives', {
-                seeds: seedKeywords,
-                negatives: negativeKeywords
-            });
-
-            console.log('API Response:', response);
-
-            if (response.keywords && Array.isArray(response.keywords)) {
-                // Extract keyword text and apply match type formatting
-                const keywordTexts = response.keywords.map((k: any) => k.text || k.keyword || k);
-                const formattedKeywords: string[] = [];
-                
-                keywordTexts.forEach((keyword: string) => {
-                    if (matchTypes.broad) {
-                        formattedKeywords.push(keyword);
-                    }
-                    if (matchTypes.phrase) {
-                        formattedKeywords.push(`"${keyword}"`);
-                    }
-                    if (matchTypes.exact) {
-                        formattedKeywords.push(`[${keyword}]`);
-                    }
-                });
-
-                setNegativeKeywords(formattedKeywords.join('\n'));
-                setApiStatus('ok');
-            } else {
-                console.error('Invalid response format:', response);
-                notifications.error('Invalid response from server. Check console for details.', {
-                    title: 'API Error'
-                });
-                setApiStatus('error');
-            }
-        } catch (error: any) {
-            console.log('ℹ️ Backend unavailable - using local fallback generation');
-            
-            // FALLBACK: Generate mock keywords locally when API is unavailable
-            const seeds = seedKeywords.split(',').map(s => s.trim()).filter(Boolean);
-            const negatives = negativeKeywords.split('\n').map(n => n.trim().toLowerCase()).filter(Boolean);
-            
-            const mockKeywords: string[] = [];
-            const modifiers = [
-                'near me', 'online', 'service', 'support', 'help', 'contact', 
-                'phone number', 'customer service', 'call center', 'hotline',
-                'number', '24/7', 'hours', 'location', 'address', 'chat',
-                'email', 'support team', 'helpline', 'assistance', 'care'
-            ];
-            
-            const questions = ['how to', 'what is', 'where is', 'when does', 'why'];
-            
-            seeds.forEach(seed => {
-                // Add base seed
-                if (!negatives.some(neg => seed.toLowerCase().includes(neg))) {
-                    mockKeywords.push(seed);
-                }
-                
-                // Add modifiers
-                modifiers.forEach(modifier => {
-                    const combined = `${seed} ${modifier}`;
-                    if (!negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                        mockKeywords.push(combined);
-                    }
-                });
-                
-                // Add question variations
-                questions.forEach(question => {
-                    const combined = `${question} ${seed}`;
-                    if (!negatives.some(neg => combined.toLowerCase().includes(neg))) {
-                        mockKeywords.push(combined);
-                    }
-                });
-            });
-            
-            // Apply match type formatting
-            const formattedKeywords: string[] = [];
-            mockKeywords.forEach((keyword: string) => {
-                if (matchTypes.broad) {
-                    formattedKeywords.push(keyword);
-                }
-                if (matchTypes.phrase) {
-                    formattedKeywords.push(`"${keyword}"`);
-                }
-                if (matchTypes.exact) {
-                    formattedKeywords.push(`[${keyword}]`);
-                }
-            });
-            
-            setNegativeKeywords(formattedKeywords.join('\n'));
             
             setApiStatus('error');
             console.log('Generated mock keywords:', formattedKeywords.length);
@@ -346,6 +342,8 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             notifications.success('Keyword plan saved!', {
                 title: 'Saved Successfully'
             });
+            // Refresh the saved lists to show the newly saved item
+            await handleLoadSavedLists();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
@@ -391,6 +389,8 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
             });
             setListName('');
             setShowSaveDialog(false);
+            // Refresh the saved lists to show the newly saved item
+            await handleLoadSavedLists();
         } catch (error) {
             console.error("Save failed", error);
             notifications.error('Failed to save. Please try again.', {
@@ -474,252 +474,232 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
     }, []);
 
     return (
-        <div className="p-8">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                    AI Keyword Planner and Negative List Builder
+        <div className="p-4 max-w-5xl mx-auto">
+            <div className="mb-4">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                    AI Keyword Planner
                 </h1>
-                <p className="text-slate-500">
+                <p className="text-sm text-slate-500">
                     Generate comprehensive keyword lists using AI based on your seed keywords and negative filters
                 </p>
             </div>
 
             {/* Tabs at the top */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
                 <TabsList>
                     <TabsTrigger value="planner">Keyword Planner</TabsTrigger>
                     <TabsTrigger value="saved">Saved Lists</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="planner">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Left Panel: Define Your Strategy */}
-                        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl">
-                            <h2 className="text-xl font-bold text-indigo-600 mb-6">
-                                1. Define Your Strategy
-                            </h2>
-
-                            {/* Seed Keywords */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Seed Keywords (3-5 Core Ideas, comma-separated)
-                                </label>
-                                <Input
-                                    placeholder="airline number, contact airline, delta phone number"
-                                    value={seedKeywords}
-                                    onChange={(e) => setSeedKeywords(e.target.value)}
-                                    className="bg-white border-slate-300"
-                                />
-                                <p className="text-xs text-slate-500 mt-1">
-                                    These are the primary topics the AI will build upon.
-                                </p>
-                            </div>
-
-                            {/* Target Match Types */}
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-slate-700 mb-3">
-                                    Target Match Types
-                                </label>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox 
-                                            id="broad-planner" 
-                                            checked={matchTypes.broad}
-                                            onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
-                                        />
-                                        <label htmlFor="broad-planner" className="text-sm text-slate-600 cursor-pointer">
-                                            Broad Match
-                                        </label>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Left Panel: Analysis Configuration */}
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg flex flex-col">
+                            <div className="relative mb-3">
+                                <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-slate-800 mb-1">
+                                            Analysis Configuration
+                                        </h2>
+                                        <p className="text-xs text-slate-500">
+                                            Provide details to guide the AI model
+                                        </p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox 
-                                            id="phrase-planner" 
-                                            checked={matchTypes.phrase}
-                                            onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
-                                        />
-                                        <label htmlFor="phrase-planner" className="text-sm text-slate-600 cursor-pointer">
-                                            Phrase Match
-                                        </label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox 
-                                            id="exact-planner" 
-                                            checked={matchTypes.exact}
-                                            onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
-                                        />
-                                        <label htmlFor="exact-planner" className="text-sm text-slate-600 cursor-pointer">
-                                            Exact Match
-                                        </label>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-2">
-                                    Keywords will be generated to fit the characteristics of the selected match types.
-                                </p>
-                            </div>
-
-                            {/* Negative Keywords */}
-                            <div className="mb-6">
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-semibold text-slate-700">
-                                        Negative Keywords (One term/phrase per line)
-                                    </label>
                                     <Button
-                                        onClick={() => handleGenerateNegatives()}
                                         variant="outline"
                                         size="sm"
-                                        className="text-xs gap-1 border-red-300 text-red-600 hover:bg-red-50"
+                                        onClick={handleFillInfo}
+                                        className="shrink-0 text-xs"
                                     >
-                                        <ShieldCheck className="w-3 h-3" />
-                                        Generate 500-1000
+                                        <Sparkles className="w-3 h-3 mr-1" />
+                                        Fill Info
                                     </Button>
                                 </div>
-                                <div className="relative bg-white border border-slate-300 rounded-lg overflow-hidden h-[200px]">
-                                    <div className="absolute inset-0 overflow-y-auto p-3">
-                                        <div className="grid grid-cols-3 gap-2 font-mono text-sm text-slate-700">
-                                            {negativeKeywords.split('\n').filter(k => k.trim()).map((keyword, idx) => (
-                                                <div key={idx} className="text-xs leading-relaxed break-words">
-                                                    {keyword}
-                                                </div>
-                                            ))}
-                                            {negativeKeywords.trim() === '' && (
-                                                <div className="col-span-3 text-slate-400 text-center py-8">
-                                                    Enter negative keywords (one per line) or click Generate
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <Textarea
-                                        placeholder="Type here... cheap, discount, reviews, job, headquater, apply, free, best, company"
-                                        value={negativeKeywords}
-                                        onChange={(e) => setNegativeKeywords(e.target.value)}
-                                        className="absolute inset-0 bg-transparent border-0 font-mono text-sm resize-none opacity-0 focus:opacity-100 focus:bg-white z-10"
-                                    />
-                                </div>
-                                <p className="text-xs text-slate-500 mt-1">
-                                    Click the text area to edit. The AI will strictly avoid generating keywords containing these terms.
-                                </p>
                             </div>
 
-                            {/* Action Buttons */}
-                            <div className="space-y-3">
+                            <div className="flex-1 space-y-4 overflow-y-auto">
+                                {/* Seed Keywords */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="seedKeywords" className="flex items-center gap-1.5 text-sm text-slate-700">
+                                        <span className="text-red-500">*</span>
+                                        Seed Keywords
+                                    </Label>
+                                    <Input
+                                        id="seedKeywords"
+                                        placeholder="airline number, contact airline, delta phone number"
+                                        value={seedKeywords}
+                                        onChange={(e) => setSeedKeywords(e.target.value)}
+                                        className="text-sm"
+                                    />
+                                    <p className="text-xs text-slate-500">
+                                        Enter the main keywords you are targeting (3-5 core ideas, comma-separated).
+                                    </p>
+                                </div>
+
+                                {/* Target Match Types */}
+                                <div className="space-y-1.5">
+                                    <Label className="flex items-center gap-1.5 text-sm text-slate-700">
+                                        <span className="text-red-500">*</span>
+                                        Target Match Types
+                                    </Label>
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <Checkbox 
+                                                id="broad-planner" 
+                                                checked={matchTypes.broad}
+                                                onCheckedChange={(c) => setMatchTypes(prev => ({...prev, broad: c as boolean}))}
+                                                className="border-amber-400"
+                                            />
+                                            <label htmlFor="broad-planner" className="text-xs text-slate-600 cursor-pointer">
+                                                Broad Match
+                                            </label>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Checkbox 
+                                                id="phrase-planner" 
+                                                checked={matchTypes.phrase}
+                                                onCheckedChange={(c) => setMatchTypes(prev => ({...prev, phrase: c as boolean}))}
+                                                className="border-blue-400"
+                                            />
+                                            <label htmlFor="phrase-planner" className="text-xs text-slate-600 cursor-pointer">
+                                                Phrase Match "keyword"
+                                            </label>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Checkbox 
+                                                id="exact-planner" 
+                                                checked={matchTypes.exact}
+                                                onCheckedChange={(c) => setMatchTypes(prev => ({...prev, exact: c as boolean}))}
+                                                className="border-emerald-400"
+                                            />
+                                            <label htmlFor="exact-planner" className="text-xs text-slate-600 cursor-pointer">
+                                                Exact Match [keyword]
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Negative Keywords */}
+                                <div className="space-y-1.5">
+                                    <Label className="text-sm text-slate-700">
+                                        Negative Keywords
+                                    </Label>
+                                    <Textarea
+                                        placeholder="cheap, discount, reviews, job, free, best..."
+                                        value={negativeKeywords}
+                                        onChange={(e) => setNegativeKeywords(e.target.value)}
+                                        className="min-h-[100px] text-xs resize-none"
+                                    />
+                                    <p className="text-xs text-slate-500">
+                                        Enter negative keywords (one per line or comma-separated). AI will avoid generating keywords containing these terms.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Generate Button */}
+                            <div className="pt-4 border-t border-slate-200 mt-4">
                                 <Button
                                     onClick={() => handleGenerate(false)}
                                     disabled={isGenerating || !seedKeywords.trim()}
-                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6"
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-2.5"
                                 >
                                     {isGenerating ? (
                                         <>
-                                            <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                                            <Sparkles className="w-4 h-4 mr-2 animate-spin" />
                                             Generating Keywords...
                                         </>
                                     ) : (
                                         <>
-                                            <Sparkles className="w-5 h-5 mr-2" />
-                                            Generate 100-300 Keywords (Faster)
+                                            <Sparkles className="w-4 h-4 mr-2" />
+                                            Generate Keywords
                                         </>
                                     )}
                                 </Button>
-
                                 {generatedKeywords.length > 0 && (
                                     <Button
                                         onClick={() => handleGenerate(true)}
                                         disabled={isGenerating || !seedKeywords.trim()}
                                         variant="outline"
-                                        className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50 py-6"
+                                        className="w-full mt-2 text-sm py-2"
                                     >
-                                        Append More Keywords (Total: {generatedKeywords.length})
+                                        Append More ({generatedKeywords.length} total)
                                     </Button>
                                 )}
                             </div>
                         </div>
 
-                        {/* Right Panel: Generated Keyword List */}
-                        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/60 shadow-xl flex flex-col">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold text-indigo-600">
-                                    2. Generated Keyword List
+                        {/* Right Panel: Generated Keywords */}
+                        <div className="bg-white/80 backdrop-blur-xl rounded-xl p-4 border border-slate-200/60 shadow-lg flex flex-col">
+                            <div className="mb-3">
+                                <h2 className="text-lg font-bold text-slate-800 mb-1">
+                                    Generated Keywords ({generatedKeywords.length} of {generatedKeywords.length})
                                 </h2>
-                                {generatedKeywords.length > 0 && (
-                                    <div className="flex gap-2">
-                                        <Button
-                                            onClick={handleOpenSaveDialog}
-                                            disabled={isSaving || generatedKeywords.length === 0}
-                                            variant="default"
-                                            size="sm"
-                                            className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-                                        >
-                                            <Save className="w-4 h-4" />
-                                            {isSaving ? 'Saving...' : 'Save Plan'}
-                                        </Button>
-                                        <Button
-                                            onClick={handleCopyAll}
-                                            variant="outline"
-                                            size="sm"
-                                            className="gap-2 bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
-                                        >
-                                            <Copy className="w-4 h-4" />
-                                            Copy All
-                                        </Button>
-                                        <Button
-                                            onClick={handleDownloadKeywords}
-                                            variant="outline"
-                                            size="sm"
-                                            className="gap-2 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
-                                        >
-                                            <Download className="w-4 h-4" />
-                                            Download
-                                        </Button>
-                                    </div>
-                                )}
+                                <p className="text-xs text-slate-500">
+                                    Results will appear here after generation
+                                </p>
                             </div>
 
-                            {generatedKeywords.length > 0 && (
-                                <div className="mb-4 px-4 py-2 bg-slate-100 rounded-lg flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-slate-700">
-                                        {generatedKeywords.length} Keywords Generated
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[600px]">
-                                {generatedKeywords.length > 0 ? (
-                                    <div className="space-y-1">
-                                        {generatedKeywords.map((keyword, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="px-3 py-2 bg-white rounded border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-sm text-slate-700 font-mono"
-                                            >
-                                                {keyword}
-                                            </div>
-                                        ))}
+                            <div className="flex-1 overflow-y-auto">
+                                {generatedKeywords.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full py-8 text-center">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                                            <Sparkles className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-base font-semibold text-slate-700 mb-2">
+                                            Ready to Generate
+                                        </h3>
+                                        <p className="text-xs text-slate-500 max-w-xs">
+                                            Fill out the configuration including your seed keywords. AI will analyze your inputs and generate a comprehensive list of keywords.
+                                        </p>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-center h-full">
-                                        <div className="text-center">
-                                            <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                            <p className="text-slate-500">
-                                                Enter seed keywords and click "Generate" to create your keyword list
-                                            </p>
+                                    <div className="space-y-3">
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2 flex-wrap">
+                                            <Button
+                                                onClick={handleOpenSaveDialog}
+                                                disabled={isSaving || generatedKeywords.length === 0}
+                                                variant="default"
+                                                size="sm"
+                                                className="text-xs gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white"
+                                            >
+                                                <Save className="w-3.5 h-3.5" />
+                                                {isSaving ? 'Saving...' : 'Save'}
+                                            </Button>
+                                            <Button
+                                                onClick={handleCopyAll}
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs gap-1.5"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                                Copy All
+                                            </Button>
+                                            <Button
+                                                onClick={handleDownloadKeywords}
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs gap-1.5"
+                                            >
+                                                <Download className="w-3.5 h-3.5" />
+                                                Download
+                                            </Button>
+                                        </div>
+
+                                        {/* Keywords List */}
+                                        <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+                                            {generatedKeywords.map((keyword, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="px-3 py-2 bg-slate-50 rounded-lg hover:bg-indigo-50 transition-colors text-xs text-slate-700 font-mono"
+                                                >
+                                                    {keyword}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
                             </div>
-
-                            {/* Save button at bottom for better visibility */}
-                            {generatedKeywords.length > 0 && (
-                                <div className="mt-4 pt-4 border-t border-slate-200">
-                                    <Button
-                                        onClick={handleOpenSaveDialog}
-                                        disabled={isSaving || generatedKeywords.length === 0}
-                                        variant="default"
-                                        size="lg"
-                                        className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-                                    >
-                                        <Save className="w-5 h-5" />
-                                        {isSaving ? 'Saving Keyword Plan...' : 'Save Keyword Plan'}
-                                    </Button>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </TabsContent>

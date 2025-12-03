@@ -1,3 +1,80 @@
+/* CSS Reset - Fixes spacing & box model */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+  height: auto;
+}
+
+/* Root element - ensure no spacing issues */
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Prevent horizontal overflow globally */
+body,
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Ensure all direct children of root respect width */
+#root > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Allow homepage to break out of width constraints */
+body[data-homepage="true"] #root > * {
+  max-width: none;
+}
+
+/* Homepage-specific overrides - prevent global styles from interfering */
+body[data-homepage="true"],
+html[data-homepage="true"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+body[data-homepage="true"] #root,
+html[data-homepage="true"] #root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+  overflow-x: hidden !important;
+}
+
+/* Homepage wrapper spacing removed - homepage deleted */
+
 /*! tailwindcss v4.1.3 | MIT License | https://tailwindcss.com */
 @layer properties {
   @supports (((-webkit-hyphens: none)) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color: rgb(from red r g b)))) {
@@ -4961,4 +5038,218 @@ html {
   to {
     height: 0;
   }
+}
+
+/* Enhanced Padding for Better Spacing */
+.enhanced-padding input,
+.enhanced-padding textarea,
+.enhanced-padding select {
+  padding: 0.75rem 1rem !important;
+}
+
+.enhanced-padding button {
+  padding: 0.625rem 1.25rem !important;
+}
+
+.enhanced-padding .card,
+.enhanced-padding [class*="card"] {
+  padding: 1.5rem !important;
+}
+
+.enhanced-padding h1 {
+  margin-bottom: 1.5rem !important;
+}
+
+.enhanced-padding h2 {
+  margin-bottom: 1rem !important;
+}
+
+.enhanced-padding h3,
+.enhanced-padding h4 {
+  margin-bottom: 0.75rem !important;
+}
+
+.enhanced-padding p {
+  margin-bottom: 0.75rem !important;
+}
+
+.enhanced-padding label {
+  margin-bottom: 0.5rem !important;
+  display: block;
+}
+
+/* Global improved spacing */
+body {
+  padding: 0;
+  margin: 0;
+}
+
+/* Form field spacing */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  padding: 0.75rem 1rem;
+}
+
+/* Button spacing improvements */
+button:not(.unstyled) {
+  padding: 0.625rem 1.25rem;
+}
+
+/* Card and container improvements */
+.bg-white,
+.bg-gray-50,
+.bg-slate-50,
+[class*="rounded"] {
+  padding: 1.25rem;
+}
+
+/* Specific component padding */
+.auth-container input {
+  padding: 0.875rem 1rem !important;
+}
+
+.auth-container button {
+  padding: 0.75rem 1.5rem !important;
+}
+
+/* Dashboard and main content areas */
+main,
+.main-content {
+  padding: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  main,
+  .main-content {
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  main,
+  .main-content {
+    padding: 2.5rem;
+  }
+}
+
+/* ==========================================
+   UNIFIED COLOR SCHEME - ADIOLOGY DASHBOARD
+   ========================================== 
+   
+   Consistent 3-color palette:
+   - Primary: Indigo (#4F46E5 - indigo-600)
+   - Secondary: Purple (#9333EA - purple-600)
+   - Tertiary: Cyan (#06B6D4 - cyan-600)
+   
+   This ensures all components use the same colors
+   across the entire dashboard.
+*/
+
+/* Replace any hardcoded gradient colors with unified scheme */
+.theme-gradient-primary,
+.theme-primary-gradient {
+  background: linear-gradient(to right, rgb(79, 70, 229), rgb(147, 51, 234)) !important;
+}
+
+.theme-gradient-text,
+.theme-primary-gradient-text {
+  background: linear-gradient(to right, rgb(79, 70, 229), rgb(147, 51, 234));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Button styles with solid colors */
+.theme-button-primary {
+  background: #4f46e5 !important;
+  color: white !important;
+}
+
+.theme-button-primary:hover {
+  background: #4338ca !important;
+}
+
+/* Card backgrounds with unified colors */
+.theme-card-primary {
+  background: linear-gradient(to bottom right, white, rgba(238, 242, 255, 0.3), rgba(243, 232, 255, 0.3)) !important;
+}
+
+.theme-card-accent {
+  background: linear-gradient(to bottom right, white, rgba(207, 250, 254, 0.2), rgba(238, 242, 255, 0.2)) !important;
+}
+
+/* Badge styles with unified colors */
+.theme-badge-primary {
+  background-color: rgb(224, 231, 255) !important;
+  color: rgb(67, 56, 202) !important;
+  border-color: rgb(199, 210, 254) !important;
+}
+
+.theme-badge-secondary {
+  background-color: rgb(243, 232, 255) !important;
+  color: rgb(107, 33, 168) !important;
+  border-color: rgb(233, 213, 255) !important;
+}
+
+.theme-badge-tertiary {
+  background-color: rgb(207, 250, 254) !important;
+  color: rgb(8, 145, 178) !important;
+  border-color: rgb(165, 243, 252) !important;
+}
+
+/* Override any component-specific colors */
+[class*="from-indigo"][class*="to-purple"],
+[class*="from-purple"][class*="to-indigo"],
+[class*="from-blue"][class*="to-purple"],
+[class*="from-emerald"],
+[class*="from-teal"],
+[class*="from-amber"],
+[class*="from-orange"],
+[class*="from-red"],
+[class*="from-pink"] {
+  /* These will be handled by Tailwind utility classes */
+}
+
+/* Text colors */
+.theme-text-primary {
+  color: rgb(79, 70, 229) !important;
+}
+
+.theme-text-secondary {
+  color: rgb(147, 51, 234) !important;
+}
+
+.theme-text-tertiary {
+  color: rgb(6, 182, 212) !important;
+}
+
+/* Border colors */
+.theme-border-primary {
+  border-color: rgb(199, 210, 254) !important;
+}
+
+.theme-border-secondary {
+  border-color: rgb(233, 213, 255) !important;
+}
+
+.theme-border-tertiary {
+  border-color: rgb(165, 243, 252) !important;
+}
+
+/* Background light shades */
+.theme-bg-primary-light {
+  background-color: rgb(238, 242, 255) !important;
+}
+
+.theme-bg-secondary-light {
+  background-color: rgb(250, 245, 255) !important;
+}
+
+.theme-bg-tertiary-light {
+  background-color: rgb(236, 254, 255) !important;
 }
