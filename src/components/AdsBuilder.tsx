@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Sparkles, Plus, Trash2, Download, FileSpreadsheet, Copy, CheckSquare, Square, Zap, Globe, Settings, Eye, Link2, Phone, Tag, MessageSquare, Building2, FileText, Image as ImageIcon, DollarSign, MapPin, Smartphone, Gift, AlertCircle, Search, Filter, X, ChevronDown, SlidersHorizontal, BarChart3, BarChart, TrendingUp, FileText as FileTextIcon, MoreVertical, Save, RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -388,21 +388,124 @@ export const AdsBuilder = () => {
     const [baseUrl, setBaseUrl] = useState('https://www.example.com');
     const [urlError, setUrlError] = useState('');
     
-    // Ad type selection with dropdown (single selection)
-    const [selectedAdType, setSelectedAdType] = useState<string>('rsa'); // 'rsa' | 'dki' | 'callOnly' | 'all'
+    // Ad type selection - array of selected types (max 3)
+    const [selectedAdTypes, setSelectedAdTypes] = useState<string[]>([]); // Array of 'rsa' | 'dki' | 'callOnly'
     
     // Ad config - generates proper number of ads per group per specifications
-    // RSA: 3-5 per group, DKI: 2-5 per group, Call-Only: 1 per group
+    // RSA: 1 per selection, DKI: 1 per selection, Call-Only: 1 per selection
     const getAdConfig = () => {
-        if (selectedAdType === 'all') {
-            return { rsaCount: 3, dkiCount: 3, callOnlyCount: 1 };
-        } else if (selectedAdType === 'rsa') {
-            return { rsaCount: 3, dkiCount: 0, callOnlyCount: 0 };
-        } else if (selectedAdType === 'dki') {
-            return { rsaCount: 0, dkiCount: 3, callOnlyCount: 0 };
-        } else {
-            return { rsaCount: 0, dkiCount: 0, callOnlyCount: 1 };
-        }
+        return {
+            rsaCount: selectedAdTypes.includes('rsa') ? 1 : 0,
+            dkiCount: selectedAdTypes.includes('dki') ? 1 : 0,
+            callOnlyCount: selectedAdTypes.includes('callOnly') ? 1 : 0
+        };
+    };
+    
+    // Pre-generate ads when keywords/URL are available
+    useEffect(() => {
+        const preGenerateAds = async () => {
+            // Get keywords from current mode
+            const keywords = mode === 'single' 
+                ? singleKeywords.split(/[,\n;]+/).map(k => k.trim()).filter(Boolean)
+                : adGroups[0]?.keywords.split(/[,\n;]+/).map(k => k.trim()).filter(Boolean) || [];
+            
+            // Only pre-generate if we have keywords and a valid URL
+            if (keywords.length === 0 || !baseUrl || baseUrl === 'https://www.example.com') {
+                setPreGeneratedAds({});
+                return;
+            }
+            
+            setIsPreGenerating(true);
+            const templateGroup = mode === 'single' 
+                ? { id: '1', name: 'Group 1', keywords: singleKeywords }
+                : adGroups[0] || { id: '1', name: 'Group 1', keywords: '' };
+            
+            const newPreGenerated: typeof preGeneratedAds = {};
+            
+            // Pre-generate RSA
+            try {
+                const rsaAd = await generateFallbackRSA(templateGroup.name, keywords, 0, baseUrl);
+                newPreGenerated.rsa = rsaAd;
+            } catch (error) {
+                console.error('Error pre-generating RSA:', error);
+            }
+            
+            // Pre-generate DKI
+            try {
+                const dkiAd = await generateFallbackDKI(templateGroup.name, keywords, 0, baseUrl);
+                newPreGenerated.dki = dkiAd;
+            } catch (error) {
+                console.error('Error pre-generating DKI:', error);
+            }
+            
+            // Pre-generate Call-Only
+            try {
+                const callAd = await generateFallbackCallOnly(templateGroup.name, keywords, 0, baseUrl);
+                newPreGenerated.callOnly = callAd;
+            } catch (error) {
+                console.error('Error pre-generating Call-Only:', error);
+            }
+            
+            setPreGeneratedAds(newPreGenerated);
+            setIsPreGenerating(false);
+        };
+        
+        // Debounce pre-generation
+        const timeoutId = setTimeout(preGenerateAds, 1000);
+        return () => clearTimeout(timeoutId);
+    }, [mode, singleKeywords, adGroups, baseUrl]);
+    
+    // Handle ad type selection (max 3) - immediately add pre-generated ad
+    const handleAdTypeToggle = (adType: string) => {
+        setSelectedAdTypes(prev => {
+            if (prev.includes(adType)) {
+                // Remove if already selected - also remove from generatedAds
+                const updatedAds = generatedAds.filter(ad => {
+                    // Keep ads that are not of this type or are in different groups
+                    return !(ad.adType === (adType === 'rsa' ? 'RSA' : adType === 'dki' ? 'DKI' : 'CallOnly') && 
+                            ad.groupName === (mode === 'single' ? 'Group 1' : adGroups[0]?.name || 'Group 1'));
+                });
+                setGeneratedAds(updatedAds);
+                return prev.filter(t => t !== adType);
+            } else {
+                // Add if not at max (3)
+                if (prev.length >= 3) {
+                    notifications.warning('Maximum 3 ad types allowed per ad group', {
+                        title: 'Limit Reached',
+                        description: 'Google Ads allows a maximum of 3 ads per ad group.'
+                    });
+                    return prev;
+                }
+                
+                // Immediately add pre-generated ad to generatedAds
+                const preGeneratedAd = preGeneratedAds[adType as keyof typeof preGeneratedAds];
+                if (preGeneratedAd) {
+                    // Copy to all ad groups
+                    const groupsToAddTo = mode === 'single' 
+                        ? [{ id: '1', name: 'Group 1', keywords: singleKeywords }]
+                        : adGroups.filter(g => g.keywords.trim());
+                    
+                    const adsToAdd: GeneratedAd[] = groupsToAddTo.map(group => ({
+                        ...preGeneratedAd,
+                        id: crypto.randomUUID(),
+                        groupName: group.name
+                    }));
+                    
+                    setGeneratedAds(prev => [...prev, ...adsToAdd]);
+                    notifications.success(`${adType.toUpperCase()} ad added!`, {
+                        title: 'Ad Added',
+                        duration: 2000
+                    });
+                } else {
+                    notifications.warning('Ad is still generating. Please wait a moment.', {
+                        title: 'Generating...',
+                        duration: 2000
+                    });
+                }
+                
+                return [...prev, adType];
+            }
+        });
     };
     
     const [generatedAds, setGeneratedAds] = useState<GeneratedAd[]>([]);
@@ -411,6 +514,14 @@ export const AdsBuilder = () => {
     const [showExtensionDialog, setShowExtensionDialog] = useState(false);
     const [selectedAdForExtension, setSelectedAdForExtension] = useState<string | null>(null);
     const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+    
+    // Pre-generated ads ready for immediate use
+    const [preGeneratedAds, setPreGeneratedAds] = useState<{
+        rsa?: GeneratedAd;
+        dki?: GeneratedAd;
+        callOnly?: GeneratedAd;
+    }>({});
+    const [isPreGenerating, setIsPreGenerating] = useState(false);
     
     // Filter & Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -549,6 +660,15 @@ export const AdsBuilder = () => {
             return;
         }
 
+        // Validate ad types are selected
+        if (selectedAdTypes.length === 0) {
+            notifications.warning('Please select at least one ad type', {
+                title: 'Ad Type Required',
+                description: 'You must select at least one ad type (RSA, DKI, or Call-Only) before generating ads.'
+            });
+            return;
+        }
+
         setIsGenerating(true);
         try {
             const groupsToProcess = mode === 'single' 
@@ -563,20 +683,16 @@ export const AdsBuilder = () => {
                 return;
             }
 
-            // Get ad config based on selected ad type
+            // Get ad config based on selected ad types
             const currentAdConfig = getAdConfig();
             
             // Calculate total ads that will be generated
-            // For proper generation: RSA = 3 per group, DKI = 3 per group, Call-Only = 1 per group
-            const rsaPerGroup = currentAdConfig.rsaCount;
-            const dkiPerGroup = currentAdConfig.dkiCount;
-            const callOnlyPerGroup = currentAdConfig.callOnlyCount;
-            const totalAdsPerGroup = rsaPerGroup + dkiPerGroup + callOnlyPerGroup;
-            const totalAdsToGenerate = totalAdsPerGroup * groupsToProcess.length;
+            // Each selected ad type generates 1 ad, which is copied to all groups
+            const totalAdsToGenerate = selectedAdTypes.length * groupsToProcess.length;
 
             // Limit total ads to 25
             if (totalAdsToGenerate > 25) {
-                notifications.warning(`Total ads cannot exceed 25. You're trying to generate ${totalAdsToGenerate} ads (${groupsToProcess.length} groups × ${totalAdsPerGroup} ads per group). Please reduce the quantities or number of groups.`, {
+                notifications.warning(`Total ads cannot exceed 25. You're trying to generate ${totalAdsToGenerate} ads (${selectedAdTypes.length} ad types × ${groupsToProcess.length} groups). Please reduce the number of ad types or groups.`, {
                     title: 'Too Many Ads'
                 });
                 setIsGenerating(false);
@@ -584,162 +700,152 @@ export const AdsBuilder = () => {
             }
 
             const allGeneratedAds: GeneratedAd[] = [];
+            
+            // Generate one ad of each selected type
+            const generatedAdTemplates: GeneratedAd[] = [];
 
+            // Use the first group's keywords for template generation
+            const templateGroup = groupsToProcess[0];
+            const templateKeywords = templateGroup.keywords
+                .split(/[,\n;]+/)
+                .map(k => k.trim())
+                .filter(Boolean);
+
+            if (templateKeywords.length === 0) {
+                notifications.warning('Please enter valid keywords', {
+                    title: 'Keywords Required'
+                });
+                setIsGenerating(false);
+                return;
+            }
+
+            // Generate RSA template if selected
+            if (currentAdConfig.rsaCount > 0) {
+                try {
+                    const response = await api.post('/generate-ads', {
+                        keywords: templateKeywords,
+                        adType: 'RSA',
+                        count: 1,
+                        groupName: templateGroup.name,
+                        baseUrl: baseUrl,
+                        systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
+                    });
+
+                    if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
+                        const ad = response.ads[0];
+                        if (ad && (ad.headline1 || ad.headlines)) {
+                            generatedAdTemplates.push({
+                                id: crypto.randomUUID(),
+                                groupName: templateGroup.name, // Will be replaced when copying
+                                adType: 'RSA',
+                                type: 'rsa',
+                                ...ad,
+                                selected: false,
+                                extensions: []
+                            });
+                        }
+                    } else {
+                        throw new Error('Invalid response structure');
+                    }
+                } catch (error) {
+                    console.log('API unavailable or invalid response, using fallback for RSA');
+                    try {
+                        const fallbackAd = await generateFallbackRSA(templateGroup.name, templateKeywords, 0, baseUrl);
+                        generatedAdTemplates.push(fallbackAd);
+                    } catch (fallbackError) {
+                        console.error('Fallback generation failed:', fallbackError);
+                    }
+                }
+            }
+
+            // Generate DKI template if selected
+            if (currentAdConfig.dkiCount > 0) {
+                try {
+                    const response = await api.post('/generate-ads', {
+                        keywords: templateKeywords,
+                        adType: 'DKI',
+                        count: 1,
+                        groupName: templateGroup.name,
+                        baseUrl: baseUrl,
+                        systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
+                    });
+
+                    if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
+                        const ad = response.ads[0];
+                        if (ad && (ad.headline1 || ad.headlines)) {
+                            generatedAdTemplates.push({
+                                id: crypto.randomUUID(),
+                                groupName: templateGroup.name, // Will be replaced when copying
+                                adType: 'DKI',
+                                type: 'dki',
+                                ...ad,
+                                selected: false,
+                                extensions: []
+                            });
+                        }
+                    } else {
+                        throw new Error('Invalid response structure');
+                    }
+                } catch (error) {
+                    console.log('API unavailable or invalid response, using fallback for DKI');
+                    try {
+                        const fallbackAd = await generateFallbackDKI(templateGroup.name, templateKeywords, 0, baseUrl);
+                        generatedAdTemplates.push(fallbackAd);
+                    } catch (fallbackError) {
+                        console.error('Fallback generation failed:', fallbackError);
+                    }
+                }
+            }
+
+            // Generate Call Only template if selected
+            if (currentAdConfig.callOnlyCount > 0) {
+                try {
+                    const response = await api.post('/generate-ads', {
+                        keywords: templateKeywords,
+                        adType: 'CallOnly',
+                        count: 1,
+                        groupName: templateGroup.name,
+                        baseUrl: baseUrl,
+                        systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
+                    });
+
+                    if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
+                        const ad = response.ads[0];
+                        if (ad && (ad.phoneNumber || ad.phone || ad.businessName)) {
+                            generatedAdTemplates.push({
+                                id: crypto.randomUUID(),
+                                groupName: templateGroup.name, // Will be replaced when copying
+                                adType: 'CallOnly',
+                                type: 'callonly',
+                                phone: ad.phoneNumber || ad.phone || '',
+                                businessName: ad.businessName || '',
+                                ...ad,
+                                selected: false,
+                                extensions: []
+                            });
+                        }
+                    } else {
+                        throw new Error('Invalid response structure');
+                    }
+                } catch (error) {
+                    console.log('API unavailable or invalid response, using fallback for Call Only');
+                    try {
+                        const fallbackAd = await generateFallbackCallOnly(templateGroup.name, templateKeywords, 0, baseUrl);
+                        generatedAdTemplates.push(fallbackAd);
+                    } catch (fallbackError) {
+                        console.error('Fallback generation failed:', fallbackError);
+                    }
+                }
+            }
+
+            // Copy generated ad templates to all ad groups
             for (const group of groupsToProcess) {
-                // Split by comma, newline, or semicolon to handle different input formats
-                const keywords = group.keywords
-                    .split(/[,\n;]+/)
-                    .map(k => k.trim())
-                    .filter(Boolean);
-                
-                // Debug: Log keywords array
-                console.log('Processing keywords for group:', group.name);
-                console.log('Keywords array:', keywords);
-                console.log('Number of keywords:', keywords.length);
-                
-                if (keywords.length === 0) {
-                    console.warn('No keywords found after splitting for group:', group.name);
-                    continue;
-                }
-                
-                // Generate RSA Ads (3 per group)
-                if (rsaPerGroup > 0) {
-                    try {
-                        const response = await api.post('/generate-ads', {
-                            keywords,
-                            adType: 'RSA',
-                            count: rsaPerGroup,
-                            groupName: group.name,
-                            baseUrl: baseUrl,
-                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
-                        });
-
-                        if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
-                            response.ads.forEach((ad: any) => {
-                                // Validate ad structure before adding
-                                if (ad && (ad.headline1 || ad.headlines)) {
-                                    allGeneratedAds.push({
-                                        id: crypto.randomUUID(),
-                                        groupName: group.name,
-                                        adType: 'RSA',
-                                        type: 'rsa',
-                                        ...ad,
-                                        selected: false,
-                                        extensions: []
-                                    });
-                                }
-                            });
-                        } else {
-                            // If response doesn't have valid ads, use fallback
-                            throw new Error('Invalid response structure');
-                        }
-                    } catch (error) {
-                        console.log('API unavailable or invalid response, using fallback for RSA');
-                        // Fallback RSA generation (3 ads per group)
-                        try {
-                            for (let i = 0; i < rsaPerGroup; i++) {
-                                const fallbackAd = await generateFallbackRSA(group.name, keywords, i, baseUrl);
-                                allGeneratedAds.push(fallbackAd);
-                            }
-                        } catch (fallbackError) {
-                            console.error('Fallback generation failed:', fallbackError);
-                            // Continue to next ad type instead of breaking the entire generation
-                        }
-                    }
-                }
-
-                // Generate DKI Ads (3 per group)
-                if (dkiPerGroup > 0) {
-                    try {
-                        const response = await api.post('/generate-ads', {
-                            keywords,
-                            adType: 'DKI',
-                            count: dkiPerGroup,
-                            groupName: group.name,
-                            baseUrl: baseUrl,
-                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
-                        });
-
-                        if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
-                            response.ads.forEach((ad: any) => {
-                                // Validate ad structure before adding
-                                if (ad && (ad.headline1 || ad.headlines)) {
-                                    allGeneratedAds.push({
-                                        id: crypto.randomUUID(),
-                                        groupName: group.name,
-                                        adType: 'DKI',
-                                        type: 'dki',
-                                        ...ad,
-                                        selected: false,
-                                        extensions: []
-                                    });
-                                }
-                            });
-                        } else {
-                            // If response doesn't have valid ads, use fallback
-                            throw new Error('Invalid response structure');
-                        }
-                    } catch (error) {
-                        console.log('API unavailable or invalid response, using fallback for DKI');
-                        // Fallback DKI generation (3 ads per group)
-                        try {
-                            for (let i = 0; i < dkiPerGroup; i++) {
-                                const fallbackAd = await generateFallbackDKI(group.name, keywords, i, baseUrl);
-                                allGeneratedAds.push(fallbackAd);
-                            }
-                        } catch (fallbackError) {
-                            console.error('Fallback generation failed:', fallbackError);
-                            // Continue to next ad type instead of breaking the entire generation
-                        }
-                    }
-                }
-
-                // Generate Call Only Ads
-                if (callOnlyPerGroup > 0) {
-                    try {
-                        const response = await api.post('/generate-ads', {
-                            keywords,
-                            adType: 'CallOnly',
-                            count: callOnlyPerGroup,
-                            groupName: group.name,
-                            baseUrl: baseUrl,
-                            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
-                        });
-
-                        if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
-                            response.ads.forEach((ad: any) => {
-                                // Validate ad structure before adding
-                                if (ad && (ad.phoneNumber || ad.phone || ad.businessName)) {
-                                    allGeneratedAds.push({
-                                        id: crypto.randomUUID(),
-                                        groupName: group.name,
-                                        adType: 'CallOnly',
-                                        type: 'callonly',
-                                        phone: ad.phoneNumber || ad.phone || '',
-                                        businessName: ad.businessName || '',
-                                        ...ad,
-                                        selected: false,
-                                        extensions: []
-                                    });
-                                }
-                            });
-                        } else {
-                            // If response doesn't have valid ads, use fallback
-                            throw new Error('Invalid response structure');
-                        }
-                    } catch (error) {
-                        console.log('API unavailable or invalid response, using fallback for Call Only');
-                        // Fallback Call Only generation
-                        try {
-                            for (let i = 0; i < callOnlyPerGroup; i++) {
-                                const fallbackAd = await generateFallbackCallOnly(group.name, keywords, i, baseUrl);
-                                allGeneratedAds.push(fallbackAd);
-                            }
-                        } catch (fallbackError) {
-                            console.error('Fallback generation failed:', fallbackError);
-                            // Continue to next ad type instead of breaking the entire generation
-                        }
-                    }
+                for (const template of generatedAdTemplates) {
+                    allGeneratedAds.push({
+                        ...template,
+                        id: crypto.randomUUID(), // New unique ID for each copy
+                        groupName: group.name // Copy to this group
+                    });
                 }
             }
 
@@ -817,14 +923,15 @@ export const AdsBuilder = () => {
 
     const generateFallbackRSA = async (groupName: string, keywords: string[], index: number, baseUrl: string): Promise<GeneratedAd> => {
         try {
-            const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+            const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Service';
             const intent = detectUserIntent([selectedKeyword], 'Services');
-            const industry = intent === 'product' ? 'Products' : 'Services';
+            const isProduct = intent === 'product';
+            const keywordTitle = cleanAndTitleCaseKeyword(selectedKeyword);
             
             // Create input for ad generator
             const input: AdGenerationInput = {
                 keywords: [selectedKeyword],
-                industry: industry,
+                industry: isProduct ? 'Products' : 'Services',
                 businessName: 'Your Business',
                 baseUrl: baseUrl,
                 adType: 'RSA',
@@ -850,15 +957,87 @@ export const AdsBuilder = () => {
             // Fall back to local generation
             const generatedAd = generateAdsUtility(input) as ResponsiveSearchAd;
             
-            if (!generatedAd || !generatedAd.headlines || !Array.isArray(generatedAd.headlines)) {
-                console.error('Generated ad has invalid structure, using safe fallback');
-                return convertRSAToGeneratedAd({ headlines: [], descriptions: [], displayPath: [], finalUrl: baseUrl }, groupName, baseUrl);
+            if (!generatedAd || !generatedAd.headlines || !Array.isArray(generatedAd.headlines) || generatedAd.headlines.length === 0) {
+                // Enhanced fallback with service vs product differentiation
+                const serviceHeadlines = [
+                    `${keywordTitle} - Expert Service`,
+                    `Professional ${keywordTitle} Service`,
+                    `Trusted ${keywordTitle} Experts`,
+                    `24/7 ${keywordTitle} Support`,
+                    `Licensed ${keywordTitle} Professionals`,
+                    `Fast ${keywordTitle} Service`,
+                    `Reliable ${keywordTitle} Solutions`,
+                    `Quality ${keywordTitle} Service`,
+                    `Local ${keywordTitle} Specialists`,
+                    `Affordable ${keywordTitle} Service`
+                ];
+                
+                const productHeadlines = [
+                    `${keywordTitle} - Best Deals`,
+                    `Shop ${keywordTitle} Online`,
+                    `Buy ${keywordTitle} - Fast Delivery`,
+                    `Premium ${keywordTitle} Available`,
+                    `${keywordTitle} - Free Shipping`,
+                    `Best ${keywordTitle} Prices`,
+                    `Quality ${keywordTitle} Products`,
+                    `Shop Now - ${keywordTitle}`,
+                    `${keywordTitle} - In Stock`,
+                    `Buy ${keywordTitle} Today`
+                ];
+                
+                const serviceDescriptions = [
+                    `Professional ${keywordTitle.toLowerCase()} services you can trust. Licensed experts ready to help.`,
+                    `Looking for reliable ${keywordTitle.toLowerCase()}? We provide fast, affordable service. Free estimates available.`
+                ];
+                
+                const productDescriptions = [
+                    `Shop ${keywordTitle.toLowerCase()} with confidence. Competitive prices and excellent quality.`,
+                    `Find the best ${keywordTitle.toLowerCase()} deals. Fast shipping and easy returns. Order today!`
+                ];
+                
+                return {
+                    id: crypto.randomUUID(),
+                    groupName,
+                    adType: 'RSA',
+                    type: 'rsa',
+                    headline1: (isProduct ? productHeadlines : serviceHeadlines)[0] || '',
+                    headline2: (isProduct ? productHeadlines : serviceHeadlines)[1] || '',
+                    headline3: (isProduct ? productHeadlines : serviceHeadlines)[2] || '',
+                    headline4: (isProduct ? productHeadlines : serviceHeadlines)[3] || '',
+                    headline5: (isProduct ? productHeadlines : serviceHeadlines)[4] || '',
+                    description1: (isProduct ? productDescriptions : serviceDescriptions)[0] || '',
+                    description2: (isProduct ? productDescriptions : serviceDescriptions)[1] || '',
+                    path1: '',
+                    path2: '',
+                    finalUrl: baseUrl || 'https://www.example.com',
+                    selected: false,
+                    extensions: []
+                };
             }
             
             return convertRSAToGeneratedAd(generatedAd, groupName, baseUrl);
         } catch (error) {
             console.error('Error in generateFallbackRSA:', error);
-            return convertRSAToGeneratedAd({ headlines: [], descriptions: [], displayPath: [], finalUrl: baseUrl }, groupName, baseUrl);
+            // Final safe fallback
+            const keywordTitle = cleanAndTitleCaseKeyword(keywords[0] || 'Service');
+            return {
+                id: crypto.randomUUID(),
+                groupName,
+                adType: 'RSA',
+                type: 'rsa',
+                headline1: `${keywordTitle} - Professional Service`,
+                headline2: `Expert ${keywordTitle} Solutions`,
+                headline3: `Trusted ${keywordTitle} Service`,
+                headline4: '',
+                headline5: '',
+                description1: `Professional ${keywordTitle.toLowerCase()} services you can trust.`,
+                description2: 'Contact us today for more information.',
+                path1: '',
+                path2: '',
+                finalUrl: baseUrl || 'https://www.example.com',
+                selected: false,
+                extensions: []
+            };
         }
     };
 
@@ -967,18 +1146,40 @@ export const AdsBuilder = () => {
                 const dkiAd = fallbackAds[0] as ExpandedTextAd;
                 if (dkiAd && dkiAd.headline1) {
                     const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
+                    const keywordRegex = new RegExp(selectedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                    const isProduct = intent === 'product';
+                    
+                    // Service vs Product fallbacks
+                    const serviceFallback = {
+                        headline1: `{KeyWord:${mainKeyword}} - Expert Service`,
+                        headline2: `Professional {KeyWord:${mainKeyword}}`,
+                        headline3: `Trusted {KeyWord:${mainKeyword}} Experts`,
+                        description1: `Professional {KeyWord:${mainKeyword}} services you can trust.`,
+                        description2: 'Licensed experts ready to help. Call for free estimate.'
+                    };
+                    
+                    const productFallback = {
+                        headline1: `{KeyWord:${mainKeyword}} - Best Deals`,
+                        headline2: `Shop {KeyWord:${mainKeyword}} Online`,
+                        headline3: `Buy {KeyWord:${mainKeyword}} Now`,
+                        description1: `Shop {KeyWord:${mainKeyword}} with confidence.`,
+                        description2: 'Competitive prices and fast shipping. Order today!'
+                    };
+                    
+                    const fallback = isProduct ? productFallback : serviceFallback;
+                    
                     return {
                         id: crypto.randomUUID(),
                         groupName,
                         adType: 'DKI',
                         type: 'dki',
-                        headline1: dkiAd.headline1 || `{KeyWord:${mainKeyword}} - Official Site`,
-                        headline2: dkiAd.headline2 || `Buy {KeyWord:${mainKeyword}} Online`,
-                        headline3: dkiAd.headline3 || `Trusted {KeyWord:${mainKeyword}} Service`,
+                        headline1: dkiAd.headline1?.replace(keywordRegex, `{KeyWord:${mainKeyword}}`) || fallback.headline1,
+                        headline2: dkiAd.headline2?.replace(keywordRegex, `{KeyWord:${mainKeyword}}`) || fallback.headline2,
+                        headline3: dkiAd.headline3?.replace(keywordRegex, `{KeyWord:${mainKeyword}}`) || fallback.headline3,
                         headline4: '',
                         headline5: '',
-                        description1: dkiAd.description1 || `Find the best {KeyWord:${mainKeyword}}. Fast & reliable support.`,
-                        description2: dkiAd.description2 || 'Contact our experts for 24/7 assistance.',
+                        description1: dkiAd.description1?.replace(keywordRegex, `{KeyWord:${mainKeyword}}`) || fallback.description1,
+                        description2: dkiAd.description2 || fallback.description2,
                         path1: dkiAd.displayPath[0] || '',
                         path2: dkiAd.displayPath[1] || '',
                         finalUrl: dkiAd.finalUrl || baseUrl || 'https://www.example.com',
@@ -991,37 +1192,54 @@ export const AdsBuilder = () => {
             console.log('Python fallback unavailable for DKI, using local generation');
         }
         
-        // Fall back to local generation
-        const inputRSA: AdGenerationInput = {
-            ...input,
-            adType: 'RSA'
+        // Enhanced fallback with service vs product differentiation
+        const isProduct = intent === 'product';
+        const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
+        
+        const serviceHeadlines = [
+            `{KeyWord:${mainKeyword}} - Expert Service`,
+            `Professional {KeyWord:${mainKeyword}}`,
+            `Trusted {KeyWord:${mainKeyword}} Experts`,
+            `24/7 {KeyWord:${mainKeyword}} Support`,
+            `Licensed {KeyWord:${mainKeyword}}`
+        ];
+        
+        const productHeadlines = [
+            `{KeyWord:${mainKeyword}} - Best Deals`,
+            `Shop {KeyWord:${mainKeyword}} Online`,
+            `Buy {KeyWord:${mainKeyword}} Now`,
+            `{KeyWord:${mainKeyword}} - Free Shipping`,
+            `Best {KeyWord:${mainKeyword}} Prices`
+        ];
+        
+        const serviceDescriptions = [
+            `Professional {KeyWord:${mainKeyword}} services you can trust. Licensed experts ready to help.`,
+            `Looking for reliable {KeyWord:${mainKeyword}}? We provide fast, affordable service. Free estimates.`
+        ];
+        
+        const productDescriptions = [
+            `Shop {KeyWord:${mainKeyword}} with confidence. Competitive prices and excellent quality.`,
+            `Find the best {KeyWord:${mainKeyword}} deals. Fast shipping and easy returns. Order today!`
+        ];
+        
+        return {
+            id: crypto.randomUUID(),
+            groupName,
+            adType: 'DKI',
+            type: 'dki',
+            headline1: (isProduct ? productHeadlines : serviceHeadlines)[0] || `{KeyWord:${mainKeyword}} - Official Site`,
+            headline2: (isProduct ? productHeadlines : serviceHeadlines)[1] || `Buy {KeyWord:${mainKeyword}} Online`,
+            headline3: (isProduct ? productHeadlines : serviceHeadlines)[2] || `Trusted {KeyWord:${mainKeyword}} Service`,
+            headline4: '',
+            headline5: '',
+            description1: (isProduct ? productDescriptions : serviceDescriptions)[0] || `Find the best {KeyWord:${mainKeyword}}. Fast & reliable support.`,
+            description2: (isProduct ? productDescriptions : serviceDescriptions)[1] || 'Contact our experts for 24/7 assistance.',
+            path1: '',
+            path2: '',
+            finalUrl: baseUrl || 'https://www.example.com',
+            selected: false,
+            extensions: []
         };
-        const generatedAd = generateAdsUtility(inputRSA) as ResponsiveSearchAd;
-        
-        if (!generatedAd || !generatedAd.headlines || !Array.isArray(generatedAd.headlines)) {
-            console.error('Generated ad has invalid structure for DKI, using safe fallback');
-            const mainKeyword = cleanAndTitleCaseKeyword(selectedKeyword);
-            return {
-                id: crypto.randomUUID(),
-                groupName,
-                adType: 'DKI',
-                type: 'dki',
-                headline1: `{KeyWord:${mainKeyword}} - Official Site`,
-                headline2: `Buy {KeyWord:${mainKeyword}} Online`,
-                headline3: `Trusted {KeyWord:${mainKeyword}} Service`,
-                headline4: '',
-                headline5: '',
-                description1: `Find the best {KeyWord:${mainKeyword}}. Fast & reliable support.`,
-                description2: 'Contact our experts for 24/7 assistance.',
-                path1: '',
-                path2: '',
-                finalUrl: baseUrl || 'https://www.example.com',
-                selected: false,
-                extensions: []
-            };
-        }
-        
-        return convertRSAToDKI(generatedAd, groupName, baseUrl, selectedKeyword);
     };
 
     // Helper to convert Call-Only ad to GeneratedAd format
@@ -1046,14 +1264,15 @@ export const AdsBuilder = () => {
     };
 
     const generateFallbackCallOnly = async (groupName: string, keywords: string[], index: number, baseUrl: string): Promise<GeneratedAd> => {
-        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Product';
+        const selectedKeyword = keywords[index % keywords.length] || keywords[0] || 'Service';
         const intent = detectUserIntent([selectedKeyword], 'Services');
-        const industry = intent === 'product' ? 'Products' : 'Services';
+        const isProduct = intent === 'product';
+        const keywordTitle = cleanAndTitleCaseKeyword(selectedKeyword);
         
         // Create input for ad generator
         const input: AdGenerationInput = {
             keywords: [selectedKeyword],
-            industry: industry,
+            industry: isProduct ? 'Products' : 'Services',
             businessName: 'Your Business',
             baseUrl: baseUrl,
             adType: 'CALL_ONLY',
@@ -1079,15 +1298,46 @@ export const AdsBuilder = () => {
             console.log('Python fallback unavailable for Call Only, using local generation');
         }
         
-        // Fall back to local generation
-        const generatedAd = generateAdsUtility(input) as CallOnlyAd;
+        // Enhanced fallback with service vs product differentiation
+        const serviceHeadlines = [
+            `Call for ${keywordTitle} Service`,
+            `${keywordTitle} - Call Now`,
+            `Professional ${keywordTitle} Service`,
+            `24/7 ${keywordTitle} Support`
+        ];
         
-        // Set phone number if not provided
-        if (!generatedAd.phoneNumber) {
-            generatedAd.phoneNumber = '+1-800-123-4567';
-        }
+        const productHeadlines = [
+            `Call to Order ${keywordTitle}`,
+            `${keywordTitle} - Call for Pricing`,
+            `Shop ${keywordTitle} - Call Now`,
+            `${keywordTitle} Orders - Call Us`
+        ];
         
-        return convertCallOnlyToGeneratedAd(generatedAd, groupName);
+        const serviceDescriptions = [
+            `Professional ${keywordTitle.toLowerCase()} services. Call now for immediate assistance.`,
+            `Licensed experts ready to help. Call us today for a free estimate.`
+        ];
+        
+        const productDescriptions = [
+            `Shop ${keywordTitle.toLowerCase()} with confidence. Call to place your order.`,
+            `Best prices and fast delivery. Call now to speak with our team.`
+        ];
+        
+        return {
+            id: crypto.randomUUID(),
+            groupName,
+            adType: 'CallOnly',
+            type: 'callonly',
+            headline1: (isProduct ? productHeadlines : serviceHeadlines)[0] || `Call for ${keywordTitle}`,
+            headline2: (isProduct ? productHeadlines : serviceHeadlines)[1] || `${keywordTitle} - Call Now`,
+            description1: (isProduct ? productDescriptions : serviceDescriptions)[0] || `Professional ${keywordTitle.toLowerCase()} services. Call now.`,
+            description2: (isProduct ? productDescriptions : serviceDescriptions)[1] || 'Call us today for more information.',
+            phoneNumber: '+1-800-123-4567',
+            businessName: 'Your Business',
+            finalUrl: baseUrl || 'https://www.example.com',
+            selected: false,
+            extensions: []
+        };
     };
 
     const toggleAdSelection = (adId: string) => {
@@ -1420,6 +1670,43 @@ export const AdsBuilder = () => {
         ));
     };
 
+    const handleDeleteAd = (adId: string) => {
+        setGeneratedAds(generatedAds.filter(ad => ad.id !== adId));
+        setSelectedAds(selectedAds.filter(id => id !== adId));
+        notifications.success('Ad deleted', {
+            title: 'Deleted',
+            duration: 2000
+        });
+    };
+
+    const handleDuplicateAd = (adId: string) => {
+        const adToDuplicate = generatedAds.find(ad => ad.id === adId);
+        if (!adToDuplicate) return;
+
+        const duplicatedAd: GeneratedAd = {
+            ...adToDuplicate,
+            id: crypto.randomUUID(),
+            selected: false
+        };
+
+        setGeneratedAds([...generatedAds, duplicatedAd]);
+        notifications.success('Ad duplicated', {
+            title: 'Duplicated',
+            duration: 2000
+        });
+    };
+
+    const handleEditAd = (adId: string) => {
+        // For now, editing is done inline through LiveAdPreview
+        // The URL editing is already available inline
+        // Headlines and descriptions can be edited through LiveAdPreview if it supports editing
+        // This handler can be extended to open a dialog if needed
+        notifications.info('Edit ad content directly in the preview below', {
+            title: 'Edit Ad',
+            duration: 3000
+        });
+    };
+
     // Filter and search logic
     const filteredAds = useMemo(() => {
         return generatedAds.filter(ad => {
@@ -1557,22 +1844,63 @@ export const AdsBuilder = () => {
                                 )}
                             </div>
 
-                            {/* Ad Type Dropdown */}
+                            {/* Ad Type Selection Buttons */}
                             <div>
                                 <Label className="block text-sm font-semibold text-slate-700 mb-2.5">
-                                    Type of Ads
+                                    Select Ad Types (Max 3)
                                 </Label>
-                                <Select value={selectedAdType} onValueChange={setSelectedAdType}>
-                                    <SelectTrigger className="w-full h-10 text-sm">
-                                        <SelectValue placeholder="Select ad type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="rsa">Responsive Search Ads</SelectItem>
-                                        <SelectItem value="dki">Dynamic Keyword Insertion (DKI)</SelectItem>
-                                        <SelectItem value="callOnly">Call-Only Ads</SelectItem>
-                                        <SelectItem value="all">All Types</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <div className="space-y-2">
+                                    <Button
+                                        type="button"
+                                        variant={selectedAdTypes.includes('rsa') ? 'default' : 'outline'}
+                                        onClick={() => handleAdTypeToggle('rsa')}
+                                        className={`w-full justify-start h-10 text-sm ${
+                                            selectedAdTypes.includes('rsa')
+                                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                                        }`}
+                                        disabled={!selectedAdTypes.includes('rsa') && selectedAdTypes.length >= 3}
+                                    >
+                                        <Plus className={`w-4 h-4 mr-2 ${selectedAdTypes.includes('rsa') ? 'hidden' : ''}`} />
+                                        <CheckSquare className={`w-4 h-4 mr-2 ${selectedAdTypes.includes('rsa') ? '' : 'hidden'}`} />
+                                        Responsive Search Ad (RSA)
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={selectedAdTypes.includes('dki') ? 'default' : 'outline'}
+                                        onClick={() => handleAdTypeToggle('dki')}
+                                        className={`w-full justify-start h-10 text-sm ${
+                                            selectedAdTypes.includes('dki')
+                                                ? 'bg-purple-600 text-white hover:bg-purple-700'
+                                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                                        }`}
+                                        disabled={!selectedAdTypes.includes('dki') && selectedAdTypes.length >= 3}
+                                    >
+                                        <Plus className={`w-4 h-4 mr-2 ${selectedAdTypes.includes('dki') ? 'hidden' : ''}`} />
+                                        <CheckSquare className={`w-4 h-4 mr-2 ${selectedAdTypes.includes('dki') ? '' : 'hidden'}`} />
+                                        Dynamic Keyword Insertion (DKI)
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={selectedAdTypes.includes('callOnly') ? 'default' : 'outline'}
+                                        onClick={() => handleAdTypeToggle('callOnly')}
+                                        className={`w-full justify-start h-10 text-sm ${
+                                            selectedAdTypes.includes('callOnly')
+                                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                                        }`}
+                                        disabled={!selectedAdTypes.includes('callOnly') && selectedAdTypes.length >= 3}
+                                    >
+                                        <Plus className={`w-4 h-4 mr-2 ${selectedAdTypes.includes('callOnly') ? 'hidden' : ''}`} />
+                                        <CheckSquare className={`w-4 h-4 mr-2 ${selectedAdTypes.includes('callOnly') ? '' : 'hidden'}`} />
+                                        Call-Only Ad
+                                    </Button>
+                                </div>
+                                {selectedAdTypes.length > 0 && (
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        {selectedAdTypes.length} of 3 ad types selected
+                                    </p>
+                                )}
                             </div>
 
                             {/* Mode Selection */}
@@ -1664,7 +1992,7 @@ export const AdsBuilder = () => {
                             {/* Generate Button */}
                             <Button
                                 onClick={generateAds}
-                                disabled={isGenerating}
+                                disabled={isGenerating || selectedAdTypes.length === 0}
                                 className="w-full theme-button-primary py-3 text-base font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 {isGenerating ? (
@@ -1675,10 +2003,15 @@ export const AdsBuilder = () => {
                                 ) : (
                                     <>
                                         <Zap className="w-4 h-4 mr-2" />
-                                        Generate Ads
+                                        Generate {selectedAdTypes.length > 0 ? `${selectedAdTypes.length} ` : ''}Ad{selectedAdTypes.length !== 1 ? 's' : ''}
                                     </>
                                 )}
                             </Button>
+                            {selectedAdTypes.length === 0 && (
+                                <p className="text-xs text-red-600 text-center mt-1">
+                                    Please select at least one ad type
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -1906,6 +2239,46 @@ export const AdsBuilder = () => {
                                                     </div>
                                                 </div>
                                             )}
+
+                                            {/* Action Buttons: Edit, Duplicate, Delete */}
+                                            <div className="mt-2 pt-2 border-t border-slate-200 flex gap-1.5">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditAd(ad.id);
+                                                    }}
+                                                    className="flex-1 h-7 text-[10px] border-green-300 text-green-700 hover:bg-green-50 px-2"
+                                                >
+                                                    <Eye className="w-3 h-3 mr-1" />
+                                                    EDIT
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDuplicateAd(ad.id);
+                                                    }}
+                                                    className="flex-1 h-7 text-[10px] border-purple-300 text-purple-700 hover:bg-purple-50 px-2"
+                                                >
+                                                    <Copy className="w-3 h-3 mr-1" />
+                                                    DUPLICATE
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteAd(ad.id);
+                                                    }}
+                                                    className="flex-1 h-7 text-[10px] border-red-300 text-red-700 hover:bg-red-50 px-2"
+                                                >
+                                                    <Trash2 className="w-3 h-3 mr-1" />
+                                                    DELETE
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

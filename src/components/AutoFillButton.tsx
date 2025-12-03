@@ -87,7 +87,8 @@ export const AutoFillButton: React.FC<AutoFillButtonProps> = ({ onAutoFill, clas
                 onClick={() => setIsOpen(true)}
                 variant="outline"
                 size="sm"
-                className={`fixed top-24 right-6 z-[100] bg-white/95 backdrop-blur-md border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 shadow-md hover:shadow-lg transition-all p-2 ${className}`}
+                style={{ position: 'fixed', top: '96px', right: '24px', zIndex: 100 }}
+                className={`bg-white/95 backdrop-blur-md border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 shadow-md hover:shadow-lg transition-all p-2 ${className}`}
                 title="Show Auto Fill button"
             >
                 <Sparkles className="w-4 h-4" />
@@ -96,7 +97,7 @@ export const AutoFillButton: React.FC<AutoFillButtonProps> = ({ onAutoFill, clas
     }
 
     return (
-        <div className={`fixed top-24 right-6 z-[100] transition-all ${className}`}>
+        <div style={{ position: 'fixed', top: '96px', right: '24px', zIndex: 100 }} className={`transition-all ${className}`}>
             <div className="bg-white/95 backdrop-blur-md border border-indigo-300 rounded-lg shadow-md hover:shadow-lg transition-all overflow-hidden">
                 {!isMinimized ? (
                     <>

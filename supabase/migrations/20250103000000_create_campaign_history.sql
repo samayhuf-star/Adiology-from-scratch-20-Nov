@@ -21,6 +21,12 @@ CREATE INDEX IF NOT EXISTS idx_campaign_history_created_at ON campaign_history(c
 -- Enable Row Level Security (RLS)
 ALTER TABLE campaign_history ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (to allow re-running this migration)
+DROP POLICY IF EXISTS "Users can view their own campaigns" ON campaign_history;
+DROP POLICY IF EXISTS "Users can insert their own campaigns" ON campaign_history;
+DROP POLICY IF EXISTS "Users can update their own campaigns" ON campaign_history;
+DROP POLICY IF EXISTS "Users can delete their own campaigns" ON campaign_history;
+
 -- Policy: Users can only see their own campaigns
 CREATE POLICY "Users can view their own campaigns"
   ON campaign_history
@@ -53,6 +59,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS update_campaign_history_updated_at ON campaign_history;
 
 -- Create trigger to automatically update updated_at
 CREATE TRIGGER update_campaign_history_updated_at

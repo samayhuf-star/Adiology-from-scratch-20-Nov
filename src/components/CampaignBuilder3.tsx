@@ -266,6 +266,7 @@ interface CampaignData {
 export const CampaignBuilder3: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [campaignSaved, setCampaignSaved] = useState(false);
   const [locationSearchTerm, setLocationSearchTerm] = useState({ countries: '', states: '', cities: '', zipCodes: '' });
   const [campaignData, setCampaignData] = useState<CampaignData>({
     url: '',
@@ -705,7 +706,11 @@ export const CampaignBuilder3: React.FC = () => {
         }, 'draft');
       }
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      // Only log unexpected errors - "Item not found" is now handled gracefully
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes('Item not found') && !errorMessage.includes('not found')) {
+        console.error('Auto-save failed:', error);
+      }
       // Don't show error to user for auto-save failures
     }
   };
@@ -1002,19 +1007,8 @@ export const CampaignBuilder3: React.FC = () => {
         createdAt: new Date().toISOString(),
       }, 'completed');
 
-      notifications.success('🎉 Campaign saved successfully!', {
-        title: 'Hurray! Campaign Saved',
-        description: 'Your campaign has been saved and is ready to use. Redirecting to dashboard...'
-      });
-
-      // Redirect to dashboard after a delay
-      setTimeout(() => {
-        const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
-        window.dispatchEvent(event);
-        if (window.location.hash) {
-          window.location.hash = '#dashboard';
-        }
-      }, 3000);
+      setCampaignSaved(true);
+      setCurrentStep(8); // Show success screen
     } catch (error) {
       console.error('Save error:', error);
       notifications.error('Failed to save campaign', {
@@ -1881,6 +1875,162 @@ export const CampaignBuilder3: React.FC = () => {
       </div>
     );
 
+  // Helper function to get location count and type
+  const getLocationCountAndType = () => {
+    const { cities, zipCodes, states, countries } = campaignData.locations;
+    
+    if (cities.length > 0) {
+      return { count: cities.length, type: 'Cities' };
+    } else if (zipCodes.length > 0) {
+      return { count: zipCodes.length, type: 'ZIP Codes' };
+    } else if (states.length > 0) {
+      return { count: states.length, type: 'States' };
+    } else if (countries.length > 0) {
+      return { count: countries.length, type: 'Countries' };
+    } else {
+      // Whole country targeting
+      return { count: 1, type: 'Country' };
+    }
+  };
+
+  const renderStep8 = () => {
+    const locationInfo = getLocationCountAndType();
+    const structureName = CAMPAIGN_STRUCTURES.find(s => s.id === campaignData.selectedStructure)?.name || 'STAG';
+    const targetLocationText = locationInfo.count === 1 && locationInfo.type === 'Country'
+      ? `${campaignData.targetCountry} (Nationwide)`
+      : `${campaignData.targetCountry} (${locationInfo.type})`;
+
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-4">
+            <CheckCircle2 className="w-12 h-12 text-green-600" />
+          </div>
+          <h2 className="text-4xl font-bold text-slate-800 mb-2">Campaign Created Successfully!</h2>
+          <p className="text-lg text-slate-600">Your campaign is ready to export and implement.</p>
+        </div>
+
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="text-3xl font-bold text-indigo-600 mb-1">1</div>
+              <div className="text-sm text-slate-600">Campaign</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="text-3xl font-bold text-indigo-600 mb-1">{campaignData.adGroups.length}</div>
+              <div className="text-sm text-slate-600">Ad Groups</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="text-3xl font-bold text-blue-600 mb-1">{campaignData.selectedKeywords.length}</div>
+              <div className="text-sm text-slate-600">Keywords</div>
+            </CardContent>
+          </Card>
+          <Card className="text-center">
+            <CardContent className="p-6">
+              <div className="text-3xl font-bold text-green-600 mb-1">{locationInfo.count}</div>
+              <div className="text-sm text-slate-600">Locations ({locationInfo.type})</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Campaign Summary */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Campaign Summary</CardTitle>
+            <CardDescription>All checks passed - ready for export</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-xs text-slate-500">Campaign Name</Label>
+                <p className="text-sm font-medium text-slate-800 mt-1">{campaignData.campaignName}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500">Structure</Label>
+                <p className="text-sm font-medium text-slate-800 mt-1">{structureName}</p>
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs text-slate-500">Target Location</Label>
+                <p className="text-sm font-medium text-slate-800 mt-1">{targetLocationText}</p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="font-medium">Validation Complete</span>
+              </div>
+              <p className="text-sm text-slate-600 mt-2">
+                Your campaign is validated and ready to export. Click 'Download CSV' below to get your file.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4 justify-center">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentStep(6)}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Review
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              // Reset and start new campaign
+              window.location.reload();
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Another Campaign
+          </Button>
+          <Button
+            onClick={() => {
+              const blob = new Blob([campaignData.csvData], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${campaignData.campaignName || 'campaign'}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              
+              // Redirect to dashboard
+              setTimeout(() => {
+                const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+                window.dispatchEvent(event);
+                if (window.location.hash) {
+                  window.location.hash = '#dashboard';
+                }
+              }, 1000);
+            }}
+            className="bg-indigo-600 hover:bg-indigo-700"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Download CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+              window.dispatchEvent(event);
+              if (window.location.hash) {
+                window.location.hash = '#dashboard';
+              }
+            }}
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const renderStep7 = () => (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-8 flex items-center justify-end">
@@ -2075,11 +2225,14 @@ export const CampaignBuilder3: React.FC = () => {
               else if (currentStep === 7) {
                 handleSaveCampaign();
               }
+              else if (currentStep === 8) {
+                // Success screen - no action needed
+              }
               }}
-              disabled={loading}
+              disabled={loading || currentStep === 8}
             size="sm"
             >
-            {currentStep === 7 ? 'Save & Finish' : 'Next Step'}
+            {currentStep === 7 ? 'Save & Finish' : currentStep === 8 ? 'Download CSV' : 'Next Step'}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -2094,6 +2247,7 @@ export const CampaignBuilder3: React.FC = () => {
         {currentStep === 5 && renderStep5()}
         {currentStep === 6 && renderStep6()}
         {currentStep === 7 && renderStep7()}
+        {currentStep === 8 && renderStep8()}
       </div>
 
       {/* Bottom Navigation */}
@@ -2140,10 +2294,13 @@ export const CampaignBuilder3: React.FC = () => {
               else if (currentStep === 7) {
                 handleSaveCampaign();
               }
+              else if (currentStep === 8) {
+                // Success screen - no action needed
+              }
             }}
-            disabled={loading}
+            disabled={loading || currentStep === 8}
           >
-            {currentStep === 7 ? 'Save & Finish' : 'Next Step'}
+            {currentStep === 7 ? 'Save & Finish' : currentStep === 8 ? 'Download CSV' : 'Next Step'}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>

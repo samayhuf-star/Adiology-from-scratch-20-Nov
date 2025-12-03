@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -38,7 +38,6 @@ import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
-import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
@@ -117,7 +116,6 @@ const App = () => {
     'builder-2',
     'builder-3',
     'campaign-history',
-    'website-templates',
     'keyword-planner',
     'keyword-mixer',
     'keyword-generator-v3',
@@ -722,12 +720,11 @@ const App = () => {
       submenu: [
         { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
         { id: 'builder-3', label: 'Builder 3.0', icon: Zap },
-    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
-    { id: 'website-templates', label: 'Web Templates', icon: Layout },
-    { 
+    {
       id: 'keyword-planner', 
       label: 'Keywords', 
       icon: Lightbulb,
@@ -1139,8 +1136,6 @@ const App = () => {
           setHistoryData(data);
           setActiveTabSafe('builder-2');
         }} />;
-      case 'website-templates':
-        return <WebsiteTemplates />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
       case 'google-ads-csv-export':
