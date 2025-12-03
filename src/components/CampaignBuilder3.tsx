@@ -1194,31 +1194,42 @@ export const CampaignBuilder3: React.FC = () => {
           <CardDescription>These keywords will be excluded from generated keywords. You can add or update them.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Textarea
-            placeholder="Enter negative keywords (one per line)"
-            value={campaignData.negativeKeywords.join('\n')}
-            onChange={(e) => {
-              const negatives = e.target.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-              // Ensure default negative keywords are always included
-              const defaultSet = new Set(DEFAULT_NEGATIVE_KEYWORDS.map(n => n.toLowerCase()));
-              const userSet = new Set(negatives.map(n => n.toLowerCase()));
-              const combined = [...DEFAULT_NEGATIVE_KEYWORDS, ...negatives.filter(n => !defaultSet.has(n.toLowerCase()))];
-              setCampaignData(prev => ({
-                ...prev,
-                negativeKeywords: combined
-              }));
-            }}
-            rows={6}
-            className="mb-3"
-          />
-          <div className="flex flex-wrap gap-2">
+          <div className="mb-3">
+            <Input
+              placeholder="Enter negative keywords (comma-separated, e.g., cheap, discount, cost)"
+              value={campaignData.negativeKeywords.filter(n => !DEFAULT_NEGATIVE_KEYWORDS.includes(n)).join(', ')}
+              onChange={(e) => {
+                const userNegatives = e.target.value.split(',').map(n => n.trim()).filter(n => n.length > 0);
+                // Ensure default negative keywords are always included
+                const combined = [...DEFAULT_NEGATIVE_KEYWORDS, ...userNegatives];
+                setCampaignData(prev => ({
+                  ...prev,
+                  negativeKeywords: combined
+                }));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const input = e.currentTarget;
+                  const userNegatives = input.value.split(',').map(n => n.trim()).filter(n => n.length > 0);
+                  const combined = [...DEFAULT_NEGATIVE_KEYWORDS, ...userNegatives];
+                  setCampaignData(prev => ({
+                    ...prev,
+                    negativeKeywords: combined
+                  }));
+                  input.value = '';
+                }
+              }}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 mb-2">
             {campaignData.negativeKeywords.map((neg, idx) => {
               const isDefault = DEFAULT_NEGATIVE_KEYWORDS.includes(neg);
               return (
                 <Badge 
                   key={idx} 
-                  variant={isDefault ? "destructive" : "secondary"} 
-                  className={isDefault ? "cursor-not-allowed opacity-75" : "cursor-pointer"}
+                  variant="destructive"
+                  className={isDefault ? "cursor-not-allowed opacity-90" : "cursor-pointer hover:opacity-80"}
                   onClick={() => {
                     // Only allow removal of non-default keywords
                     if (!isDefault) {
@@ -1236,7 +1247,7 @@ export const CampaignBuilder3: React.FC = () => {
               );
             })}
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-slate-500">
             Default negative keywords (highlighted in red) are always kept. You can add more or remove custom ones. These {campaignData.negativeKeywords.length} negative keywords will always be excluded when generating keywords.
           </p>
         </CardContent>
