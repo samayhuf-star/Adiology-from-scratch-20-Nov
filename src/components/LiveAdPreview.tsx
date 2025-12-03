@@ -35,25 +35,9 @@ interface LiveAdPreviewProps {
 }
 
 export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = '', onRemoveExtension }) => {
-    // Format display URL properly
-    const formatDisplayUrl = () => {
-        if (!ad.finalUrl) return 'example.com';
-        
-        try {
-            // Remove protocol
-            let url = ad.finalUrl.replace(/^https?:\/\//, '').replace(/^www\./, '');
-            // Get base domain (first part before any path)
-            const baseDomain = url.split('/')[0];
-            // Add paths if they exist
-            const path1 = ad.path1 ? `/${ad.path1}` : '';
-            const path2 = ad.path2 ? `/${ad.path2}` : '';
-            return `${baseDomain}${path1}${path2}`;
-        } catch (error) {
-            return ad.finalUrl.replace(/^https?:\/\//, '').replace(/^www\./, '');
-        }
-    };
-    
-    const displayUrl = formatDisplayUrl();
+    const displayUrl = ad.finalUrl 
+        ? `${ad.finalUrl.replace(/^https?:\/\//, '').split('/')[0]}${ad.path1 ? '/' + ad.path1 : ''}${ad.path2 ? '/' + ad.path2 : ''}`
+        : 'example.com';
 
     const renderExtension = (ext: Extension, idx: number) => {
         const extensionId = ext.id || `ext-${idx}`;
@@ -261,62 +245,66 @@ export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = ''
     return (
         <div className={`bg-white border-2 border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow ${className}`}>
             {/* Google Ads Style Preview */}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
                 {/* Headlines */}
                 {(ad.type === 'rsa' || ad.type === 'dki') && (
                     <>
-                        <div className="flex flex-wrap gap-1.5 items-center">
-                            {/* Collect all headlines (RSA can have up to 15) */}
-                            {[
-                                ad.headline1,
-                                ad.headline2,
-                                ad.headline3,
-                                ad.headline4,
-                                ad.headline5,
-                                ad.headline6,
-                                ad.headline7,
-                                ad.headline8,
-                                ad.headline9,
-                                ad.headline10,
-                                ad.headline11,
-                                ad.headline12,
-                                ad.headline13,
-                                ad.headline14,
-                                ad.headline15
-                            ].filter(Boolean).map((headline, idx, headlines) => (
-                                <React.Fragment key={idx}>
-                                    {idx > 0 && <span className="text-slate-300 mx-0.5">|</span>}
+                        <div className="flex flex-wrap gap-1.5">
+                            {ad.headline1 && (
+                                <span className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">
+                                    {ad.headline1}
+                                </span>
+                            )}
+                            {ad.headline2 && (
+                                <>
+                                    <span className="text-slate-300">|</span>
                                     <span className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">
-                                        {headline}
+                                        {ad.headline2}
                                     </span>
-                                </React.Fragment>
-                            ))}
-                            {!ad.headline1 && (
-                                <span className="text-sm text-slate-400 italic">No headlines</span>
+                                </>
+                            )}
+                            {ad.headline3 && (
+                                <>
+                                    <span className="text-slate-300">|</span>
+                                    <span className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">
+                                        {ad.headline3}
+                                    </span>
+                                </>
+                            )}
+                            {ad.headline4 && (
+                                <>
+                                    <span className="text-slate-300">|</span>
+                                    <span className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">
+                                        {ad.headline4}
+                                    </span>
+                                </>
+                            )}
+                            {ad.headline5 && (
+                                <>
+                                    <span className="text-slate-300">|</span>
+                                    <span className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">
+                                        {ad.headline5}
+                                    </span>
+                                </>
                             )}
                         </div>
 
                         {/* Display URL */}
-                        <div className="text-xs text-green-700 font-medium mt-1">
+                        <div className="text-xs text-green-700 font-medium">
                             {displayUrl}
                         </div>
 
-                        {/* Descriptions - show all (RSA can have up to 4) */}
-                        <div className="space-y-1 mt-1">
-                            {[
-                                ad.description1,
-                                ad.description2,
-                                ad.description3,
-                                ad.description4
-                            ].filter(Boolean).map((desc, idx) => (
-                                <div key={idx} className="text-xs text-slate-600 leading-relaxed">
-                                    {desc}
-                                </div>
-                            ))}
-                            {!ad.description1 && (
-                                <div className="text-xs text-slate-400 italic">No description</div>
-                            )}
-                        </div>
+                        {/* Descriptions */}
+                        {ad.description1 && (
+                            <div className="text-xs text-slate-600 leading-relaxed">
+                                {ad.description1}
+                            </div>
+                        )}
+                        {ad.description2 && (
+                            <div className="text-xs text-slate-600 leading-relaxed">
+                                {ad.description2}
+                            </div>
+                        )}
                     </>
                 )}
 

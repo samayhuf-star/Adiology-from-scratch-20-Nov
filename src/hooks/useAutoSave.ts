@@ -58,19 +58,8 @@ export function useAutoSave({
       const timestampedName = `${draftName} (Draft - ${new Date().toLocaleString()})`;
 
       if (draftIdRef.current) {
-        // Update existing draft (will create if not found)
-        try {
-          await historyService.update(draftIdRef.current, data, timestampedName);
-        } catch (updateError: any) {
-          // If update fails because item doesn't exist, create a new draft
-          if (updateError?.message?.includes('Item not found') || updateError?.message?.includes('not found')) {
-            console.log('Draft not found, creating new draft...');
-            const id = await historyService.save(type, timestampedName, data, 'draft');
-            draftIdRef.current = id;
-          } else {
-            throw updateError; // Re-throw unexpected errors
-          }
-        }
+        // Update existing draft
+        await historyService.update(draftIdRef.current, data, timestampedName);
       } else {
         // Create new draft
         const id = await historyService.save(type, timestampedName, data, 'draft');
@@ -85,16 +74,9 @@ export function useAutoSave({
 
       console.log('✅ Auto-saved draft:', draftIdRef.current);
     } catch (error) {
-      // Only log unexpected errors - "Item not found" is now handled gracefully
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('Item not found') && !errorMessage.includes('not found')) {
-        console.error('❌ Auto-save failed:', error);
-        if (onError && error instanceof Error) {
-          onError(error);
-        }
-      } else {
-        // Silently handle "item not found" - it's been handled by creating a new draft
-        console.log('ℹ️ Auto-save handled gracefully (item not found, created new)');
+      console.error('❌ Auto-save failed:', error);
+      if (onError && error instanceof Error) {
+        onError(error);
       }
     } finally {
       isSavingRef.current = false;

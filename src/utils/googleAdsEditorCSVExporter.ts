@@ -136,51 +136,6 @@ function isValidURL(url: string | null | undefined): boolean {
 }
 
 /**
- * Validate ZIP code format
- * Accepts: 5 digits (12345) or 5+4 format (12345-6789)
- */
-function isValidZipCode(zip: string): boolean {
-  if (!zip || typeof zip !== 'string') return false;
-  const zipRegex = /^\d{5}(-\d{4})?$/;
-  return zipRegex.test(zip.trim());
-}
-
-/**
- * Count unique ZIP codes in rows
- */
-function countUniqueZipCodes(rows: CSVRow[]): { count: number; invalid: string[]; duplicates: number } {
-  const zipCodeRows = rows.filter(row => {
-    const rowType = (row['Row Type'] || '').toString().toUpperCase();
-    const locationType = (row['Location Type'] || row['Target Type'] || '').toString().toLowerCase();
-    return rowType === 'LOCATION' && (locationType.includes('postal') || locationType.includes('zip'));
-  });
-
-  const uniqueZips = new Set<string>();
-  const invalidZips: string[] = [];
-  const allZips: string[] = [];
-
-  zipCodeRows.forEach(row => {
-    const zipCode = (row['Location Code'] || row['Criterion ID'] || row['Location'] || row['Location Name'] || '').toString().trim();
-    if (zipCode) {
-      allZips.push(zipCode);
-      if (isValidZipCode(zipCode)) {
-        uniqueZips.add(zipCode);
-      } else {
-        invalidZips.push(zipCode);
-      }
-    }
-  });
-
-  const duplicateCount = allZips.length - uniqueZips.size;
-
-  return {
-    count: uniqueZips.size,
-    invalid: invalidZips,
-    duplicates: duplicateCount
-  };
-}
-
-/**
  * Convert campaign structure to Google Ads Editor CSV rows
  */
 export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow[] {
@@ -503,102 +458,7 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
         errors.push(`Row ${rowNum}: Invalid Match Type for Negative Keyword "${matchType}"`);
       }
     }
-
-    // Location/ZIP Code validation
-    if (rowType === 'LOCATION') {
-      const campaignName = (row['Campaign'] || '').toString().trim();
-      const location = (row['Location'] || row['Location Name'] || '').toString().trim();
-      const locationCode = (row['Location Code'] || row['Criterion ID'] || '').toString().trim();
-      const locationType = (row['Location Type'] || row['Target Type'] || '').toString().trim();
-      const bidAdjustment = (row['Bid Adjustment'] || '').toString().trim();
-
-      if (!campaignName) {
-        errors.push(`Row ${rowNum}: Campaign name is required for Location targeting`);
-      }
-
-      // Validate location name or code is present
-      if (!location && !locationCode) {
-        errors.push(`Row ${rowNum}: Location Name or Location Code is required for Location targeting`);
-      }
-
-      // Validate ZIP code format if it's a postal code
-      if (locationType && (locationType.toLowerCase().includes('postal') || locationType.toLowerCase().includes('zip'))) {
-        const zipCode = locationCode || location;
-        if (zipCode) {
-          if (!isValidZipCode(zipCode)) {
-            errors.push(`Row ${rowNum}: Invalid ZIP code format "${zipCode}". ZIP codes must be 5 digits (e.g., 12345) or 5+4 format (e.g., 12345-6789)`);
-          }
-        }
-      }
-
-      // Validate bid adjustment if present
-      if (bidAdjustment) {
-        const bidMatch = bidAdjustment.match(/^(-?\d+(?:\.\d+)?)%?$/);
-        if (!bidMatch) {
-          errors.push(`Row ${rowNum}: Invalid Bid Adjustment format "${bidAdjustment}". Must be a percentage (e.g., 10% or -50%)`);
-        } else {
-          const bidValue = parseFloat(bidMatch[1]);
-          if (bidValue < -90 || bidValue > 900) {
-            errors.push(`Row ${rowNum}: Bid Adjustment "${bidAdjustment}" is out of range. Must be between -90% and 900%`);
-          }
-        }
-      }
-    }
   });
-
-  // Count ZIP codes and validate limits
-  const zipStats = countUniqueZipCodes(rows);
-
-  if (zipStats.count > 0 || zipStats.invalid.length > 0) {
-    // Report invalid ZIP codes
-    if (zipStats.invalid.length > 0) {
-      zipStats.invalid.slice(0, 10).forEach(zip => {
-        errors.push(`Invalid ZIP code format: "${zip}". ZIP codes must be 5 digits (e.g., 12345) or 5+4 format (e.g., 12345-6789)`);
-      });
-      if (zipStats.invalid.length > 10) {
-        errors.push(`${zipStats.invalid.length - 10} more invalid ZIP codes found`);
-      }
-    }
-
-    // Google Ads has limits on location targeting
-    if (zipStats.count > 25000) {
-      errors.push(`Too many ZIP codes: ${zipStats.count} unique ZIP codes found. Google Ads Editor supports a maximum of 25,000 location targets per campaign. Please reduce the number of ZIP codes.`);
-    } else if (zipStats.count > 5000) {
-      warnings.push(`Large number of ZIP codes: ${zipStats.count} unique ZIP codes found. Google Ads Editor may have performance issues with more than 5,000 location targets. Consider splitting into multiple campaigns.`);
-    } else if (zipStats.count > 0) {
-      // Info message for reasonable counts
-      warnings.push(`ZIP code targeting: ${zipStats.count} unique ZIP code${zipStats.count > 1 ? 's' : ''} will be included in the CSV.`);
-    }
-
-    // Report duplicates
-    if (zipStats.duplicates > 0) {
-      warnings.push(`${zipStats.duplicates} duplicate ZIP code${zipStats.duplicates > 1 ? 's' : ''} found. Duplicates will be removed during export.`);
-    }
-
-    // Check for duplicate ZIP codes in the same campaign
-    const campaignZipMap = new Map<string, Set<string>>();
-    rows.forEach((row, index) => {
-      const rowType = (row['Row Type'] || '').toString().toUpperCase();
-      const locationType = (row['Location Type'] || row['Target Type'] || '').toString().toLowerCase();
-      
-      if (rowType === 'LOCATION' && (locationType.includes('postal') || locationType.includes('zip'))) {
-        const campaignName = (row['Campaign'] || '').toString().trim();
-        const zipCode = (row['Location Code'] || row['Criterion ID'] || row['Location'] || row['Location Name'] || '').toString().trim();
-        
-        if (campaignName && zipCode && isValidZipCode(zipCode)) {
-          if (!campaignZipMap.has(campaignName)) {
-            campaignZipMap.set(campaignName, new Set());
-          }
-          const zipSet = campaignZipMap.get(campaignName)!;
-          if (zipSet.has(zipCode)) {
-            warnings.push(`Row ${index + 1}: Duplicate ZIP code "${zipCode}" found in campaign "${campaignName}". Duplicate location targets may cause import issues.`);
-          } else {
-            zipSet.add(zipCode);
-          }
-        }
-      }
-    });
-  }
 
   return {
     isValid: errors.length === 0,
@@ -618,26 +478,11 @@ export async function exportCampaignToGoogleAdsEditorCSV(
   // Convert structure to CSV rows
   const rows = campaignStructureToCSVRows(structure);
 
-  // Validate rows (but don't block export for non-critical errors)
+  // Validate rows
   const validation = validateCSVRows(rows);
 
-  // Only throw for critical errors that would make the CSV unusable
-  if (!validation.isValid && validation.errors.length > 0) {
-    const criticalErrors = validation.errors.filter(err => 
-      err.includes('No rows to export') || 
-      err.includes('Missing Row Type') ||
-      err.includes('Campaign name is required')
-    );
-    
-    if (criticalErrors.length > 0) {
-      throw new Error(`CSV validation failed:\n${criticalErrors.join('\n')}`);
-    }
-    
-    // Log non-critical errors as warnings but continue export
-    if (validation.errors.length > criticalErrors.length) {
-      console.warn('CSV validation warnings (export will continue):', 
-        validation.errors.filter(err => !criticalErrors.includes(err)).join('\n'));
-    }
+  if (!validation.isValid) {
+    throw new Error(`CSV validation failed:\n${validation.errors.join('\n')}`);
   }
 
   // Generate CSV content using PapaParse

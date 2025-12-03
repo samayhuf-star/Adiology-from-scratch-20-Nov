@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, Clock, Eye, Trash2, Search, AlertCircle,
-  CheckCircle2, Download, FolderOpen, Plus, Sparkles, Grid3x3, List
+  CheckCircle2, Download, FolderOpen, Plus, Sparkles
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -43,7 +43,6 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     loadSavedCampaigns();
@@ -141,37 +140,12 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
-                Saved Campaigns
-              </h1>
-              <p className="text-slate-600">
-                All your campaigns are automatically saved. Continue where you left off or start a new one.
-              </p>
-            </div>
-            {/* View Toggle */}
-            <div className="flex items-center gap-2 ml-4">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className={viewMode === 'grid' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}
-                title="Grid view"
-              >
-                <Grid3x3 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className={viewMode === 'list' ? 'bg-indigo-600 hover:bg-indigo-700' : ''}
-                title="List view"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
+            Campaign History
+          </h1>
+          <p className="text-slate-600">
+            View and manage your saved campaigns. Continue where you left off or start a new one.
+          </p>
         </div>
 
         {/* Search */}
@@ -239,10 +213,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
             </CardContent>
           </Card>
         ) : (
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-            : 'space-y-4'
-          }>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCampaigns.map((campaign) => {
               const data = campaign.data || campaign;
               const status = campaign.status || data.status || 'completed';
@@ -257,11 +228,9 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
               return (
                 <Card 
                   key={campaign.id} 
-                  className={`border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all ${
-                    viewMode === 'list' ? 'flex flex-row' : 'flex flex-col'
-                  } overflow-hidden`}
+                  className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all flex flex-col overflow-hidden"
                 >
-                  <CardHeader className={`pb-3 ${viewMode === 'list' ? 'flex-shrink-0 w-64 border-r border-slate-200' : ''}`}>
+                  <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1 min-w-0 pr-2">
                         <CardTitle 
@@ -286,38 +255,38 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                       })}</span>
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className={`flex-1 flex ${viewMode === 'list' ? 'flex-row items-center justify-between gap-4' : 'flex-col space-y-3'}`}>
-                    <div className={`flex-1 ${viewMode === 'list' ? 'flex flex-row gap-6 items-center' : 'space-y-2.5'}`}>
-                      <div className="flex items-center gap-2 text-sm">
+                  <CardContent className="space-y-3 flex-1 flex flex-col">
+                    <div className="space-y-2.5 flex-1">
+                      <div className="flex items-center justify-between text-sm gap-2">
                         <span className="text-slate-500 flex-shrink-0">Structure:</span>
-                        <span className="font-medium text-slate-700" title={STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}>
+                        <span className="font-medium text-slate-700 truncate text-right" title={STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}>
                           {STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center justify-between text-sm gap-2">
                         <span className="text-slate-500 flex-shrink-0">Current Step:</span>
-                        <span className="font-medium text-slate-700" title={getStepLabel(stepNum)}>
+                        <span className="font-medium text-slate-700 truncate text-right" title={getStepLabel(stepNum)}>
                           {getStepLabel(stepNum)}
                         </span>
                       </div>
                       {data.selectedKeywords && data.selectedKeywords.length > 0 && (
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center justify-between text-sm gap-2">
                           <span className="text-slate-500 flex-shrink-0">Keywords:</span>
                           <span className="font-medium text-slate-700">{data.selectedKeywords.length}</span>
                         </div>
                       )}
                       {data.generatedAds && data.generatedAds.length > 0 && (
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center justify-between text-sm gap-2">
                           <span className="text-slate-500 flex-shrink-0">Ads:</span>
                           <span className="font-medium text-slate-700">{data.generatedAds.length}</span>
                         </div>
                       )}
                     </div>
-                    {viewMode === 'grid' && <Separator className="my-3" />}
-                    <div className={`flex gap-2 ${viewMode === 'list' ? 'flex-shrink-0' : 'pt-1'}`}>
+                    <Separator className="my-3" />
+                    <div className="flex gap-2 pt-1">
                       <Button 
                         onClick={() => onLoadCampaign(data)}
-                        className={`${viewMode === 'list' ? '' : 'flex-1'} bg-indigo-600 hover:bg-indigo-700 text-white min-w-0`}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white min-w-0"
                       >
                         <Eye className="w-4 h-4 mr-2 flex-shrink-0" />
                         <span className="truncate">Continue</span>
