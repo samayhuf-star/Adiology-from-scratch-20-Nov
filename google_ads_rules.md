@@ -275,6 +275,62 @@ The builder must pre-validate to avoid these API errors:
 - **Bid Modifiers:** Range from -100% (Turn off) to +900%.
 - **Example:** To disable Tablets, set modifier to -100.
 
+## 11. Google Ads Editor CSV Export Rules
+
+**Purpose:** The system must generate CSV content that requires zero formatting by the user to import into Google Ads Editor.
+
+### A. Strict Column Headers (Case Sensitive)
+
+The builder must use these exact column headers for the CSV file. Do not invent new headers.
+
+| Entity | Required Headers (Exact Spelling) | Optional/Conditional Headers |
+|--------|-----------------------------------|------------------------------|
+| Campaign | Campaign, Budget, Bid Strategy Type, Campaign Type | Campaign Status (Enabled/Paused), Start Date |
+| Ad Group | Campaign, Ad Group, Max. CPC | Ad Group Status, Ad Group Type (Default: Standard) |
+| Keyword | Campaign, Ad Group, Keyword, Criterion Type | Final URL (if keyword-level URL) |
+| RSA Ad | Campaign, Ad Group, Headline 1...Headline 15, Description 1...Description 4, Final URL | Path 1, Path 2, Ad Status |
+| Location | Campaign, Location | Bid Adjustment |
+| Negative KW | Campaign, Keyword, Criterion Type | Ad Group (if ad group level negative) |
+
+### B. Data Formatting Rules
+
+#### 1. Criterion Type (Match Types)
+
+- **Broad Match:** `Broad`
+- **Phrase Match:** `Phrase`
+- **Exact Match:** `Exact`
+- **Negative Broad:** `Negative Broad`
+- **Negative Phrase:** `Negative Phrase`
+- **Negative Exact:** `Negative Exact`
+
+**Note:** Do not use symbols (like `[keyword]`) in the Keyword column if you are using the Criterion Type column. Keep the keyword clean.
+
+#### 2. Responsive Search Ads (RSA) Columns
+
+- **Headlines:** Columns must be named `Headline 1`, `Headline 2`, ... up to `Headline 15`.
+- **Descriptions:** Columns must be named `Description 1`, `Description 2`, `Description 3`, `Description 4`.
+- **Pinning (Advanced):** If the user wants to pin a headline, you need a separate column like `Headline 1 Position` with values 1, 2, or 3. (Only generate if explicitly requested).
+
+#### 3. Locations
+
+- **Format:** Use the canonical name string from the Google GeoTargets dataset.
+- **Valid:** `New York, New York, United States`
+- **Valid:** `United Kingdom`
+- **Invalid:** `NY` (Ambiguous)
+- **Radius:** Format as `20.0 mi: City, Country` or `10.0 km: Lat, Long`.
+
+### C. CSV Generation Logic (Cursor Instruction)
+
+When generating the CSV export:
+
+- **Grouping:** Sort the CSV rows by Campaign -> Ad Group -> Entity Type.
+- **Encoding:** UTF-8.
+- **One File Strategy:** Google Ads Editor allows mixed entities in one CSV if columns are clear, BUT it is safer to generate **Separate CSVs** for:
+  - `campaigns_structure.csv` (Campaigns & Ad Groups)
+  - `keywords.csv` (Keywords & Negatives)
+  - `ads.csv` (RSAs)
+  - `targeting.csv` (Locations)
+
 ---
 
 ## How to use this with Cursor
