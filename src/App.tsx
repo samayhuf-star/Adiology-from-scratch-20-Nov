@@ -1166,9 +1166,8 @@ const App = () => {
       case 'dashboard':
         return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
       default:
-        // Fallback: redirect to dashboard for any invalid/missing route
-        console.warn(`Invalid route/tab "${activeTab}" - redirecting to dashboard`);
-        setActiveTabSafe('dashboard');
+        // Fallback: show dashboard for any invalid/missing route
+        // Don't call setState here to avoid React warning - existing useEffect at line 483 will handle redirect
         return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
     }
   };
