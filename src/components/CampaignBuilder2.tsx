@@ -1725,27 +1725,30 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           {/* Negative Keywords Card */}
           <Card className="border-2 border-red-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-4 bg-red-50 rounded-t-lg border-b border-red-100">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-600 rounded-2xl shadow-md">
-                  <MinusCircle className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl font-bold text-red-700">
-                    Negative Keywords
-                  </CardTitle>
-                  <CardDescription className="text-sm mt-1.5 text-slate-600">
-                    Exclude keywords containing these terms
-                  </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-600 rounded-2xl shadow-md">
+                    <MinusCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-red-700">
+                      Negative Keywords
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1.5 text-slate-600">
+                      Exclude keywords containing these terms
+                    </CardDescription>
+                  </div>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="space-y-6 pt-6">
               <div className="space-y-3">
-                <Input
+                <Textarea
                   value={negativeKeywords}
                   onChange={(e) => setNegativeKeywords(e.target.value)}
                   placeholder="cheap, discount, reviews, job, free..."
-                  className="font-mono text-sm border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 rounded-xl h-12 transition-all shadow-sm hover:shadow-md"
+                  rows={6}
+                  className="font-mono text-sm border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 rounded-xl transition-all shadow-sm hover:shadow-md"
                 />
                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
@@ -1759,7 +1762,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         </div>
 
         {/* Match Types Selection */}
-        <Card className="border-2 border-indigo-200/80 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
+        <Card className="border-2 border-indigo-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
           <CardContent className="pt-6">
             <div className="flex flex-wrap gap-4 items-center">
               <Label className="text-base font-semibold text-slate-700 mr-2">Match Types:</Label>
@@ -1772,7 +1775,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   }}
                   className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
                     matchTypes.broad
-                      ? 'bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 border-amber-500 shadow-md'
+                      ? 'bg-amber-100 border-amber-500 shadow-md'
                       : 'bg-white border-amber-300 hover:border-amber-400 hover:shadow-sm'
                   }`}
                 >
@@ -1783,7 +1786,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       setMatchTypes(prev => ({ ...prev, broad: !!checked }));
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="border-amber-500 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600 data-[state=checked]:border-amber-600"
+                    className="border-amber-500 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600"
                   />
                   <span className={`font-medium text-sm transition-colors cursor-pointer ${
                     matchTypes.broad ? 'text-amber-950' : 'text-amber-700 group-hover:text-amber-900'
@@ -1799,7 +1802,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   }}
                   className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
                     matchTypes.phrase
-                      ? 'bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-blue-500 shadow-md'
+                      ? 'bg-blue-100 border-blue-500 shadow-md'
                       : 'bg-white border-blue-300 hover:border-blue-400 hover:shadow-sm'
                   }`}
                 >
@@ -1810,7 +1813,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="border-blue-500 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-500 data-[state=checked]:to-cyan-600 data-[state=checked]:border-blue-600"
+                    className="border-blue-500 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                   />
                   <span className={`font-medium text-sm transition-colors cursor-pointer ${
                     matchTypes.phrase ? 'text-blue-950' : 'text-blue-700 group-hover:text-blue-900'
@@ -1826,7 +1829,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   }}
                   className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
                     matchTypes.exact
-                      ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 shadow-md'
+                      ? 'bg-emerald-100 border-emerald-500 shadow-md'
                       : 'bg-white border-emerald-300 hover:border-emerald-400 hover:shadow-sm'
                   }`}
                 >
@@ -1837,7 +1840,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       setMatchTypes(prev => ({ ...prev, exact: !!checked }));
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="border-emerald-500 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-600 data-[state=checked]:border-emerald-600"
+                    className="border-emerald-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                   />
                   <span className={`font-medium text-sm transition-colors cursor-pointer ${
                     matchTypes.exact ? 'text-emerald-950' : 'text-emerald-700 group-hover:text-emerald-900'
@@ -2170,7 +2173,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         setSelectedKeywords([]);
                       }
                     }}
-                    className="h-5 w-5 border-indigo-500"
+                    className="h-5 w-5 border-2 border-indigo-500 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                   />
                   <span>Select All</span>
                 </Label>
@@ -2243,7 +2246,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                               }
                             });
                           }}
-                          className="h-5 w-5 flex-shrink-0 border-indigo-500"
+                          className="h-5 w-5 flex-shrink-0 border-2 border-indigo-500 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                         />
                         <span className={`flex-1 text-sm font-semibold ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
                           {keywordText}
@@ -2630,13 +2633,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return (
       <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 shadow-2xl mb-6 transform hover:scale-105 transition-transform">
-            <Hash className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent mb-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-indigo-700 mb-3">
             Keyword Generator
           </h2>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full border border-indigo-200 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 rounded-full border border-indigo-200 shadow-sm">
             <p className="text-slate-700 text-sm font-medium">
               Structure: <span className="font-bold text-indigo-700">{STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</span>
             </p>
@@ -2964,6 +2964,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
 
     setIsGeneratingAds(true);
+    
+    // Show initial loading message
+    const loadingToastId = notifications.loading('Starting ad generation...', {
+      title: 'Generating Ads',
+      description: 'Please wait while we create your ads.',
+    });
+
     const baseUrl = url || DEFAULT_URL;
     const adGroups = getDynamicAdGroups();
     const allGeneratedAds: any[] = [];
@@ -2976,10 +2983,34 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     const callOnlyPerGroup = 1;
     const MAX_ADS_PER_GROUP = 3;
 
-    for (const group of adGroups) {
+    for (let groupIndex = 0; groupIndex < adGroups.length; groupIndex++) {
+      const group = adGroups[groupIndex];
+      
+      // Update progress message
+      try {
+        notifications.dismiss(loadingToastId);
+      } catch (e) {
+        // Ignore dismiss errors
+      }
+      
+      const progressToastId = notifications.loading(
+        `Generating ads for "${group.name}" (${groupIndex + 1}/${adGroups.length})...`,
+        {
+          title: 'Generating Ads',
+          description: `Processing ad group ${groupIndex + 1} of ${adGroups.length}`,
+        }
+      );
+      
       // Get keywords for this ad group
       const groupKeywords = group.keywords || [];
-      if (groupKeywords.length === 0) continue;
+      if (groupKeywords.length === 0) {
+        try {
+          notifications.dismiss(progressToastId);
+        } catch (e) {
+          // Ignore dismiss errors
+        }
+        continue;
+      }
 
       // Clean keywords (remove brackets, quotes, etc.)
       const cleanKeywords = groupKeywords.map(k => {
@@ -3111,6 +3142,11 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           adsAddedForThisGroup++;
         }
       }
+      
+      // Dismiss group progress toast
+      try {
+        notifications.dismiss(progressToastId);
+      } catch (e) {}
     }
 
       // Apply tracking parameters (UTM) to final URLs
@@ -3145,14 +3181,26 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       
       setGeneratedAds(adsWithTracking);
     
+    // Dismiss any remaining loading toasts
+    try {
+      notifications.dismiss('all');
+    } catch (e) {
+      // Ignore dismiss errors
+    }
+    
+    // Small delay before showing success message
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     if (adsWithTracking.length > 0) {
       notifications.success(`Generated ${adsWithTracking.length} ad(s) for ${adGroups.length} ad group(s)`, {
         title: 'Ads Generated',
-        duration: 3000
+        description: `Successfully created ${adsWithTracking.length} ads across ${adGroups.length} ad group(s)`,
+        duration: 5000
       });
     } else {
       notifications.warning('No ads were generated. Please check your keywords and try again.', {
         title: 'Generation Failed',
+        description: 'Unable to generate ads. Please verify your keywords and try again.',
         duration: 5000
       });
     }
@@ -3381,12 +3429,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         extension.unit = 'per service';
         extension.description = 'Starting price';
         break;
-      case 'app':
-        extension.appStore = 'GOOGLE_PLAY';
-        extension.appId = 'com.example.app';
-        extension.appLinkText = 'Download Now';
-        extension.appFinalUrl = 'https://play.google.com/store/apps/details?id=com.example.app';
-        break;
       case 'location':
         extension.businessName = 'Your Business Name';
         extension.addressLine1 = '123 Main St';
@@ -3426,8 +3468,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return extension;
   };
 
-  const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
-    const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
+  const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
+    const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
     const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
     
     // Validate keywords are selected
@@ -3466,7 +3508,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                        type === 'sitelink' ? 'Sitelink Extension' :
                        type === 'call' ? 'Call Extension' :
                        type === 'price' ? 'Price Extension' :
-                       type === 'app' ? 'App Extension' :
                        type === 'location' ? 'Location Extension' :
                        type === 'message' ? 'Message Extension' :
                        type === 'leadform' ? 'Lead Form Extension' :
@@ -3501,7 +3542,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                      type === 'sitelink' ? 'Sitelink Extension' :
                      type === 'call' ? 'Call Extension' :
                      type === 'price' ? 'Price Extension' :
-                     type === 'app' ? 'App Extension' :
                      type === 'location' ? 'Location Extension' :
                      type === 'message' ? 'Message Extension' :
                      type === 'leadform' ? 'Lead Form Extension' :
@@ -3601,7 +3641,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       type === 'sitelink' ? 'Sitelink Extension' :
                       type === 'call' ? 'Call Extension' :
                       type === 'price' ? 'Price Extension' :
-                      type === 'app' ? 'App Extension' :
                       type === 'location' ? 'Location Extension' :
                       type === 'message' ? 'Message Extension' :
                       type === 'leadform' ? 'Lead Form Extension' :
@@ -3650,7 +3689,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     { id: 'message', label: 'Message Extension', description: 'Enable messaging', icon: MessageSquare, color: 'purple' },
     { id: 'promotion', label: 'Promotion Extension', description: 'Show special offers', icon: Gift, color: 'orange' },
     { id: 'image', label: 'Image Extension', description: 'Add images', icon: ImageIcon, color: 'pink' },
-    { id: 'app', label: 'App Extension', description: 'Link to mobile app', icon: Smartphone, color: 'slate' },
   ];
 
   const handleConfirmAIExtensions = () => {
@@ -3733,7 +3771,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     
     // Calculate total ads (only count regular ads)
     const totalAds = filteredAds.length;
-    const maxAds = 25; // Maximum ads allowed (total across all groups)
+    const maxAds = 3; // Maximum ads allowed (total across all groups)
     
     // Google Ads rule: Maximum 3 ads per ad group
     const MAX_ADS_PER_GROUP = 3;
@@ -3910,13 +3948,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
-                  </Button>
-                  <Button 
-                    onClick={() => createNewAd('app')}
-                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
-                  >
-                    <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('location')}

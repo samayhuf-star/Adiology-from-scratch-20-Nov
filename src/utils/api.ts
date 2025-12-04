@@ -124,14 +124,15 @@ export const api = {
           errorMessage += `: ${response.statusText}`;
         }
         
-        // Log 404s as warnings (expected when endpoints don't exist)
-        const logLevel = response.status === 404 ? 'warning' : 'error';
-        loggingService.addLog(logLevel, 'API', `GET ${endpoint} → ${response.status} (expected fallback)`, { 
-          endpoint, 
-          status: response.status,
-          statusText: response.statusText,
-          isExpected: response.status === 404
-        });
+        // Suppress 404 warnings - these are expected when endpoints don't exist
+        // Only log non-404 errors
+        if (response.status !== 404) {
+          loggingService.addLog('error', 'API', `GET ${endpoint} → ${response.status}`, { 
+            endpoint, 
+            status: response.status,
+            statusText: response.statusText
+          });
+        }
         throw new Error(errorMessage);
       }
 
@@ -143,7 +144,8 @@ export const api = {
       // The calling code will handle fallback to localStorage
       if (e instanceof TypeError && e.message.includes('fetch')) {
         const networkError = new Error('Network error: Unable to reach server');
-        loggingService.addLog('warning', 'API', `GET ${endpoint}: Network error`, { endpoint });
+        // Suppress warning for expected network errors - fallback will handle it
+        // loggingService.addLog('warning', 'API', `GET ${endpoint}: Network error`, { endpoint });
         throw networkError;
       }
       // Don't capture expected errors (404, network errors, or generic request failures)

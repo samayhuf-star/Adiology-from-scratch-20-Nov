@@ -21,10 +21,11 @@ export function checkRequiredEnvVars(): { valid: boolean; missing: string[] } {
     return !value || value === 'undefined' || value === '';
   });
 
-  // Only warn, don't fail - app has hardcoded fallbacks
+  // Only log, don't warn - app has hardcoded fallbacks
+  // Suppress warning for optional variables since they have fallbacks
   if (missing.length > 0) {
-    console.warn('⚠️ Optional environment variables not set:', missing);
-    console.log('ℹ️ Using hardcoded fallback values');
+    // Silently use fallbacks - no need to warn for optional variables
+    // console.log('ℹ️ Using hardcoded fallback values for optional env vars');
   } else {
     console.log('✅ Environment variables loaded');
   }

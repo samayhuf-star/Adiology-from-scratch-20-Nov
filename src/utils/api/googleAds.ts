@@ -103,14 +103,24 @@ export async function generateKeywords(
       metadata: { seedKeywords }
     });
     
-    // Final fallback: return basic variations
-    const keywords = generateBasicKeywordVariations(seedKeywords, maxResults, negativeKeywords);
+    // Final fallback: use autocomplete-based keyword generator
+    const { generateKeywords: generateAutocompleteKeywords } = require('../keywordGenerator');
+    const autocompleteKeywords = generateAutocompleteKeywords({
+      seedKeywords: seedKeywords.join('\n'),
+      negativeKeywords: negativeKeywords.join('\n'),
+      maxKeywords: maxResults,
+      minKeywords: Math.min(300, maxResults)
+    });
+    
     return {
-      keywords: keywords.map((kw, index) => ({
-        text: kw.keyword,
-        id: `kw-${Date.now()}-${index}`,
-        keyword: kw.keyword,
-        matchType: kw.matchType || 'broad'
+      keywords: autocompleteKeywords.map((kw, index) => ({
+        text: kw.text,
+        id: kw.id || `kw-${Date.now()}-${index}`,
+        keyword: kw.text,
+        matchType: (kw.matchType || 'broad').toLowerCase(),
+        volume: kw.volume,
+        cpc: kw.cpc,
+        type: kw.type
       }))
     };
   }
