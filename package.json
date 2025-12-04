@@ -55,7 +55,8 @@
             "tailwind-merge": "*",
             "vaul": "^1.1.2",
             "xlsx": "^0.18.5",
-            "xlsx-js-style": "^1.2.0"
+            "xlsx-js-style": "^1.2.0",
+            "zod": "^4.1.13"
       },
       "devDependencies": {
             "@lambdatest/playwright-node-sdk": "^1.0.2",
@@ -64,8 +65,8 @@
             "@types/xlsx": "^0.0.35",
             "@vitejs/plugin-react-swc": "^3.10.2",
             "dotenv": "^17.2.3",
-            "handlebars": "^4.7.8",
             "fs-extra": "^11.2.0",
+            "handlebars": "^4.7.8",
             "vite": "6.3.5"
       },
       "scripts": {
