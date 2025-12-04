@@ -14,6 +14,7 @@ import {
 } from './components/ui/dropdown-menu';
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
+import { CampaignBuilder3 } from './components/CampaignBuilder3';
 import { CSVValidator3 } from './components/CSVValidator3';
 import { GoogleAdsCSVExport } from './components/GoogleAdsCSVExport';
 import { KeywordPlanner } from './components/KeywordPlanner';
@@ -112,6 +113,7 @@ const App = () => {
     'dashboard',
     'campaign-presets',
     'builder-2',
+    'builder-3',
     'campaign-history',
     'website-templates',
     'keyword-planner',
@@ -717,6 +719,7 @@ const App = () => {
       icon: Sparkles,
       submenu: [
         { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
+        { id: 'builder-3', label: 'Builder 3.0', icon: Sparkles },
     { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
@@ -1126,6 +1129,8 @@ const App = () => {
         }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
+      case 'builder-3':
+        return <CampaignBuilder3 />;
       case 'campaign-history':
         // Campaign History - Show only saved campaigns, not all activity history
         return <CampaignHistoryView onLoadCampaign={(data) => {

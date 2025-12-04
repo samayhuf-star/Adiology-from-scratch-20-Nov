@@ -1755,6 +1755,98 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
+        {/* Match Types Selection */}
+        <Card className="border-2 border-indigo-200/80 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-4 items-center">
+              <Label className="text-base font-semibold text-slate-700 mr-2">Match Types:</Label>
+              <div className="flex flex-wrap gap-4">
+                <label
+                  htmlFor="match-broad"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMatchTypes(prev => ({ ...prev, broad: !prev.broad }));
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
+                    matchTypes.broad
+                      ? 'bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 border-amber-500 shadow-md'
+                      : 'bg-white border-amber-300 hover:border-amber-400 hover:shadow-sm'
+                  }`}
+                >
+                  <Checkbox
+                    id="match-broad"
+                    checked={matchTypes.broad}
+                    onCheckedChange={(checked) => {
+                      setMatchTypes(prev => ({ ...prev, broad: !!checked }));
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="border-amber-500 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600 data-[state=checked]:border-amber-600"
+                  />
+                  <span className={`font-medium text-sm transition-colors cursor-pointer ${
+                    matchTypes.broad ? 'text-amber-950' : 'text-amber-700 group-hover:text-amber-900'
+                  }`}>
+                    Broad Match
+                  </span>
+                </label>
+                <label
+                  htmlFor="match-phrase"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMatchTypes(prev => ({ ...prev, phrase: !prev.phrase }));
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
+                    matchTypes.phrase
+                      ? 'bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-blue-500 shadow-md'
+                      : 'bg-white border-blue-300 hover:border-blue-400 hover:shadow-sm'
+                  }`}
+                >
+                  <Checkbox
+                    id="match-phrase"
+                    checked={matchTypes.phrase}
+                    onCheckedChange={(checked) => {
+                      setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="border-blue-500 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-500 data-[state=checked]:to-cyan-600 data-[state=checked]:border-blue-600"
+                  />
+                  <span className={`font-medium text-sm transition-colors cursor-pointer ${
+                    matchTypes.phrase ? 'text-blue-950' : 'text-blue-700 group-hover:text-blue-900'
+                  }`}>
+                    Phrase Match
+                  </span>
+                </label>
+                <label
+                  htmlFor="match-exact"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMatchTypes(prev => ({ ...prev, exact: !prev.exact }));
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
+                    matchTypes.exact
+                      ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 shadow-md'
+                      : 'bg-white border-emerald-300 hover:border-emerald-400 hover:shadow-sm'
+                  }`}
+                >
+                  <Checkbox
+                    id="match-exact"
+                    checked={matchTypes.exact}
+                    onCheckedChange={(checked) => {
+                      setMatchTypes(prev => ({ ...prev, exact: !!checked }));
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="border-emerald-500 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-600 data-[state=checked]:border-emerald-600"
+                  />
+                  <span className={`font-medium text-sm transition-colors cursor-pointer ${
+                    matchTypes.exact ? 'text-emerald-950' : 'text-emerald-700 group-hover:text-emerald-900'
+                  }`}>
+                    Exact Match
+                  </span>
+                </label>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Generate Button */}
         <div className="pt-2">
           <Button
