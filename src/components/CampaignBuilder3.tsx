@@ -1215,7 +1215,7 @@ export const CampaignBuilder3: React.FC = () => {
       if (type === 'sitelink') {
         return {
           ...baseExt,
-          links: [{ text: label, url: prev.url, description: '' }],
+          links: [{ text: label, url: campaignData.url, description: '' }],
         };
       } else if (type === 'callout') {
         return {
@@ -1240,6 +1240,7 @@ export const CampaignBuilder3: React.FC = () => {
       return baseExt;
     };
 
+    setCampaignData(prev => {
       const updatedAds = prev.ads.map(ad => {
         const newExtension = createExtension(extensionType, extensionLabel);
         return {
@@ -1502,6 +1503,17 @@ export const CampaignBuilder3: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Progress bar steps
+  const steps = [
+    { id: 1, label: 'URL Input' },
+    { id: 2, label: 'Structure' },
+    { id: 3, label: 'Keywords' },
+    { id: 4, label: 'Ads & Extensions' },
+    { id: 5, label: 'Geo Target' },
+    { id: 6, label: 'Review' },
+    { id: 7, label: 'CSV & Validate' },
+  ];
 
   // Render functions for each step
   const renderStep1 = () => (
@@ -2770,17 +2782,6 @@ export const CampaignBuilder3: React.FC = () => {
       )}
     </div>
   );
-
-  // Progress bar
-  const steps = [
-    { id: 1, label: 'URL Input' },
-    { id: 2, label: 'Structure' },
-    { id: 3, label: 'Keywords' },
-    { id: 4, label: 'Ads & Extensions' },
-    { id: 5, label: 'Geo Target' },
-    { id: 6, label: 'Review' },
-    { id: 7, label: 'CSV & Validate' },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-cyan-50">

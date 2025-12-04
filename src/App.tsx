@@ -112,6 +112,7 @@ const App = () => {
     'dashboard',
     'campaign-presets',
     'builder-2',
+    'builder-3',
     'campaign-history',
     'website-templates',
     'keyword-planner',
@@ -1126,6 +1127,8 @@ const App = () => {
         }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
+      case 'builder-3':
+        return <CampaignBuilder3 />;
       case 'campaign-history':
         // Campaign History - Show only saved campaigns, not all activity history
         return <CampaignHistoryView onLoadCampaign={(data) => {
@@ -1161,9 +1164,8 @@ const App = () => {
       case 'dashboard':
         return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
       default:
-        // Fallback: redirect to dashboard for any invalid/missing route
-        console.warn(`Invalid route/tab "${activeTab}" - redirecting to dashboard`);
-        setActiveTabSafe('dashboard');
+        // Fallback: show dashboard for any invalid/missing route
+        // Don't call setState here to avoid React warning - existing useEffect at line 483 will handle redirect
         return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
     }
   };
