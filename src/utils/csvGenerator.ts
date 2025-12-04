@@ -254,12 +254,11 @@ function generateCampaignsStructureCSV(data: CampaignData): string {
   });
   
   // Generate CSV
-  const csv = Papa.unparse(rows, {
-    header: true,
-    skipEmptyLines: true
-  });
-  
-  return csv;
+  return Papa.unparse(rows, {
+      header: true,
+      skipEmptyLines: true
+    });
+
 }
 
 /**
