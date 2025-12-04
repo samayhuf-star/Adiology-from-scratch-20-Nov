@@ -1662,10 +1662,13 @@ export const AdsBuilder = () => {
         }
     };
 
-    const handleRemoveExtension = (adId: string, extensionId: string) => {
+    const handleRemoveExtension = (adId: string, extensionIndex: number) => {
         setGeneratedAds(generatedAds.map(ad => 
             ad.id === adId 
-                ? { ...ad, extensions: (ad.extensions || []).filter((ext: Extension) => ext.id !== extensionId) }
+                ? { 
+                    ...ad, 
+                    extensions: (ad.extensions || []).filter((_, idx) => idx !== extensionIndex)
+                }
                 : ad
         ));
     };
@@ -2215,7 +2218,7 @@ export const AdsBuilder = () => {
                                                     {/* Live Ad Preview */}
                                                     <LiveAdPreview 
                                                         ad={previewAd} 
-                                                        onRemoveExtension={(extensionId) => handleRemoveExtension(ad.id, extensionId)}
+                                                        onRemoveExtension={(extensionIndex) => handleRemoveExtension(ad.id, extensionIndex)}
                                                     />
 
                                             {/* Editable URL for RSA/DKI */}

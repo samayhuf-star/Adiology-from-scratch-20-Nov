@@ -27,6 +27,22 @@ export default function CreativeMinimalistHomepage({
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Load Microedits script on home page
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'http://app.microedits.com/XGgDKb-.js';
+    script.async = true;
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup: remove script when component unmounts
+      const existingScript = document.querySelector('script[src="http://app.microedits.com/XGgDKb-.js"]');
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 text-white overflow-hidden">
       {/* Animated Background Elements */}

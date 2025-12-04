@@ -254,12 +254,29 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
           myDomains = uniqueDomains.size;
         } catch (websiteError: any) {
           // Silently handle published websites errors (table might not exist)
-          // Don't log any errors - expected when table doesn't exist
+          const errorMessage = websiteError?.message?.toLowerCase() || '';
+          // Only log if it's not a missing table error
+          if (!errorMessage.includes('schema cache') && 
+              !errorMessage.includes('could not find the table') &&
+              !errorMessage.includes('does not exist')) {
+            console.warn('Could not fetch published websites:', websiteError);
+          }
           myWebsites = 0;
           myDomains = 0;
         }
       } catch (error: any) {
-        // Silently handle all errors - expected when tables/endpoints don't exist
+        // Check if error is about missing published_websites table
+        const errorMessage = error?.message?.toLowerCase() || '';
+        const isTableMissingError = 
+          errorMessage.includes('schema cache') || 
+          errorMessage.includes('could not find the table') ||
+          errorMessage.includes('does not exist') ||
+          errorMessage.includes('relation') && errorMessage.includes('does not exist');
+        
+        if (!isTableMissingError) {
+          // Only log non-table-missing errors
+          console.error('Error fetching user resources:', error);
+        }
         // Continue with 0 counts if there's an error
       }
 

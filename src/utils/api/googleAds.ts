@@ -97,31 +97,30 @@ export async function generateKeywords(
       }))
     };
   } catch (error) {
-    // Log error with proper message
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const fullError = error instanceof Error ? error : new Error(errorMessage || 'AI fallback error');
+    captureError(error instanceof Error ? error : new Error('AI fallback error'), {
+      module: 'googleAds',
+      action: 'generateKeywords',
+      metadata: { seedKeywords }
+    });
     
-    // Only capture non-timeout errors (timeouts are expected in some cases)
-    if (!errorMessage.includes('timeout') && !errorMessage.includes('Network error')) {
-      captureError(fullError, {
-        module: 'googleAds',
-        action: 'generateKeywords',
-        metadata: { 
-          seedKeywords,
-          errorMessage: errorMessage || 'Unknown error'
-        }
-      });
-    }
+    // Final fallback: use autocomplete-based keyword generator
+    const { generateKeywords: generateAutocompleteKeywords } = require('../keywordGenerator');
+    const autocompleteKeywords = generateAutocompleteKeywords({
+      seedKeywords: seedKeywords.join('\n'),
+      negativeKeywords: negativeKeywords.join('\n'),
+      maxKeywords: maxResults,
+      minKeywords: Math.min(300, maxResults)
+    });
     
-    // Final fallback: return basic variations
-    console.warn('AI keyword generation failed, using basic variations:', errorMessage);
-    const keywords = generateBasicKeywordVariations(seedKeywords, maxResults, negativeKeywords);
     return {
-      keywords: keywords.map((kw, index) => ({
-        text: kw.keyword,
-        id: `kw-${Date.now()}-${index}`,
-        keyword: kw.keyword,
-        matchType: kw.matchType || 'broad'
+      keywords: autocompleteKeywords.map((kw, index) => ({
+        text: kw.text,
+        id: kw.id || `kw-${Date.now()}-${index}`,
+        keyword: kw.text,
+        matchType: (kw.matchType || 'broad').toLowerCase(),
+        volume: kw.volume,
+        cpc: kw.cpc,
+        type: kw.type
       }))
     };
   }
@@ -164,108 +163,54 @@ Requirements:
 - Do not include explanations or formatting`;
 
   try {
-    // Add timeout for AI API calls (60 seconds)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-    
-    try {
-      const response = await fetch(`${AI_API_BASE}?key=${AI_API_KEY}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 8192,
-          }
-        }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        let errorDetails = response.statusText || `HTTP ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorDetails = errorData.error?.message || errorData.message || errorDetails;
-        } catch (e) {
-          // If we can't parse error response, use status text
+    const response = await fetch(`${AI_API_BASE}?key=${AI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
         }
-        throw new Error(`AI API error: ${errorDetails} (Status: ${response.status})`);
-      }
+      })
+    });
 
-      const data = await response.json();
-      
-      // Check for API errors in response
-      if (data.error) {
-        throw new Error(`AI API error: ${data.error.message || data.error.code || 'Unknown error'}`);
-      }
-      
-      // Extract keywords from AI response
-      const keywordText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
-      if (!keywordText) {
-        throw new Error('AI API error: No keywords generated in response');
-      }
-      
-      const keywords = keywordText
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => {
-          // Remove numbering, bullets, and empty lines
-          const cleaned = line.replace(/^[\d\-\•\*\.]\s*/, '').trim();
-          return cleaned.length > 0 && 
-                 !cleaned.toLowerCase().includes('keyword') &&
-                 !cleaned.toLowerCase().includes('example') &&
-                 !containsNegativeKeyword(cleaned, negativeKeywords);
-        })
-        .slice(0, maxResults)
-        .map(keyword => ({
-          keyword: keyword.replace(/^[\d\-\•\*\.]\s*/, '').trim(),
-          matchType: 'broad' as const
-        }));
-
-      if (keywords.length === 0) {
-        throw new Error('AI API error: Generated keywords list is empty');
-      }
-
-      return keywords;
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      
-      // Handle timeout errors
-      if (fetchError.name === 'AbortError' || fetchError.message?.includes('aborted')) {
-        throw new Error('AI API error: Request timeout (60s) - API is taking too long to respond');
-      }
-      
-      // Re-throw if it's already a formatted error
-      if (fetchError.message?.includes('AI API error:')) {
-        throw fetchError;
-      }
-      
-      // Handle network errors
-      if (fetchError instanceof TypeError && fetchError.message.includes('fetch')) {
-        throw new Error('AI API error: Network error - Unable to reach AI service');
-      }
-      
-      // Handle other errors
-      throw new Error(`AI API error: ${fetchError.message || 'Unknown error occurred'}`);
+    if (!response.ok) {
+      throw new Error(`AI API error: ${response.statusText}`);
     }
+
+    const data = await response.json();
+    
+    // Extract keywords from AI response
+    const keywordText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const keywords = keywordText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => {
+        // Remove numbering, bullets, and empty lines
+        const cleaned = line.replace(/^[\d\-\•\*\.]\s*/, '').trim();
+        return cleaned.length > 0 && 
+               !cleaned.toLowerCase().includes('keyword') &&
+               !cleaned.toLowerCase().includes('example') &&
+               !containsNegativeKeyword(cleaned, negativeKeywords);
+      })
+      .slice(0, maxResults)
+      .map(keyword => ({
+        keyword: keyword.replace(/^[\d\-\•\*\.]\s*/, '').trim(),
+        matchType: 'broad' as const
+      }));
+
+    return keywords;
   } catch (error) {
-    // Re-throw with better context
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(`AI API error: ${String(error)}`);
+    throw error;
   }
 }
 

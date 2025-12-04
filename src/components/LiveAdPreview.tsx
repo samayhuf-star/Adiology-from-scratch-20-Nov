@@ -31,7 +31,7 @@ interface Ad {
 interface LiveAdPreviewProps {
     ad: Ad;
     className?: string;
-    onRemoveExtension?: (extensionId: string) => void;
+    onRemoveExtension?: (extensionIndex: number) => void;
 }
 
 export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = '', onRemoveExtension }) => {
@@ -56,8 +56,7 @@ export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = ''
     const displayUrl = formatDisplayUrl();
 
     const renderExtension = (ext: Extension, idx: number) => {
-        const extensionId = ext.id || `ext-${idx}`;
-        const canDelete = onRemoveExtension && extensionId;
+        const canDelete = onRemoveExtension !== undefined;
         
         const DeleteButton = canDelete ? (
             <Button
@@ -65,7 +64,7 @@ export const LiveAdPreview: React.FC<LiveAdPreviewProps> = ({ ad, className = ''
                 size="sm"
                 onClick={(e) => {
                     e.stopPropagation();
-                    onRemoveExtension(extensionId);
+                    onRemoveExtension(idx);
                 }}
                 className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
             >

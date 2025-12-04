@@ -1615,103 +1615,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           </CardContent>
         </Card>
 
-        {/* Match Types - Enhanced Design */}
-        <Card className="border-2 border-teal-200/80 bg-gradient-to-br from-white via-teal-50/30 to-cyan-50/30 backdrop-blur-xl shadow-2xl hover:shadow-3xl transition-all duration-300">
-          <CardHeader className="pb-6 border-b-2 border-teal-100/60">
-            <CardTitle className="text-2xl font-bold text-teal-900 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl shadow-lg">
-                <Tag className="w-6 h-6 text-white" />
-              </div>
-              Match Types
-            </CardTitle>
-            <CardDescription className="text-base mt-2 text-teal-700">
-              Select which keyword match types to include in your campaign
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-8">
-            <div className="flex flex-wrap gap-5">
-              <label
-                htmlFor="broad"
-                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
-                  matchTypes.broad
-                    ? 'bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 border-amber-500 shadow-lg scale-105'
-                    : 'bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 border-amber-300 hover:border-amber-400 hover:shadow-lg hover:scale-105'
-                }`}
-              >
-                <Checkbox
-                  id="broad"
-                  checked={matchTypes.broad}
-                  onCheckedChange={(checked) => {
-                    setMatchTypes(prev => ({ ...prev, broad: !!checked }));
-                  }}
-                  className="border-amber-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-600 data-[state=checked]:border-amber-600"
-                />
-                <span 
-                  className={`font-bold text-base transition-colors cursor-pointer ${
-                    matchTypes.broad 
-                      ? 'text-amber-950' 
-                      : 'text-amber-900 group-hover:text-amber-950'
-                  }`}
-                >
-                  Broad Match
-                </span>
-              </label>
-              <label
-                htmlFor="phrase"
-                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
-                  matchTypes.phrase
-                    ? 'bg-gradient-to-br from-blue-100 via-cyan-100 to-blue-200 border-blue-500 shadow-lg scale-105'
-                    : 'bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 border-blue-300 hover:border-blue-400 hover:shadow-lg hover:scale-105'
-                }`}
-              >
-                <Checkbox
-                  id="phrase"
-                  checked={matchTypes.phrase}
-                  onCheckedChange={(checked) => {
-                    setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
-                  }}
-                  className="border-blue-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-500 data-[state=checked]:to-cyan-600 data-[state=checked]:border-blue-600"
-                />
-                <span 
-                  className={`font-bold text-base transition-colors cursor-pointer ${
-                    matchTypes.phrase 
-                      ? 'text-blue-950' 
-                      : 'text-blue-900 group-hover:text-blue-950'
-                  }`}
-                >
-                  Phrase Match
-                </span>
-              </label>
-              <label
-                htmlFor="exact"
-                className={`flex items-center space-x-3 px-6 py-4 rounded-xl border-2 cursor-pointer transition-all duration-300 group flex-1 min-w-[180px] ${
-                  matchTypes.exact
-                    ? 'bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-500 shadow-lg scale-105'
-                    : 'bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 border-emerald-300 hover:border-emerald-400 hover:shadow-lg hover:scale-105'
-                }`}
-              >
-                <Checkbox
-                  id="exact"
-                  checked={matchTypes.exact}
-                  onCheckedChange={(checked) => {
-                    setMatchTypes(prev => ({ ...prev, exact: !!checked }));
-                  }}
-                  className="border-emerald-500 w-6 h-6 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-emerald-500 data-[state=checked]:to-teal-600 data-[state=checked]:border-emerald-600"
-                />
-                <span 
-                  className={`font-bold text-base transition-colors cursor-pointer ${
-                    matchTypes.exact 
-                      ? 'text-emerald-950' 
-                      : 'text-emerald-900 group-hover:text-emerald-950'
-                  }`}
-                >
-                  Exact Match
-                </span>
-              </label>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Navigation - Enhanced */}
         <div className="flex justify-end pt-6">
           <Button
@@ -1733,10 +1636,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               if (!url.match(/^https?:\/\/.+/i)) {
                 notifications.error('Please enter a valid URL starting with http:// or https://', { title: 'Invalid URL' });
                 setUrlError('Please enter a valid URL starting with http:// or https://');
-                return;
-              }
-              if (!matchTypes.broad && !matchTypes.phrase && !matchTypes.exact) {
-                notifications.error('Please select at least one match type', { title: 'Match Type Required' });
                 return;
               }
               setStep(2);
@@ -1765,92 +1664,190 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     // Common keyword input section
     const commonKeywordSection = (
       <div className="space-y-6">
-        {/* Seed Keywords Card */}
-        <Card className="border-2 border-indigo-200/80 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
-          <CardHeader className="pb-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 rounded-t-lg border-b border-indigo-100/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
-                  <Hash className="w-6 h-6 text-white" />
+        {/* Seed Keywords and Negative Keywords Side by Side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Seed Keywords Card */}
+          <Card className="border-2 border-indigo-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4 bg-indigo-50 rounded-t-lg border-b border-indigo-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-600 rounded-2xl shadow-md">
+                    <Hash className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-indigo-700">
+                      Seed Keywords
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1.5 text-slate-600">
+                      Enter your seed keywords (one per line)
+                    </CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">
-                    Seed Keywords
-                  </CardTitle>
-                  <CardDescription className="text-sm mt-1.5 text-slate-600">
-                    Enter your seed keywords (one per line)
-                  </CardDescription>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Randomly select a preset and fill both seed keywords and negative keywords
+                    const preset = pickRandomPreset(FILL_INFO_PRESETS);
+                    setSeedKeywords(preset.seedKeywords);
+                    setNegativeKeywords(preset.negativeKeywords);
+                    notifications.success('Random test data filled!', {
+                      title: 'Fill Info',
+                      description: 'Seed keywords and negative keywords have been populated with random test data.'
+                    });
+                  }}
+                  className="gap-2 border-indigo-300 bg-white hover:bg-indigo-50 hover:border-indigo-400 transition-all shadow-sm"
+                >
+                  <Info className="w-4 h-4" />
+                  Fill Info
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-3">
+                <Textarea
+                  value={seedKeywords}
+                  onChange={(e) => setSeedKeywords(e.target.value)}
+                  placeholder="Call airline&#10;airline number&#10;call united number"
+                  rows={6}
+                  className="font-mono text-sm border-2 border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl transition-all shadow-sm hover:shadow-md"
+                />
+                <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-700">
+                    Each keyword must be at least 3 characters long.
+                  </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Randomly select a preset and fill both seed keywords and negative keywords
-                  const preset = pickRandomPreset(FILL_INFO_PRESETS);
-                  setSeedKeywords(preset.seedKeywords);
-                  setNegativeKeywords(preset.negativeKeywords);
-                  notifications.success('Random test data filled!', {
-                    title: 'Fill Info',
-                    description: 'Seed keywords and negative keywords have been populated with random test data.'
-                  });
-                }}
-                className="gap-2 border-indigo-300 hover:bg-indigo-100 hover:border-indigo-400 transition-all shadow-sm"
-              >
-                <Info className="w-4 h-4" />
-                Fill Info
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <div className="space-y-3">
-              <Textarea
-                value={seedKeywords}
-                onChange={(e) => setSeedKeywords(e.target.value)}
-                placeholder="Call airline&#10;airline number&#10;call united number"
-                rows={6}
-                className="font-mono text-sm border-2 border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 rounded-xl transition-all shadow-sm hover:shadow-md"
-              />
-              <div className="flex items-start gap-2 p-3 bg-blue-50/50 border border-blue-200/50 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-blue-700">
-                  Each keyword must be at least 3 characters long.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Negative Keywords Card */}
-        <Card className="border-2 border-red-200/80 bg-gradient-to-br from-white via-red-50/20 to-orange-50/20 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-300">
-          <CardHeader className="pb-4 bg-gradient-to-r from-red-50/50 to-orange-50/50 rounded-t-lg border-b border-red-100/50">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-red-500 via-orange-500 to-red-600 rounded-2xl shadow-lg">
-                <MinusCircle className="w-6 h-6 text-white" />
+          {/* Negative Keywords Card */}
+          <Card className="border-2 border-red-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardHeader className="pb-4 bg-red-50 rounded-t-lg border-b border-red-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-red-600 rounded-2xl shadow-md">
+                    <MinusCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-red-700">
+                      Negative Keywords
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1.5 text-slate-600">
+                      Exclude keywords containing these terms
+                    </CardDescription>
+                  </div>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-red-700 to-orange-700 bg-clip-text text-transparent">
-                  Negative Keywords
-                </CardTitle>
-                <CardDescription className="text-sm mt-1.5 text-slate-600">
-                  Exclude keywords containing these terms
-                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-3">
+                <Textarea
+                  value={negativeKeywords}
+                  onChange={(e) => setNegativeKeywords(e.target.value)}
+                  placeholder="cheap, discount, reviews, job, free..."
+                  rows={6}
+                  className="font-mono text-sm border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 rounded-xl transition-all shadow-sm hover:shadow-md"
+                />
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-red-700">
+                    Keywords containing these terms will be excluded. Separate with commas.
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardHeader>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Match Types Selection */}
+        <Card className="border-2 border-indigo-200 bg-white shadow-lg hover:shadow-xl transition-all duration-300">
           <CardContent className="pt-6">
-            <div className="space-y-3">
-              <Input
-                value={negativeKeywords}
-                onChange={(e) => setNegativeKeywords(e.target.value)}
-                placeholder="cheap, discount, reviews, job, free..."
-                className="font-mono text-sm border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 rounded-xl h-12 transition-all shadow-sm hover:shadow-md"
-              />
-              <div className="flex items-start gap-2 p-3 bg-red-50/50 border border-red-200/50 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-red-700">
-                  Keywords containing these terms will be excluded. Separate with commas.
-                </p>
+            <div className="flex flex-wrap gap-4 items-center">
+              <Label className="text-base font-semibold text-slate-700 mr-2">Match Types:</Label>
+              <div className="flex flex-wrap gap-4">
+                <label
+                  htmlFor="match-broad"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMatchTypes(prev => ({ ...prev, broad: !prev.broad }));
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
+                    matchTypes.broad
+                      ? 'bg-amber-100 border-amber-500 shadow-md'
+                      : 'bg-white border-amber-300 hover:border-amber-400 hover:shadow-sm'
+                  }`}
+                >
+                  <Checkbox
+                    id="match-broad"
+                    checked={matchTypes.broad}
+                    onCheckedChange={(checked) => {
+                      setMatchTypes(prev => ({ ...prev, broad: !!checked }));
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="border-amber-500 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600"
+                  />
+                  <span className={`font-medium text-sm transition-colors cursor-pointer ${
+                    matchTypes.broad ? 'text-amber-950' : 'text-amber-700 group-hover:text-amber-900'
+                  }`}>
+                    Broad Match
+                  </span>
+                </label>
+                <label
+                  htmlFor="match-phrase"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMatchTypes(prev => ({ ...prev, phrase: !prev.phrase }));
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
+                    matchTypes.phrase
+                      ? 'bg-blue-100 border-blue-500 shadow-md'
+                      : 'bg-white border-blue-300 hover:border-blue-400 hover:shadow-sm'
+                  }`}
+                >
+                  <Checkbox
+                    id="match-phrase"
+                    checked={matchTypes.phrase}
+                    onCheckedChange={(checked) => {
+                      setMatchTypes(prev => ({ ...prev, phrase: !!checked }));
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="border-blue-500 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <span className={`font-medium text-sm transition-colors cursor-pointer ${
+                    matchTypes.phrase ? 'text-blue-950' : 'text-blue-700 group-hover:text-blue-900'
+                  }`}>
+                    Phrase Match
+                  </span>
+                </label>
+                <label
+                  htmlFor="match-exact"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMatchTypes(prev => ({ ...prev, exact: !prev.exact }));
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all duration-200 group ${
+                    matchTypes.exact
+                      ? 'bg-emerald-100 border-emerald-500 shadow-md'
+                      : 'bg-white border-emerald-300 hover:border-emerald-400 hover:shadow-sm'
+                  }`}
+                >
+                  <Checkbox
+                    id="match-exact"
+                    checked={matchTypes.exact}
+                    onCheckedChange={(checked) => {
+                      setMatchTypes(prev => ({ ...prev, exact: !!checked }));
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="border-emerald-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                  />
+                  <span className={`font-medium text-sm transition-colors cursor-pointer ${
+                    matchTypes.exact ? 'text-emerald-950' : 'text-emerald-700 group-hover:text-emerald-900'
+                  }`}>
+                    Exact Match
+                  </span>
+                </label>
               </div>
             </div>
           </CardContent>
@@ -2117,7 +2114,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 }, 0);
               }}
               disabled={!seedKeywords.trim() || isGeneratingKeywords}
-              className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-800 text-white shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 py-7 text-lg font-bold rounded-xl"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 py-7 text-lg font-bold rounded-xl"
           >
             {isGeneratingKeywords ? (
               <>
@@ -2176,7 +2173,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                         setSelectedKeywords([]);
                       }
                     }}
-                    className="h-5 w-5 border-indigo-500"
+                    className="h-5 w-5 border-2 border-indigo-500 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                   />
                   <span>Select All</span>
                 </Label>
@@ -2184,7 +2181,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 font-bold text-sm shadow-md">
                     {selectedKeywords.length} selected
                   </Badge>
-                  {/* Floating Next Button */}
                   <Button
                     size="sm"
                     onClick={() => {
@@ -2198,9 +2194,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       setStep(3);
                     }}
                     disabled={selectedKeywords.length === 0}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold px-4 py-1.5"
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 px-4 py-1.5 font-bold text-sm"
                   >
-                    Next <ArrowRight className="ml-1.5 w-4 h-4" />
+                    Next
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -2249,7 +2246,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                               }
                             });
                           }}
-                          className="h-5 w-5 flex-shrink-0 border-indigo-500"
+                          className="h-5 w-5 flex-shrink-0 border-2 border-indigo-500 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                         />
                         <span className={`flex-1 text-sm font-semibold ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
                           {keywordText}
@@ -2636,13 +2633,10 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return (
       <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 shadow-2xl mb-6 transform hover:scale-105 transition-transform">
-            <Hash className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent mb-3">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-indigo-700 mb-3">
             Keyword Generator
           </h2>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full border border-indigo-200 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 rounded-full border border-indigo-200 shadow-sm">
             <p className="text-slate-700 text-sm font-medium">
               Structure: <span className="font-bold text-indigo-700">{STRUCTURE_TYPES.find(s => s.id === structureType)?.name}</span>
             </p>
@@ -2970,20 +2964,53 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
 
     setIsGeneratingAds(true);
+    
+    // Show initial loading message
+    const loadingToastId = notifications.loading('Starting ad generation...', {
+      title: 'Generating Ads',
+      description: 'Please wait while we create your ads.',
+    });
+
     const baseUrl = url || DEFAULT_URL;
     const adGroups = getDynamicAdGroups();
     const allGeneratedAds: any[] = [];
     let adIdCounter = 1;
       
-    // Default ad counts per group
-    const rsaPerGroup = 2;
-    const dkiPerGroup = 2;
+    // Google Ads rule: Maximum 3 ads per ad group
+    // Default ad counts per group (total must not exceed 3)
+    const rsaPerGroup = 1;
+    const dkiPerGroup = 1;
     const callOnlyPerGroup = 1;
+    const MAX_ADS_PER_GROUP = 3;
 
-    for (const group of adGroups) {
+    for (let groupIndex = 0; groupIndex < adGroups.length; groupIndex++) {
+      const group = adGroups[groupIndex];
+      
+      // Update progress message
+      try {
+        notifications.dismiss(loadingToastId);
+      } catch (e) {
+        // Ignore dismiss errors
+      }
+      
+      const progressToastId = notifications.loading(
+        `Generating ads for "${group.name}" (${groupIndex + 1}/${adGroups.length})...`,
+        {
+          title: 'Generating Ads',
+          description: `Processing ad group ${groupIndex + 1} of ${adGroups.length}`,
+        }
+      );
+      
       // Get keywords for this ad group
       const groupKeywords = group.keywords || [];
-      if (groupKeywords.length === 0) continue;
+      if (groupKeywords.length === 0) {
+        try {
+          notifications.dismiss(progressToastId);
+        } catch (e) {
+          // Ignore dismiss errors
+        }
+        continue;
+      }
 
       // Clean keywords (remove brackets, quotes, etc.)
       const cleanKeywords = groupKeywords.map(k => {
@@ -2996,8 +3023,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
       if (cleanKeywords.length === 0) continue;
 
-      // Generate RSA Ads
-      for (let i = 0; i < rsaPerGroup; i++) {
+      // Count existing ads for this group (if any)
+      const existingAdsForGroup = allGeneratedAds.filter(ad => ad.adGroup === group.name && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
+      let adsAddedForThisGroup = existingAdsForGroup.length;
+
+      // Generate RSA Ads (up to MAX_ADS_PER_GROUP total)
+      for (let i = 0; i < rsaPerGroup && adsAddedForThisGroup < MAX_ADS_PER_GROUP; i++) {
         try {
           const response = await api.post('/generate-ads', {
             keywords: cleanKeywords,
@@ -3019,6 +3050,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               );
               convertedAd.id = adIdCounter++;
               allGeneratedAds.push(convertedAd);
+              adsAddedForThisGroup++;
             }
           } else {
             throw new Error('Invalid response structure');
@@ -3028,11 +3060,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           const fallbackAd = generateFallbackRSA(group.name, cleanKeywords, i, baseUrl);
           fallbackAd.id = adIdCounter++;
           allGeneratedAds.push(fallbackAd);
+          adsAddedForThisGroup++;
         }
       }
 
-      // Generate DKI Ads
-      for (let i = 0; i < dkiPerGroup; i++) {
+      // Generate DKI Ads (up to MAX_ADS_PER_GROUP total)
+      for (let i = 0; i < dkiPerGroup && adsAddedForThisGroup < MAX_ADS_PER_GROUP; i++) {
         try {
           const response = await api.post('/generate-ads', {
             keywords: cleanKeywords,
@@ -3052,6 +3085,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               const convertedAd = convertRSAToDKI(rsaAd, group.name, baseUrl, cleanKeywords[i % cleanKeywords.length] || cleanKeywords[0]);
               convertedAd.id = adIdCounter++;
               allGeneratedAds.push(convertedAd);
+              adsAddedForThisGroup++;
             }
           } else {
             throw new Error('Invalid response structure');
@@ -3061,11 +3095,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           const fallbackAd = generateFallbackDKI(group.name, cleanKeywords, i, baseUrl);
           fallbackAd.id = adIdCounter++;
           allGeneratedAds.push(fallbackAd);
+          adsAddedForThisGroup++;
         }
       }
 
-      // Generate Call-Only Ads
-      for (let i = 0; i < callOnlyPerGroup; i++) {
+      // Generate Call-Only Ads (up to MAX_ADS_PER_GROUP total)
+      for (let i = 0; i < callOnlyPerGroup && adsAddedForThisGroup < MAX_ADS_PER_GROUP; i++) {
         try {
           const response = await api.post('/generate-ads', {
             keywords: cleanKeywords,
@@ -3094,6 +3129,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 adGroup: group.name
               };
               allGeneratedAds.push(callAd);
+              adsAddedForThisGroup++;
             }
           } else {
             throw new Error('Invalid response structure');
@@ -3103,8 +3139,14 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           const fallbackAd = generateFallbackCallOnly(group.name, cleanKeywords, i, baseUrl);
           fallbackAd.id = adIdCounter++;
           allGeneratedAds.push(fallbackAd);
+          adsAddedForThisGroup++;
         }
       }
+      
+      // Dismiss group progress toast
+      try {
+        notifications.dismiss(progressToastId);
+      } catch (e) {}
     }
 
       // Apply tracking parameters (UTM) to final URLs
@@ -3139,14 +3181,26 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       
       setGeneratedAds(adsWithTracking);
     
+    // Dismiss any remaining loading toasts
+    try {
+      notifications.dismiss('all');
+    } catch (e) {
+      // Ignore dismiss errors
+    }
+    
+    // Small delay before showing success message
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     if (adsWithTracking.length > 0) {
       notifications.success(`Generated ${adsWithTracking.length} ad(s) for ${adGroups.length} ad group(s)`, {
         title: 'Ads Generated',
-        duration: 3000
+        description: `Successfully created ${adsWithTracking.length} ads across ${adGroups.length} ad group(s)`,
+        duration: 5000
       });
     } else {
       notifications.warning('No ads were generated. Please check your keywords and try again.', {
         title: 'Generation Failed',
+        description: 'Unable to generate ads. Please verify your keywords and try again.',
         duration: 5000
       });
     }
@@ -3282,6 +3336,24 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   };
 
   const handleDuplicateAd = (ad: any) => {
+    // Google Ads rule: Maximum 3 ads per ad group
+    const MAX_ADS_PER_GROUP = 3;
+    const targetAdGroup = ad.adGroup || (selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup);
+    
+    // Check if this ad group already has 3 ads (only count regular ads, not extensions)
+    const adsInGroup = generatedAds.filter(existingAd => 
+      existingAd.adGroup === targetAdGroup &&
+      (existingAd.type === 'rsa' || existingAd.type === 'dki' || existingAd.type === 'callonly')
+    );
+    
+    if (adsInGroup.length >= MAX_ADS_PER_GROUP) {
+      notifications.error(`Maximum ${MAX_ADS_PER_GROUP} ads per ad group`, {
+        title: 'Google Ads Limit',
+        description: `Cannot duplicate ad. This ad group already has ${MAX_ADS_PER_GROUP} ads. Please remove an existing ad first.`,
+      });
+      return;
+    }
+    
     const newAd = { 
       ...ad, 
       id: Date.now() + Math.random() * 1000, // Ensure unique ID
@@ -3357,12 +3429,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         extension.unit = 'per service';
         extension.description = 'Starting price';
         break;
-      case 'app':
-        extension.appStore = 'GOOGLE_PLAY';
-        extension.appId = 'com.example.app';
-        extension.appLinkText = 'Download Now';
-        extension.appFinalUrl = 'https://play.google.com/store/apps/details?id=com.example.app';
-        break;
       case 'location':
         extension.businessName = 'Your Business Name';
         extension.addressLine1 = '123 Main St';
@@ -3402,8 +3468,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     return extension;
   };
 
-  const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
-    const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
+  const createNewAd = (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
+    const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
     const hasRegularAds = generatedAds.some(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
     
     // Validate keywords are selected
@@ -3442,7 +3508,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                        type === 'sitelink' ? 'Sitelink Extension' :
                        type === 'call' ? 'Call Extension' :
                        type === 'price' ? 'Price Extension' :
-                       type === 'app' ? 'App Extension' :
                        type === 'location' ? 'Location Extension' :
                        type === 'message' ? 'Message Extension' :
                        type === 'leadform' ? 'Lead Form Extension' :
@@ -3477,7 +3542,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                      type === 'sitelink' ? 'Sitelink Extension' :
                      type === 'call' ? 'Call Extension' :
                      type === 'price' ? 'Price Extension' :
-                     type === 'app' ? 'App Extension' :
                      type === 'location' ? 'Location Extension' :
                      type === 'message' ? 'Message Extension' :
                      type === 'leadform' ? 'Lead Form Extension' :
@@ -3493,6 +3557,25 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
     const dynamicAdGroups = getDynamicAdGroups();
     const currentGroup = dynamicAdGroups.find(g => g.name === selectedAdGroup) || dynamicAdGroups[0];
+    
+    // Google Ads rule: Maximum 3 ads per ad group
+    const MAX_ADS_PER_GROUP = 3;
+    const targetAdGroup = selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup;
+    
+    // Check if this ad group already has 3 ads
+    const adsInGroup = generatedAds.filter(ad => 
+      (ad.adGroup === targetAdGroup || (targetAdGroup === ALL_AD_GROUPS_VALUE && !ad.adGroup)) &&
+      (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
+    );
+    
+    if (adsInGroup.length >= MAX_ADS_PER_GROUP) {
+      notifications.error(`Maximum ${MAX_ADS_PER_GROUP} ads per ad group`, {
+        title: 'Google Ads Limit',
+        description: `Each ad group can have a maximum of ${MAX_ADS_PER_GROUP} ads. Please remove an existing ad or select a different ad group.`,
+      });
+      return;
+    }
+    
     const rawKeyword = currentGroup?.keywords[0] || selectedKeywords[0] || 'your service';
     // Clean keyword for ALL ad types - Google Ads doesn't allow quotes in ad text
     const mainKeyword = cleanKeyword(rawKeyword);
@@ -3500,7 +3583,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     let newAd: any = {
       id: Date.now(),
       type: type,
-      adGroup: selectedAdGroup === ALL_AD_GROUPS_VALUE ? ALL_AD_GROUPS_VALUE : selectedAdGroup
+      adGroup: targetAdGroup
     };
 
     const baseUrl = url || 'www.example.com';
@@ -3558,7 +3641,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                       type === 'sitelink' ? 'Sitelink Extension' :
                       type === 'call' ? 'Call Extension' :
                       type === 'price' ? 'Price Extension' :
-                      type === 'app' ? 'App Extension' :
                       type === 'location' ? 'Location Extension' :
                       type === 'message' ? 'Message Extension' :
                       type === 'leadform' ? 'Lead Form Extension' :
@@ -3607,7 +3689,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     { id: 'message', label: 'Message Extension', description: 'Enable messaging', icon: MessageSquare, color: 'purple' },
     { id: 'promotion', label: 'Promotion Extension', description: 'Show special offers', icon: Gift, color: 'orange' },
     { id: 'image', label: 'Image Extension', description: 'Add images', icon: ImageIcon, color: 'pink' },
-    { id: 'app', label: 'App Extension', description: 'Link to mobile app', icon: Smartphone, color: 'slate' },
   ];
 
   const handleConfirmAIExtensions = () => {
@@ -3685,19 +3766,19 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     // Filter ads for the selected ad group
     // Filter ads for the selected ad group (only show regular ads, not extension-only objects)
     const filteredAds = selectedAdGroup === ALL_AD_GROUPS_VALUE 
-      ? generatedAds.filter(ad => ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
-      : generatedAds.filter(ad => {
-          // Match by adGroup name, groupName, or if ad was created for "ALL AD GROUPS"
-          const matchesGroup = ad.adGroup === selectedAdGroup || 
-                               ad.groupName === selectedAdGroup ||
-                               ad.adGroup === ALL_AD_GROUPS_VALUE ||
-                               (!ad.adGroup && !ad.groupName);
-          return matchesGroup && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly');
-        });
+      ? generatedAds.filter(ad => selectedAdIds.includes(ad.id) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'))
+      : generatedAds.filter(ad => (ad.adGroup === selectedAdGroup || !ad.adGroup) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
     
     // Calculate total ads (only count regular ads)
     const totalAds = filteredAds.length;
-    const maxAds = 25; // Maximum ads allowed
+    const maxAds = 3; // Maximum ads allowed (total across all groups)
+    
+    // Google Ads rule: Maximum 3 ads per ad group
+    const MAX_ADS_PER_GROUP = 3;
+    const adsInCurrentGroup = selectedAdGroup === ALL_AD_GROUPS_VALUE
+      ? generatedAds.filter(ad => selectedAdIds.includes(ad.id) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')).length
+      : generatedAds.filter(ad => (ad.adGroup === selectedAdGroup || !ad.adGroup) && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')).length;
+    const isAdGroupLimitReached = adsInCurrentGroup >= MAX_ADS_PER_GROUP;
     
     // Format display URL for ads
     const formatDisplayUrl = (ad: any) => {
@@ -3776,7 +3857,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
               </div>
               
               {/* Total Ads Counter */}
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-slate-700">Total Ads:</span>
                   {isGeneratingAds ? (
@@ -3790,28 +3871,42 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     </span>
                   )}
                 </div>
+                {selectedAdGroup !== ALL_AD_GROUPS_VALUE && (
+                  <div className="flex items-center justify-between pt-2 border-t border-indigo-200">
+                    <span className="text-xs font-semibold text-slate-600">This Ad Group:</span>
+                    <span className={`text-sm font-bold ${isAdGroupLimitReached ? 'text-red-600' : 'text-indigo-600'}`}>
+                      {adsInCurrentGroup} / {MAX_ADS_PER_GROUP}
+                      {isAdGroupLimitReached && (
+                        <span className="ml-1 text-xs">(Max reached)</span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
               
               {/* Create Ad Buttons */}
               <div className="space-y-3">
                 <Button 
                   onClick={() => createNewAd('rsa')}
-                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
+                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds || isAdGroupLimitReached}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  title={isAdGroupLimitReached ? `Maximum ${MAX_ADS_PER_GROUP} ads per ad group (Google Ads limit)` : ''}
                 >
                   <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
                 </Button>
                 <Button 
                   onClick={() => createNewAd('dki')}
-                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
+                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds || isAdGroupLimitReached}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  title={isAdGroupLimitReached ? `Maximum ${MAX_ADS_PER_GROUP} ads per ad group (Google Ads limit)` : ''}
                 >
                   <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
                 </Button>
                 <Button 
                   onClick={() => createNewAd('callonly')}
-                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds}
+                  disabled={selectedKeywords.length === 0 || totalAds >= maxAds || isAdGroupLimitReached}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  title={isAdGroupLimitReached ? `Maximum ${MAX_ADS_PER_GROUP} ads per ad group (Google Ads limit)` : ''}
                 >
                   <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
                 </Button>
@@ -3853,13 +3948,6 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
                   >
                     <Plus className="mr-2 w-5 h-5" /> PRICE EXTENSION
-                  </Button>
-                  <Button 
-                    onClick={() => createNewAd('app')}
-                    disabled={selectedKeywords.length === 0 || !hasRegularAds}
-                    className="w-full bg-blue-400 hover:bg-blue-500 text-black justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold"
-                  >
-                    <Plus className="mr-2 w-5 h-5" /> APP EXTENSION
                   </Button>
                   <Button 
                     onClick={() => createNewAd('location')}
@@ -4811,47 +4899,46 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Step 5: Detailed Review - shows all ad groups with editable content
   const renderStep5 = () => {
-    // First, get unique ad group names from generatedAds (these reflect any name changes from editing)
+    // First, get unique ad group names from generatedAds (these reflect any name changes)
     const uniqueAdGroupsFromAds = Array.from(new Set(generatedAds.map(ad => ad.adGroup).filter(Boolean))) as string[];
     
     // Use preset ad groups if available (from preset), otherwise use dynamic ad groups
     let reviewAdGroups = presetAdGroups || getDynamicAdGroups();
     
-    // Sync reviewAdGroups names with generatedAds to reflect any edits
-    // This ensures that when ad group names are edited, the reviewAdGroups array uses the updated names
+    // If we have ads with ad group names, sync reviewAdGroups names with generatedAds
+    // This ensures that when ad group names are edited, the reviewAdGroups array reflects the changes
     if (uniqueAdGroupsFromAds.length > 0 && reviewAdGroups.length > 0) {
-      // Create a mapping: for each group in reviewAdGroups, find its corresponding name in generatedAds
-      reviewAdGroups = reviewAdGroups.map((group, idx) => {
-        // First, try to find ads that belong to this group by matching keywords
+      // Create a map of old names to new names based on generatedAds
+      const nameMap = new Map<string, string>();
+      reviewAdGroups.forEach((group, idx) => {
+        // Find ads that belong to this group by checking if they have matching keywords or by index
         const groupKeywords = group.keywords || [];
-        const matchingAds = generatedAds.filter(ad => {
-          if (!ad.adGroup || ad.extensionType) return false;
-          // Check if ad content matches this group's keywords
+        const adsForThisGroup = generatedAds.filter(ad => {
+          if (!ad.adGroup) return false;
+          // Check if ad's keywords match this group's keywords
           const adText = `${ad.headline1 || ''} ${ad.headline2 || ''} ${ad.description1 || ''}`.toLowerCase();
-          return groupKeywords.some(kw => {
-            const cleanKw = kw.toLowerCase().replace(/[\[\]"]/g, '');
-            return adText.includes(cleanKw);
-          });
+          return groupKeywords.some(kw => adText.includes(kw.toLowerCase().replace(/[\[\]"]/g, '')));
         });
         
-        if (matchingAds.length > 0) {
-          // Use the ad group name from the matching ads (this reflects any edits)
-          const actualName = matchingAds[0].adGroup;
-          if (actualName && actualName !== group.name) {
-            return { ...group, name: actualName };
+        if (adsForThisGroup.length > 0) {
+          // Use the ad group name from the first ad
+          const newName = adsForThisGroup[0].adGroup;
+          if (newName && newName !== group.name) {
+            nameMap.set(group.name, newName);
+          }
+        } else if (idx < uniqueAdGroupsFromAds.length) {
+          // Fallback: match by index if no keyword match
+          const newName = uniqueAdGroupsFromAds[idx];
+          if (newName && newName !== group.name) {
+            nameMap.set(group.name, newName);
           }
         }
-        
-        // Fallback: match by index if we have a corresponding ad group name
-        if (idx < uniqueAdGroupsFromAds.length) {
-          const adGroupName = uniqueAdGroupsFromAds[idx];
-          const adsForThisName = generatedAds.filter(ad => ad.adGroup === adGroupName);
-          if (adsForThisName.length > 0) {
-            return { ...group, name: adGroupName };
-          }
-        }
-        
-        return group;
+      });
+      
+      // Update reviewAdGroups with new names
+      reviewAdGroups = reviewAdGroups.map(group => {
+        const newName = nameMap.get(group.name);
+        return newName ? { ...group, name: newName } : group;
       });
     }
     
@@ -4936,6 +5023,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         setGeneratedAds(generatedAds.map(ad => 
           ad.adGroup === oldName ? { ...ad, adGroup: newName } : ad
         ));
+        
+        // Update reviewAdGroups to reflect the new name
+        // This ensures the UI shows the correct group name and ads are properly matched
+        const updatedReviewAdGroups = reviewAdGroups.map(group => 
+          group.name === oldName ? { ...group, name: newName } : group
+        );
         
         // Update presetAdGroups if it exists (for persistence)
         if (presetAdGroups) {
@@ -5124,7 +5217,35 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                 ) : (
                   reviewAdGroups.map((group, idx) => {
                   // Match ads to group by name, or if no adGroup set, assign to first group or distribute
+                  // First try exact match with current group name
                   let groupAds = generatedAds.filter(ad => ad.adGroup === group.name && !ad.extensionType);
+                  
+                  // If no ads found, also check for ads that might have been updated but reviewAdGroups hasn't refreshed yet
+                  // This handles the case where ad group name was just edited
+                  if (groupAds.length === 0) {
+                    // Check if there are ads that should belong to this group by checking keywords
+                    const groupKeywords = group.keywords || [];
+                    const potentialAds = generatedAds.filter(ad => {
+                      if (ad.extensionType) return false;
+                      if (!ad.adGroup) return false;
+                      // Check if ad content matches this group's keywords
+                      const adText = `${ad.headline1 || ''} ${ad.headline2 || ''} ${ad.description1 || ''}`.toLowerCase();
+                      return groupKeywords.some(kw => {
+                        const cleanKw = kw.toLowerCase().replace(/[\[\]"]/g, '');
+                        return adText.includes(cleanKw);
+                      });
+                    });
+                    
+                    // If we found potential ads, use them and update the group name to match
+                    if (potentialAds.length > 0) {
+                      const actualAdGroupName = potentialAds[0].adGroup;
+                      if (actualAdGroupName) {
+                        // Update the group name to match the actual ad group name
+                        group.name = actualAdGroupName;
+                        groupAds = potentialAds;
+                      }
+                    }
+                  }
                   
                   // If no ads found for this group, try to match unassigned ads
                   if (groupAds.length === 0) {
@@ -5661,191 +5782,109 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         // Generate campaign structure
         const structure = generateCampaignStructure(selectedKeywords, settings);
         
-        // Export to CSV - be lenient with validation, only block on truly critical issues
+        // Validate CSV before export using comprehensive validators
+        const validation = validateCSVBeforeExport(structure);
+        const detailedValidation = validateCampaignForExport(structure);
+        
+        // Combine validation results - prioritize detailed validation errors
+        const allErrors: string[] = [];
+        const allWarnings: string[] = [];
+        
+        // Add errors from detailed validation (more comprehensive)
+        if (detailedValidation.errors.length > 0) {
+          detailedValidation.errors.forEach(err => {
+            allErrors.push(err.message);
+          });
+        }
+        
+        // Add errors from V3 validation (if not already included)
+        if (validation.errors.length > 0) {
+          validation.errors.forEach(err => {
+            if (!allErrors.some(e => e === err)) {
+              allErrors.push(err);
+            }
+          });
+        }
+        
+        // Add warnings from both validators
+        if (detailedValidation.warnings.length > 0) {
+          detailedValidation.warnings.forEach(warn => {
+            allWarnings.push(warn.message);
+          });
+        }
+        if (validation.warnings.length > 0) {
+          validation.warnings.forEach(warn => {
+            if (!allWarnings.some(w => w === warn)) {
+              allWarnings.push(warn);
+            }
+          });
+        }
+        
+        // If any errors exist, block export
+        if (allErrors.length > 0) {
+          const errorMessage = allErrors.map((err, idx) => `${idx + 1}. ${err}`).join('\n');
+          notifications.error(
+            <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
+              {errorMessage}
+            </div>,
+            { 
+              title: '❌ CSV Validation Failed',
+              description: 'Please fix the errors above before exporting. These errors will prevent Google Ads Editor from importing your campaign.',
+              duration: 15000
+            }
+          );
+          return;
+        }
+        
+        // Show warnings if any (but still allow export)
+        if (allWarnings.length > 0) {
+          const warningMessage = allWarnings.map((warn, idx) => `${idx + 1}. ${warn}`).join('\n');
+          notifications.warning(
+            <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
+              {warningMessage}
+            </div>,
+            { 
+              title: '⚠️  CSV Validation Warnings',
+              description: 'Your campaign will export, but consider fixing these warnings for better results.',
+              duration: 10000
+            }
+          );
+        }
+        
+        // Export to CSV using Google Ads Editor format with validation
         try {
           const filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
           
-          // Try to validate, but don't block export unless absolutely critical
-          let validationWarnings: string[] = [];
-          try {
-            const validation = validateCSVBeforeExport(structure);
-            const detailedValidation = validateCampaignForExport(structure);
-            
-            // Only check for truly critical errors that would break the CSV
-            const criticalErrors: string[] = [];
-            
-            if (detailedValidation.errors.length > 0) {
-              detailedValidation.errors.forEach(err => {
-                const errMsg = err.message || String(err);
-                // Only block on absolutely critical errors
-                if (errMsg.includes('No campaigns found') || 
-                    errMsg.includes('No ad groups found') ||
-                    (errMsg.includes('Campaign name is required') && !campaignName)) {
-                  criticalErrors.push(errMsg);
-                } else {
-                  validationWarnings.push(errMsg);
-                }
-              });
-            }
-            
-            if (validation.errors.length > 0) {
-              validation.errors.forEach(err => {
-                const errMsg = String(err);
-                if (errMsg.includes('No rows to export') || 
-                    errMsg.includes('No campaigns found')) {
-                  if (!criticalErrors.includes(errMsg)) {
-                    criticalErrors.push(errMsg);
-                  }
-                } else if (!validationWarnings.includes(errMsg)) {
-                  validationWarnings.push(errMsg);
-                }
-              });
-            }
-            
-            // Add warnings
-            if (detailedValidation.warnings.length > 0) {
-              detailedValidation.warnings.forEach(warn => {
-                validationWarnings.push(warn.message);
-              });
-            }
-            if (validation.warnings.length > 0) {
-              validation.warnings.forEach(warn => {
-                if (!validationWarnings.includes(String(warn))) {
-                  validationWarnings.push(String(warn));
-                }
-              });
-            }
-            
-            // Only block if there are truly critical errors
-            if (criticalErrors.length > 0) {
-              const errorMessage = criticalErrors.slice(0, 5).join('\n');
-              notifications.error(
-                <div className="whitespace-pre-wrap font-mono text-sm max-h-96 overflow-y-auto">
-                  {errorMessage}
-                </div>,
-                { 
-                  title: '❌ CSV Export Blocked',
-                  description: 'Critical errors detected that would prevent CSV generation. Please fix these issues.',
-                  duration: 15000
-                }
-              );
-              return;
-            }
-            
-            // Show warnings but proceed with export
-            if (validationWarnings.length > 0) {
-              const warningMessage = validationWarnings.slice(0, 5).join('\n') + 
-                (validationWarnings.length > 5 ? `\n... and ${validationWarnings.length - 5} more warnings` : '');
-              notifications.warning(
-                <div className="whitespace-pre-wrap font-mono text-sm max-h-64 overflow-y-auto">
-                  {warningMessage}
-                </div>,
-                { 
-                  title: '⚠️  Export Warnings',
-                  description: 'Export will proceed with warnings. Consider reviewing these for optimal results.',
-                  duration: 8000
-                }
-              );
-            }
-          } catch (validationError) {
-            // If validation itself fails, log but don't block export
-            console.warn('Validation check failed, proceeding with export:', validationError);
-            validationWarnings.push('Validation check encountered issues, but export will proceed');
-          }
+          // Convert to CSV rows and validate
+          const rows = campaignStructureToCSVRows(structure);
+          const validation = validateCSVRows(rows);
           
-          // Convert to CSV rows and validate rows
-          let rows: any[] = [];
-          try {
-            rows = campaignStructureToCSVRows(structure);
-            const rowValidation = validateCSVRows(rows);
-            
-            // Only block if no rows at all
-            if (rows.length === 0) {
-              notifications.error('Cannot export: No data to export', {
-                title: '❌ Export Failed',
-                description: 'The campaign structure is empty. Please ensure you have created ads and ad groups.',
-                duration: 10000
-              });
-              return;
-            }
-            
-            // Add row validation warnings
-            if (rowValidation.warnings && rowValidation.warnings.length > 0) {
-              rowValidation.warnings.forEach((warn: string) => {
-                if (!validationWarnings.includes(warn)) {
-                  validationWarnings.push(warn);
-                }
-              });
-            }
-          } catch (rowError) {
-            console.warn('Row validation failed, proceeding with export:', rowError);
-          }
-          
-          // Export the CSV - wrap in try-catch to handle any export errors gracefully
-          try {
-            // Call export function - it may throw for critical errors, but we've already validated
-            // If it still throws, catch and handle gracefully
-            const exportResult = await exportCampaignToGoogleAdsEditorCSV(structure, filename);
-            
-            // Mark draft as completed
-            saveCompleted();
-            
-            const warningText = validationWarnings.length > 0 
-              ? ` (${validationWarnings.length} warning${validationWarnings.length > 1 ? 's' : ''})`
-              : '';
-            
-            notifications.success('Campaign exported successfully!', {
-              title: '✅ Export Complete',
-              description: `Your campaign "${campaignName}" has been exported to ${filename}${warningText}`,
-              duration: 5000
-            });
-          } catch (exportError: any) {
-            // If export fails, check if it's a validation error we've already handled
-            const errorMsg = exportError?.message || String(exportError);
-            console.error('CSV export error:', exportError);
-            
-            // If it's a validation error we've already checked, try to proceed anyway
-            if (errorMsg.includes('validation') || errorMsg.includes('No rows')) {
-              // Try to export anyway - the structure should be valid
-              try {
-                // Force export by calling the underlying CSV generation directly
-                const rows = campaignStructureToCSVRows(structure);
-                if (rows.length > 0) {
-                  // Import Papa dynamically for fallback export
-                  const Papa = (await import('papaparse')).default;
-                  const csv = Papa.unparse(rows, {
-                    header: true,
-                    delimiter: ','
-                  });
-                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                  const link = document.createElement('a');
-                  link.href = URL.createObjectURL(blob);
-                  link.download = filename;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  URL.revokeObjectURL(link.href);
-                  
-                  saveCompleted();
-                  
-                  notifications.success('Campaign exported successfully!', {
-                    title: '✅ Export Complete',
-                    description: `Your campaign "${campaignName}" has been exported to ${filename}`,
-                    duration: 5000
-                  });
-                  return;
-                }
-              } catch (fallbackError) {
-                console.error('Fallback export also failed:', fallbackError);
-              }
-            }
-            
-            notifications.error('Failed to export CSV file', {
-              title: '❌ Export Error',
-              description: `An error occurred while exporting: ${errorMsg}. Please try again or contact support if the issue persists.`,
+          if (!validation.isValid) {
+            const errorMessage = validation.errors.slice(0, 5).join('\n') + 
+              (validation.errors.length > 5 ? `\n... and ${validation.errors.length - 5} more errors` : '');
+            notifications.error('CSV validation failed', {
+              title: '❌ Validation Errors',
+              description: errorMessage,
               duration: 10000
             });
+            return;
           }
+          
+          // Export with validation
+          await exportCampaignToGoogleAdsEditorCSV(structure, filename);
+          
+          // Mark draft as completed (removes draft status in history)
+          saveCompleted();
+          
+          const warningText = validation.warnings.length > 0 
+            ? ` (${validation.warnings.length} warning${validation.warnings.length > 1 ? 's' : ''})`
+            : '';
+          
+          notifications.success('Campaign exported successfully!', {
+            title: '✅ Export Complete',
+            description: `Your campaign "${campaignName}" has been exported to ${filename}${warningText}`,
+            duration: 5000
+          });
         } catch (error: any) {
           console.error('CSV export error:', error);
           notifications.error(
