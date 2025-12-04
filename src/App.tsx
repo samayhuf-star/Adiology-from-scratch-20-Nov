@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Layout, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -38,7 +38,6 @@ import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
 import { CampaignPresets } from './components/CampaignPresets';
 import { Dashboard } from './components/Dashboard';
-import { WebsiteTemplates } from './components/WebsiteTemplates';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
 import { FeedbackButton } from './components/FeedbackButton';
@@ -47,6 +46,8 @@ import { getCurrentUserProfile, isAuthenticated, signOut, isSuperAdmin } from '.
 import { getUserPreferences, applyUserPreferences } from './utils/userPreferences';
 import CreativeMinimalistHomepage from './components/CreativeMinimalistHomepage';
 import { LiveLogs } from './components/LiveLogs';
+import { notifications as notificationService } from './utils/notifications';
+import { AutoFillButton } from './components/AutoFillButton';
 
 type AppView = 'homepage' | 'auth' | 'user' | 'admin-login' | 'admin-landing' | 'admin-panel' | 'verify-email' | 'reset-password' | 'payment' | 'payment-success';
 
@@ -115,7 +116,6 @@ const App = () => {
     'builder-2',
     'builder-3',
     'campaign-history',
-    'website-templates',
     'keyword-planner',
     'keyword-mixer',
     'keyword-generator-v3',
@@ -178,7 +178,7 @@ const App = () => {
     setActiveTabSafe(targetTab);
     
     // Show success notification
-    notifications.success('History item restored successfully', {
+    notificationService.success('History item restored successfully', {
       title: 'Restored',
       description: 'Your saved item has been loaded and is ready to use.'
     });
@@ -719,13 +719,12 @@ const App = () => {
       icon: Sparkles,
       submenu: [
         { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
-        { id: 'builder-3', label: 'Builder 3.0', icon: Sparkles },
-    { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+        { id: 'builder-3', label: 'Builder 3.0', icon: Zap },
+        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
-    { id: 'website-templates', label: 'Web Templates', icon: Layout },
-    { 
+    {
       id: 'keyword-planner', 
       label: 'Keywords', 
       icon: Lightbulb,
@@ -1137,8 +1136,6 @@ const App = () => {
           setHistoryData(data);
           setActiveTabSafe('builder-2');
         }} />;
-      case 'website-templates':
-        return <WebsiteTemplates />;
       case 'csv-validator-3':
         return <CSVValidator3 />;
       case 'google-ads-csv-export':
@@ -1166,8 +1163,9 @@ const App = () => {
       case 'dashboard':
         return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
       default:
-        // Fallback: show dashboard for any invalid/missing route
-        // Don't call setState here to avoid React warning - existing useEffect at line 483 will handle redirect
+        // Fallback: redirect to dashboard for any invalid/missing route
+        console.warn(`Invalid route/tab "${activeTab}" - redirecting to dashboard`);
+        setActiveTabSafe('dashboard');
         return <Dashboard user={user} onNavigate={setActiveTabSafe} />;
     }
   };
@@ -1555,7 +1553,9 @@ const App = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full min-w-0">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full min-w-0 relative">
+          {/* Auto Fill Button - appears on all pages */}
+          {appView === 'user' && <AutoFillButton />}
           {renderContent()}
         </main>
       </div>
