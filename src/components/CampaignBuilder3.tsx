@@ -276,7 +276,7 @@ export const CampaignBuilder3: React.FC = () => {
     cta: null,
     selectedStructure: null,
     structureRankings: [],
-    seedKeywords: [],
+    seedKeywords: ['plumber number', 'contact plumber', 'plumbing near me', '24/7 plumber'],
     negativeKeywords: [...DEFAULT_NEGATIVE_KEYWORDS], // Initialize with default negative keywords
     generatedKeywords: [],
     selectedKeywords: [],
@@ -304,6 +304,16 @@ export const CampaignBuilder3: React.FC = () => {
       }));
     }
   }, [campaignData.url]);
+
+  // Auto-populate seed keywords when step 3 is reached if they're empty
+  useEffect(() => {
+    if (currentStep === 3 && campaignData.seedKeywords.length === 0) {
+      setCampaignData(prev => ({
+        ...prev,
+        seedKeywords: ['plumber number', 'contact plumber', 'plumbing near me', '24/7 plumber']
+      }));
+    }
+  }, [currentStep]);
 
   // Step 1: URL Input & AI Analysis
   const handleUrlSubmit = async () => {
@@ -418,72 +428,28 @@ export const CampaignBuilder3: React.FC = () => {
 
     setLoading(true);
     try {
-      // Try Python API endpoint first
-      let generated: any[] = [];
-      let useFallback = false;
+      // Use local autocomplete-based keyword generator directly
+      // This ensures we always use the new autocomplete patterns
+      console.log('Using autocomplete-based keyword generator');
+      const localKeywords = generateKeywordsUtil({
+        seedKeywords: campaignData.seedKeywords.join('\n'),
+        negativeKeywords: campaignData.negativeKeywords.join('\n'),
+        vertical: campaignData.vertical || 'default',
+        intentResult: campaignData.intent,
+        landingPageData: campaignData.landingPageData,
+        maxKeywords: 710,
+        minKeywords: 410,
+      });
 
-      try {
-        const response = await api.post('/generate-keywords', {
-          seeds: campaignData.seedKeywords,
-          negatives: campaignData.negativeKeywords, // Pass negative keywords to API
-        });
-
-        if (response && response.keywords && Array.isArray(response.keywords) && response.keywords.length > 0) {
-          // Transform API response to our format
-          generated = response.keywords
-            .map((k: any, index: number) => {
-              const keywordText = (k.text || k.keyword || k).toString().trim();
-              return {
-                id: `kw-${Date.now()}-${index}`,
-                text: keywordText,
-                keyword: keywordText,
-                matchType: k.matchType || 'broad',
-                volume: k.volume || 'Medium',
-                cpc: k.cpc || '$2.50',
-                type: k.type || 'Generated',
-              };
-            })
-            .filter((kw: any) => kw.text && kw.text.length >= 3 && kw.text.length <= 50);
-        } else {
-          useFallback = true;
-        }
-      } catch (apiError: any) {
-        // Check if it's an expected 404 (backend not deployed)
-        const isExpectedError = 
-          apiError?.name === 'NotFoundError' ||
-          apiError?.message?.includes('404') ||
-          apiError?.message?.includes('Request failed');
-        
-        if (isExpectedError) {
-          console.log('Python API unavailable, using local keyword generation fallback');
-          useFallback = true;
-        } else {
-          throw apiError; // Re-throw unexpected errors
-        }
-      }
-
-      // Fallback to local keyword generation
-      if (useFallback || generated.length === 0) {
-        console.log('Using local keyword generation fallback');
-        const localKeywords = generateKeywordsUtil({
-          seedKeywords: campaignData.seedKeywords.join('\n'),
-          negativeKeywords: campaignData.negativeKeywords.join('\n'), // Pass negative keywords
-          vertical: campaignData.vertical || 'default',
-          intentResult: campaignData.intent,
-          maxKeywords: 710,
-          minKeywords: 410,
-        });
-
-        generated = localKeywords.map((kw, index) => ({
-          id: kw.id || `kw-${Date.now()}-${index}`,
-          text: kw.text,
-          keyword: kw.text,
-          matchType: kw.matchType || 'broad',
-          volume: kw.volume || 'Medium',
-          cpc: kw.cpc || '$2.50',
-          type: kw.type || 'Generated',
-        }));
-      }
+      const generated = localKeywords.map((kw, index) => ({
+        id: kw.id || `kw-${Date.now()}-${index}`,
+        text: kw.text,
+        keyword: kw.text,
+        matchType: (kw.matchType || 'BROAD').toLowerCase(),
+        volume: kw.volume || 'Medium',
+        cpc: kw.cpc || '$2.50',
+        type: kw.type || 'Generated',
+      }));
 
       // Generate 410-710 keywords (random range as specified)
       const targetCount = Math.floor(Math.random() * 300) + 410;
@@ -689,7 +655,8 @@ export const CampaignBuilder3: React.FC = () => {
   };
 
   const handleAutoFillStep3 = () => {
-    const seedKeywords = generateSeedKeywords().split(', ').filter(k => k.trim());
+    // Use default plumber keywords
+    const seedKeywords = ['plumber number', 'contact plumber', 'plumbing near me', '24/7 plumber'];
     const negativeKeywords = generateNegativeKeywords().split('\n').filter(k => k.trim());
     setCampaignData(prev => ({
       ...prev,
@@ -1078,6 +1045,34 @@ export const CampaignBuilder3: React.FC = () => {
         return ad;
       }),
     }));
+  };
+
+  const handleAddExtensionToAllAds = (extensionType: string) => {
+    if (campaignData.ads.length === 0) {
+      notifications.warning('Please create at least one ad before adding extensions', {
+        title: 'No Ads Found'
+      });
+      return;
+    }
+
+    setCampaignData(prev => ({
+      ...prev,
+      ads: prev.ads.map(ad => {
+        const newExtension = {
+          id: `ext-${Date.now()}-${Math.random()}`,
+          type: extensionType,
+          text: '',
+        };
+        return {
+          ...ad,
+          extensions: [...(ad.extensions || []), newExtension],
+        };
+      }),
+    }));
+
+    notifications.success(`Added ${extensionType} extension to all ads`, {
+      title: 'Extension Added'
+    });
   };
 
 

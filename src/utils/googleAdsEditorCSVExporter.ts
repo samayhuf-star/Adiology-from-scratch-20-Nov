@@ -261,6 +261,50 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
         }
       });
     }
+
+    // Location Targeting Rows - Google Ads Editor format
+    if (campaign.states && Array.isArray(campaign.states) && campaign.states.length > 0) {
+      campaign.states.forEach((state: string) => {
+        if (state && state.trim()) {
+          const locationRow: CSVRow = {
+            'Row Type': 'LOCATION',
+            'Campaign': campaign.campaign_name || '',
+            'Location Type': 'STATE',
+            'Location Code': state.trim(),
+            'Operation': 'NEW',
+          };
+          rows.push(locationRow);
+        }
+      });
+    }
+    if (campaign.cities && Array.isArray(campaign.cities) && campaign.cities.length > 0) {
+      campaign.cities.forEach((city: string) => {
+        if (city && city.trim()) {
+          const locationRow: CSVRow = {
+            'Row Type': 'LOCATION',
+            'Campaign': campaign.campaign_name || '',
+            'Location Type': 'CITY',
+            'Location Code': city.trim(),
+            'Operation': 'NEW',
+          };
+          rows.push(locationRow);
+        }
+      });
+    }
+    if (campaign.zip_codes && Array.isArray(campaign.zip_codes) && campaign.zip_codes.length > 0) {
+      campaign.zip_codes.forEach((zip: string) => {
+        if (zip && zip.trim()) {
+          const locationRow: CSVRow = {
+            'Row Type': 'LOCATION',
+            'Campaign': campaign.campaign_name || '',
+            'Location Type': 'ZIP',
+            'Location Code': zip.trim(),
+            'Operation': 'NEW',
+          };
+          rows.push(locationRow);
+        }
+      });
+    }
   });
 
   return rows;

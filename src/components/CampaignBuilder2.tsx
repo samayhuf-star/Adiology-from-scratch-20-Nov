@@ -5,7 +5,7 @@ import {
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
-  Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map, Funnel, 
+  Tag, Image as ImageIcon, Gift, Target, Brain, Split, Map as MapIcon, Funnel, 
   Users, TrendingDown, Network, Filter, Info, FolderOpen, Cog, Megaphone, MinusCircle
 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -4870,18 +4870,38 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           <Button 
             size="lg" 
             onClick={() => {
-              // Parse manualGeoInput into appropriate arrays before moving to next step
-              if (targetType === 'STATE' && manualGeoInput) {
-                const states = manualGeoInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
-                setSelectedStates(states);
-              } else if (targetType === 'CITY' && manualGeoInput) {
-                const cities = manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
-                setSelectedCities(cities);
-              } else if (targetType === 'ZIP' && manualGeoInput) {
-                const zips = manualGeoInput.split(',').map(z => z.trim()).filter(z => z.length > 0);
-                setSelectedZips(zips);
+              try {
+                // Parse manualGeoInput into appropriate arrays before moving to next step
+                if (targetType === 'STATE') {
+                  if (manualGeoInput && manualGeoInput.trim()) {
+                    const states = manualGeoInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    setSelectedStates(states);
+                  } else if (statePreset !== null && statePreset !== undefined) {
+                    // Use preset if manual input is empty
+                    const states = getTopStatesByPopulation(targetCountry, statePreset === '0' ? 0 : parseInt(statePreset || '0'));
+                    setSelectedStates(states);
+                  }
+                } else if (targetType === 'CITY') {
+                  if (manualGeoInput && manualGeoInput.trim()) {
+                    const cities = manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+                    setSelectedCities(cities);
+                  } else if (cityPreset !== null && cityPreset !== undefined) {
+                    // Use preset if manual input is empty
+                    const cities = getTopCitiesByIncome(targetCountry, cityPreset === '0' ? 0 : parseInt(cityPreset || '0'));
+                    setSelectedCities(cities);
+                  }
+                } else if (targetType === 'ZIP' && manualGeoInput && manualGeoInput.trim()) {
+                  const zips = manualGeoInput.split(',').map(z => z.trim()).filter(z => z.length > 0);
+                  setSelectedZips(zips);
+                }
+                setStep(5);
+              } catch (error) {
+                console.error('Error processing geo-targeting:', error);
+                notifications.error('Failed to process location selection. Please try again.', {
+                  title: 'Error',
+                  description: error instanceof Error ? error.message : 'Unknown error occurred'
+                });
               }
-              setStep(5);
             }}
             className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
           >
@@ -5739,19 +5759,44 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         let finalSelectedZips = selectedZips;
         
         // If arrays are empty but manualGeoInput has data, parse it
-        if (targetType === 'STATE' && finalSelectedStates.length === 0 && manualGeoInput) {
-          finalSelectedStates = manualGeoInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        } else if (targetType === 'CITY' && finalSelectedCities.length === 0 && manualGeoInput) {
-          finalSelectedCities = manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
-        } else if (targetType === 'ZIP' && finalSelectedZips.length === 0 && manualGeoInput) {
-          finalSelectedZips = manualGeoInput.split(',').map(z => z.trim()).filter(z => z.length > 0);
+        if (targetType === 'STATE' && finalSelectedStates.length === 0 && manualGeoInput && manualGeoInput.trim()) {
+          try {
+            finalSelectedStates = manualGeoInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+          } catch (error) {
+            console.error('Error parsing states:', error);
+            finalSelectedStates = [];
+          }
+        } else if (targetType === 'CITY' && finalSelectedCities.length === 0 && manualGeoInput && manualGeoInput.trim()) {
+          try {
+            finalSelectedCities = manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+          } catch (error) {
+            console.error('Error parsing cities:', error);
+            finalSelectedCities = [];
+          }
+        } else if (targetType === 'ZIP' && finalSelectedZips.length === 0 && manualGeoInput && manualGeoInput.trim()) {
+          try {
+            finalSelectedZips = manualGeoInput.split(',').map(z => z.trim()).filter(z => z.length > 0);
+          } catch (error) {
+            console.error('Error parsing ZIPs:', error);
+            finalSelectedZips = [];
+          }
         }
         
         // Also check preset values if manual input is empty
-        if (targetType === 'STATE' && finalSelectedStates.length === 0 && statePreset !== null) {
-          finalSelectedStates = getTopStatesByPopulation(targetCountry, statePreset === '0' ? 0 : parseInt(statePreset));
-        } else if (targetType === 'CITY' && finalSelectedCities.length === 0 && cityPreset !== null) {
-          finalSelectedCities = getTopCitiesByIncome(targetCountry, cityPreset === '0' ? 0 : parseInt(cityPreset));
+        if (targetType === 'STATE' && finalSelectedStates.length === 0 && statePreset !== null && statePreset !== undefined) {
+          try {
+            finalSelectedStates = getTopStatesByPopulation(targetCountry, statePreset === '0' ? 0 : parseInt(statePreset || '0'));
+          } catch (error) {
+            console.error('Error getting states:', error);
+            finalSelectedStates = [];
+          }
+        } else if (targetType === 'CITY' && finalSelectedCities.length === 0 && cityPreset !== null && cityPreset !== undefined) {
+          try {
+            finalSelectedCities = getTopCitiesByIncome(targetCountry, cityPreset === '0' ? 0 : parseInt(cityPreset || '0'));
+          } catch (error) {
+            console.error('Error getting cities:', error);
+            finalSelectedCities = [];
+          }
         }
 
         // Prepare settings for structure generation

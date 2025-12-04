@@ -86,12 +86,18 @@ export async function extractLandingPageContent(
     const clientResult = await extractViaClient(url);
     return { ...result, ...clientResult, extractionMethod: 'crawl' };
   } catch (error: any) {
-    // Silently handle CSP violations - they're expected
-    const isCSPError = error?.message?.includes('CSP') || 
-                      error?.message?.includes('Content Security Policy') ||
-                      error?.message?.includes('violates');
+    // Silently handle network/CORS/CSP errors - they're expected
+    const isExpectedError = 
+      error?.message?.includes('Failed to fetch') ||
+      error?.message?.includes('NetworkError') ||
+      error?.message?.includes('CORS') ||
+      error?.message?.includes('CSP') || 
+      error?.message?.includes('Content Security Policy') ||
+      error?.message?.includes('violates') ||
+      (error?.name === 'TypeError' && error?.message?.includes('fetch'));
     
-    if (!isCSPError) {
+    // Only log unexpected errors
+    if (!isExpectedError) {
       console.warn('Landing page extraction failed:', error);
     }
     return { ...result, extractionMethod: 'fallback' };
@@ -145,12 +151,18 @@ async function extractViaClient(url: string): Promise<Partial<LandingPageExtract
     }
 
     // Use CORS proxy or direct fetch if same-origin
-    // Note: This may fail due to CSP restrictions - that's expected
+    // Note: This may fail due to CSP/CORS restrictions - that's expected
+    // Network errors are expected and should be handled silently
     const response = await fetch(url, {
       mode: 'cors',
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; AdiologyBot/1.0)',
       },
+    }).catch((fetchError: any) => {
+      // Convert fetch errors to a specific error type that we can identify
+      const networkError = new Error('NETWORK_ERROR');
+      (networkError as any).originalError = fetchError;
+      throw networkError;
     });
 
     if (!response.ok) {
@@ -160,12 +172,23 @@ async function extractViaClient(url: string): Promise<Partial<LandingPageExtract
     const html = await response.text();
     return parseHTML(html);
   } catch (error: any) {
-    // If CORS fails or CSP blocks, return empty result (user can manually enter)
-    // Don't log CSP violations as errors - they're expected
-    const isCSPError = error?.message?.includes('CSP') || 
-                      error?.message?.includes('Content Security Policy') ||
-                      error?.message?.includes('violates') ||
-                      error?.name === 'TypeError' && error?.message?.includes('fetch');
+    // If CORS fails, network error, or CSP blocks, return empty result (user can manually enter)
+    // Don't log network/CORS errors as errors - they're expected
+    const isNetworkError = 
+      error?.message === 'NETWORK_ERROR' ||
+      error?.message?.includes('Failed to fetch') ||
+      error?.message?.includes('NetworkError') ||
+      error?.message?.includes('CORS') ||
+      error?.message?.includes('CSP') || 
+      error?.message?.includes('Content Security Policy') ||
+      error?.message?.includes('violates') ||
+      (error?.name === 'TypeError' && error?.message?.includes('fetch'));
+    
+    // Silently handle network/CORS errors - they're expected and don't need logging
+    // Only log unexpected errors
+    if (!isNetworkError) {
+      console.warn('Landing page extraction error:', error);
+    }
     
     if (!isCSPError) {
       console.warn('Client-side extraction failed (CORS or network):', error);
