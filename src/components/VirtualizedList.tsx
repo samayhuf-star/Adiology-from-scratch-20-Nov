@@ -45,7 +45,7 @@ export function VirtualizedList<T>({
   );
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
+    const {scrollTop} = e.currentTarget;
     debouncedScrollHandler(scrollTop);
   }, [debouncedScrollHandler]);
 
