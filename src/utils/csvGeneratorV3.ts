@@ -553,12 +553,13 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 23. Location Targeting Block
   blocks.push(BLOCK_HEADERS.LOCATION_TARGETING);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
       if (adGroup.location_target) {
         const locations = adGroup.location_target.split(',').map(l => l.trim()).filter(l => l.length > 0);
         locations.forEach(location => {
           const row = [
-            escapeCSVField(campaign.campaign_name),
+            escapeCSVField(campaignName),
             escapeCSVField(location),
             escapeCSVField('Location of interest'), // Target Type
             escapeCSVField('') // Bid Adjustment
@@ -573,11 +574,12 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 24. ZIP/Postal Code Targeting Block
   blocks.push(BLOCK_HEADERS.ZIP_TARGETING);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     // Check campaign-level zip codes
     if (campaign.zip_codes && campaign.zip_codes.length > 0) {
       campaign.zip_codes.forEach(zip => {
         const row = [
-          escapeCSVField(campaign.campaign_name),
+          escapeCSVField(campaignName),
           escapeCSVField(zip),
           escapeCSVField('Postal Code'), // Target Type
           escapeCSVField('') // Bid Adjustment
