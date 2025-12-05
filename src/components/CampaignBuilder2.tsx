@@ -3012,11 +3012,29 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       // Get keywords for this ad group
       const groupKeywords = group.keywords || [];
       if (groupKeywords.length === 0) {
+        console.warn(`No keywords for group "${group.name}", creating basic ad`);
         try {
           notifications.dismiss(progressToastId);
         } catch (e) {
           // Ignore dismiss errors
         }
+        // Still create basic ads even if no keywords
+        const basicAd = {
+          id: adIdCounter++,
+          type: 'rsa',
+          adGroup: group.name,
+          headline1: 'Professional Services',
+          headline2: 'Expert Team Available',
+          headline3: 'Get Started Today',
+          headline4: '',
+          headline5: '',
+          description1: 'Professional services you can trust. Get expert help when you need it.',
+          description2: 'Contact us today for reliable and affordable solutions.',
+          finalUrl: baseUrl || url || 'https://www.example.com',
+          path1: 'services',
+          path2: 'contact'
+        };
+        allGeneratedAds.push(basicAd);
         continue;
       }
 
@@ -3029,7 +3047,27 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         return clean.trim();
       }).filter(Boolean);
 
-      if (cleanKeywords.length === 0) continue;
+      if (cleanKeywords.length === 0) {
+        console.warn(`No valid keywords after cleaning for group "${group.name}", creating basic ad`);
+        // Create basic ad even if keywords are invalid
+        const basicAd = {
+          id: adIdCounter++,
+          type: 'rsa',
+          adGroup: group.name,
+          headline1: 'Professional Services',
+          headline2: 'Expert Team Available',
+          headline3: 'Get Started Today',
+          headline4: '',
+          headline5: '',
+          description1: 'Professional services you can trust. Get expert help when you need it.',
+          description2: 'Contact us today for reliable and affordable solutions.',
+          finalUrl: baseUrl || url || 'https://www.example.com',
+          path1: 'services',
+          path2: 'contact'
+        };
+        allGeneratedAds.push(basicAd);
+        continue;
+      }
 
       // Count existing ads for this group (if any)
       const existingAdsForGroup = allGeneratedAds.filter(ad => ad.adGroup === group.name && (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'));
@@ -3073,11 +3111,37 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           }
         } catch (error) {
           // API unavailable - using fallback (expected behavior)
-          // console.debug('API unavailable, using fallback for RSA');
-          const fallbackAd = generateFallbackRSA(group.name, cleanKeywords, i, baseUrl);
-          fallbackAd.id = adIdCounter++;
-          allGeneratedAds.push(fallbackAd);
-          adsAddedForThisGroup++;
+          console.log('API unavailable, using fallback for RSA:', error);
+          try {
+            const fallbackAd = generateFallbackRSA(group.name, cleanKeywords, i, baseUrl);
+            if (fallbackAd) {
+              fallbackAd.id = adIdCounter++;
+              allGeneratedAds.push(fallbackAd);
+              adsAddedForThisGroup++;
+            } else {
+              console.error('Fallback RSA ad generation returned null/undefined');
+            }
+          } catch (fallbackError) {
+            console.error('Error in fallback RSA generation:', fallbackError);
+            // Create a basic ad as last resort
+            const basicAd = {
+              id: adIdCounter++,
+              type: 'rsa',
+              adGroup: group.name,
+              headline1: cleanKeywords[0] ? `${cleanKeywords[0]} Services` : 'Professional Services',
+              headline2: 'Expert Team Available',
+              headline3: 'Get Started Today',
+              headline4: '',
+              headline5: '',
+              description1: 'Professional services you can trust. Get expert help when you need it.',
+              description2: 'Contact us today for reliable and affordable solutions.',
+              finalUrl: baseUrl || url || 'https://www.example.com',
+              path1: 'services',
+              path2: 'contact'
+            };
+            allGeneratedAds.push(basicAd);
+            adsAddedForThisGroup++;
+          }
         }
       }
 
@@ -3117,11 +3181,37 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           }
         } catch (error) {
           // API unavailable - using fallback (expected behavior)
-          // console.debug('API unavailable, using fallback for DKI');
-          const fallbackAd = generateFallbackDKI(group.name, cleanKeywords, i, baseUrl);
-          fallbackAd.id = adIdCounter++;
-          allGeneratedAds.push(fallbackAd);
-          adsAddedForThisGroup++;
+          console.log('API unavailable, using fallback for DKI:', error);
+          try {
+            const fallbackAd = generateFallbackDKI(group.name, cleanKeywords, i, baseUrl);
+            if (fallbackAd) {
+              fallbackAd.id = adIdCounter++;
+              allGeneratedAds.push(fallbackAd);
+              adsAddedForThisGroup++;
+            } else {
+              console.error('Fallback DKI ad generation returned null/undefined');
+            }
+          } catch (fallbackError) {
+            console.error('Error in fallback DKI generation:', fallbackError);
+            // Create a basic DKI ad as last resort
+            const mainKeyword = cleanKeywords[0] || 'Service';
+            const keywordTitle = mainKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            const basicAd = {
+              id: adIdCounter++,
+              type: 'dki',
+              adGroup: group.name,
+              headline1: `{KeyWord:${keywordTitle}} - Official Site`,
+              headline2: `Buy {KeyWord:${keywordTitle}} Online`,
+              headline3: `Trusted {KeyWord:${keywordTitle}} Service`,
+              description1: `Find the best {KeyWord:${keywordTitle}}. Fast & reliable support.`,
+              description2: 'Contact our experts for 24/7 assistance.',
+              finalUrl: baseUrl || url || 'https://www.example.com',
+              path1: 'keyword',
+              path2: 'deals'
+            };
+            allGeneratedAds.push(basicAd);
+            adsAddedForThisGroup++;
+          }
         }
       }
 
@@ -3170,11 +3260,36 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
           }
         } catch (error) {
           // API unavailable - using fallback (expected behavior)
-          // console.debug('API unavailable, using fallback for Call Only');
-          const fallbackAd = generateFallbackCallOnly(group.name, cleanKeywords, i, baseUrl);
-          fallbackAd.id = adIdCounter++;
-          allGeneratedAds.push(fallbackAd);
-          adsAddedForThisGroup++;
+          console.log('API unavailable, using fallback for Call Only:', error);
+          try {
+            const fallbackAd = generateFallbackCallOnly(group.name, cleanKeywords, i, baseUrl);
+            if (fallbackAd) {
+              fallbackAd.id = adIdCounter++;
+              allGeneratedAds.push(fallbackAd);
+              adsAddedForThisGroup++;
+            } else {
+              console.error('Fallback Call Only ad generation returned null/undefined');
+            }
+          } catch (fallbackError) {
+            console.error('Error in fallback Call Only generation:', fallbackError);
+            // Create a basic call-only ad as last resort
+            const basicAd = {
+              id: adIdCounter++,
+              type: 'callonly',
+              adGroup: group.name,
+              headline1: 'Call Us Today',
+              headline2: 'Expert Service Available',
+              description1: 'Get immediate assistance from our team.',
+              description2: 'Available 24/7 for your convenience.',
+              phoneNumber: landingPageData?.phones[0] || '+1-800-123-4567',
+              businessName: campaignName || 'Your Business',
+              finalUrl: baseUrl || url || 'https://www.example.com',
+              path1: '',
+              path2: ''
+            };
+            allGeneratedAds.push(basicAd);
+            adsAddedForThisGroup++;
+          }
         }
       }
       
@@ -3187,6 +3302,32 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         // Ignore dismiss errors
       }
     }
+
+      // Ensure we have at least some ads - if allGeneratedAds is empty, create basic ads
+      if (allGeneratedAds.length === 0 && adGroups.length > 0) {
+        console.warn('No ads were generated, creating basic fallback ads');
+        const firstGroup = adGroups[0];
+        const mainKeyword = firstGroup.keywords?.[0] || 'service';
+        const keywordTitle = mainKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        
+        // Create at least one RSA ad
+        const basicRSA = {
+          id: adIdCounter++,
+          type: 'rsa',
+          adGroup: firstGroup.name,
+          headline1: `${keywordTitle} Services`,
+          headline2: 'Expert Team Available',
+          headline3: 'Get Started Today',
+          headline4: '',
+          headline5: '',
+          description1: 'Professional services you can trust. Get expert help when you need it.',
+          description2: 'Contact us today for reliable and affordable solutions.',
+          finalUrl: baseUrl || url || 'https://www.example.com',
+          path1: 'services',
+          path2: 'contact'
+        };
+        allGeneratedAds.push(basicRSA);
+      }
 
       // Apply tracking parameters (UTM) to final URLs
     const adsWithTracking = allGeneratedAds.map(ad => {
@@ -3218,6 +3359,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         };
       });
       
+      // Always set ads, even if empty (so UI can show appropriate message)
+      console.log(`Setting ${adsWithTracking.length} ads to state`);
       setGeneratedAds(adsWithTracking);
     
     // Dismiss any remaining loading toasts
@@ -3243,6 +3386,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         duration: 5000
       });
     } else {
+      console.error('No ads were generated! allGeneratedAds:', allGeneratedAds, 'adGroups:', adGroups, 'cleanKeywords sample:', adGroups[0]?.keywords?.slice(0, 3));
       notifications.warning('No ads were generated. Please check your keywords and try again.', {
         title: 'Generation Failed',
         description: 'Unable to generate ads. Please verify your keywords and try again.',
@@ -6189,6 +6333,52 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Cities Summary - Show if cities are selected */}
+              {targetType === 'CITY' && (selectedCities.length > 0 || (manualGeoInput && manualGeoInput.trim())) && (() => {
+                const citiesList = selectedCities.length > 0 ? selectedCities : manualGeoInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+                const cityCount = citiesList.length;
+                const presetLabel = cityPreset 
+                  ? (cityPreset === '0' ? 'All Cities' : `Top ${cityPreset} Cities`)
+                  : 'Custom Cities';
+                
+                return (
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {presetLabel}
+                          </p>
+                          <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                            {cityCount} selected
+                          </Badge>
+                        </div>
+                        {cityCount > 0 && (
+                          <div className="mt-2">
+                            <p className="text-xs text-slate-600 mb-2">Selected cities:</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {citiesList.slice(0, 10).map((city, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs bg-white text-slate-700 border-slate-300">
+                                  {city}
+                                </Badge>
+                              ))}
+                              {cityCount > 10 && (
+                                <Badge variant="secondary" className="text-xs bg-white text-slate-500 border-slate-300">
+                                  +{cityCount - 10} more
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/50 rounded-lg p-4">
                 <div className="flex items-start gap-3">

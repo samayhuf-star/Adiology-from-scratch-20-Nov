@@ -4974,11 +4974,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 {/* Review Table - Show All Groups */}
                 <Card className="border-indigo-200/60 bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/30 backdrop-blur-xl shadow-2xl overflow-hidden">
                     <div className="overflow-x-auto">
-                        <Table>
+                        <Table className="table-fixed w-full">
                             <TableHeader>
                                 <TableRow className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600">
                                     <TableHead className="font-bold text-white w-[180px] py-4">AD GROUP</TableHead>
-                                    <TableHead className="font-bold text-white w-[320px] py-4">ADS & EXTENSIONS</TableHead>
+                                    <TableHead className="font-bold text-white w-[300px] max-w-[300px] py-4">ADS & EXTENSIONS</TableHead>
                                     <TableHead className="font-bold text-white w-[240px] py-4">KEYWORDS</TableHead>
                                     <TableHead className="font-bold text-white w-[180px] py-4">NEGATIVES</TableHead>
                                 </TableRow>
@@ -5032,26 +5032,26 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                             </TableCell>
 
                                             {/* Ads & Extensions - Show All Ads for This Group */}
-                                            <TableCell className="align-top py-6">
+                                            <TableCell className="align-top py-6 max-w-[300px]">
                                                 {groupAds.length > 0 ? (
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-3 max-w-[300px]">
                                                         {groupAds.map((ad, adIdx) => (
-                                                            <div key={ad.id || adIdx} className="space-y-2 text-sm border-b border-indigo-200/50 pb-3 last:border-0 last:pb-0 bg-gradient-to-r from-purple-50/30 to-indigo-50/30 p-3 rounded-lg">
-                                                        <div className="flex items-start gap-2">
-                                                            <div className="flex-1">
+                                                            <div key={ad.id || adIdx} className="space-y-2 text-sm border-b border-indigo-200/50 pb-3 last:border-0 last:pb-0 bg-gradient-to-r from-purple-50/30 to-indigo-50/30 p-3 rounded-lg max-w-full overflow-hidden">
+                                                        <div className="flex items-start gap-2 max-w-full">
+                                                            <div className="flex-1 min-w-0 max-w-[260px]">
                                                                         {(ad.type === 'rsa' || ad.type === 'dki') && (
                                                                             <>
-                                                                <div className="text-indigo-700 font-semibold hover:text-purple-700 hover:underline cursor-pointer transition-colors">
+                                                                <div className="text-indigo-700 font-semibold hover:text-purple-700 hover:underline cursor-pointer transition-colors overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxHeight: '2.5em' }}>
                                                                                     {ad.headline1} {ad.headline2 && `| ${ad.headline2}`} {ad.headline3 && `| ${ad.headline3}`}
                                                                 </div>
-                                                                <div className="text-emerald-600 font-medium text-xs mt-1">
+                                                                <div className="text-emerald-600 font-medium text-xs mt-1 truncate" title={`${ad.finalUrl || url || 'www.example.com'}/${ad.path1 || ''}/${ad.path2 || ''}`}>
                                                                                     {ad.finalUrl || url || 'www.example.com'}/{ad.path1 || ''}/{ad.path2 || ''}
                                                                 </div>
-                                                                                <div className="text-slate-700 text-xs mt-1.5 leading-relaxed">
+                                                                                <div className="text-slate-700 text-xs mt-1.5 leading-relaxed overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxHeight: '2.5em' }}>
                                                                                     {ad.description1}
                                                                 </div>
                                                                                 {ad.description2 && (
-                                                                                    <div className="text-slate-600 text-xs mt-1 leading-relaxed">
+                                                                                    <div className="text-slate-600 text-xs mt-1 leading-relaxed overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxHeight: '2.5em' }}>
                                                                                         {ad.description2}
                                                             </div>
                                                                                 )}
@@ -5059,24 +5059,24 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                                                         )}
                                                                         {ad.type === 'callonly' && (
                                                                             <>
-                                                                                <div className="text-indigo-700 font-bold">
+                                                                                <div className="text-indigo-700 font-bold overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxHeight: '2.5em' }}>
                                                                                     {ad.headline1}
                                                                                 </div>
                                                                                 {ad.headline2 && (
-                                                                                    <div className="text-purple-600 text-xs mt-1 font-medium">
+                                                                                    <div className="text-purple-600 text-xs mt-1 font-medium truncate">
                                                                                         {ad.headline2}
                                                                                     </div>
                                                                                 )}
-                                                                                <div className="text-slate-700 text-xs mt-1.5 leading-relaxed">
+                                                                                <div className="text-slate-700 text-xs mt-1.5 leading-relaxed overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxHeight: '2.5em' }}>
                                                                                     {ad.description1}
                                                                                 </div>
                                                                                 {ad.description2 && (
-                                                                                    <div className="text-slate-600 text-xs mt-1 leading-relaxed">
+                                                                                    <div className="text-slate-600 text-xs mt-1 leading-relaxed overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', maxHeight: '2.5em' }}>
                                                                                         {ad.description2}
                                                                                     </div>
                                                                                 )}
-                                                                                <div className="text-emerald-600 font-bold text-xs mt-2 flex items-center gap-1">
-                                                                                    <Phone className="w-3 h-3" /> {ad.phone} • {ad.businessName}
+                                                                                <div className="text-emerald-600 font-bold text-xs mt-2 flex items-center gap-1 truncate">
+                                                                                    <Phone className="w-3 h-3 flex-shrink-0" /> <span className="truncate">{ad.phone} • {ad.businessName}</span>
                                                                                 </div>
                                                                             </>
                                                                         )}
