@@ -33,6 +33,7 @@ export const KeywordPlannerSelectable = ({
     const [isSaving, setIsSaving] = useState(false);
     const [apiStatus, setApiStatus] = useState<'unknown' | 'ok' | 'error'>('unknown');
     const [errorMessage, setErrorMessage] = useState<string>('');
+    const [showAllKeywords, setShowAllKeywords] = useState(false);
     
     // Match types - all selected by default
     const [matchTypes, setMatchTypes] = useState({
@@ -691,29 +692,95 @@ export const KeywordPlannerSelectable = ({
 
                     {generatedKeywords.length > 0 && (
                         <>
-                            <div className="mb-4 flex items-center justify-between px-4 py-3 bg-slate-100 rounded-lg">
-                                <span className="text-sm font-semibold text-slate-700">
-                                    {generatedKeywords.length} Keywords Generated
-                                    {selectedKeywords.length > 0 && (
-                                        <span className="ml-2 text-indigo-600">
-                                            ({selectedKeywords.length} selected)
-                                        </span>
-                                    )}
-                                </span>
-                                <div className="flex gap-2">
+                            {/* Summary Card */}
+                            <div className="mb-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-200 shadow-sm">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-800 mb-1">
+                                            Keywords Generated Successfully! ✨
+                                        </h3>
+                                        <p className="text-sm text-slate-600">
+                                            {generatedKeywords.length} keywords ready • {selectedKeywords.length} selected
+                                        </p>
+                                    </div>
                                     <Button
-                                        onClick={handleRemoveDuplicateKeywords}
+                                        onClick={() => setShowAllKeywords(!showAllKeywords)}
                                         variant="outline"
                                         size="sm"
-                                        className="h-7 text-xs"
+                                        className="text-xs"
                                     >
-                                        Remove Duplicates
+                                        {showAllKeywords ? 'Hide' : 'Show'} All Keywords
                                     </Button>
+                                </div>
+                                
+                                {/* Keyword Statistics */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                    <div className="bg-white/80 rounded-lg p-3 border border-indigo-100">
+                                        <div className="text-xs text-slate-500 mb-1">Total Keywords</div>
+                                        <div className="text-xl font-bold text-indigo-600">{generatedKeywords.length}</div>
+                                    </div>
+                                    <div className="bg-white/80 rounded-lg p-3 border border-indigo-100">
+                                        <div className="text-xs text-slate-500 mb-1">Selected</div>
+                                        <div className="text-xl font-bold text-purple-600">{selectedKeywords.length}</div>
+                                    </div>
+                                    <div className="bg-white/80 rounded-lg p-3 border border-indigo-100">
+                                        <div className="text-xs text-slate-500 mb-1">Broad Match</div>
+                                        <div className="text-xl font-bold text-blue-600">
+                                            {generatedKeywords.filter(k => !k.startsWith('"') && !k.startsWith('[')).length}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/80 rounded-lg p-3 border border-indigo-100">
+                                        <div className="text-xs text-slate-500 mb-1">Phrase/Exact</div>
+                                        <div className="text-xl font-bold text-green-600">
+                                            {generatedKeywords.filter(k => k.startsWith('"') || k.startsWith('[')).length}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Structure Info */}
+                                <div className="bg-white/90 rounded-lg p-4 border border-indigo-200">
+                                    <div className="text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Campaign Structure</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {matchTypes.broad && (
+                                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                                Broad Match
+                                            </span>
+                                        )}
+                                        {matchTypes.phrase && (
+                                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
+                                                Phrase Match
+                                            </span>
+                                        )}
+                                        {matchTypes.exact && (
+                                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                                                Exact Match
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="mt-3 text-xs text-slate-600">
+                                        <div className="font-medium mb-1">Sample Keywords:</div>
+                                        <div className="flex flex-wrap gap-1">
+                                            {generatedKeywords.slice(0, 8).map((kw, idx) => (
+                                                <span key={idx} className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-mono">
+                                                    {kw.length > 25 ? kw.substring(0, 25) + '...' : kw}
+                                                </span>
+                                            ))}
+                                            {generatedKeywords.length > 8 && (
+                                                <span className="px-2 py-0.5 text-slate-500 text-xs">
+                                                    +{generatedKeywords.length - 8} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2 mt-4">
                                     <Button
                                         onClick={handleSelectAll}
                                         variant="outline"
                                         size="sm"
-                                        className="gap-2"
+                                        className="flex-1 gap-2"
                                     >
                                         {allSelected ? (
                                             <>
@@ -723,15 +790,23 @@ export const KeywordPlannerSelectable = ({
                                         ) : (
                                             <>
                                                 <CheckSquare className="w-4 h-4" />
-                                                Select All
+                                                Select All ({generatedKeywords.length})
                                             </>
                                         )}
+                                    </Button>
+                                    <Button
+                                        onClick={handleRemoveDuplicateKeywords}
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs"
+                                    >
+                                        Remove Duplicates
                                     </Button>
                                     <Button
                                         onClick={handleClearAllKeywords}
                                         variant="outline"
                                         size="sm"
-                                        className="h-7 text-xs text-red-600 hover:text-red-700"
+                                        className="text-xs text-red-600 hover:text-red-700"
                                     >
                                         Clear All
                                     </Button>
@@ -749,8 +824,8 @@ export const KeywordPlannerSelectable = ({
                         </>
                     )}
 
-                    <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[600px]">
-                        {generatedKeywords.length > 0 ? (
+                    {showAllKeywords && generatedKeywords.length > 0 ? (
+                        <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[600px]">
                             <div className="space-y-1">
                                 {generatedKeywords.map((keyword, idx) => {
                                     const isSelected = selectedKeywords.includes(keyword);
@@ -784,17 +859,28 @@ export const KeywordPlannerSelectable = ({
                                     );
                                 })}
                             </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-full">
-                                <div className="text-center">
-                                    <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-slate-500">
-                                        Enter seed keywords and click "Generate" to create your keyword list
-                                    </p>
-                                </div>
+                        </div>
+                    ) : generatedKeywords.length === 0 ? (
+                        <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 flex items-center justify-center">
+                            <div className="text-center">
+                                <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                <p className="text-slate-500">
+                                    Enter seed keywords and click "Generate" to create your keyword list
+                                </p>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 flex items-center justify-center">
+                            <div className="text-center">
+                                <p className="text-slate-500 mb-2">
+                                    Click "Show All Keywords" above to view and select individual keywords
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                    {generatedKeywords.length} keywords available • {selectedKeywords.length} selected
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
