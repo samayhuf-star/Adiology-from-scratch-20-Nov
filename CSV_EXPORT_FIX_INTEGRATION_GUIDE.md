@@ -36,8 +36,9 @@ This fix pack addresses all 6 CSV generation issues identified in the analysis:
 4. **Start server:**
    ```bash
    cd backend
-   python ad_generator_api.py
+   python3 ad_generator_api.py
    # Server runs on http://localhost:8000
+   # Note: On macOS, use 'python3' instead of 'python'
    ```
 
 ### Step 2: Frontend Integration

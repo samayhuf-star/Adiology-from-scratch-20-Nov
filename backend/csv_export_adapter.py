@@ -64,30 +64,76 @@ def map_frontend_to_backend(
         # Map ads to backend format
         mapped_ads = []
         for ad in group_ads:
+            # Check if ad has any content - skip completely empty ads
+            has_headlines = any([
+                ad.get('headline1'), ad.get('headline2'), ad.get('headline3'),
+                ad.get('headlines') and len(ad.get('headlines', [])) > 0
+            ])
+            has_descriptions = any([
+                ad.get('description1'), ad.get('description2'),
+                ad.get('descriptions') and len(ad.get('descriptions', [])) > 0
+            ])
+            
+            # Skip ads that have no content at all (they're likely placeholders)
+            if not has_headlines and not has_descriptions:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Skipping empty ad in group '{ad_group_name}' - ad has no headlines or descriptions. Ad keys: {list(ad.keys())}")
+                continue
+            # Handle both camelCase and snake_case field names
+            # Also check for nested structures (e.g., ad.headlines[0])
+            def get_field(ad_obj, *keys):
+                """Get field value trying multiple key variations"""
+                for key in keys:
+                    if key in ad_obj and ad_obj[key]:
+                        return str(ad_obj[key]).strip()
+                return ''
+            
+            # Try multiple field name variations
+            headline1 = get_field(ad, 'headline1', 'headline_1', 'Headline1', 'Headline 1')
+            headline2 = get_field(ad, 'headline2', 'headline_2', 'Headline2', 'Headline 2')
+            headline3 = get_field(ad, 'headline3', 'headline_3', 'Headline3', 'Headline 3')
+            
+            # Check if headlines are in an array
+            if not headline1 and 'headlines' in ad and isinstance(ad['headlines'], list) and len(ad['headlines']) > 0:
+                headlines_list = ad['headlines']
+                headline1 = str(headlines_list[0]).strip() if len(headlines_list) > 0 else ''
+                headline2 = str(headlines_list[1]).strip() if len(headlines_list) > 1 else ''
+                headline3 = str(headlines_list[2]).strip() if len(headlines_list) > 2 else ''
+            
+            description1 = get_field(ad, 'description1', 'description_1', 'Description1', 'Description 1')
+            description2 = get_field(ad, 'description2', 'description_2', 'Description2', 'Description 2')
+            
+            # Check if descriptions are in an array
+            if not description1 and 'descriptions' in ad and isinstance(ad['descriptions'], list) and len(ad['descriptions']) > 0:
+                descriptions_list = ad['descriptions']
+                description1 = str(descriptions_list[0]).strip() if len(descriptions_list) > 0 else ''
+                description2 = str(descriptions_list[1]).strip() if len(descriptions_list) > 1 else ''
+            
             mapped_ad = {
                 'type': ad.get('type', 'rsa').lower(),
-                'headline1': (ad.get('headline1') or '').strip(),
-                'headline2': (ad.get('headline2') or '').strip(),
-                'headline3': (ad.get('headline3') or '').strip(),
-                'headline4': (ad.get('headline4') or '').strip(),
-                'headline5': (ad.get('headline5') or '').strip(),
-                'headline6': (ad.get('headline6') or '').strip(),
-                'headline7': (ad.get('headline7') or '').strip(),
-                'headline8': (ad.get('headline8') or '').strip(),
-                'headline9': (ad.get('headline9') or '').strip(),
-                'headline10': (ad.get('headline10') or '').strip(),
-                'headline11': (ad.get('headline11') or '').strip(),
-                'headline12': (ad.get('headline12') or '').strip(),
-                'headline13': (ad.get('headline13') or '').strip(),
-                'headline14': (ad.get('headline14') or '').strip(),
-                'headline15': (ad.get('headline15') or '').strip(),
-                'description1': (ad.get('description1') or '').strip(),
-                'description2': (ad.get('description2') or '').strip(),
-                'description3': (ad.get('description3') or '').strip(),
-                'description4': (ad.get('description4') or '').strip(),
-                'finalUrl': (ad.get('finalUrl') or ad.get('final_url') or '').strip(),
-                'path1': (ad.get('path1') or '').strip(),
-                'path2': (ad.get('path2') or '').strip(),
+                'headline1': headline1,
+                'headline2': headline2,
+                'headline3': headline3,
+                'headline4': get_field(ad, 'headline4', 'headline_4', 'Headline4', 'Headline 4'),
+                'headline5': get_field(ad, 'headline5', 'headline_5', 'Headline5', 'Headline 5'),
+                'headline6': get_field(ad, 'headline6', 'headline_6', 'Headline6', 'Headline 6'),
+                'headline7': get_field(ad, 'headline7', 'headline_7', 'Headline7', 'Headline 7'),
+                'headline8': get_field(ad, 'headline8', 'headline_8', 'Headline8', 'Headline 8'),
+                'headline9': get_field(ad, 'headline9', 'headline_9', 'Headline9', 'Headline 9'),
+                'headline10': get_field(ad, 'headline10', 'headline_10', 'Headline10', 'Headline 10'),
+                'headline11': get_field(ad, 'headline11', 'headline_11', 'Headline11', 'Headline 11'),
+                'headline12': get_field(ad, 'headline12', 'headline_12', 'Headline12', 'Headline 12'),
+                'headline13': get_field(ad, 'headline13', 'headline_13', 'Headline13', 'Headline 13'),
+                'headline14': get_field(ad, 'headline14', 'headline_14', 'Headline14', 'Headline 14'),
+                'headline15': get_field(ad, 'headline15', 'headline_15', 'Headline15', 'Headline 15'),
+                'description1': description1,
+                'description2': description2,
+                'description3': get_field(ad, 'description3', 'description_3', 'Description3', 'Description 3'),
+                'description4': get_field(ad, 'description4', 'description_4', 'Description4', 'Description 4'),
+                'finalUrl': get_field(ad, 'finalUrl', 'final_url', 'finalURL', 'Final URL', 'FinalURL'),
+                'path1': get_field(ad, 'path1', 'path_1', 'Path1', 'Path 1'),
+                'path2': get_field(ad, 'path2', 'path_2', 'Path2', 'Path 2'),
             }
             mapped_ads.append(mapped_ad)
         

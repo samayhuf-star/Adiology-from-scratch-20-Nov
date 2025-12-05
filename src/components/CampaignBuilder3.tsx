@@ -1228,16 +1228,16 @@ export const CampaignBuilder3: React.FC = () => {
 
   const handleRemoveExtension = (adId: string, extensionId: string) => {
     setCampaignData(prev => ({
-      ...prev,
-      ads: prev.ads.map(ad => {
-        if (ad.id === adId) {
-          return {
-            ...ad,
+        ...prev,
+        ads: prev.ads.map(ad => {
+          if (ad.id === adId) {
+            return {
+              ...ad,
             extensions: (ad.extensions || []).filter(ext => ext.id !== extensionId),
-          };
-        }
-        return ad;
-      }),
+            };
+          }
+          return ad;
+        }),
     }));
     notifications.success('Extension removed', { title: 'Removed' });
   };
@@ -1311,9 +1311,9 @@ export const CampaignBuilder3: React.FC = () => {
         return {
           ...ad,
           extensions: [...currentExtensions, newExtension],
-      };
-    });
-
+        };
+      });
+      
         return {
         ...prev,
         ads: updatedAds,
@@ -1344,7 +1344,7 @@ export const CampaignBuilder3: React.FC = () => {
       };
 
       try {
-        await generateCSVWithBackend(
+        const result = await generateCSVWithBackend(
           campaignData.campaignName || 'Campaign 1',
           adGroups.map((group: any) => ({
             name: group.name,
@@ -1359,19 +1359,53 @@ export const CampaignBuilder3: React.FC = () => {
           'ALL_AD_GROUPS'
         );
         
+        // Check if this is an async export (large file)
+        if (result && typeof result === 'object' && (result as any).async === true) {
+          // Save campaign with job_id for later retrieval
+          const asyncResult = result as { async: boolean; job_id: string; estimated_rows: number; message: string };
+          try {
+            await historyService.save('campaign', campaignData.campaignName || 'Campaign 1', {
+              name: campaignData.campaignName,
+              url: campaignData.url,
+              structure: campaignData.selectedStructure || 'stag',
+              keywords: campaignData.selectedKeywords,
+              ads: campaignData.ads,
+              locations: campaignData.locations,
+              intent: campaignData.intent,
+              vertical: campaignData.vertical,
+              cta: campaignData.cta,
+              negativeKeywords: campaignData.negativeKeywords,
+              adGroups: campaignData.adGroups,
+              csvExportJobId: asyncResult.job_id,
+              csvExportStatus: 'processing',
+              csvExportEstimatedRows: asyncResult.estimated_rows,
+              createdAt: new Date().toISOString(),
+            }, 'completed');
+            
+            notifications.success('Campaign saved. CSV will be ready in 2 minutes.', {
+              title: 'Campaign Saved',
+              description: 'Check your saved campaigns in 2 minutes to download the CSV file.',
+              duration: 10000
+            });
+          } catch (saveError) {
+            console.error('Failed to save campaign with job_id:', saveError);
+          }
+          return; // Exit early - async export in progress
+        }
+        
         // If backend export succeeds, also update local state for compatibility
-      const structure = generateCampaignStructure(
-        campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
-        {
-          structureType: campaignData.selectedStructure || 'stag',
-          campaignName: campaignData.campaignName,
-          keywords: campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
-          matchTypes: {
-            broad: campaignData.keywordTypes.broad,
-            phrase: campaignData.keywordTypes.phrase,
-            exact: campaignData.keywordTypes.exact,
-          },
-          url: campaignData.url,
+        const structure = generateCampaignStructure(
+          campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
+          {
+            structureType: campaignData.selectedStructure || 'stag',
+            campaignName: campaignData.campaignName,
+            keywords: campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
+            matchTypes: {
+              broad: campaignData.keywordTypes.broad,
+              phrase: campaignData.keywordTypes.phrase,
+              exact: campaignData.keywordTypes.exact,
+            },
+            url: campaignData.url,
             ads: campaignData.ads,
             negativeKeywords: campaignData.negativeKeywords,
           } as StructureSettings

@@ -8,8 +8,10 @@ import { notifications } from './notifications';
 import { projectId, publicAnonKey } from './supabase/info';
 
 // API Base URL
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-6757d0ca`;
-// For local development, use: const API_BASE = 'http://localhost:8000';
+// For local development, uncomment the line below and comment out the production URL
+const API_BASE = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:8000'
+  : `https://${projectId}.supabase.co/functions/v1/make-server-6757d0ca`;
 
 /**
  * Convert Campaign Builder 1 data to backend request format
@@ -49,6 +51,7 @@ function convertToExportRequest(
 /**
  * Main CSV export function
  * Replaces generateCSV in CampaignBuilder.tsx
+ * Returns void for sync exports, or { async: true, job_id, ... } for async exports
  */
 export async function generateCSVWithBackend(
   campaignName: string,
@@ -97,8 +100,67 @@ export async function generateCSVWithBackend(
       // notifications.dismiss(loadingNotification.id);
     }
 
-    // Check if response is CSV file (success) or JSON (validation errors)
+    // Check if response is CSV file (success) or JSON (validation errors or async)
     const contentType = response.headers.get('content-type') || '';
+    
+    // Check for async export response
+    if (contentType.includes('application/json')) {
+      const jsonData = await response.json();
+      
+      // Check if this is an async export response
+      if (jsonData.async === true && jsonData.job_id) {
+        // Large export - show message
+        notifications.info(
+          `We're processing your request. Please check saved campaigns in 2 minutes to download the CSV.`,
+          {
+            title: 'Large Export in Progress',
+            description: `Your campaign with ${jsonData.estimated_rows} rows is being processed. The CSV will be available in your saved campaigns shortly.`,
+            duration: 15000
+          }
+        );
+        
+        // Return job_id so caller can save it with campaign
+        return {
+          async: true,
+          job_id: jsonData.job_id,
+          estimated_rows: jsonData.estimated_rows,
+          message: jsonData.message
+        } as any;
+      }
+      
+      // Regular validation errors
+      if (jsonData.validation_errors && jsonData.validation_errors.length > 0) {
+        // Handle validation errors (existing code)
+        const errorMessages = jsonData.validation_errors
+          .map((err: any, idx: number) => {
+            const rowInfo = err.row_index ? ` (Row ${err.row_index})` : '';
+            return `${idx + 1}. ${err.field}${rowInfo}: ${err.message}`;
+          })
+          .join('\n');
+
+        const warningMessages = jsonData.warnings && jsonData.warnings.length > 0
+          ? jsonData.warnings
+              .map((warn: any, idx: number) => {
+                const rowInfo = warn.row_index ? ` (Row ${warn.row_index})` : '';
+                return `${idx + 1}. ${warn.field}${rowInfo}: ${warn.message}`;
+              })
+              .join('\n')
+          : '';
+
+        let fullMessage = `Validation failed:\n\n${errorMessages}`;
+        if (warningMessages) {
+          fullMessage += `\n\nWarnings:\n${warningMessages}`;
+        }
+
+        notifications.error(fullMessage, {
+          title: 'CSV Export Failed',
+          description: `Please fix ${jsonData.validation_errors.length} error(s) before exporting.`,
+          duration: 15000,
+          priority: 'high'
+        });
+        return;
+      }
+    }
     
     if (contentType.includes('text/csv')) {
       // Success - download CSV file

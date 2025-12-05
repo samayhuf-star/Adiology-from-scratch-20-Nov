@@ -342,13 +342,14 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 6. Campaign Negative Keywords Block
   blocks.push(BLOCK_HEADERS.CAMPAIGN_NEGATIVE_KEYWORDS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     // Check if campaign has negative keywords
     if (campaign.negative_keywords && Array.isArray(campaign.negative_keywords) && campaign.negative_keywords.length > 0) {
       campaign.negative_keywords.forEach(negativeKw => {
         const matchType = getMatchType(negativeKw);
         const cleanNegative = cleanKeywordText(negativeKw);
         const row = [
-          escapeCSVField(campaign.campaign_name || 'Campaign'),
+          escapeCSVField(campaignName),
           escapeCSVField(cleanNegative),
           escapeCSVField(matchType)
         ];

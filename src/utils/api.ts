@@ -41,14 +41,24 @@ export const api = {
       if (!endpoint.includes('/history/') && !endpoint.includes('/generate-ads')) {
         loggingService.logTransaction('API', `POST ${endpoint}`, { endpoint, bodySize: JSON.stringify(body).length });
       }
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify(body)
-      });
+      // Add timeout using AbortController (15 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      let response;
+      try {
+        response = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${publicAnonKey}`
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         let errorMessage = 'Request failed';

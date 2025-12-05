@@ -5,8 +5,9 @@
 1. **Start Backend Server**
    ```bash
    cd backend
-   python ad_generator_api.py
+   python3 ad_generator_api.py
    # Server should start on http://localhost:8000
+   # Note: On macOS, use 'python3' instead of 'python'
    ```
 
 2. **Verify Endpoint**

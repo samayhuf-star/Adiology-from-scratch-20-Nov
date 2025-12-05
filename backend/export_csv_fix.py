@@ -590,6 +590,25 @@ def validate_csv_content(csv_content: str) -> tuple[bool, List[ValidationError]]
 # MAIN EXPORT FUNCTION
 # ============================================================================
 
+def estimate_export_size(request: CampaignExportRequest) -> int:
+    """
+    Estimate the number of rows that will be generated
+    Returns approximate row count
+    """
+    estimated_rows = 1  # Campaign row
+    
+    for adgroup in request.ad_groups:
+        estimated_rows += 1  # AdGroup row
+        estimated_rows += len(adgroup.get('keywords', []))  # Keywords
+        estimated_rows += len(adgroup.get('ads', []))  # Ads
+        estimated_rows += len(adgroup.get('negativeKeywords', []))  # Negative keywords
+    
+    if request.location_targeting:
+        estimated_rows += len(request.location_targeting.get('locations', []))
+    
+    return estimated_rows
+
+
 def export_campaign_to_csv(request: CampaignExportRequest) -> CSVExportResponse:
     """
     Main function to export campaign to CSV with full validation

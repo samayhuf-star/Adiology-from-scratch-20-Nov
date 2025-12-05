@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     History, Clock, ArrowRight, Trash2, RotateCcw, FileText, 
     Search, Filter, Calendar, AlertCircle, ChevronDown, ChevronUp,
-    Globe, Tag, Hash, Sparkles, Eye, Copy, Download, ExternalLink
+    Globe, Tag, Hash, Sparkles, Eye, Copy, Download, ExternalLink, FileSpreadsheet
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -12,6 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
+
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-6757d0ca`;
 
 interface HistoryItem {
     id: string;
@@ -98,6 +101,84 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         notifications.success('Copied to clipboard!', { title: 'Copied' });
+    };
+
+    const handleDownloadCSV = async (jobId: string, campaignName: string) => {
+        try {
+            notifications.info('Checking CSV status...', {
+                title: 'Downloading CSV',
+                description: 'Please wait while we retrieve your CSV file.',
+                duration: 5000
+            });
+
+            const response = await fetch(`${API_BASE}/export-csv/${jobId}`, {
+                headers: {
+                    'Authorization': `Bearer ${publicAnonKey}`
+                }
+            });
+
+            if (response.status === 404) {
+                notifications.warning('CSV is still being processed. Please check again in a moment.', {
+                    title: 'Processing',
+                    description: 'Your CSV export is still in progress. Try again in a minute.',
+                    duration: 10000
+                });
+                return;
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            
+            if (contentType.includes('text/csv')) {
+                // CSV is ready - download it
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = `${campaignName.replace(/[^a-z0-9]/gi, '_')}_export.csv`;
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="?(.+?)"?$/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+                
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                notifications.success('CSV downloaded successfully!', {
+                    title: 'Download Complete',
+                    description: `Your CSV file "${filename}" has been downloaded.`
+                });
+            } else {
+                // Check status
+                const data = await response.json();
+                if (data.status === 'processing') {
+                    notifications.warning('CSV is still being processed. Please check again in a moment.', {
+                        title: 'Processing',
+                        description: 'Your CSV export is still in progress. Try again in a minute.',
+                        duration: 10000
+                    });
+                } else if (data.status === 'failed') {
+                    notifications.error('CSV export failed', {
+                        title: 'Export Failed',
+                        description: data.error || 'An error occurred during CSV generation.',
+                        duration: 10000
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('CSV download error:', error);
+            notifications.error('Failed to download CSV', {
+                title: 'Download Error',
+                description: error instanceof Error ? error.message : 'An error occurred while downloading the CSV.',
+                duration: 10000
+            });
+        }
     };
 
     const filteredHistory = history.filter(item => {
@@ -537,6 +618,17 @@ export const HistoryPanel = ({ onLoadItem }: HistoryPanelProps) => {
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
+                                                {item.type === 'campaign' && item.data?.csvExportJobId && (
+                                                    <Button 
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleDownloadCSV(item.data.csvExportJobId, item.name)}
+                                                        className="whitespace-nowrap border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                                                    >
+                                                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                                        Download CSV
+                                                    </Button>
+                                                )}
                                                 <Button 
                                                     size="sm"
                                                     onClick={() => onLoadItem(item.type, item.data)}

@@ -5,7 +5,7 @@ import {
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
   DollarSign, Smartphone, MessageSquare, Building2, FileText as FormIcon, 
-  Tag, Image as ImageIcon, Gift, Upload, FileCheck, X
+  Tag, Image as ImageIcon, Gift, Upload, FileCheck, X, MapPin as MapPinIcon
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -1747,7 +1747,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         
         // Use new backend CSV export
         try {
-            await generateCSVWithBackend(
+            const result = await generateCSVWithBackend(
                 campaignNameValue,
                 adGroups.map(group => ({
                     name: group.name,
@@ -1763,6 +1763,36 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 negativeKeywords,
                 ALL_AD_GROUPS_VALUE
             );
+            
+            // Check if this is an async export (large file)
+            if (result && typeof result === 'object' && (result as any).async === true) {
+                // Save campaign with job_id for later retrieval
+                const asyncResult = result as { async: boolean; job_id: string; estimated_rows: number; message: string };
+                try {
+                    await historyService.save('campaign', campaignNameValue, {
+                        name: campaignNameValue,
+                        url: url || '',
+                        structure: structure || 'SKAG',
+                        keywords: selectedKeywords,
+                        ads: generatedAds,
+                        locationTargeting: locationTargeting,
+                        csvExportJobId: asyncResult.job_id,
+                        csvExportStatus: 'processing',
+                        csvExportEstimatedRows: asyncResult.estimated_rows,
+                        createdAt: new Date().toISOString(),
+                    }, 'completed');
+                    
+                    notifications.success('Campaign saved. CSV will be ready in 2 minutes.', {
+                        title: 'Campaign Saved',
+                        description: 'Check your saved campaigns in 2 minutes to download the CSV file.',
+                        duration: 10000
+                    });
+                } catch (saveError) {
+                    console.error('Failed to save campaign with job_id:', saveError);
+                }
+                return; // Exit early - async export in progress
+            }
+            
             return; // Exit early - generateCSVWithBackend handles everything
         } catch (error) {
             console.error('Backend CSV export failed, falling back to local generation:', error);
@@ -4995,10 +5025,49 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             {targetCountry && (
                                 <div className="text-[10px] text-slate-500 mt-0.5">{targetCountry}</div>
                             )}
-                            {manualGeoInput && manualGeoInput.trim() && !zipPreset && !cityPreset && !statePreset && (
-                                <div className="text-[10px] text-slate-500 mt-1 max-w-full truncate" title={manualGeoInput.split(',').slice(0, 5).join(', ')}>
-                                    {manualGeoInput.split(',').slice(0, 3).map(loc => loc.trim()).filter(Boolean).join(', ')}
-                                    {manualGeoInput.split(',').length > 3 ? '...' : ''}
+                            {/* Show preset label or ZIP codes */}
+                            {zipPreset && (
+                                <div className="text-[10px] text-slate-500 mt-1 font-semibold">
+                                    Top {zipPreset.replace(/\D/g, '')} ZIP Codes
+                                </div>
+                            )}
+                            {cityPreset && cityPreset !== '0' && (
+                                <div className="text-[10px] text-slate-500 mt-1 font-semibold">
+                                    Top {cityPreset.replace(/\D/g, '')} Cities
+                                </div>
+                            )}
+                            {cityPreset === '0' && (
+                                <div className="text-[10px] text-slate-500 mt-1 font-semibold">
+                                    All Cities
+                                </div>
+                            )}
+                            {statePreset && (
+                                <div className="text-[10px] text-slate-500 mt-1 font-semibold">
+                                    Top {statePreset.replace(/\D/g, '')} States
+                                </div>
+                            )}
+                            {/* Show actual ZIP codes if manualGeoInput contains them (not placeholder) */}
+                            {manualGeoInput && manualGeoInput.trim() && 
+                             !manualGeoInput.includes('[Auto-Generated') && 
+                             !manualGeoInput.includes('Auto-Generated') &&
+                             (targetType === 'ZIP' || (!zipPreset && !cityPreset && !statePreset)) && (
+                                <div className="text-[10px] text-slate-500 mt-1 max-w-full">
+                                    <div className="flex flex-wrap gap-1">
+                                        {manualGeoInput.split(',').slice(0, 5).map((loc, idx) => {
+                                            const trimmed = loc.trim();
+                                            if (!trimmed) return null;
+                                            return (
+                                                <span key={idx} className="inline-block bg-slate-100 px-1.5 py-0.5 rounded text-[9px] font-mono">
+                                                    {trimmed}
+                                                </span>
+                                            );
+                                        })}
+                                        {manualGeoInput.split(',').filter(l => l.trim()).length > 5 && (
+                                            <span className="inline-block bg-slate-100 px-1.5 py-0.5 rounded text-[9px] text-slate-500">
+                                                +{manualGeoInput.split(',').filter(l => l.trim()).length - 5} more
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </CardContent>
@@ -5966,12 +6035,63 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 )}
 
                                 {csvValidationResults.validation.fatalErrors.length === 0 && csvValidationResults.validation.warnings.length === 0 && (
-                                    <div className="mt-6 p-6 bg-green-50 border border-green-200 rounded-lg text-center">
-                                        <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                                        <h3 className="font-semibold text-green-800 mb-2">All Validations Passed!</h3>
-                                        <p className="text-sm text-green-700">
-                                            Your CSV file is ready for Google Ads Editor import.
-                                        </p>
+                                    <div className="mt-6 space-y-4">
+                                        <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+                                            <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                                            <h3 className="font-semibold text-green-800 mb-2">All Validations Passed!</h3>
+                                            <p className="text-sm text-green-700">
+                                                Your CSV file is ready for Google Ads Editor import.
+                                            </p>
+                                        </div>
+                                        
+                                        {/* ZIP Codes Summary - Show if ZIP codes are selected */}
+                                        {targetType === 'ZIP' && (zipPreset || (manualGeoInput && manualGeoInput.trim() && !manualGeoInput.includes('[Auto-Generated'))) && (
+                                            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/50 rounded-lg p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                                        <MapPinIcon className="w-5 h-5 text-blue-600" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <p className="text-sm font-semibold text-slate-900">
+                                                                {zipPreset
+                                                                    ? `Top ${zipPreset.replace(/\D/g, '')} ZIP Codes`
+                                                                    : 'Custom ZIP Codes'}
+                                                            </p>
+                                                            <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                                                                {zipPreset
+                                                                    ? `${zipPreset.replace(/\D/g, '')} selected`
+                                                                    : manualGeoInput && manualGeoInput.trim()
+                                                                    ? `${manualGeoInput.split(',').filter(z => z.trim()).length} entered`
+                                                                    : '0 selected'}
+                                                            </Badge>
+                                                        </div>
+                                                        {manualGeoInput && manualGeoInput.trim() && !manualGeoInput.includes('[Auto-Generated') && (
+                                                            <div className="mt-2">
+                                                                <p className="text-xs text-slate-600 mb-2">Selected ZIP codes:</p>
+                                                                <div className="flex flex-wrap gap-1.5">
+                                                                    {manualGeoInput.split(',').filter(z => z.trim()).slice(0, 10).map((zip, idx) => (
+                                                                        <Badge key={idx} variant="secondary" className="text-xs bg-white text-slate-700 border-slate-300 font-mono">
+                                                                            {zip.trim()}
+                                                                        </Badge>
+                                                                    ))}
+                                                                    {manualGeoInput.split(',').filter(z => z.trim()).length > 10 && (
+                                                                        <Badge variant="secondary" className="text-xs bg-white text-slate-500 border-slate-300">
+                                                                            +{manualGeoInput.split(',').filter(z => z.trim()).length - 10} more
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {zipPreset && manualGeoInput.includes('[Auto-Generated') && (
+                                                            <p className="text-xs text-slate-600 mt-2">
+                                                                ZIP codes will be generated during CSV export based on population and income data.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

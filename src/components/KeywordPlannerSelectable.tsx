@@ -122,7 +122,7 @@ export const KeywordPlannerSelectable = ({
             const response = await api.post('/generate-keywords', {
                 seeds: seedKeywords,
                 negatives: negativeKeywords
-            });
+            }) as any;
 
             console.log('API Response:', response);
             console.log('Response type:', typeof response);
@@ -189,7 +189,8 @@ export const KeywordPlannerSelectable = ({
                 setErrorMessage('Invalid response format from server');
             }
         } catch (error: any) {
-            console.log('ℹ️ Backend unavailable - using local fallback generation');
+            console.log('ℹ️ Backend unavailable or timeout - using local fallback generation');
+            console.log('Error details:', error.message || error);
             
             // FALLBACK: Generate mock keywords locally when API is unavailable
             // Handle both comma-separated and newline-separated seed keywords
