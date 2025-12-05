@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  ArrowRight, Check, ChevronRight, Download, FileText, Globe, 
+  ArrowRight, Check, ChevronRight, ChevronDown, ChevronUp, Download, FileText, Globe, 
   Layout, Layers, MapPin, Mail, Hash, TrendingUp, Zap, 
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
@@ -44,6 +44,7 @@ import {
 } from '../utils/googleAdGenerator';
 // Old CSV exporter imports removed - using new googleAdsCSVGenerator instead
 import { generateGoogleAdsCSV, validateRows } from '../utils/googleAdsCSVGenerator';
+import Papa from 'papaparse';
 import { AutoFillButton } from './AutoFillButton';
 import { generateCampaignName, generateSeedKeywords, generateNegativeKeywords, generateURL, generateLocationInput } from '../utils/autoFill';
 import {
@@ -991,6 +992,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     const [uploadedCsvFile, setUploadedCsvFile] = useState<File | null>(null);
     const [csvValidationResults, setCsvValidationResults] = useState<any>(null);
     const [isValidatingCsv, setIsValidatingCsv] = useState(false);
+    const [expandedValidationStats, setExpandedValidationStats] = useState<Set<string>>(new Set());
 
     // Initialize campaign name with default date/time format
     useEffect(() => {
@@ -1244,7 +1246,10 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                  setGeneratedKeywords(deduplicatedKeywords);
                  setSelectedKeywords(deduplicatedKeywords.map((k: any) => k.id));
                  setIsGeneratingKeywords(false);
-                    if (loadingToast) loadingToast();
+                 // Always dismiss loading toast
+                 if (loadingToast && typeof loadingToast === 'function') {
+                     loadingToast();
+                 }
                     notifications.success(`Generated ${mockKeywords.length} keywords successfully`, {
                         title: 'Keywords Generated',
                         description: `Found ${mockKeywords.length} keyword suggestions based on your seed keywords.`,
@@ -1267,7 +1272,11 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 const deduplicatedKeywords = removeDuplicateKeywords(data.keywords);
                 setGeneratedKeywords(deduplicatedKeywords);
                 setSelectedKeywords(deduplicatedKeywords.map((k: any) => k.id));
-                if (loadingToast) loadingToast();
+                setIsGeneratingKeywords(false);
+                // Always dismiss loading toast
+                if (loadingToast && typeof loadingToast === 'function') {
+                    loadingToast();
+                }
                 notifications.success(`Generated ${data.keywords.length} keywords successfully`, {
                     title: 'Keywords Generated',
                     description: `Google Ads API found ${data.keywords.length} keyword suggestions. Review and select the ones you want to use.`,                           
@@ -1283,13 +1292,26 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             const deduplicatedKeywords = removeDuplicateKeywords(mockKeywords);
             setGeneratedKeywords(deduplicatedKeywords);
             setSelectedKeywords(deduplicatedKeywords.map((k: any) => k.id));
-            if (loadingToast) loadingToast();
+            setIsGeneratingKeywords(false);
+            // Always dismiss loading toast
+            if (loadingToast && typeof loadingToast === 'function') {
+                loadingToast();
+            }
             notifications.info(`Generated ${mockKeywords.length} keywords using local generation`, {
                 title: 'Keywords Generated (Offline Mode)',
                 description: 'Using local generation. Some features may be limited.',
             });
         } finally {
+            // Ensure loading state is always reset, even if something goes wrong
             setIsGeneratingKeywords(false);
+            // Double-check: dismiss loading toast in finally block as well
+            if (loadingToast && typeof loadingToast === 'function') {
+                try {
+                    loadingToast();
+                } catch (e) {
+                    console.warn('Error dismissing loading toast:', e);
+                }
+            }
         }
     };
 
@@ -2260,90 +2282,129 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     );
 
     // Step 1: Structure & Settings
-    const renderStep1 = () => (
-        <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Campaign Name */}
-            <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-indigo-600" />
-                        Campaign Name
-                    </CardTitle>
-                    <CardDescription>Give your campaign a name to easily identify it later</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="relative">
-                        <Input
-                            value={campaignName}
-                            onChange={(e) => {
-                                setCampaignName(e.target.value);
-                                // Clear validation error when user starts typing
-                                if (campaignNameError) setCampaignNameError('');
-                            }}
-                            placeholder="Enter campaign name"
-                            className={`text-lg py-6 bg-white border-slate-300 focus:border-indigo-500 ${campaignNameError ? 'border-red-500 focus:border-red-500' : ''}`}
-                        />
-                    </div>
-                    {campaignNameError && (
-                        <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
-                            <AlertCircle className="w-4 h-4" />
-                            {campaignNameError}
+    const renderStep1 = () => {
+        // Safety check: ensure all required state variables exist
+        if (typeof campaignName === 'undefined' || typeof structure === 'undefined' || typeof geo === 'undefined') {
+            console.error('CampaignBuilder: Missing required state variables', { campaignName, structure, geo });
+            return (
+                <div className="max-w-5xl mx-auto p-8 text-center">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-semibold text-red-600 mb-2">Initialization Error</h2>
+                    <p className="text-slate-600">Please refresh the page to reload the component.</p>
+                </div>
+            );
+        }
+
+        // Safety check: ensure GEO_SEGMENTATION and GEO_OPTIONS are defined
+        if (!Array.isArray(GEO_SEGMENTATION) || !Array.isArray(GEO_OPTIONS)) {
+            console.error('CampaignBuilder: GEO_SEGMENTATION or GEO_OPTIONS is not an array', { GEO_SEGMENTATION, GEO_OPTIONS });
+            return (
+                <div className="max-w-5xl mx-auto p-8 text-center">
+                    <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-semibold text-red-600 mb-2">Configuration Error</h2>
+                    <p className="text-slate-600">Please refresh the page to reload the component.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Campaign Name */}
+                <Card className="border-slate-200/60 bg-white/60 backdrop-blur-xl shadow-xl">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-indigo-600" />
+                            Campaign Name
+                        </CardTitle>
+                        <CardDescription>Give your campaign a name to easily identify it later</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="relative">
+                            <Input
+                                value={campaignName || ''}
+                                onChange={(e) => {
+                                    setCampaignName(e.target.value);
+                                    // Clear validation error when user starts typing
+                                    if (campaignNameError) setCampaignNameError('');
+                                }}
+                                placeholder="Enter campaign name"
+                                className={`text-lg py-6 bg-white border-slate-300 focus:border-indigo-500 ${campaignNameError ? 'border-red-500 focus:border-red-500' : ''}`}
+                            />
+                        </div>
+                        {campaignNameError && (
+                            <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
+                                <AlertCircle className="w-4 h-4" />
+                                {campaignNameError}
+                            </p>
+                        )}
+                        <p className="text-xs text-slate-500 mt-2">
+                            This name will be used when saving and exporting your campaign
                         </p>
-                    )}
-                    <p className="text-xs text-slate-500 mt-2">
-                        This name will be used when saving and exporting your campaign
-                    </p>
-                </CardContent>
-            </Card>
-
-            {/* Structure & Geo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card className="border-2 border-purple-200/60 bg-gradient-to-br from-purple-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5 text-purple-600"/> Base Structure</CardTitle>
-                        <CardDescription>Choose your campaign structure</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-3 gap-4">
-                        {GEO_SEGMENTATION.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => setStructure(item.id)}
-                                className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
-                                    structure === item.id 
-                                    ? 'border-purple-500 bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-200' 
-                                    : 'border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50'
-                                }`}
-                            >
-                                <item.icon className={`w-6 h-6 ${structure === item.id ? 'text-white' : 'text-purple-600'}`} />
-                                <span className="font-semibold text-sm">{item.name}</span>
-                            </button>
-                        ))}
                     </CardContent>
                 </Card>
 
-                <Card className="border-2 border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-600"/> Geo Strategy</CardTitle>
-                        <CardDescription>Select geographic targeting</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-4 gap-3">
-                        {GEO_OPTIONS.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => setGeo(item.id)}
-                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
-                                    geo === item.id 
-                                    ? 'border-emerald-500 bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-200' 
-                                    : 'border-emerald-200 hover:border-emerald-300 bg-white hover:bg-emerald-50'
-                                }`}
-                            >
-                                <item.icon className={`w-5 h-5 ${geo === item.id ? 'text-white' : 'text-emerald-600'}`} />
-                                <span className="font-semibold text-xs">{item.name}</span>
-                            </button>
-                        ))}
-                    </CardContent>
-                </Card>
-            </div>
+                {/* Structure & Geo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Card className="border-2 border-purple-200/60 bg-gradient-to-br from-purple-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Layers className="w-5 h-5 text-purple-600"/> Base Structure</CardTitle>
+                            <CardDescription>Choose your campaign structure</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-3 gap-4">
+                            {GEO_SEGMENTATION.map(item => {
+                                const IconComponent = item.icon;
+                                if (!IconComponent) {
+                                    console.warn('CampaignBuilder: Missing icon for GEO_SEGMENTATION item', item);
+                                    return null;
+                                }
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setStructure(item.id)}
+                                        className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
+                                            structure === item.id 
+                                            ? 'border-purple-500 bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-200' 
+                                            : 'border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50'
+                                        }`}
+                                    >
+                                        <IconComponent className={`w-6 h-6 ${structure === item.id ? 'text-white' : 'text-purple-600'}`} />
+                                        <span className="font-semibold text-sm">{item.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5 text-emerald-600"/> Geo Strategy</CardTitle>
+                            <CardDescription>Select geographic targeting</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-4 gap-3">
+                            {GEO_OPTIONS.map(item => {
+                                const IconComponent = item.icon;
+                                if (!IconComponent) {
+                                    console.warn('CampaignBuilder: Missing icon for GEO_OPTIONS item', item);
+                                    return null;
+                                }
+                                return (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setGeo(item.id)}
+                                        className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all hover:scale-105 ${
+                                            geo === item.id 
+                                            ? 'border-emerald-500 bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-200' 
+                                            : 'border-emerald-200 hover:border-emerald-300 bg-white hover:bg-emerald-50'
+                                        }`}
+                                    >
+                                        <IconComponent className={`w-5 h-5 ${geo === item.id ? 'text-white' : 'text-emerald-600'}`} />
+                                        <span className="font-semibold text-xs">{item.name}</span>
+                                    </button>
+                                );
+                            })}
+                        </CardContent>
+                    </Card>
+                </div>
 
             {/* Match Type & URL */}
             <Card className="border-2 border-blue-200/60 bg-gradient-to-br from-blue-50/80 to-white/60 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all">
@@ -5592,29 +5653,237 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 </Card>
 
                 {csvValidationResults && (
-                    <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-                        <CardHeader>
-                            <CardTitle>Validation Results</CardTitle>
-                            <CardDescription>
-                                Detailed column-by-column validation report
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div className="p-4 bg-slate-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-slate-800">{csvValidationResults.totalRows}</div>
-                                        <div className="text-sm text-slate-600">Total Rows</div>
+                    <>
+                        {/* Validation Statistics Summary */}
+                        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+                            <CardHeader>
+                                <CardTitle>Validation Statistics</CardTitle>
+                                <CardDescription>
+                                    Click on any row to expand and see details
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-2">
+                                    {/* Errors Row */}
+                                    <div 
+                                        className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg cursor-pointer hover:bg-red-100 transition-colors"
+                                        onClick={() => {
+                                            const newExpanded = new Set(expandedValidationStats);
+                                            if (newExpanded.has('errors')) {
+                                                newExpanded.delete('errors');
+                                            } else {
+                                                newExpanded.add('errors');
+                                            }
+                                            setExpandedValidationStats(newExpanded);
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <AlertCircle className="w-5 h-5 text-red-600" />
+                                            <span className="font-medium">Errors</span>
+                                            <span className="text-red-600 font-bold">{csvValidationResults.validation.fatalErrors.length}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-slate-600">
+                                                {expandedValidationStats.has('errors') ? 'Click to collapse' : 'Click to expand'}
+                                            </span>
+                                            {expandedValidationStats.has('errors') ? (
+                                                <ChevronUp className="w-4 h-4 text-slate-600" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4 text-slate-600" />
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="p-4 bg-red-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-red-600">{csvValidationResults.validation.fatalErrors.length}</div>
-                                        <div className="text-sm text-red-600">Fatal Errors</div>
+                                    {expandedValidationStats.has('errors') && csvValidationResults.validation.fatalErrors.length > 0 && (
+                                        <div className="ml-8 mt-2 space-y-2 max-h-60 overflow-y-auto">
+                                            {csvValidationResults.validation.fatalErrors.map((error: any, idx: number) => (
+                                                <div key={idx} className="p-2 bg-red-50 border border-red-200 rounded text-sm">
+                                                    <span className="font-medium text-red-800">
+                                                        Row {error.rowIndex + 1} • {error.errors.join(', ')}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Warnings Row */}
+                                    <div 
+                                        className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors"
+                                        onClick={() => {
+                                            const newExpanded = new Set(expandedValidationStats);
+                                            if (newExpanded.has('warnings')) {
+                                                newExpanded.delete('warnings');
+                                            } else {
+                                                newExpanded.add('warnings');
+                                            }
+                                            setExpandedValidationStats(newExpanded);
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                                            <span className="font-medium">Warnings</span>
+                                            <span className="text-yellow-600 font-bold">{csvValidationResults.validation.warnings.length}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-slate-600">
+                                                {expandedValidationStats.has('warnings') ? 'Click to collapse' : 'Click to expand'}
+                                            </span>
+                                            {expandedValidationStats.has('warnings') ? (
+                                                <ChevronUp className="w-4 h-4 text-slate-600" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4 text-slate-600" />
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="p-4 bg-yellow-50 rounded-lg">
-                                        <div className="text-2xl font-bold text-yellow-600">{csvValidationResults.validation.warnings.length}</div>
-                                        <div className="text-sm text-yellow-600">Warnings</div>
+                                    {expandedValidationStats.has('warnings') && csvValidationResults.validation.warnings.length > 0 && (
+                                        <div className="ml-8 mt-2 space-y-2 max-h-60 overflow-y-auto">
+                                            {csvValidationResults.validation.warnings.map((warning: any, idx: number) => (
+                                                <div key={idx} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                                                    <span className="font-medium text-yellow-800">
+                                                        {warning.rowIndex !== undefined ? `Row ${warning.rowIndex + 1} • ` : ''}
+                                                        {warning.msg}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Total Rows Row */}
+                                    <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="w-5 h-5 text-blue-600" />
+                                            <span className="font-medium">Total Rows</span>
+                                            <span className="text-blue-600 font-bold">{csvValidationResults.totalRows}</span>
+                                        </div>
+                                        <span className="text-sm text-slate-600">Rows parsed from CSV</span>
                                     </div>
                                 </div>
+
+                                {/* Export Errors & Warnings Button */}
+                                {(csvValidationResults.validation.fatalErrors.length > 0 || csvValidationResults.validation.warnings.length > 0) && (
+                                    <div className="mt-4 pt-4 border-t">
+                                        <Button
+                                            onClick={() => {
+                                                // Get all rows with errors or warnings
+                                                const errorRowIndices = new Set(
+                                                    csvValidationResults.validation.fatalErrors
+                                                        .map((e: any) => e.rowIndex)
+                                                        .filter((idx: number) => idx !== undefined)
+                                                );
+                                                const warningRowIndices = new Set(
+                                                    csvValidationResults.validation.warnings
+                                                        .map((w: any) => w.rowIndex)
+                                                        .filter((idx: number) => idx !== undefined)
+                                                );
+                                                const allProblemIndices = new Set([...errorRowIndices, ...warningRowIndices]);
+
+                                                if (allProblemIndices.size === 0) {
+                                                    notifications.info('No row-level errors or warnings found.', {
+                                                        title: 'No Row Problems'
+                                                    });
+                                                    return;
+                                                }
+
+                                                // Filter rows to only include those with problems
+                                                const problemRows = csvValidationResults.rows.filter((_: any, idx: number) => 
+                                                    allProblemIndices.has(idx)
+                                                );
+
+                                                if (problemRows.length === 0) {
+                                                    notifications.warning('No rows with errors found.', {
+                                                        title: 'No Error Rows'
+                                                    });
+                                                    return;
+                                                }
+
+                                                // Add Problems column
+                                                const allHeaders = csvValidationResults.headers;
+                                                const enhancedHeaders = [...allHeaders, 'Problems'];
+                                                const enhancedRows = problemRows.map((row: any, idx: number) => {
+                                                    const originalIdx = csvValidationResults.rows.indexOf(row);
+                                                    const rowErrors = csvValidationResults.validation.fatalErrors
+                                                        .filter((e: any) => e.rowIndex === originalIdx)
+                                                        .map((e: any) => `ERROR: ${e.errors.join(', ')}`)
+                                                        .join('; ');
+                                                    const rowWarnings = csvValidationResults.validation.warnings
+                                                        .filter((w: any) => w.rowIndex === originalIdx)
+                                                        .map((w: any) => `WARNING: ${w.msg}`)
+                                                        .join('; ');
+                                                    const problems = [rowErrors, rowWarnings].filter(p => p).join('; ');
+                                                    return [...allHeaders.map((h: string) => row[h] || ''), problems];
+                                                });
+
+                                                const csv = Papa.unparse({ 
+                                                    fields: enhancedHeaders, 
+                                                    data: enhancedRows
+                                                });
+                                                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                                                const url = URL.createObjectURL(blob);
+                                                const link = document.createElement('a');
+                                                link.href = url;
+                                                const errorCount = csvValidationResults.validation.fatalErrors.length;
+                                                const warningCount = csvValidationResults.validation.warnings.length;
+                                                link.download = `google-ads-errors-warnings-${errorCount}E-${warningCount}W-${new Date().toISOString().split('T')[0]}.csv`;
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                                URL.revokeObjectURL(url);
+                                                
+                                                notifications.success(`Exported ${problemRows.length} row(s) with ${errorCount} error(s) and ${warningCount} warning(s).`, {
+                                                    title: 'Errors & Warnings Exported',
+                                                    description: `File: ${link.download}`
+                                                });
+                                            }}
+                                            variant="outline"
+                                            className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                                        >
+                                            <AlertCircle className="w-4 h-4 mr-2" />
+                                            Export Errors & Warnings to CSV
+                                        </Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Detailed Results Card (Collapsible) */}
+                        <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl mt-4">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Detailed Validation Results</CardTitle>
+                                        <CardDescription>
+                                            Column-by-column validation report
+                                        </CardDescription>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                            const newExpanded = new Set(expandedValidationStats);
+                                            if (newExpanded.has('details')) {
+                                                newExpanded.delete('details');
+                                            } else {
+                                                newExpanded.add('details');
+                                            }
+                                            setExpandedValidationStats(newExpanded);
+                                        }}
+                                    >
+                                        {expandedValidationStats.has('details') ? (
+                                            <>
+                                                <ChevronUp className="w-4 h-4 mr-2" />
+                                                Collapse
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ChevronDown className="w-4 h-4 mr-2" />
+                                                Expand
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            {expandedValidationStats.has('details') && (
+                                <CardContent>
+                                    <div className="space-y-4">
 
                                 {csvValidationResults.validation.fatalErrors.length > 0 && (
                                     <div className="mt-6">

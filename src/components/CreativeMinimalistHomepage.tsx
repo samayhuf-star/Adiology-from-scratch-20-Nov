@@ -30,13 +30,13 @@ export default function CreativeMinimalistHomepage({
   // Load Microedits script on home page
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'http://app.microedits.com/XGgDKb-.js';
+    script.src = 'https://app.microedits.com/XGgDKb-.js';
     script.async = true;
     document.head.appendChild(script);
 
     return () => {
       // Cleanup: remove script when component unmounts
-      const existingScript = document.querySelector('script[src="http://app.microedits.com/XGgDKb-.js"]');
+      const existingScript = document.querySelector('script[src="https://app.microedits.com/XGgDKb-.js"]');
       if (existingScript) {
         document.head.removeChild(existingScript);
       }

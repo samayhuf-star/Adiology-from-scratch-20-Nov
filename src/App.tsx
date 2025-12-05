@@ -297,8 +297,19 @@ const App = () => {
     };
 
     window.addEventListener('loadHistoryItem', handleLoadHistoryItem as EventListener);
+    
+    // Listen for navigate events from child components (e.g., CampaignBuilder3)
+    const handleNavigate = (event: CustomEvent) => {
+      const { tab } = event.detail;
+      if (tab && typeof tab === 'string') {
+        setActiveTabSafe(tab);
+      }
+    };
+
+    window.addEventListener('navigate', handleNavigate as EventListener);
     return () => {
       window.removeEventListener('loadHistoryItem', handleLoadHistoryItem as EventListener);
+      window.removeEventListener('navigate', handleNavigate as EventListener);
     };
   }, []);
 

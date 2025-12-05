@@ -315,6 +315,14 @@ export const CampaignBuilder3: React.FC = () => {
     }
   }, [currentStep]);
 
+  // Auto-generate ads when step 4 is reached if no ads exist and keywords are available
+  useEffect(() => {
+    if (currentStep === 4 && campaignData.ads.length === 0 && campaignData.selectedKeywords.length > 0 && !loading) {
+      // Auto-generate ads when entering step 4
+      handleGenerateAds();
+    }
+  }, [currentStep]);
+
   // Step 1: URL Input & AI Analysis
   const handleUrlSubmit = async () => {
     if (!campaignData.url || !campaignData.url.trim()) {
@@ -431,36 +439,132 @@ export const CampaignBuilder3: React.FC = () => {
       // Use local autocomplete-based keyword generator directly
       // This ensures we always use the new autocomplete patterns
       console.log('Using autocomplete-based keyword generator');
+      console.log('Seed keywords:', campaignData.seedKeywords);
+      console.log('Negative keywords:', campaignData.negativeKeywords);
+      
+      const seedKeywordsString = campaignData.seedKeywords.join('\n');
+      const negativeKeywordsString = campaignData.negativeKeywords.join('\n');
+      
+      console.log('Calling generateKeywordsUtil with:', {
+        seedKeywords: seedKeywordsString,
+        negativeKeywords: negativeKeywordsString,
+        maxKeywords: 710,
+        minKeywords: 410
+      });
+      
       const localKeywords = generateKeywordsUtil({
-        seedKeywords: campaignData.seedKeywords.join('\n'),
-        negativeKeywords: campaignData.negativeKeywords.join('\n'),
-        vertical: campaignData.vertical || 'default',
+        seedKeywords: seedKeywordsString,
+        negativeKeywords: negativeKeywordsString,
+          vertical: campaignData.vertical || 'default',
         intentResult: campaignData.intent,
         landingPageData: campaignData.landingPageData,
         maxKeywords: 710,
         minKeywords: 410,
       });
 
+      console.log('Generated keywords from utility:', localKeywords.length, localKeywords.slice(0, 10));
+
+      if (!localKeywords || localKeywords.length === 0) {
+        throw new Error('Keyword generator returned no keywords. Please check your seed keywords.');
+      }
+
+      // If we got very few keywords, something went wrong - generate more variations
+      if (localKeywords.length < 50) {
+        console.warn('Keyword generator returned only', localKeywords.length, 'keywords. Generating additional variations...');
+        
+        // Generate additional variations manually
+        const additionalKeywords: any[] = [];
+        const seedList = campaignData.seedKeywords.filter(s => s.trim().length >= 2);
+        const negativeList = campaignData.negativeKeywords.map(n => n.trim().toLowerCase()).filter(Boolean);
+        
+        seedList.forEach((seed, seedIdx) => {
+          const cleanSeed = seed.trim().toLowerCase();
+          if (negativeList.some(neg => cleanSeed.includes(neg))) return;
+          
+          // Generate many variations per seed
+          const variations = [
+            `${cleanSeed} near me`,
+            `best ${cleanSeed}`,
+            `top ${cleanSeed}`,
+            `cheap ${cleanSeed}`,
+            `24/7 ${cleanSeed}`,
+            `emergency ${cleanSeed}`,
+            `${cleanSeed} cost`,
+            `${cleanSeed} price`,
+            `${cleanSeed} services`,
+            `${cleanSeed} company`,
+            `professional ${cleanSeed}`,
+            `licensed ${cleanSeed}`,
+            `same day ${cleanSeed}`,
+            `${cleanSeed} repair`,
+            `${cleanSeed} replacement`,
+            `how to ${cleanSeed}`,
+            `what is ${cleanSeed}`,
+            `where to ${cleanSeed}`,
+            `best ${cleanSeed} near me`,
+            `top ${cleanSeed} near me`,
+            `24/7 ${cleanSeed} near me`,
+            `emergency ${cleanSeed} near me`,
+            `${cleanSeed} services near me`,
+            `${cleanSeed} cost near me`,
+            `${cleanSeed} price near me`,
+            `best ${cleanSeed} cost`,
+            `top ${cleanSeed} services`,
+            `same day ${cleanSeed} repair`,
+            `${cleanSeed} repair cost`,
+            `${cleanSeed} replacement cost`,
+          ];
+          
+          variations.forEach((variation, varIdx) => {
+            if (additionalKeywords.length >= 500) return;
+            if (negativeList.some(neg => variation.includes(neg))) return;
+            if (localKeywords.some(k => k.text.toLowerCase() === variation.toLowerCase())) return;
+            if (additionalKeywords.some(k => k.text.toLowerCase() === variation.toLowerCase())) return;
+            
+            additionalKeywords.push({
+              id: `kw-manual-${seedIdx}-${varIdx}`,
+              text: variation,
+              volume: 'Medium',
+              cpc: '$2.50',
+              type: 'Generated',
+              matchType: 'BROAD'
+            });
+          });
+        });
+        
+        console.log('Generated', additionalKeywords.length, 'additional keyword variations');
+        localKeywords.push(...additionalKeywords);
+      }
+
       const generated = localKeywords.map((kw, index) => ({
-        id: kw.id || `kw-${Date.now()}-${index}`,
-        text: kw.text,
-        keyword: kw.text,
+          id: kw.id || `kw-${Date.now()}-${index}`,
+          text: kw.text,
+          keyword: kw.text,
         matchType: (kw.matchType || 'BROAD').toLowerCase(),
-        volume: kw.volume || 'Medium',
-        cpc: kw.cpc || '$2.50',
-        type: kw.type || 'Generated',
-      }));
+          volume: kw.volume || 'Medium',
+          cpc: kw.cpc || '$2.50',
+          type: kw.type || 'Generated',
+        }));
+
+      console.log('Mapped keywords:', generated.length);
 
       // Generate 410-710 keywords (random range as specified)
       const targetCount = Math.floor(Math.random() * 300) + 410;
       const finalKeywords = generated.slice(0, Math.min(generated.length, targetCount));
+      
+      console.log('Final keywords before filtering:', finalKeywords.length);
 
       // Filter out keywords that match negative keywords
       const negativeList = campaignData.negativeKeywords.map(n => n.trim().toLowerCase()).filter(Boolean);
+      console.log('Negative keywords list:', negativeList);
+      
       const filteredByNegatives = finalKeywords.filter((kw: any) => {
         const keywordText = (kw.text || kw.keyword || '').toLowerCase();
-        return !negativeList.some(neg => keywordText.includes(neg));
+        const shouldExclude = negativeList.some(neg => keywordText.includes(neg));
+        return !shouldExclude;
       });
+      
+      console.log('Keywords after negative filtering:', filteredByNegatives.length);
 
       // Apply match types based on selected keyword types
       const formattedKeywords: any[] = [];
@@ -508,6 +612,13 @@ export const CampaignBuilder3: React.FC = () => {
 
       // Shuffle for variety
       const shuffled = [...formattedKeywords].sort(() => Math.random() - 0.5);
+      
+      console.log('Final formatted keywords count:', shuffled.length);
+      console.log('Sample keywords:', shuffled.slice(0, 10).map(k => k.text));
+
+      if (shuffled.length === 0) {
+        throw new Error('No keywords were generated after formatting. Please check your seed keywords and match type selections.');
+      }
 
       // Generate ad groups based on campaign structure
       const adGroups = generateAdGroupsFromKeywords(shuffled, campaignData.selectedStructure || 'stag');
@@ -524,9 +635,7 @@ export const CampaignBuilder3: React.FC = () => {
 
       notifications.success(`Generated ${shuffled.length} keywords`, {
         title: 'Keywords Generated',
-        description: useFallback 
-          ? `Generated ${shuffled.length} keywords using local generation`
-          : `Successfully generated ${shuffled.length} keywords using AI`
+        description: `Successfully generated ${shuffled.length} keywords using autocomplete patterns`
       });
     } catch (error) {
       console.error('Keyword generation error:', error);
@@ -980,7 +1089,7 @@ export const CampaignBuilder3: React.FC = () => {
 
       if (newAd) {
         setCampaignData(prev => ({
-          ...prev,
+            ...prev,
           ads: [...prev.ads, newAd],
         }));
 
@@ -1010,6 +1119,32 @@ export const CampaignBuilder3: React.FC = () => {
     notifications.info('Ad editing feature coming soon', { title: 'Edit Ad' });
   };
 
+  const handleDuplicateAd = (adId: string) => {
+    const adToDuplicate = campaignData.ads.find(ad => ad.id === adId);
+    if (!adToDuplicate) {
+      notifications.error('Ad not found', { title: 'Error' });
+      return;
+    }
+
+    if (campaignData.ads.length >= 3) {
+      notifications.warning('Maximum 3 ads allowed', { title: 'Limit Reached' });
+      return;
+    }
+
+    const duplicatedAd = {
+      ...adToDuplicate,
+      id: `ad-${Date.now()}-${Math.random()}`,
+      extensions: adToDuplicate.extensions ? [...adToDuplicate.extensions] : [],
+    };
+
+    setCampaignData(prev => ({
+      ...prev,
+      ads: [...prev.ads, duplicatedAd],
+    }));
+
+    notifications.success('Ad duplicated', { title: 'Duplicated' });
+  };
+
   const handleDeleteAd = (adId: string) => {
     setCampaignData(prev => ({
       ...prev,
@@ -1029,22 +1164,81 @@ export const CampaignBuilder3: React.FC = () => {
 
   const handleAddExtension = (adId: string, extensionType: string) => {
     setCampaignData(prev => ({
-      ...prev,
-      ads: prev.ads.map(ad => {
-        if (ad.id === adId) {
-          const newExtension = {
-            id: `ext-${Date.now()}`,
+        ...prev,
+        ads: prev.ads.map(ad => {
+          if (ad.id === adId) {
+          const currentExtensions = Array.isArray(ad.extensions) ? ad.extensions : [];
+          const extensionExists = currentExtensions.some(ext => ext.type === extensionType);
+          if (extensionExists) {
+            return ad; // Don't add duplicate
+          }
+          
+          // Create extension with proper structure based on type
+          const newExtension: any = {
+            id: `ext-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type: extensionType,
-            text: '',
+            extensionType: extensionType,
+            label: extensionType.charAt(0).toUpperCase() + extensionType.slice(1).replace(/([A-Z])/g, ' $1'),
           };
-          return {
+          
+          // Add type-specific default values
+          switch (extensionType) {
+            case 'snippet':
+              newExtension.header = 'Types';
+              newExtension.values = ['Service 1', 'Service 2', 'Service 3'];
+              newExtension.text = `Types: ${newExtension.values.join(', ')}`;
+              break;
+            case 'callout':
+              newExtension.callouts = ['24/7 Support', 'Free Consultation', 'Expert Service'];
+              newExtension.text = newExtension.callouts.join(', ');
+              break;
+            case 'sitelink':
+              newExtension.sitelinks = [
+                { text: 'Contact Us', description: 'Get in touch', url: campaignData.url || '' },
+                { text: 'Services', description: 'Our services', url: campaignData.url || '' }
+              ];
+              newExtension.text = newExtension.sitelinks.map((sl: any) => sl.text).join(', ');
+              break;
+            case 'call':
+              newExtension.phone = '(555) 123-4567';
+              newExtension.phoneNumber = '(555) 123-4567';
+              newExtension.countryCode = 'US';
+              newExtension.text = newExtension.phone;
+              break;
+            case 'price':
+              newExtension.priceQualifier = 'From';
+              newExtension.price = '$99';
+              newExtension.currency = 'USD';
+              newExtension.unit = 'per service';
+              newExtension.text = `${newExtension.priceQualifier} ${newExtension.price} ${newExtension.unit}`;
+              break;
+            default:
+              newExtension.text = newExtension.label;
+          }
+        return {
             ...ad,
-            extensions: [...(ad.extensions || []), newExtension],
+            extensions: [...currentExtensions, newExtension],
           };
         }
         return ad;
       }),
     }));
+  };
+
+  const handleRemoveExtension = (adId: string, extensionId: string) => {
+    setCampaignData(prev => ({
+      ...prev,
+      ads: prev.ads.map(ad => {
+        if (ad.id === adId) {
+          return {
+            ...ad,
+            extensions: (ad.extensions || []).filter(ext => ext.id !== extensionId),
+          };
+        }
+        return ad;
+      }),
+    }));
+    notifications.success('Extension removed', { title: 'Removed' });
   };
 
   const handleAddExtensionToAllAds = (extensionType: string) => {
@@ -1055,22 +1249,79 @@ export const CampaignBuilder3: React.FC = () => {
       return;
     }
 
-    setCampaignData(prev => ({
-      ...prev,
-      ads: prev.ads.map(ad => {
-        const newExtension = {
-          id: `ext-${Date.now()}-${Math.random()}`,
+    setCampaignData(prev => {
+      const updatedAds = prev.ads.map((ad, index) => {
+        // Ensure extensions array exists
+        const currentExtensions = Array.isArray(ad.extensions) ? ad.extensions : [];
+        
+        // Check if this extension type already exists for this ad
+        const extensionExists = currentExtensions.some(ext => ext.type === extensionType);
+        if (extensionExists) {
+          // Extension already exists, don't add duplicate
+          return ad;
+        }
+        
+        // Create unique extension ID
+        const extensionId = `ext-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Create extension with proper structure based on type
+        const newExtension: any = {
+          id: extensionId,
           type: extensionType,
-          text: '',
+          extensionType: extensionType,
+          label: extensionType.charAt(0).toUpperCase() + extensionType.slice(1).replace(/([A-Z])/g, ' $1'),
         };
+        
+        // Add type-specific default values
+        switch (extensionType) {
+          case 'snippet':
+            newExtension.header = 'Types';
+            newExtension.values = ['Service 1', 'Service 2', 'Service 3'];
+            newExtension.text = `Types: ${newExtension.values.join(', ')}`;
+            break;
+          case 'callout':
+            newExtension.callouts = ['24/7 Support', 'Free Consultation', 'Expert Service'];
+            newExtension.text = newExtension.callouts.join(', ');
+            break;
+          case 'sitelink':
+            newExtension.sitelinks = [
+              { text: 'Contact Us', description: 'Get in touch', url: campaignData.url || '' },
+              { text: 'Services', description: 'Our services', url: campaignData.url || '' }
+            ];
+            newExtension.text = newExtension.sitelinks.map((sl: any) => sl.text).join(', ');
+            break;
+          case 'call':
+            newExtension.phone = '(555) 123-4567';
+            newExtension.phoneNumber = '(555) 123-4567';
+            newExtension.countryCode = 'US';
+            newExtension.text = newExtension.phone;
+            break;
+          case 'price':
+            newExtension.priceQualifier = 'From';
+            newExtension.price = '$99';
+            newExtension.currency = 'USD';
+            newExtension.unit = 'per service';
+            newExtension.text = `${newExtension.priceQualifier} ${newExtension.price} ${newExtension.unit}`;
+            break;
+          default:
+            newExtension.text = newExtension.label;
+        }
+        
         return {
           ...ad,
-          extensions: [...(ad.extensions || []), newExtension],
-        };
-      }),
-    }));
+          extensions: [...currentExtensions, newExtension],
+      };
+    });
 
-    notifications.success(`Added ${extensionType} extension to all ads`, {
+        return {
+        ...prev,
+        ads: updatedAds,
+      };
+    });
+
+    // Get extension label for notification
+    const extensionLabel = extensionType.charAt(0).toUpperCase() + extensionType.slice(1).replace(/([A-Z])/g, ' $1');
+    notifications.success(`Added ${extensionLabel} extension to all ${campaignData.ads.length} ad(s)`, {
       title: 'Extension Added'
     });
   };
@@ -1309,147 +1560,147 @@ export const CampaignBuilder3: React.FC = () => {
       </div>
 
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Seed Keywords</CardTitle>
-          <CardDescription>AI-suggested seed keywords based on your URL</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {campaignData.seedKeywords.map((kw, idx) => (
-              <Badge key={idx} variant="secondary">{kw}</Badge>
-            ))}
-          </div>
-          <Textarea
-            placeholder="Enter additional seed keywords (one per line)"
-            value={campaignData.seedKeywords.join('\n')}
-            onChange={(e) => setCampaignData(prev => ({
-              ...prev,
-              seedKeywords: e.target.value.split('\n').filter(k => k.trim())
-            }))}
-            rows={4}
-          />
-          <Button onClick={handleGenerateKeywords} disabled={loading} className="mt-4">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            Generate Keywords
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Negative Keywords</CardTitle>
-          <CardDescription>These keywords will be excluded from generated keywords. You can add or update them.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-3">
-            <Input
-              placeholder="Enter negative keywords (comma-separated, e.g., cheap, discount, cost)"
-              value={campaignData.negativeKeywords.filter(n => !DEFAULT_NEGATIVE_KEYWORDS.includes(n)).join(', ')}
-              onChange={(e) => {
-                const userNegatives = e.target.value.split(',').map(n => n.trim()).filter(n => n.length > 0);
-                // Ensure default negative keywords are always included
-                const combined = [...DEFAULT_NEGATIVE_KEYWORDS, ...userNegatives];
-                setCampaignData(prev => ({
-                  ...prev,
-                  negativeKeywords: combined
-                }));
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const input = e.currentTarget;
-                  const userNegatives = input.value.split(',').map(n => n.trim()).filter(n => n.length > 0);
-                  const combined = [...DEFAULT_NEGATIVE_KEYWORDS, ...userNegatives];
-                  setCampaignData(prev => ({
-                    ...prev,
-                    negativeKeywords: combined
-                  }));
-                  input.value = '';
-                }
-              }}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {campaignData.negativeKeywords.map((neg, idx) => {
-              const isDefault = DEFAULT_NEGATIVE_KEYWORDS.includes(neg);
-              return (
-                <Badge 
-                  key={idx} 
-                  variant="destructive"
-                  className={isDefault ? "cursor-not-allowed opacity-90" : "cursor-pointer hover:opacity-80"}
-                  onClick={() => {
-                    // Only allow removal of non-default keywords
-                    if (!isDefault) {
-                      const updated = campaignData.negativeKeywords.filter((_, i) => i !== idx);
-                      setCampaignData(prev => ({
-                        ...prev,
-                        negativeKeywords: updated
-                      }));
-                    }
-                  }}
-                >
-                  {neg}
-                  {!isDefault && <X className="w-3 h-3 ml-1" />}
-                </Badge>
-              );
-            })}
-          </div>
-          <p className="text-xs text-slate-500">
-            Default negative keywords (highlighted in red) are always kept. You can add more or remove custom ones. These {campaignData.negativeKeywords.length} negative keywords will always be excluded when generating keywords.
-          </p>
-        </CardContent>
-      </Card>
-
-      {campaignData.generatedKeywords.length > 0 && (
-        <>
-          <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Keyword Type Filters</CardTitle>
-              <CardDescription>Toggle keyword types to filter the list</CardDescription>
+              <CardTitle>Seed Keywords</CardTitle>
+              <CardDescription>AI-suggested seed keywords based on your URL</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4">
-                {KEYWORD_TYPES.map(type => (
-                  <div key={type.id} className="flex items-center gap-2">
-                    <Checkbox
-                      id={type.id}
-                      checked={campaignData.keywordTypes[type.id] || false}
-                      onCheckedChange={() => handleKeywordTypeToggle(type.id)}
-                    />
-                    <Label htmlFor={type.id}>{type.label}</Label>
-                  </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {campaignData.seedKeywords.map((kw, idx) => (
+                  <Badge key={idx} variant="secondary">{kw}</Badge>
                 ))}
               </div>
+              <Textarea
+                placeholder="Enter additional seed keywords (one per line)"
+                value={campaignData.seedKeywords.join('\n')}
+                onChange={(e) => setCampaignData(prev => ({
+                  ...prev,
+                  seedKeywords: e.target.value.split('\n').filter(k => k.trim())
+                }))}
+                rows={4}
+              />
+          <Button onClick={handleGenerateKeywords} disabled={loading} className="mt-4">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                Generate Keywords
+              </Button>
             </CardContent>
           </Card>
 
-          <Card className="mb-6">
+      <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Generated Keywords ({filteredKeywords.length})</CardTitle>
-              <CardDescription>Keywords organized by campaign structure: {campaignData.selectedStructure?.toUpperCase() || 'STAG'}</CardDescription>
+              <CardTitle>Negative Keywords</CardTitle>
+              <CardDescription>These keywords will be excluded from generated keywords. You can add or update them.</CardDescription>
             </CardHeader>
+            <CardContent>
+              <div className="mb-3">
+                <Input
+                  placeholder="Enter negative keywords (comma-separated, e.g., cheap, discount, cost)"
+                  value={campaignData.negativeKeywords.filter(n => !DEFAULT_NEGATIVE_KEYWORDS.includes(n)).join(', ')}
+                  onChange={(e) => {
+                    const userNegatives = e.target.value.split(',').map(n => n.trim()).filter(n => n.length > 0);
+                    // Ensure default negative keywords are always included
+                    const combined = [...DEFAULT_NEGATIVE_KEYWORDS, ...userNegatives];
+                    setCampaignData(prev => ({
+                      ...prev,
+                      negativeKeywords: combined
+                    }));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const input = e.currentTarget;
+                      const userNegatives = input.value.split(',').map(n => n.trim()).filter(n => n.length > 0);
+                      const combined = [...DEFAULT_NEGATIVE_KEYWORDS, ...userNegatives];
+                      setCampaignData(prev => ({
+                        ...prev,
+                        negativeKeywords: combined
+                      }));
+                      input.value = '';
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {campaignData.negativeKeywords.map((neg, idx) => {
+                  const isDefault = DEFAULT_NEGATIVE_KEYWORDS.includes(neg);
+                  return (
+                    <Badge 
+                      key={idx} 
+                      variant="destructive"
+                      className={isDefault ? "cursor-not-allowed opacity-90" : "cursor-pointer hover:opacity-80"}
+                      onClick={() => {
+                        // Only allow removal of non-default keywords
+                        if (!isDefault) {
+                          const updated = campaignData.negativeKeywords.filter((_, i) => i !== idx);
+                          setCampaignData(prev => ({
+                            ...prev,
+                            negativeKeywords: updated
+                          }));
+                        }
+                      }}
+                    >
+                      {neg}
+                      {!isDefault && <X className="w-3 h-3 ml-1" />}
+                    </Badge>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-slate-500">
+                Default negative keywords (highlighted in red) are always kept. You can add more or remove custom ones. These {campaignData.negativeKeywords.length} negative keywords will always be excluded when generating keywords.
+              </p>
+            </CardContent>
+          </Card>
+
+          {campaignData.generatedKeywords.length > 0 && (
+        <>
+          <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Keyword Type Filters</CardTitle>
+                <CardDescription>Toggle keyword types to filter the list</CardDescription>
+              </CardHeader>
+              <CardContent>
+              <div className="flex gap-4">
+                  {KEYWORD_TYPES.map(type => (
+                    <div key={type.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={type.id}
+                        checked={campaignData.keywordTypes[type.id] || false}
+                        onCheckedChange={() => handleKeywordTypeToggle(type.id)}
+                      />
+                      <Label htmlFor={type.id}>{type.label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+          <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Generated Keywords ({filteredKeywords.length})</CardTitle>
+                <CardDescription>Keywords organized by campaign structure: {campaignData.selectedStructure?.toUpperCase() || 'STAG'}</CardDescription>
+              </CardHeader>
             <CardContent>
               <ScrollArea className="h-96">
                 <div className="space-y-2">
-                  {filteredKeywords.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <p>No keywords match your filters.</p>
-                      <p className="text-xs mt-2">Try adjusting keyword type filters or negative keywords.</p>
-                    </div>
-                  ) : (
-                    filteredKeywords.map((kw, idx) => (
+                    {filteredKeywords.length === 0 ? (
+                      <div className="text-center py-8 text-slate-500">
+                        <p>No keywords match your filters.</p>
+                        <p className="text-xs mt-2">Try adjusting keyword type filters or negative keywords.</p>
+                      </div>
+                    ) : (
+                      filteredKeywords.map((kw, idx) => (
                       <div key={kw.id || idx} className="flex items-center justify-between p-2 border rounded">
                       <span className="text-sm">{kw.text || kw.keyword || kw}</span>
-                      {kw.matchType && (
+                          {kw.matchType && (
                         <Badge variant="outline">{kw.matchType}</Badge>
-                      )}
-                    </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
         </>
       )}
     </div>
@@ -1516,7 +1767,7 @@ export const CampaignBuilder3: React.FC = () => {
                 <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
                   <span>Total Ads:</span>
                   {loading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-4 h-4 animate-spin" />
                   ) : (
                     <span className="font-semibold">{displayAds.length} / 3</span>
                   )}
@@ -1531,21 +1782,21 @@ export const CampaignBuilder3: React.FC = () => {
                 onClick={() => handleAddNewAd('rsa')}
                 disabled={loading || campaignData.ads.length >= 3 || campaignData.ads.some(ad => ad.type === 'rsa' || ad.adType === 'RSA')}
               >
-                <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
+                    <Plus className="mr-2 w-5 h-5" /> RESP. SEARCH AD
               </Button>
               <Button 
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleAddNewAd('dki')}
                 disabled={loading || campaignData.ads.length >= 3 || campaignData.ads.some(ad => ad.type === 'dki' || ad.adType === 'DKI')}
               >
-                <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
+                    <Plus className="mr-2 w-5 h-5" /> DKI TEXT AD
               </Button>
               <Button 
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white justify-start py-6 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => handleAddNewAd('call')}
                 disabled={loading || campaignData.ads.length >= 3 || campaignData.ads.some(ad => ad.type === 'call' || ad.adType === 'CallOnly')}
               >
-                <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
+                    <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
               </Button>
             </div>
 
@@ -1672,29 +1923,56 @@ export const CampaignBuilder3: React.FC = () => {
                       <div className="mt-4 pt-4 border-t">
                         <Label className="text-xs text-slate-500 mb-2 block">Extensions</Label>
                         <div className="space-y-2">
-                            {ad.extensions.map((ext: any) => (
-                            <div key={ext.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
-                              <div className="flex items-center gap-2">
-                                {ext.type === 'call' && <Phone className="w-4 h-4 text-green-600" />}
-                                {ext.type === 'price' && <DollarSign className="w-4 h-4 text-blue-600" />}
-                                {ext.type === 'message' && <MessageSquare className="w-4 h-4 text-purple-600" />}
-                                {ext.type === 'leadform' && <FileText className="w-4 h-4 text-orange-600" />}
-                                {ext.type === 'promotion' && <Gift className="w-4 h-4 text-pink-600" />}
-                                {ext.type === 'image' && <ImageIcon className="w-4 h-4 text-indigo-600" />}
-                                <span className="text-sm text-slate-700">
-                                  {ext.text || ext.label || ext.type}
+                            {ad.extensions.map((ext: any) => {
+                              // Get extension display text based on type
+                              let displayText = ext.text || ext.label || ext.type;
+                              
+                              if (ext.type === 'snippet' && ext.header && ext.values) {
+                                displayText = `${ext.header}: ${ext.values.join(', ')}`;
+                              } else if (ext.type === 'callout' && ext.callouts && Array.isArray(ext.callouts)) {
+                                displayText = ext.callouts.join(', ');
+                              } else if (ext.type === 'sitelink' && ext.sitelinks && Array.isArray(ext.sitelinks)) {
+                                displayText = ext.sitelinks.map((sl: any) => sl.text || sl.linkText || 'Sitelink').join(', ');
+                              } else if (ext.type === 'call' && (ext.phone || ext.phoneNumber)) {
+                                displayText = ext.phone || ext.phoneNumber;
+                              } else if (ext.type === 'price' && ext.price) {
+                                displayText = `${ext.priceQualifier || 'From'} ${ext.price} ${ext.unit || ''}`.trim();
+                              }
+                              
+                              return (
+                                <div key={ext.id} className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200">
+                                  <div className="flex items-center gap-3 flex-1">
+                                    {ext.type === 'snippet' && <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />}
+                                    {ext.type === 'callout' && <MessageSquare className="w-4 h-4 text-purple-600 flex-shrink-0" />}
+                                    {ext.type === 'sitelink' && <Link2 className="w-4 h-4 text-indigo-600 flex-shrink-0" />}
+                                    {ext.type === 'call' && <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />}
+                                    {ext.type === 'price' && <DollarSign className="w-4 h-4 text-yellow-600 flex-shrink-0" />}
+                                    {ext.type === 'app' && <Smartphone className="w-4 h-4 text-cyan-600 flex-shrink-0" />}
+                                    {ext.type === 'location' && <MapPinIcon className="w-4 h-4 text-red-600 flex-shrink-0" />}
+                                    {ext.type === 'message' && <MessageSquare className="w-4 h-4 text-purple-600 flex-shrink-0" />}
+                                    {ext.type === 'leadform' && <FileText className="w-4 h-4 text-orange-600 flex-shrink-0" />}
+                                    {ext.type === 'promotion' && <Gift className="w-4 h-4 text-pink-600 flex-shrink-0" />}
+                                    {ext.type === 'image' && <ImageIcon className="w-4 h-4 text-indigo-600 flex-shrink-0" />}
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-xs text-slate-500 uppercase font-semibold block mb-1">
+                                        {ext.label || ext.type.charAt(0).toUpperCase() + ext.type.slice(1).replace(/([A-Z])/g, ' $1')}
+                                      </span>
+                                      <span className="text-sm text-slate-700 font-medium block truncate">
+                                        {displayText}
                                 </span>
+                                    </div>
                           </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveExtension(ad.id, ext.id)}
-                                className="text-red-600 hover:text-red-700"
+                                    className="text-red-600 hover:text-red-700 flex-shrink-0"
                               >
                                 <X className="w-4 h-4" />
                               </Button>
                       </div>
-                ))}
+                              );
+                            })}
               </div>
                       </div>
                     )}
@@ -1721,6 +1999,18 @@ export const CampaignBuilder3: React.FC = () => {
           locations: {
             ...prev.locations,
           cities: [...new Set([...prev.locations.cities, ...cities])],
+        },
+      }));
+      autoSaveDraft();
+    };
+
+    const handleStatePreset = (count: number) => {
+      const states = LOCATION_PRESETS.states.slice(0, count);
+      setCampaignData(prev => ({
+        ...prev,
+        locations: {
+          ...prev.locations,
+          states: [...new Set([...prev.locations.states, ...states])],
         },
       }));
       autoSaveDraft();
@@ -1784,119 +2074,181 @@ export const CampaignBuilder3: React.FC = () => {
                 <MapPin className="w-5 h-5 text-indigo-600" />
                 <CardTitle>Specific Locations</CardTitle>
               </div>
+              <CardDescription>
+                {!hasSpecificLocations 
+                  ? 'Add specific cities, states, or ZIP codes to target, or leave empty to target the entire country.'
+                  : `Targeting ${campaignData.locations.cities.length} cities, ${campaignData.locations.states.length} states, and ${campaignData.locations.zipCodes.length} ZIP codes.`
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {!hasSpecificLocations ? (
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <Globe className="w-8 h-8 text-green-600 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-green-800 mb-2">Whole Country Targeting</h3>
-                        <p className="text-sm text-green-700 mb-4">
-                          Your campaign will target the entire country selected above.
-                        </p>
-                        <div className="bg-white rounded p-3 border border-green-200">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-green-800">
-                              Target Country: {campaignData.targetCountry}
-                            </span>
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <div className="space-y-6">
+                {/* State Presets */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">States/Provinces</Label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(10)}>
+                      Top 10 States
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(20)}>
+                      Top 20 States
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(LOCATION_PRESETS.states.length)}>
+                      All States ({LOCATION_PRESETS.states.length})
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Enter states manually (comma-separated, e.g., California, Texas, New York)..."
+                    value={campaignData.locations.states.join(', ')}
+                    onChange={(e) => {
+                      const states = e.target.value.split(',').map(s => s.trim()).filter(s => s);
+                      setCampaignData(prev => ({
+                        ...prev,
+                        locations: { ...prev.locations, states }
+                      }));
+                      autoSaveDraft();
+                    }}
+                    rows={2}
+                  />
+                  {campaignData.locations.states.length > 0 && (
+                    <div className="mt-2 text-xs text-slate-500">
+                      {campaignData.locations.states.length} state(s) selected
+                    </div>
+                  )}
+                </div>
+
+                {/* City Presets */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Cities</Label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(20)}>
+                      Top 20 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(50)}>
+                      Top 50 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(100)}>
+                      Top 100 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(200)}>
+                      Top 200 Cities
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(LOCATION_PRESETS.cities.length)}>
+                      All Cities ({LOCATION_PRESETS.cities.length})
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
+                    value={campaignData.locations.cities.join(', ')}
+                    onChange={(e) => {
+                      const cities = e.target.value.split(',').map(c => c.trim()).filter(c => c);
+                      setCampaignData(prev => ({
+                        ...prev,
+                        locations: { ...prev.locations, cities }
+                      }));
+                      autoSaveDraft();
+                    }}
+                    rows={3}
+                  />
+                  {campaignData.locations.cities.length > 0 && (
+                    <div className="mt-2 text-xs text-slate-500">
+                      {campaignData.locations.cities.length} city/cities selected
+                    </div>
+                  )}
+                </div>
+
+                {/* ZIP Code Presets */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">ZIP Codes</Label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(1000)}>
+                      1,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(5000)}>
+                      5,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(10000)}>
+                      10,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(15000)}>
+                      15,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(30000)}>
+                      30,000 ZIPs
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(LOCATION_PRESETS.zipCodes.length)}>
+                      All ZIPs ({LOCATION_PRESETS.zipCodes.length.toLocaleString()})
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Enter ZIP codes manually (comma-separated, e.g., 10001, 10002, 90210)..."
+                    value={campaignData.locations.zipCodes.join(', ')}
+                    onChange={(e) => {
+                      const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z);
+                      setCampaignData(prev => ({
+                        ...prev,
+                        locations: { ...prev.locations, zipCodes: zips }
+                      }));
+                      autoSaveDraft();
+                    }}
+                    rows={3}
+                  />
+                  {campaignData.locations.zipCodes.length > 0 && (
+                    <div className="mt-2 text-xs text-slate-500">
+                      {campaignData.locations.zipCodes.length.toLocaleString()} ZIP code(s) selected
+                    </div>
+                      )}
+                    </div>
+
+                {/* Summary when locations are selected */}
+                {hasSpecificLocations && (
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-blue-800 mb-1">Specific Location Targeting Active</h4>
+                          <p className="text-sm text-blue-700">
+                            Your campaign will target only the selected locations instead of the entire country.
+                          </p>
+                          <div className="mt-2 text-xs text-blue-600 space-y-1">
+                            {campaignData.locations.states.length > 0 && (
+                              <div>• {campaignData.locations.states.length} State(s)</div>
+                            )}
+                            {campaignData.locations.cities.length > 0 && (
+                              <div>• {campaignData.locations.cities.length} City/Cities</div>
+                            )}
+                            {campaignData.locations.zipCodes.length > 0 && (
+                              <div>• {campaignData.locations.zipCodes.length.toLocaleString()} ZIP Code(s)</div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2 mt-2 text-xs text-green-700">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Nationwide Coverage: All cities, states, and regions within {campaignData.targetCountry} will be included in your campaign targeting.</span>
-                          </div>
+                </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Info when no locations selected */}
+                {!hasSpecificLocations && (
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Globe className="w-5 h-5 text-green-600 mt-0.5" />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-green-800 mb-1">Whole Country Targeting</h4>
+                          <p className="text-sm text-green-700">
+                            Your campaign will target the entire <strong>{campaignData.targetCountry}</strong>. 
+                            All cities, states, and regions within this country will be included.
+                          </p>
+                          <p className="text-xs text-green-600 mt-2">
+                            To target specific locations only, use the preset buttons above or enter locations manually.
+                          </p>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-slate-600 pb-2 border-b">
-                    <div>Country</div>
-                    <div>Cities</div>
-                    <div>Zip Codes</div>
-                    <div>States/Provinces</div>
-                  </div>
-                  
-                  {/* City Presets */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Cities</Label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(20)}>
-                        Top 20 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(50)}>
-                        Top 50 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(100)}>
-                        Top 100 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(200)}>
-                        Top 200 Cities
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleCityPreset(LOCATION_PRESETS.cities.length)}>
-                        All Cities
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-blue-500 text-blue-600">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Manual Entry
-                      </Button>
-                    </div>
-                    <Textarea
-                      placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
-                      value={campaignData.locations.cities.join(', ')}
-                      onChange={(e) => {
-                        const cities = e.target.value.split(',').map(c => c.trim()).filter(c => c);
-                        setCampaignData(prev => ({
-                          ...prev,
-                          locations: { ...prev.locations, cities }
-                        }));
-                        autoSaveDraft();
-                      }}
-                      rows={3}
-                    />
-                  </div>
-
-                  {/* ZIP Code Presets */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Zip Codes</Label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(5000)}>
-                        5000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(10000)}>
-                        10000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(15000)}>
-                        15000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleZipPreset(30000)}>
-                        30000 ZIPs
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-blue-500 text-blue-600">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Manual Entry
-                      </Button>
-                    </div>
-                    <Textarea
-                      placeholder="Enter ZIP codes manually (comma-separated, e.g., 10001, 10002, 90210)..."
-                      value={campaignData.locations.zipCodes.join(', ')}
-                      onChange={(e) => {
-                        const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z);
-                        setCampaignData(prev => ({
-                          ...prev,
-                          locations: { ...prev.locations, zipCodes: zips }
-                        }));
-                        autoSaveDraft();
-                      }}
-                      rows={3}
-                    />
-                    </div>
-                </div>
-              )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -2167,11 +2519,20 @@ export const CampaignBuilder3: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => {
+              // Dispatch custom event for App.tsx to handle
               const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
               window.dispatchEvent(event);
-              if (window.location.hash) {
+              
+              // Fallback: Update URL hash
+              if (window.location.hash !== '#dashboard') {
                 window.location.hash = '#dashboard';
               }
+              
+              // Additional fallback: Try direct navigation after a short delay
+              setTimeout(() => {
+                const event2 = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+                window.dispatchEvent(event2);
+              }, 100);
             }}
           >
             Go to Dashboard
@@ -2572,4 +2933,5 @@ function detectIsProduct(url: string, intent: IntentResult | null): boolean {
   return lowerUrl.includes('shop') || lowerUrl.includes('product') || lowerUrl.includes('buy') || 
          (intent?.intentId === IntentId.PURCHASE);
 }
+
 

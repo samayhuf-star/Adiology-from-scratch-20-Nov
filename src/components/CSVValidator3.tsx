@@ -80,49 +80,67 @@ export const CSVValidator3 = () => {
 
         rows.forEach((row, i) => {
             const rowNum = i + 2; // header row is 1
-            const keywordCell = row['Keyword'] || '';
-            const matchCell = row['Match type'] || '';
-            const detected = detectMatchTypeFormat(keywordCell) || (matchCell ? matchCell.trim() : null);
+            
+            // Get Row Type (check multiple possible column names)
+            const rowType = (row['Row Type'] || row['row type'] || row['RowType'] || '').toString().toUpperCase().trim();
+            
+            // Get keyword and match type values (check multiple possible column names)
+            const keywordValue = (row['Keyword'] || row['keyword'] || '').toString().trim();
+            const matchTypeValue = (row['Match type'] || row['Match Type'] || row['match type'] || '').toString().trim();
+            
+            // Only validate keyword/match type fields for keyword rows
+            // A row is a keyword row if:
+            // 1. Row Type is explicitly KEYWORD or NEGATIVE_KEYWORD, OR
+            // 2. Row Type is missing/empty BUT the row has non-empty Keyword or Match type values
+            const isKeywordRow = rowType === 'KEYWORD' || 
+                                 rowType === 'NEGATIVE_KEYWORD' || 
+                                 (!rowType && (keywordValue || matchTypeValue));
+            
+            if (isKeywordRow) {
+                const keywordCell = keywordValue;
+                const matchCell = matchTypeValue;
+                const detected = detectMatchTypeFormat(keywordCell) || (matchCell ? matchCell.trim() : null);
 
-            if (!keywordCell) {
-                problems.push({ row: rowNum, col: 'Keyword', type: 'missing', message: 'Keyword is empty' });
-            }
-            if (!matchCell) {
-                problems.push({ row: rowNum, col: 'Match type', type: 'missing', message: 'Match type is empty' });
-            }
-            if (matchCell && !ALLOWED_MATCH_TYPES.includes(matchCell.trim())) {
-                problems.push({ 
-                    row: rowNum, 
-                    col: 'Match type', 
-                    type: 'invalid', 
-                    message: `Match type not one of ${ALLOWED_MATCH_TYPES.join(', ')}` 
-                });
-            }
-
-            // Check if keyword format matches declared match type
-            if (keywordCell && matchCell) {
-                if (!isValidKeywordForMatch(keywordCell, matchCell.trim())) {
+                if (!keywordCell) {
+                    problems.push({ row: rowNum, col: 'Keyword', type: 'missing', message: 'Keyword is empty' });
+                }
+                if (!matchCell) {
+                    problems.push({ row: rowNum, col: 'Match type', type: 'missing', message: 'Match type is empty' });
+                }
+                if (matchCell && !ALLOWED_MATCH_TYPES.includes(matchCell.trim())) {
                     problems.push({ 
                         row: rowNum, 
-                        col: 'Keyword', 
-                        type: 'format_mismatch', 
-                        message: `Keyword formatting does not match match type (${matchCell})` 
+                        col: 'Match type', 
+                        type: 'invalid', 
+                        message: `Match type not one of ${ALLOWED_MATCH_TYPES.join(', ')}` 
                     });
                 }
-            }
 
-            // Duplicate detection
-            const norm = (keywordCell || '').toLowerCase().replace(/[\s\u00A0]+/g, ' ').trim();
-            if (norm) {
-                if (seen.has(norm)) {
-                    problems.push({ 
-                        row: rowNum, 
-                        col: 'Keyword', 
-                        type: 'duplicate', 
-                        message: `Duplicate of row ${seen.get(norm)}` 
-                    });
-                } else {
-                    seen.set(norm, rowNum);
+                // Check if keyword format matches declared match type
+                if (keywordCell && matchCell) {
+                    if (!isValidKeywordForMatch(keywordCell, matchCell.trim())) {
+                        problems.push({ 
+                            row: rowNum, 
+                            col: 'Keyword', 
+                            type: 'format_mismatch', 
+                            message: `Keyword formatting does not match match type (${matchCell})` 
+                        });
+                    }
+                }
+
+                // Duplicate detection (only for keyword rows)
+                const norm = (keywordCell || '').toLowerCase().replace(/[\s\u00A0]+/g, ' ').trim();
+                if (norm) {
+                    if (seen.has(norm)) {
+                        problems.push({ 
+                            row: rowNum, 
+                            col: 'Keyword', 
+                            type: 'duplicate', 
+                            message: `Duplicate of row ${seen.get(norm)}` 
+                        });
+                    } else {
+                        seen.set(norm, rowNum);
+                    }
                 }
             }
 
@@ -695,6 +713,91 @@ export const CSVValidator3 = () => {
         });
     }, [headers, rows, problems]);
 
+    // Export only rows with errors and warnings
+    const handleExportErrorsWarnings = useCallback(() => {
+        if (rows.length === 0) {
+            notifications.warning('Please upload and process a file first.', {
+                title: 'No File Processed'
+            });
+            return;
+        }
+
+        if (problems.length === 0) {
+            notifications.info('No errors or warnings found. Nothing to export.', {
+                title: 'No Problems'
+            });
+            return;
+        }
+
+        // Get unique row numbers that have problems (row number in problems is 1-indexed, rows array is 0-indexed)
+        // Row number 0 means header-level issues, so we skip those
+        const problemRowNumbers = new Set(
+            problems
+                .map(p => p.row)
+                .filter(rowNum => rowNum > 0) // Skip header-level problems (row 0)
+        );
+
+        if (problemRowNumbers.size === 0) {
+            notifications.info('No row-level errors or warnings found. All problems are header-level.', {
+                title: 'No Row Problems'
+            });
+            return;
+        }
+
+        // Filter rows to only include those with problems
+        // problems.row is 1-indexed (row 1 = header, row 2 = first data row)
+        // rows array is 0-indexed (index 0 = first data row)
+        // So row number 2 in problems = index 0 in rows
+        const errorRowsWithIndex: Array<{ row: any; index: number; rowNumber: number }> = [];
+        rows.forEach((row, index) => {
+            const rowNumber = index + 2; // Convert 0-indexed to 1-indexed (accounting for header row)
+            if (problemRowNumbers.has(rowNumber)) {
+                errorRowsWithIndex.push({ row, index, rowNumber });
+            }
+        });
+
+        if (errorRowsWithIndex.length === 0) {
+            notifications.warning('No rows with errors found.', {
+                title: 'No Error Rows'
+            });
+            return;
+        }
+
+        // Ensure all headers are included in the CSV
+        const allHeaders = headers.length > 0 ? headers : Object.keys(rows[0] || {});
+        
+        // Add a column to show what problems each row has
+        const enhancedHeaders = [...allHeaders, 'Problems'];
+        const enhancedRows = errorRowsWithIndex.map(({ row, rowNumber }) => {
+            const rowProblems = problems
+                .filter(p => p.row === rowNumber)
+                .map(p => `${p.col}: ${p.message}`)
+                .join('; ');
+            return [...allHeaders.map(h => row[h] || ''), rowProblems];
+        });
+
+        const csv = Papa.unparse({ 
+            fields: enhancedHeaders, 
+            data: enhancedRows
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const errorCount = problems.filter(p => p.row > 0).length;
+        const warningCount = validationStats.warnings;
+        link.download = `google-ads-errors-warnings-${errorCount}E-${warningCount}W-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        notifications.success(`Exported ${errorRowsWithIndex.length} row(s) with ${errorCount} error(s) and ${warningCount} warning(s).`, {
+            title: 'Errors & Warnings Exported',
+            description: `File: ${link.download}`
+        });
+    }, [headers, rows, problems, validationStats]);
+
     // Get cell problem
     const getCellProblem = useCallback((rowIdx: number, col: string): ValidationProblem | undefined => {
         return problems.find(p => p.row === rowIdx + 2 && p.col === col);
@@ -1044,6 +1147,16 @@ export const CSVValidator3 = () => {
                         >
                             <FileText className="w-4 h-4 mr-2" />
                             Export with Errors
+                        </Button>
+                        <Button
+                            onClick={handleExportErrorsWarnings}
+                            disabled={rows.length === 0 || problems.length === 0}
+                            variant="outline"
+                            className="border-red-300 text-red-700 hover:bg-red-50"
+                            title="Export only rows that have errors or warnings"
+                        >
+                            <AlertCircle className="w-4 h-4 mr-2" />
+                            Errors & Warnings Export
                         </Button>
                     </div>
                 )}

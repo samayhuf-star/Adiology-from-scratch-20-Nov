@@ -2964,12 +2964,15 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     }
 
     setIsGeneratingAds(true);
+    let loadingToastId: any = null;
+    let progressToastId: any = null;
     
-    // Show initial loading message
-    const loadingToastId = notifications.loading('Starting ad generation...', {
-      title: 'Generating Ads',
-      description: 'Please wait while we create your ads.',
-    });
+    try {
+      // Show initial loading message
+      loadingToastId = notifications.loading('Starting ad generation...', {
+        title: 'Generating Ads',
+        description: 'Please wait while we create your ads.',
+      });
 
     const baseUrl = url || DEFAULT_URL;
     const adGroups = getDynamicAdGroups();
@@ -2988,12 +2991,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       
       // Update progress message
       try {
-        notifications.dismiss(loadingToastId);
+        if (loadingToastId) {
+          notifications.dismiss(loadingToastId);
+        }
+        if (progressToastId) {
+          notifications.dismiss(progressToastId);
+        }
       } catch (e) {
         // Ignore dismiss errors
       }
       
-      const progressToastId = notifications.loading(
+      progressToastId = notifications.loading(
         `Generating ads for "${group.name}" (${groupIndex + 1}/${adGroups.length})...`,
         {
           title: 'Generating Ads',
@@ -3030,14 +3038,22 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       // Generate RSA Ads (up to MAX_ADS_PER_GROUP total)
       for (let i = 0; i < rsaPerGroup && adsAddedForThisGroup < MAX_ADS_PER_GROUP; i++) {
         try {
-          const response = await api.post('/generate-ads', {
-            keywords: cleanKeywords,
-            adType: 'RSA',
-            count: 1,
-            groupName: group.name,
-            baseUrl: baseUrl,
-            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
-          });
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 30000)
+          );
+          
+          const response = await Promise.race([
+            api.post('/generate-ads', {
+              keywords: cleanKeywords,
+              adType: 'RSA',
+              count: 1,
+              groupName: group.name,
+              baseUrl: baseUrl,
+              systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
+            }),
+            timeoutPromise
+          ]) as any;
 
           if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
             const ad = response.ads[0];
@@ -3056,7 +3072,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             throw new Error('Invalid response structure');
           }
         } catch (error) {
-          console.log('API unavailable, using fallback for RSA');
+          // API unavailable - using fallback (expected behavior)
+          // console.debug('API unavailable, using fallback for RSA');
           const fallbackAd = generateFallbackRSA(group.name, cleanKeywords, i, baseUrl);
           fallbackAd.id = adIdCounter++;
           allGeneratedAds.push(fallbackAd);
@@ -3067,14 +3084,22 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       // Generate DKI Ads (up to MAX_ADS_PER_GROUP total)
       for (let i = 0; i < dkiPerGroup && adsAddedForThisGroup < MAX_ADS_PER_GROUP; i++) {
         try {
-          const response = await api.post('/generate-ads', {
-            keywords: cleanKeywords,
-            adType: 'DKI',
-            count: 1,
-            groupName: group.name,
-            baseUrl: baseUrl,
-            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
-          });
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 30000)
+          );
+          
+          const response = await Promise.race([
+            api.post('/generate-ads', {
+              keywords: cleanKeywords,
+              adType: 'DKI',
+              count: 1,
+              groupName: group.name,
+              baseUrl: baseUrl,
+              systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
+            }),
+            timeoutPromise
+          ]) as any;
 
           if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
             const ad = response.ads[0];
@@ -3091,7 +3116,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             throw new Error('Invalid response structure');
           }
         } catch (error) {
-          console.log('API unavailable, using fallback for DKI');
+          // API unavailable - using fallback (expected behavior)
+          // console.debug('API unavailable, using fallback for DKI');
           const fallbackAd = generateFallbackDKI(group.name, cleanKeywords, i, baseUrl);
           fallbackAd.id = adIdCounter++;
           allGeneratedAds.push(fallbackAd);
@@ -3102,14 +3128,22 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       // Generate Call-Only Ads (up to MAX_ADS_PER_GROUP total)
       for (let i = 0; i < callOnlyPerGroup && adsAddedForThisGroup < MAX_ADS_PER_GROUP; i++) {
         try {
-          const response = await api.post('/generate-ads', {
-            keywords: cleanKeywords,
-            adType: 'CallOnly',
-            count: 1,
-            groupName: group.name,
-            baseUrl: baseUrl,
-            systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
-          });
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 30000)
+          );
+          
+          const response = await Promise.race([
+            api.post('/generate-ads', {
+              keywords: cleanKeywords,
+              adType: 'CallOnly',
+              count: 1,
+              groupName: group.name,
+              baseUrl: baseUrl,
+              systemPrompt: GOOGLE_ADS_SYSTEM_PROMPT
+            }),
+            timeoutPromise
+          ]) as any;
 
           if (response && response.ads && Array.isArray(response.ads) && response.ads.length > 0) {
             const ad = response.ads[0];
@@ -3135,7 +3169,8 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
             throw new Error('Invalid response structure');
           }
         } catch (error) {
-          console.log('API unavailable, using fallback for Call Only');
+          // API unavailable - using fallback (expected behavior)
+          // console.debug('API unavailable, using fallback for Call Only');
           const fallbackAd = generateFallbackCallOnly(group.name, cleanKeywords, i, baseUrl);
           fallbackAd.id = adIdCounter++;
           allGeneratedAds.push(fallbackAd);
@@ -3145,8 +3180,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       
       // Dismiss group progress toast
       try {
-        notifications.dismiss(progressToastId);
-      } catch (e) {}
+        if (progressToastId) {
+          notifications.dismiss(progressToastId);
+        }
+      } catch (e) {
+        // Ignore dismiss errors
+      }
     }
 
       // Apply tracking parameters (UTM) to final URLs
@@ -3183,6 +3222,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     
     // Dismiss any remaining loading toasts
     try {
+      if (loadingToastId) {
+        notifications.dismiss(loadingToastId);
+      }
+      if (progressToastId) {
+        notifications.dismiss(progressToastId);
+      }
       notifications.dismiss('all');
     } catch (e) {
       // Ignore dismiss errors
@@ -3205,11 +3250,38 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       });
     }
     setIsGeneratingAds(false);
+  } catch (error: any) {
+    // Ensure loading state is always reset, even on error
+    console.error('Error generating ads:', error);
+    setIsGeneratingAds(false);
+    
+    // Dismiss any remaining loading toasts
+    try {
+      notifications.dismiss('all');
+    } catch (e) {
+      // Ignore dismiss errors
+    }
+    
+    notifications.error('Failed to generate ads', {
+      title: 'Generation Error',
+      description: error.message || 'An error occurred while generating ads. Please try again.',
+      duration: 5000
+    });
+  } finally {
+    // Double-check: always reset loading state
+    setIsGeneratingAds(false);
+    // Ensure all loading notifications are dismissed
+    try {
+      notifications.dismiss('all');
+    } catch (e) {
+      // Ignore dismiss errors
+    }
+  }
   }, [structureType, selectedKeywords, url, getDynamicAdGroups, campaignName, intentResult, landingPageData]);
 
   // Generate ads when step 3 is reached
   useEffect(() => {
-    if (step === 3) {
+    if (step === 3 && !isGeneratingAds) {
       if (!structureType) {
         return; // Will show error message in renderStep3
       }
@@ -3223,10 +3295,13 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         setSelectedAdGroup(ALL_AD_GROUPS_VALUE);
       }
       
-      // Always generate ads when step 3 is reached with valid data
-      generateAdsForStructure();
+      // Only generate ads if not already generating and we have generated ads count is 0 or user explicitly wants to regenerate
+      // Check if ads already exist to avoid regenerating unnecessarily
+      if (generatedAds.length === 0) {
+        generateAdsForStructure();
+      }
     }
-  }, [step, structureType, selectedKeywords.length, generateAdsForStructure]);
+  }, [step, structureType, selectedKeywords.length, generateAdsForStructure, isGeneratingAds, selectedAdGroup, getDynamicAdGroups, generatedAds.length]);
 
   // Helper functions for ad management (matching Campaign Builder)
   const handleEditAd = (ad: any) => {

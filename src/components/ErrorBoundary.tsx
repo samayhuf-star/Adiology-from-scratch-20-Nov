@@ -37,6 +37,12 @@ class ErrorBoundary extends Component<Props, State> {
             stack: error.stack,
             componentStack: errorInfo.componentStack 
           })
+        }).then((response) => {
+          // Suppress 405 and 404 errors - endpoint may not exist or support POST
+          if (response && !response.ok && response.status !== 405 && response.status !== 404) {
+            // Only log unexpected errors
+            console.debug('Error logging failed:', response.status);
+          }
         }).catch(() => {
           // Silently fail if error logging endpoint doesn't exist or returns an error
         });
