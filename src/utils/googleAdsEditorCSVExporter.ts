@@ -79,6 +79,7 @@ export interface CSVValidationResult {
 
 /**
  * Get match type from keyword format
+ * Returns internal format (e.g., 'NEGATIVE_BROAD')
  */
 function getMatchType(keyword: string): string {
   if (!keyword) return 'BROAD';
@@ -95,6 +96,43 @@ function getMatchType(keyword: string): string {
     return 'NEGATIVE_BROAD';
   }
   return 'BROAD';
+}
+
+/**
+ * Convert match type to Google Ads Editor CSV format
+ * According to google_ads_rules.md Section 11, negative match types should be:
+ * "Negative Broad", "Negative Phrase", "Negative Exact" (with spaces)
+ */
+function formatMatchTypeForCSV(matchType: string, isNegative: boolean = false): string {
+  const upper = matchType.toUpperCase().trim();
+  
+  if (isNegative) {
+    // Convert negative match types to Google Ads Editor format
+    if (upper === 'NEGATIVE_BROAD' || upper === 'NEGATIVE BROAD') {
+      return 'Negative Broad';
+    } else if (upper === 'NEGATIVE_PHRASE' || upper === 'NEGATIVE PHRASE') {
+      return 'Negative Phrase';
+    } else if (upper === 'NEGATIVE_EXACT' || upper === 'NEGATIVE EXACT') {
+      return 'Negative Exact';
+    }
+    // Fallback: if it's already in the correct format, return as is
+    if (matchType.includes('Negative')) {
+      return matchType;
+    }
+    // Default to Negative Broad if it's a negative keyword but format is unclear
+    return 'Negative Broad';
+  } else {
+    // Positive match types: "Broad", "Phrase", "Exact"
+    if (upper === 'BROAD') {
+      return 'Broad';
+    } else if (upper === 'PHRASE') {
+      return 'Phrase';
+    } else if (upper === 'EXACT') {
+      return 'Exact';
+    }
+    // Fallback: capitalize first letter
+    return matchType.charAt(0).toUpperCase() + matchType.slice(1).toLowerCase();
+  }
 }
 
 /**
@@ -247,13 +285,15 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
             const keywordText = typeof negativeKeyword === 'string' ? negativeKeyword : (negativeKeyword as any).keyword || negativeKeyword;
             const matchType = typeof negativeKeyword === 'string' ? getMatchType(keywordText) : ((negativeKeyword as any).matchType || getMatchType(keywordText));
             const cleanedKeyword = cleanKeywordText(keywordText);
+            // Convert to Google Ads Editor format: "Negative Broad", "Negative Phrase", "Negative Exact"
+            const csvMatchType = formatMatchTypeForCSV(matchType, true);
 
             const negativeRow: CSVRow = {
               'Row Type': 'NEGATIVE_KEYWORD',
               'Campaign': campaign.campaign_name || '',
               'AdGroup': adGroup.adgroup_name || '',
               'Negative Keyword': cleanedKeyword,
-              'Match Type': matchType.toUpperCase(),
+              'Match Type': csvMatchType,
               'Operation': 'NEW',
             };
             rows.push(negativeRow);
@@ -488,7 +528,7 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
     if (rowType === 'NEGATIVE_KEYWORD') {
       const campaignName = (row['Campaign'] || '').toString().trim();
       const negativeKeyword = (row['Negative Keyword'] || '').toString().trim();
-      const matchType = (row['Match Type'] || '').toString().toUpperCase();
+      const matchType = (row['Match Type'] || '').toString().trim();
 
       if (!campaignName) {
         errors.push(`Row ${rowNum}: Campaign name is required for Negative Keyword`);
@@ -497,9 +537,15 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
         errors.push(`Row ${rowNum}: Negative Keyword text is required`);
       }
 
-      const validMatchTypes = ['NEGATIVE_BROAD', 'NEGATIVE_PHRASE', 'NEGATIVE_EXACT'];
-      if (matchType && !validMatchTypes.includes(matchType)) {
-        errors.push(`Row ${rowNum}: Invalid Match Type for Negative Keyword "${matchType}"`);
+      // Accept both formats: "Negative Broad" (with spaces) and "NEGATIVE_BROAD" (with underscores)
+      const validMatchTypes = [
+        'Negative Broad', 'Negative Phrase', 'Negative Exact',  // Google Ads Editor format (with spaces)
+        'NEGATIVE_BROAD', 'NEGATIVE_PHRASE', 'NEGATIVE_EXACT', // Internal format (with underscores)
+        'NEGATIVE BROAD', 'NEGATIVE PHRASE', 'NEGATIVE EXACT'  // Alternative format
+      ];
+      const normalizedMatchType = matchType.replace(/_/g, ' '); // Normalize underscores to spaces for comparison
+      if (matchType && !validMatchTypes.some(valid => valid.replace(/_/g, ' ') === normalizedMatchType)) {
+        errors.push(`Row ${rowNum}: Invalid Match Type for Negative Keyword "${matchType}". Expected: "Negative Broad", "Negative Phrase", or "Negative Exact"`);
       }
     }
   });

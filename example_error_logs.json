@@ -1,0 +1,84 @@
+{
+  "timestamp": "2024-12-01T10:30:45.123Z",
+  "endpoint": "/export-csv",
+  "method": "POST",
+  "status": 400,
+  "errors": [
+    {
+      "type": "validation_error",
+      "field": "Final URL",
+      "message": "Final URL is required for ads",
+      "severity": "error",
+      "row_index": null,
+      "ad_id": 1,
+      "ad_group": "Emergency Plumbing"
+    },
+    {
+      "type": "validation_error",
+      "field": "Headlines",
+      "message": "At least 3 headlines are required for Responsive Search Ads",
+      "severity": "error",
+      "row_index": null,
+      "ad_id": 2,
+      "ad_group": "Drain Cleaning"
+    },
+    {
+      "type": "validation_warning",
+      "field": "Headline 1",
+      "message": "Headline 1 truncated from 45 to 30 characters",
+      "severity": "warning",
+      "row_index": 5,
+      "ad_id": 3,
+      "ad_group": "Emergency Plumbing",
+      "original_length": 45,
+      "truncated_length": 30
+    },
+    {
+      "type": "validation_warning",
+      "field": "Description 1",
+      "message": "Description 1 truncated from 120 to 90 characters",
+      "severity": "warning",
+      "row_index": 5,
+      "ad_id": 3,
+      "ad_group": "Emergency Plumbing",
+      "original_length": 120,
+      "truncated_length": 90
+    },
+    {
+      "type": "validation_error",
+      "field": "Path1",
+      "message": "Path1 exceeds 15 characters (18 chars)",
+      "severity": "error",
+      "row_index": 6,
+      "ad_id": 4,
+      "ad_group": "Drain Cleaning",
+      "value": "verylongpathname",
+      "max_length": 15
+    }
+  ],
+  "request_data": {
+    "campaign_name": "Plumbing Services - Local",
+    "ad_groups_count": 2,
+    "ads_count": 4,
+    "keywords_count": 10
+  },
+  "backend_errors": [
+    {
+      "type": "pydantic_validation_error",
+      "field": "ad_groups[0].ads[0].finalUrl",
+      "message": "field required",
+      "input": null
+    }
+  ],
+  "csv_validation_errors": [
+    {
+      "row_index": 5,
+      "field": "Row",
+      "message": "Row 5 has 48 fields, expected 51",
+      "severity": "error"
+    }
+  ],
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+  "ip_address": "192.168.1.100"
+}
+

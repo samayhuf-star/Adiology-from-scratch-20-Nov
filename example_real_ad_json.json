@@ -1,0 +1,143 @@
+{
+  "campaign_name": "Plumbing Services - Local",
+  "ad_groups": [
+    {
+      "name": "Emergency Plumbing",
+      "keywords": [
+        "emergency plumber",
+        "24/7 plumber",
+        "plumber near me",
+        "\"emergency plumbing service\"",
+        "[urgent plumber]"
+      ],
+      "negativeKeywords": [
+        "-free",
+        "-\"plumber jobs\"",
+        "-[plumber salary]"
+      ],
+      "defaultMaxCPC": 5.50
+    },
+    {
+      "name": "Drain Cleaning",
+      "keywords": [
+        "drain cleaning",
+        "clogged drain",
+        "drain repair",
+        "\"drain cleaning service\"",
+        "[hydro jetting]"
+      ],
+      "negativeKeywords": [
+        "-free",
+        "-diy"
+      ]
+    }
+  ],
+  "generated_ads": [
+    {
+      "id": 1,
+      "type": "rsa",
+      "adGroup": "Emergency Plumbing",
+      "headline1": "24/7 Emergency Plumber",
+      "headline2": "Licensed & Insured",
+      "headline3": "Same Day Service",
+      "headline4": "Fast Response Time",
+      "headline5": "Expert Plumbers",
+      "headline6": "Available Now",
+      "headline7": "Trusted Service",
+      "headline8": "Professional Team",
+      "headline9": "Emergency Repairs",
+      "headline10": "24 Hour Service",
+      "headline11": "Local Plumbers",
+      "headline12": "Quick Response",
+      "headline13": "Reliable Service",
+      "headline14": "Expert Technicians",
+      "headline15": "Call Now",
+      "description1": "Professional emergency plumbing services available 24/7. Licensed, insured plumbers ready to help with any plumbing emergency.",
+      "description2": "Fast response times, fair pricing, and quality workmanship. Same-day service available. Call now for immediate assistance.",
+      "description3": "Trusted by thousands of homeowners. Expert plumbers with years of experience. Satisfaction guaranteed.",
+      "description4": "Don't wait - call our emergency plumber hotline now. We're available 24 hours a day, 7 days a week.",
+      "finalUrl": "https://www.example-plumbing.com/emergency",
+      "path1": "emergency",
+      "path2": "plumber",
+      "selected": true
+    },
+    {
+      "id": 2,
+      "type": "dki",
+      "adGroup": "Emergency Plumbing",
+      "headline1": "{KeyWord:Emergency Plumber} - 24/7",
+      "headline2": "Call {KeyWord:Emergency Plumber} Now",
+      "headline3": "Trusted {KeyWord:Emergency Plumber}",
+      "headline4": "Fast {KeyWord:Emergency Plumber} Service",
+      "headline5": "Expert {KeyWord:Emergency Plumber}",
+      "description1": "Need a {KeyWord:Emergency Plumber}? We're available 24/7 for all your plumbing emergencies. Licensed and insured.",
+      "description2": "Fast response times and quality service. Call our {KeyWord:Emergency Plumber} hotline now for immediate help.",
+      "finalUrl": "https://www.example-plumbing.com/emergency-plumber",
+      "path1": "emergency",
+      "path2": "service",
+      "selected": true
+    },
+    {
+      "id": 3,
+      "type": "callonly",
+      "adGroup": "Emergency Plumbing",
+      "headline1": "Emergency Plumber - Call Now",
+      "headline2": "24/7 Plumbing Service",
+      "headline3": "Licensed Professionals",
+      "description1": "Emergency plumbing services available 24/7. Call now for immediate assistance.",
+      "description2": "Fast response times. Licensed and insured. Satisfaction guaranteed.",
+      "finalUrl": "https://www.example-plumbing.com",
+      "phone": "+1-555-123-4567",
+      "businessName": "Example Plumbing Co",
+      "selected": true
+    },
+    {
+      "id": 4,
+      "type": "rsa",
+      "adGroup": "Drain Cleaning",
+      "headline1": "Professional Drain Cleaning",
+      "headline2": "Clogged Drain Service",
+      "headline3": "Expert Drain Repair",
+      "headline4": "Hydro Jetting Available",
+      "headline5": "Same Day Service",
+      "headline6": "Licensed Technicians",
+      "headline7": "Fast Drain Cleaning",
+      "headline8": "Affordable Prices",
+      "headline9": "Trusted Service",
+      "headline10": "Call Today",
+      "description1": "Professional drain cleaning services for clogged drains, sewer lines, and more. Fast, reliable service.",
+      "description2": "Expert technicians with advanced equipment. Same-day service available. Free estimates. Call now!",
+      "description3": "Don't let a clogged drain ruin your day. Our professional drain cleaning service gets the job done right.",
+      "description4": "Licensed and insured drain cleaning experts. We use hydro jetting and other advanced techniques.",
+      "finalUrl": "https://www.example-plumbing.com/drain-cleaning",
+      "path1": "drain",
+      "path2": "cleaning",
+      "selected": true
+    }
+  ],
+  "location_targeting": {
+    "country": "United States",
+    "states": [
+      "California",
+      "Texas",
+      "New York"
+    ],
+    "cities": [
+      "New York",
+      "Los Angeles",
+      "Chicago",
+      "Houston",
+      "Phoenix"
+    ],
+    "zipCodes": []
+  },
+  "budget": 100.0,
+  "bidding_strategy": "MANUAL_CPC",
+  "negative_keywords": [
+    "free",
+    "cheap",
+    "diy",
+    "how to"
+  ]
+}
+

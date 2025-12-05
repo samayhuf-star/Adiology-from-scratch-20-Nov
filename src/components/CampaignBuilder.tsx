@@ -46,6 +46,7 @@ import {
 import { generateGoogleAdsCSV, validateRows } from '../utils/googleAdsCSVGenerator';
 import Papa from 'papaparse';
 import { AutoFillButton } from './AutoFillButton';
+import { generateCSVWithBackend } from '../utils/csvExportBackend';
 import { generateCampaignName, generateSeedKeywords, generateNegativeKeywords, generateURL, generateLocationInput } from '../utils/autoFill';
 import {
     validateURL,
@@ -1719,6 +1720,54 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         const adGroups = getDynamicAdGroups();
         const campaignNameValue = campaignName || 'Campaign 1';
         const baseUrl = formatURL(url || 'www.example.com');
+        
+        // Prepare location targeting for backend
+        const locationTargeting: any = {
+            locations: []
+        };
+        
+        // Add country
+        if (targetCountry) {
+            locationTargeting.locations.push({
+                type: 'COUNTRY',
+                code: targetCountry
+            });
+        }
+        
+        // Parse manual geo input based on target type
+        if (manualGeoInput && manualGeoInput.trim()) {
+            const locations = manualGeoInput.split(',').map(loc => loc.trim()).filter(loc => loc.length > 0);
+            locations.forEach(loc => {
+                locationTargeting.locations.push({
+                    type: targetType.toUpperCase(),
+                    code: loc
+                });
+            });
+        }
+        
+        // Use new backend CSV export
+        try {
+            await generateCSVWithBackend(
+                campaignNameValue,
+                adGroups.map(group => ({
+                    name: group.name,
+                    keywords: group.keywords || [],
+                    negativeKeywords: negativeKeywords.split('\n').filter(k => k.trim())
+                })),
+                generatedAds.filter(ad => 
+                    (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
+                ),
+                locationTargeting.locations.length > 0 ? locationTargeting : undefined,
+                undefined, // budget
+                'MANUAL_CPC', // bidding strategy
+                negativeKeywords,
+                ALL_AD_GROUPS_VALUE
+            );
+            return; // Exit early - generateCSVWithBackend handles everything
+        } catch (error) {
+            console.error('Backend CSV export failed, falling back to local generation:', error);
+            // Fall through to local generation below
+        }
         
         // Google Ads Editor compatible CSV format - all required columns
         // Following Google Ads Editor import format guidelines

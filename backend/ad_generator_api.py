@@ -6,11 +6,17 @@ Can be deployed as a Supabase Edge Function or standalone API
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import List, Optional
 import json
 
 from ad_generator_fallback import generate_ads, detect_business_type
+from export_csv_fix import (
+    CampaignExportRequest,
+    CSVExportResponse,
+    export_campaign_to_csv
+)
 
 app = FastAPI(title="Adiology Ad Generator Fallback API")
 
@@ -82,6 +88,35 @@ async def health_check():
     return {"status": "healthy", "service": "ad_generator_fallback"}
 
 
+@app.post("/export-csv", response_model=CSVExportResponse)
+async def export_csv_endpoint(request: CampaignExportRequest):
+    """
+    Export campaign to Google Ads Editor CSV format with full validation
+    """
+    try:
+        result = export_campaign_to_csv(request)
+        
+        # If successful, return CSV file
+        if result.success and result.csv_content:
+            return Response(
+                content=result.csv_content,
+                media_type="text/csv; charset=utf-8",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{result.filename}"',
+                    "Content-Type": "text/csv; charset=utf-8"
+                }
+            )
+        
+        # If validation failed, return JSON with errors
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"CSV export failed: {str(e)}"
+        )
+
+
 @app.get("/")
 async def root():
     """Root endpoint with API info"""
@@ -90,6 +125,7 @@ async def root():
         "version": "1.0.0",
         "endpoints": {
             "POST /generate": "Generate ads for services or products",
+            "POST /export-csv": "Export campaign to Google Ads Editor CSV",
             "GET /health": "Health check"
         }
     }

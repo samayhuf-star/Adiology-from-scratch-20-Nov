@@ -512,18 +512,63 @@ export const CSVValidator3 = () => {
                 // Fix match type for keywords
                 if (copy['Row Type'] === 'KEYWORD' || copy['Row Type'] === 'NEGATIVE_KEYWORD') {
                     if (!copy['Match Type'] && !copy['match type']) {
-                        const detected = detectMatchTypeFormat(copy['Keyword']?.toString() || '');
+                        const detected = detectMatchTypeFormat(copy['Keyword']?.toString() || copy['Negative Keyword']?.toString() || '');
                         if (detected) {
-                            copy['Match Type'] = detected.toUpperCase();
-                            changed.push(`set Match Type to ${detected.toUpperCase()}`);
+                            // For negative keywords, use Google Ads Editor format: "Negative Broad"
+                            if (copy['Row Type'] === 'NEGATIVE_KEYWORD') {
+                                const negativeFormat = detected.toUpperCase() === 'EXACT' ? 'Negative Exact' :
+                                                      detected.toUpperCase() === 'PHRASE' ? 'Negative Phrase' : 'Negative Broad';
+                                copy['Match Type'] = negativeFormat;
+                                changed.push(`set Match Type to ${negativeFormat}`);
+                            } else {
+                                // For positive keywords, use standard format: "Broad", "Phrase", "Exact"
+                                copy['Match Type'] = detected.charAt(0).toUpperCase() + detected.slice(1).toLowerCase();
+                                changed.push(`set Match Type to ${copy['Match Type']}`);
+                            }
                         } else {
-                            copy['Match Type'] = 'BROAD';
-                            changed.push('set Match Type to BROAD (default)');
+                            // Default match type
+                            if (copy['Row Type'] === 'NEGATIVE_KEYWORD') {
+                                copy['Match Type'] = 'Negative Broad';
+                                changed.push('set Match Type to Negative Broad (default)');
+                            } else {
+                                copy['Match Type'] = 'Broad';
+                                changed.push('set Match Type to Broad (default)');
+                            }
                         }
                     } else {
                         // Normalize match type
-                        const matchType = (copy['Match Type'] || copy['match type'] || '').toString().toUpperCase().trim();
-                        copy['Match Type'] = matchType;
+                        const matchType = (copy['Match Type'] || copy['match type'] || '').toString().trim();
+                        
+                        // For negative keywords, ensure proper format
+                        if (copy['Row Type'] === 'NEGATIVE_KEYWORD') {
+                            const upper = matchType.toUpperCase();
+                            if (upper === 'BROAD' || upper === 'NEGATIVE_BROAD' || upper === 'NEGATIVE BROAD') {
+                                copy['Match Type'] = 'Negative Broad';
+                            } else if (upper === 'PHRASE' || upper === 'NEGATIVE_PHRASE' || upper === 'NEGATIVE PHRASE') {
+                                copy['Match Type'] = 'Negative Phrase';
+                            } else if (upper === 'EXACT' || upper === 'NEGATIVE_EXACT' || upper === 'NEGATIVE EXACT') {
+                                copy['Match Type'] = 'Negative Exact';
+                            } else if (!matchType.includes('Negative')) {
+                                // If it doesn't contain "Negative", add it
+                                copy['Match Type'] = 'Negative ' + matchType.charAt(0).toUpperCase() + matchType.slice(1).toLowerCase();
+                                changed.push(`normalized negative match type to ${copy['Match Type']}`);
+                            } else {
+                                // Already in correct format, just normalize capitalization
+                                copy['Match Type'] = matchType.charAt(0).toUpperCase() + matchType.slice(1).toLowerCase();
+                            }
+                        } else {
+                            // For positive keywords, normalize to "Broad", "Phrase", "Exact"
+                            const upper = matchType.toUpperCase();
+                            if (upper === 'BROAD') {
+                                copy['Match Type'] = 'Broad';
+                            } else if (upper === 'PHRASE') {
+                                copy['Match Type'] = 'Phrase';
+                            } else if (upper === 'EXACT') {
+                                copy['Match Type'] = 'Exact';
+                            } else {
+                                copy['Match Type'] = matchType.charAt(0).toUpperCase() + matchType.slice(1).toLowerCase();
+                            }
+                        }
                     }
                 }
 

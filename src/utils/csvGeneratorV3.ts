@@ -51,7 +51,7 @@ const ENUMS = {
   CRITERION_TYPE: ['Broad', 'Phrase', 'Exact'],
   CAMPAIGN_TYPE: ['Search', 'Display', 'Shopping', 'Video', 'Smart', 'Performance Max'],
   AD_TYPE: ['Responsive search ad', 'Expanded text ad', 'Dynamic search ad'],
-  MATCH_TYPE: ['Broad', 'Phrase', 'Exact', 'Broad (Negative)', 'Phrase (Negative)', 'Exact (Negative)']
+  MATCH_TYPE: ['Broad', 'Phrase', 'Exact', 'Negative Broad', 'Negative Phrase', 'Negative Exact']
 };
 
 export interface CSVValidationResult {
@@ -80,19 +80,21 @@ function escapeCSVField(value: string | number | undefined | null): string {
 
 /**
  * Get match type from keyword format
+ * Returns Google Ads Editor format: "Broad", "Phrase", "Exact", "Negative Broad", "Negative Phrase", "Negative Exact"
  */
 function getMatchType(keyword: string): string {
+  if (!keyword || typeof keyword !== 'string') return 'Broad';
   const trimmed = keyword.trim();
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     return 'Exact';
   } else if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
     return 'Phrase';
   } else if (trimmed.startsWith('-[') && trimmed.endsWith(']')) {
-    return 'Exact (Negative)';
+    return 'Negative Exact';
   } else if (trimmed.startsWith('-"') && trimmed.endsWith('"')) {
-    return 'Phrase (Negative)';
+    return 'Negative Phrase';
   } else if (trimmed.startsWith('-')) {
-    return 'Broad (Negative)';
+    return 'Negative Broad';
   }
   return 'Broad';
 }
@@ -258,8 +260,10 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 1. Campaigns Block
   blocks.push(BLOCK_HEADERS.CAMPAIGNS);
   structure.campaigns.forEach(campaign => {
+    // Ensure campaign name is never undefined
+    const campaignName = campaign.campaign_name || 'Campaign';
     const row = [
-      escapeCSVField(campaign.campaign_name),
+      escapeCSVField(campaignName),
       escapeCSVField('Enabled'), // Campaign Status
       escapeCSVField('Search'), // Campaign Type
       escapeCSVField('Search Network'), // Networks
@@ -287,10 +291,11 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 4. Ad Groups Block
   blocks.push(BLOCK_HEADERS.AD_GROUPS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
       const row = [
-        escapeCSVField(campaign.campaign_name),
-        escapeCSVField(adGroup.adgroup_name),
+        escapeCSVField(campaignName),
+        escapeCSVField(adGroup.adgroup_name || 'Ad Group'),
         escapeCSVField('Enabled'), // Ad Group Status
         escapeCSVField(''), // CPC Bid
         escapeCSVField(''), // Ad Group Default Max CPC
@@ -304,49 +309,67 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 5. Keywords Block
   blocks.push(BLOCK_HEADERS.KEYWORDS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
-      adGroup.keywords.forEach(keyword => {
-        const matchType = getMatchType(keyword);
-        const cleanKeyword = cleanKeywordText(keyword);
-        const defaultUrl = adGroup.ads && adGroup.ads.length > 0 
-          ? (adGroup.ads[0].final_url || 'https://www.example.com')
-          : 'https://www.example.com';
-        
-        const row = [
-          escapeCSVField(campaign.campaign_name),
-          escapeCSVField(adGroup.adgroup_name),
-          escapeCSVField(cleanKeyword),
-          escapeCSVField(matchType),
-          escapeCSVField(defaultUrl),
-          escapeCSVField('Enabled'),
-          escapeCSVField('') // Custom Parameter
-        ];
-        blocks.push(row.join(','));
-      });
+      if (adGroup.keywords && Array.isArray(adGroup.keywords) && adGroup.keywords.length > 0) {
+        adGroup.keywords.forEach(keyword => {
+          // Skip negative keywords here - they go in negative keyword blocks
+          if (typeof keyword === 'string' && keyword.trim().startsWith('-')) {
+            return;
+          }
+          const matchType = getMatchType(keyword);
+          const cleanKeyword = cleanKeywordText(keyword);
+          const defaultUrl = adGroup.ads && adGroup.ads.length > 0 
+            ? (adGroup.ads[0].final_url || 'https://www.example.com')
+            : 'https://www.example.com';
+          
+          const row = [
+            escapeCSVField(campaignName),
+            escapeCSVField(adGroup.adgroup_name || 'Ad Group'),
+            escapeCSVField(cleanKeyword),
+            escapeCSVField(matchType),
+            escapeCSVField(defaultUrl),
+            escapeCSVField('Enabled'),
+            escapeCSVField('') // Custom Parameter
+          ];
+          blocks.push(row.join(','));
+        });
+      }
     });
   });
   blocks.push(''); // Blank line between blocks
   
   // 6. Campaign Negative Keywords Block
   blocks.push(BLOCK_HEADERS.CAMPAIGN_NEGATIVE_KEYWORDS);
-  // Collect campaign-level negative keywords if any
   structure.campaigns.forEach(campaign => {
-    // Check if campaign has negative keywords (would need to be added to structure)
-    // For now, skip if not present
+    // Check if campaign has negative keywords
+    if (campaign.negative_keywords && Array.isArray(campaign.negative_keywords) && campaign.negative_keywords.length > 0) {
+      campaign.negative_keywords.forEach(negativeKw => {
+        const matchType = getMatchType(negativeKw);
+        const cleanNegative = cleanKeywordText(negativeKw);
+        const row = [
+          escapeCSVField(campaign.campaign_name || 'Campaign'),
+          escapeCSVField(cleanNegative),
+          escapeCSVField(matchType)
+        ];
+        blocks.push(row.join(','));
+      });
+    }
   });
   blocks.push(''); // Blank line between blocks
   
   // 7. Ad Group Negative Keywords Block
   blocks.push(BLOCK_HEADERS.AD_GROUP_NEGATIVE_KEYWORDS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
-      if (adGroup.negative_keywords && adGroup.negative_keywords.length > 0) {
+      if (adGroup.negative_keywords && Array.isArray(adGroup.negative_keywords) && adGroup.negative_keywords.length > 0) {
         adGroup.negative_keywords.forEach(negativeKw => {
           const matchType = getMatchType(negativeKw);
           const cleanNegative = cleanKeywordText(negativeKw);
           const row = [
-            escapeCSVField(campaign.campaign_name),
-            escapeCSVField(adGroup.adgroup_name),
+            escapeCSVField(campaignName),
+            escapeCSVField(adGroup.adgroup_name || 'Ad Group'),
             escapeCSVField(cleanNegative),
             escapeCSVField(matchType)
           ];
@@ -360,12 +383,13 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 8. RSA Ads Block
   blocks.push(BLOCK_HEADERS.RSA_ADS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
       adGroup.ads.forEach(ad => {
         if (ad.type === 'rsa' || ad.type === 'dki') {
           const row = [
-            escapeCSVField(campaign.campaign_name),
-            escapeCSVField(adGroup.adgroup_name),
+            escapeCSVField(campaignName),
+            escapeCSVField(adGroup.adgroup_name || 'Ad Group'),
             escapeCSVField('Responsive search ad'),
             escapeCSVField('Enabled'),
             escapeCSVField(ad.final_url || 'https://www.example.com'),
@@ -405,6 +429,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 12. Sitelink Extensions Block
   blocks.push(BLOCK_HEADERS.SITELINK_EXTENSIONS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
       adGroup.ads.forEach(ad => {
         if (ad.extensions && Array.isArray(ad.extensions)) {
@@ -413,7 +438,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
               const links = ext.links || ext.sitelinks || [];
               links.forEach((link: any) => {
                 const row = [
-                  escapeCSVField(campaign.campaign_name),
+                  escapeCSVField(campaignName),
                   escapeCSVField(link.text || link.linkText || ''),
                   escapeCSVField(link.description || link.descriptionLine1 || ''),
                   escapeCSVField(link.descriptionLine2 || ''),
@@ -436,6 +461,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 13. Callout Extensions Block
   blocks.push(BLOCK_HEADERS.CALLOUT_EXTENSIONS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
       adGroup.ads.forEach(ad => {
         if (ad.extensions && Array.isArray(ad.extensions)) {
@@ -444,7 +470,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
               const callouts = ext.callouts || ext.values || [];
               callouts.forEach((callout: string) => {
                 const row = [
-                  escapeCSVField(campaign.campaign_name),
+                  escapeCSVField(campaignName),
                   escapeCSVField(callout),
                   escapeCSVField(''), // Start Date
                   escapeCSVField(''), // End Date
@@ -464,6 +490,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 14. Structured Snippets Block
   blocks.push(BLOCK_HEADERS.STRUCTURED_SNIPPETS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
       adGroup.ads.forEach(ad => {
         if (ad.extensions && Array.isArray(ad.extensions)) {
@@ -472,7 +499,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
               const values = ext.values || [];
               values.forEach((value: string) => {
                 const row = [
-                  escapeCSVField(campaign.campaign_name),
+                  escapeCSVField(campaignName),
                   escapeCSVField(ext.header || ext.title || ''),
                   escapeCSVField(value),
                   escapeCSVField(''), // Start Date
@@ -492,13 +519,14 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 15. Call Extensions Block
   blocks.push(BLOCK_HEADERS.CALL_EXTENSIONS);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     campaign.adgroups.forEach(adGroup => {
       adGroup.ads.forEach(ad => {
         if (ad.extensions && Array.isArray(ad.extensions)) {
           ad.extensions.forEach((ext: any) => {
             if (ext.extensionType === 'call' || ext.type === 'call') {
               const row = [
-                escapeCSVField(campaign.campaign_name),
+                escapeCSVField(campaignName),
                 escapeCSVField(ext.phone || ext.phoneNumber || ''),
                 escapeCSVField(ext.countryCode || ext.country || 'US'),
                 escapeCSVField(''), // Phone Verification

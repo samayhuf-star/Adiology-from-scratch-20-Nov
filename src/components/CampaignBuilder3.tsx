@@ -34,6 +34,7 @@ import {
 } from '../utils/googleAdGenerator';
 import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
 import { historyService } from '../utils/historyService';
+import { generateCSVWithBackend } from '../utils/csvExportBackend';
 import { api } from '../utils/api';
 import { AutoFillButton } from './AutoFillButton';
 import { 
@@ -1331,6 +1332,63 @@ export const CampaignBuilder3: React.FC = () => {
   const handleGenerateCSV = async () => {
     setLoading(true);
     try {
+      // Use new backend CSV export
+      const adGroups = campaignData.adGroups || [];
+      const locationTargeting = {
+        locations: [
+          ...(campaignData.locations.countries.map((c: string) => ({ type: 'COUNTRY', code: c }))),
+          ...(campaignData.locations.states.map((s: string) => ({ type: 'STATE', code: s }))),
+          ...(campaignData.locations.cities.map((c: string) => ({ type: 'CITY', code: c }))),
+          ...(campaignData.locations.zipCodes.map((z: string) => ({ type: 'ZIP', code: z })))
+        ].filter(loc => loc.code)
+      };
+
+      try {
+        await generateCSVWithBackend(
+          campaignData.campaignName || 'Campaign 1',
+          adGroups.map((group: any) => ({
+            name: group.name,
+            keywords: group.keywords || [],
+            negativeKeywords: group.negativeKeywords || []
+          })),
+          campaignData.ads || [],
+          locationTargeting.locations.length > 0 ? locationTargeting : undefined,
+          undefined, // budget
+          'MANUAL_CPC', // bidding strategy
+          campaignData.negativeKeywords?.join('\n'),
+          'ALL_AD_GROUPS'
+        );
+        
+        // If backend export succeeds, also update local state for compatibility
+      const structure = generateCampaignStructure(
+        campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
+        {
+          structureType: campaignData.selectedStructure || 'stag',
+          campaignName: campaignData.campaignName,
+          keywords: campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
+          matchTypes: {
+            broad: campaignData.keywordTypes.broad,
+            phrase: campaignData.keywordTypes.phrase,
+            exact: campaignData.keywordTypes.exact,
+          },
+          url: campaignData.url,
+            ads: campaignData.ads,
+            negativeKeywords: campaignData.negativeKeywords,
+          } as StructureSettings
+        );
+        const csvData = await exportCampaignToCSVV3(structure);
+        setCampaignData(prev => ({
+          ...prev,
+          csvData,
+          csvErrors: [],
+        }));
+        return; // Exit early - backend export handled everything
+      } catch (backendError) {
+        console.warn('Backend CSV export failed, using local generation:', backendError);
+        // Fall through to local generation below
+      }
+
+      // Fallback to local generation
       const structure = generateCampaignStructure(
         campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
         {
