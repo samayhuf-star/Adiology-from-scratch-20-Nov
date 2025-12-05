@@ -587,12 +587,12 @@ export function generateCSVV3(structure: CampaignStructure): string {
         blocks.push(row.join(','));
       });
     }
-    // Check ad group-level zip codes
+      // Check ad group-level zip codes
     campaign.adgroups.forEach(adGroup => {
       if (adGroup.zip_codes && adGroup.zip_codes.length > 0) {
         adGroup.zip_codes.forEach(zip => {
           const row = [
-            escapeCSVField(campaign.campaign_name),
+            escapeCSVField(campaignName),
             escapeCSVField(zip),
             escapeCSVField('Postal Code'), // Target Type
             escapeCSVField('') // Bid Adjustment
@@ -607,11 +607,12 @@ export function generateCSVV3(structure: CampaignStructure): string {
   // 25. City/State Targeting Block
   blocks.push(BLOCK_HEADERS.CITY_STATE_TARGETING);
   structure.campaigns.forEach(campaign => {
+    const campaignName = campaign.campaign_name || 'Campaign';
     // Check campaign-level cities
     if (campaign.cities && campaign.cities.length > 0) {
       campaign.cities.forEach(city => {
         const row = [
-          escapeCSVField(campaign.campaign_name),
+          escapeCSVField(campaignName),
           escapeCSVField(city),
           escapeCSVField('City'), // Target Type
           escapeCSVField('') // Bid Adjustment
@@ -623,7 +624,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
     if (campaign.states && campaign.states.length > 0) {
       campaign.states.forEach(state => {
         const row = [
-          escapeCSVField(campaign.campaign_name),
+          escapeCSVField(campaignName),
           escapeCSVField(state),
           escapeCSVField('State'), // Target Type
           escapeCSVField('') // Bid Adjustment
@@ -636,7 +637,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
       if (adGroup.cities && adGroup.cities.length > 0) {
         adGroup.cities.forEach(city => {
           const row = [
-            escapeCSVField(campaign.campaign_name),
+            escapeCSVField(campaignName),
             escapeCSVField(city),
             escapeCSVField('City'), // Target Type
             escapeCSVField('') // Bid Adjustment
@@ -648,7 +649,7 @@ export function generateCSVV3(structure: CampaignStructure): string {
       if (adGroup.states && adGroup.states.length > 0) {
         adGroup.states.forEach(state => {
           const row = [
-            escapeCSVField(campaign.campaign_name),
+            escapeCSVField(campaignName),
             escapeCSVField(state),
             escapeCSVField('State'), // Target Type
             escapeCSVField('') // Bid Adjustment
