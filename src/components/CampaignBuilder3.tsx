@@ -2461,6 +2461,55 @@ export const CampaignBuilder3: React.FC = () => {
                 <p className="text-sm font-medium text-slate-800 mt-1">{targetLocationText}</p>
               </div>
             </div>
+            {/* Cities Summary - Show if cities are selected */}
+            {campaignData.locations.cities.length > 0 && (() => {
+              const cityCount = campaignData.locations.cities.length;
+              const presetCounts = [20, 50, 100, 200, LOCATION_PRESETS.cities.length];
+              const isPreset = presetCounts.includes(cityCount);
+              const presetLabel = cityCount === 20 ? 'Top 20 Cities' :
+                                cityCount === 50 ? 'Top 50 Cities' :
+                                cityCount === 100 ? 'Top 100 Cities' :
+                                cityCount === 200 ? 'Top 200 Cities' :
+                                cityCount === LOCATION_PRESETS.cities.length ? 'All Cities' : null;
+              
+              return (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/50 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {presetLabel || 'Custom Cities'}
+                          </p>
+                          <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 border-blue-300">
+                            {cityCount} selected
+                          </Badge>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-xs text-slate-600 mb-2">Selected cities:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {campaignData.locations.cities.slice(0, 10).map((city, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs bg-white text-slate-700 border-slate-300">
+                                {city}
+                              </Badge>
+                            ))}
+                            {cityCount > 10 && (
+                              <Badge variant="secondary" className="text-xs bg-white text-slate-500 border-slate-300">
+                                +{cityCount - 10} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle2 className="w-5 h-5" />
