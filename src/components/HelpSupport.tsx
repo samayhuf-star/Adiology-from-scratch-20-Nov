@@ -19,7 +19,7 @@ const documentationSections = [
         articles: [
             {
                 title: 'Welcome to Google Ads Dashboard',
-                content: `Our platform helps you create professional Google Ads campaigns in minutes. This dashboard provides a comprehensive suite of tools including a 5-step Campaign Builder, Keyword Planner with AI-powered suggestions, CSV Validator for bulk imports, and an Ad Creation interface supporting RSA (Responsive Search Ads), DKI (Dynamic Keyword Insertion), and Call-Only ads.`
+                content: `Our platform helps you create professional Google Ads campaigns in minutes. This dashboard provides a comprehensive suite of tools including a 5-step Campaign Builder, Keyword Planner with AI-powered suggestions, CSV Export for bulk imports, and an Ad Creation interface supporting RSA (Responsive Search Ads), DKI (Dynamic Keyword Insertion), and Call-Only ads.`
             },
             {
                 title: 'Quick Start Guide',
@@ -231,56 +231,6 @@ If keyword doesn't fit, shows: "Buy Running Shoes Online"
         ]
     },
     {
-        id: 'csv-validator',
-        title: 'CSV Validator',
-        icon: Upload,
-        articles: [
-            {
-                title: 'Using the CSV Validator',
-                content: `The CSV Validator checks your Google Ads import files for errors:
-
-**How to Use:**
-1. Navigate to CSV Validator from the menu
-2. Upload your CSV file
-3. Review validation results
-4. Fix errors highlighted in red
-5. Download corrected CSV
-
-**What it Checks:**
-- Required columns present
-- Character limit compliance
-- URL format validation
-- Match type syntax
-- Duplicate detection
-- Invalid characters`
-            },
-            {
-                title: 'CSV Format Requirements',
-                content: `**Required Columns:**
-- Campaign Name
-- Ad Group Name
-- Keyword
-- Match Type
-- Final URL
-
-**Optional Columns:**
-- Max CPC
-- Ad Headlines (1-15)
-- Ad Descriptions (1-4)
-- Display Path (1-2)
-- Location Targets
-- Negative Keywords
-
-**Format Rules:**
-- UTF-8 encoding
-- Comma-separated values
-- Headers in first row
-- No empty required fields
-- URLs must include http:// or https://`
-            }
-        ]
-    },
-    {
         id: 'exporting',
         title: 'Exporting & Importing',
         icon: Download,
@@ -466,8 +416,8 @@ const faqItems = [
         answer: "RSA Headlines: 30 characters each (up to 15). RSA Descriptions: 90 characters each (up to 4). Display URL paths: 15 characters each. Call-Only ads have the same limits. The platform automatically validates these limits."
     },
     {
-        question: "How do I validate my CSV before importing?",
-        answer: "Use the CSV Validator tool from the main menu. Upload your CSV file, and it will check for errors like missing required fields, character limit violations, invalid URLs, and formatting issues. Fix any errors shown in red before importing to Google Ads."
+        question: "How do I export my campaign to CSV?",
+        answer: "Use the CSV Export tool from the main menu. After building your campaign, you can export it directly to Google Ads Editor format. The export includes all campaign settings, ad groups, keywords, ads, and targeting information."
     },
     {
         question: "Can I target specific locations?",

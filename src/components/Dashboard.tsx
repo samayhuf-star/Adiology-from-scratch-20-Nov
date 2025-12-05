@@ -421,15 +421,6 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
     },
-    {
-      id: 'csv-validator-3',
-      title: 'Validate CSV',
-      description: 'Check your campaign files',
-      icon: FileText,
-      color: 'from-orange-500 to-red-500',
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600',
-    },
   ];
 
   return (
