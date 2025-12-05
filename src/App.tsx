@@ -15,7 +15,6 @@ import {
 import { Badge } from './components/ui/badge';
 import { CampaignBuilder2 } from './components/CampaignBuilder2';
 import { CampaignBuilder3 } from './components/CampaignBuilder3';
-import { CSVValidator3 } from './components/CSVValidator3';
 import { GoogleAdsCSVExport } from './components/GoogleAdsCSVExport';
 import { KeywordPlanner } from './components/KeywordPlanner';
 import { KeywordMixer } from './components/KeywordMixer';
@@ -121,7 +120,6 @@ const App = () => {
     'keyword-generator-v3',
     'ads-builder',
     'negative-keywords',
-    'csv-validator-3',
     'google-ads-csv-export',
     'settings',
     'billing',
@@ -197,7 +195,7 @@ const App = () => {
     if (title.includes('campaign')) {
       setActiveTabSafe('builder-2');
     } else if (title.includes('export') || title.includes('csv')) {
-      setActiveTabSafe('csv-validator-3');
+      setActiveTabSafe('google-ads-csv-export');
     } else if (title.includes('billing') || title.includes('subscription')) {
       setActiveTabSafe('settings');
       // Optionally open billing tab in settings
@@ -748,7 +746,6 @@ const App = () => {
       ]
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
-    { id: 'csv-validator-3', label: 'CSV Validator', icon: FileCheck },
     { id: 'google-ads-csv-export', label: 'CSV Export', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
@@ -858,7 +855,7 @@ const App = () => {
         'ads': 'ads-builder',
         'advertising': 'ads-builder',
         'negative keywords': 'negative-keywords',
-        'csv': 'csv-validator-3',
+        'csv': 'google-ads-csv-export',
         'export': 'google-ads-csv-export',
         'csv export': 'google-ads-csv-export',
         'google ads csv': 'google-ads-csv-export',
@@ -1147,8 +1144,6 @@ const App = () => {
           setHistoryData(data);
           setActiveTabSafe('builder-2');
         }} />;
-      case 'csv-validator-3':
-        return <CSVValidator3 />;
       case 'google-ads-csv-export':
         return <GoogleAdsCSVExport />;
       case 'keyword-planner':
