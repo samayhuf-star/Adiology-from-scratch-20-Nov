@@ -42,11 +42,10 @@ import {
     type ExpandedTextAd,
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
-// Old CSV exporter imports removed - using new googleAdsCSVGenerator instead
-import { generateGoogleAdsCSV, validateRows } from '../utils/googleAdsCSVGenerator';
+// New CSV exporter - follows exact format from Google Ads Editor template
+import { exportCampaignToCSV, convertCampaignBuilderData } from '../utils/googleAdsCSVExporter';
 import Papa from 'papaparse';
 import { AutoFillButton } from './AutoFillButton';
-import { generateCSVWithBackend } from '../utils/csvExportBackend';
 import { generateCampaignName, generateSeedKeywords, generateNegativeKeywords, generateURL, generateLocationInput } from '../utils/autoFill';
 import {
     validateURL,
@@ -804,12 +803,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // MUST be defined early to avoid "Cannot access before initialization" errors
     const getDynamicAdGroups = useCallback(() => {
         try {
-            if (!selectedKeywords || selectedKeywords.length === 0) return [];
-            if (!structure) return [];
-            
             // Ensure selectedKeywords is an array
-            const keywords = Array.isArray(selectedKeywords) ? selectedKeywords : [];
+            let keywords = Array.isArray(selectedKeywords) ? selectedKeywords : [];
+            
+            // Fix: If selectedKeywords is empty but generatedKeywords exist, use generatedKeywords
+            // This handles the case when coming from keyword planner where keywords are generated but not selected
+            if (keywords.length === 0 && generatedKeywords && generatedKeywords.length > 0) {
+                // Extract keyword strings from generatedKeywords (handle both string and object formats)
+                keywords = generatedKeywords.map((kw: any) => {
+                    if (typeof kw === 'string') return kw;
+                    if (kw?.text) return kw.text;
+                    if (kw?.keyword) return kw.keyword;
+                    return String(kw || '');
+                }).filter((kw: string) => kw && kw.trim().length > 0);
+                
+                console.log(`✅ Using ${keywords.length} generated keywords for ad group generation (selectedKeywords was empty)`);
+            }
+            
             if (keywords.length === 0) return [];
+            if (!structure) return [];
             
             type AdGroup = { name: string; keywords: string[] };
             
@@ -873,7 +885,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     : []
             }];
         }
-    }, [selectedKeywords, structure]);
+    }, [selectedKeywords, structure, generatedKeywords]);
 
     // Helper function to get current ad state (deep copy to maintain CSV structure)
     const getCurrentAdState = (): AdHistoryState => ({
@@ -1023,7 +1035,27 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             setSeedKeywords(initialData.seedKeywords || '');
             setNegativeKeywords(initialData.negativeKeywords || '');
             setGeneratedKeywords(initialData.generatedKeywords || []);
-            setSelectedKeywords(initialData.selectedKeywords || []);
+            
+            // Fix: If coming from keyword planner, generatedKeywords exist but selectedKeywords is empty
+            // Auto-select all generated keywords to enable ad group generation
+            const loadedGeneratedKeywords = initialData.generatedKeywords || [];
+            const loadedSelectedKeywords = initialData.selectedKeywords || [];
+            
+            if (loadedGeneratedKeywords.length > 0 && loadedSelectedKeywords.length === 0) {
+                // Extract keyword strings from generatedKeywords (handle both string and object formats)
+                const keywordStrings = loadedGeneratedKeywords.map((kw: any) => {
+                    if (typeof kw === 'string') return kw;
+                    if (kw?.text) return kw.text;
+                    if (kw?.keyword) return kw.keyword;
+                    return String(kw || '');
+                }).filter((kw: string) => kw && kw.trim().length > 0);
+                
+                setSelectedKeywords(keywordStrings);
+                console.log(`✅ Auto-selected ${keywordStrings.length} keywords from keyword planner for ad group generation`);
+            } else {
+                setSelectedKeywords(loadedSelectedKeywords);
+            }
+            
             setAds(initialData.ads || ads);
             setEnabledAdTypes(initialData.enabledAdTypes || ['rsa', 'dki', 'call']);
             setTargetCountry(initialData.targetCountry || 'United States');
@@ -1752,76 +1784,44 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             });
         }
         
-        // Use new backend CSV export
+        // Use new CSV exporter - follows exact format from Google Ads Editor template
         try {
-            const result = await generateCSVWithBackend(
+            const campaignData = convertCampaignBuilderData(
                 campaignNameValue,
                 adGroups.map(group => ({
                     name: group.name,
-                    keywords: group.keywords || [],
-                    negativeKeywords: negativeKeywords.split('\n').filter(k => k.trim())
+                    keywords: group.keywords || []
                 })),
                 generatedAds.filter(ad => 
                     (ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly')
                 ),
-                locationTargeting.locations.length > 0 ? locationTargeting : undefined,
-                undefined, // budget
-                'Manual CPC', // bidding strategy
-                negativeKeywords,
-                ALL_AD_GROUPS_VALUE
+                baseUrl
             );
             
-            // Check if this is an async export (large file)
-            if (result && typeof result === 'object' && (result as any).async === true) {
-                // Save campaign with job_id for later retrieval
-                const asyncResult = result as { async: boolean; job_id: string; estimated_rows: number; message: string };
-                try {
-                    await historyService.save('campaign', campaignNameValue, {
-                        name: campaignNameValue,
-                        url: url || '',
-                        structure: structure || 'SKAG',
-                        keywords: selectedKeywords,
-                        ads: generatedAds,
-                        locationTargeting: locationTargeting,
-                        csvExportJobId: asyncResult.job_id,
-                        csvExportStatus: 'processing',
-                        csvExportEstimatedRows: asyncResult.estimated_rows,
-                        createdAt: new Date().toISOString(),
-                    }, 'completed');
-                    
-                    notifications.success('Campaign saved. CSV will be ready in 2 minutes.', {
-                        title: 'Campaign Saved',
-                        description: 'Check your saved campaigns in 2 minutes to download the CSV file.',
-                        duration: 10000
-                    });
-                } catch (saveError) {
-                    console.error('Failed to save campaign with job_id:', saveError);
-                }
-                return; // Exit early - async export in progress
-            }
+            const filename = `${campaignNameValue.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+            exportCampaignToCSV(campaignData, filename);
             
-            return; // Exit early - generateCSVWithBackend handles everything
+            notifications.success('Campaign exported successfully', {
+                title: 'Export Complete',
+                description: `CSV file "${filename}" has been downloaded. Ready for Google Ads Editor import.`,
+                duration: 3000
+            });
+            
+            return;
         } catch (error) {
-            console.error('Backend CSV export failed, falling back to local generation:', error);
-            // Fall through to local generation below
+            console.error('CSV export failed:', error);
+            notifications.error('CSV export failed', {
+                title: 'Export Error',
+                description: error instanceof Error ? error.message : 'An unexpected error occurred',
+                duration: 5000
+            });
+            return;
         }
         
-        // Google Ads Editor compatible CSV format - all required columns
-        // Following Google Ads Editor import format guidelines
-        const headers = [
-            "Campaign", "Ad Group", "Row Type", "Status",
-            "Keywords", "Match Types", 
-            "Final URL", "Headline 1", "Headline 2", "Headline 3", "Headline 4", "Headline 5",
-            "Headline 6", "Headline 7", "Headline 8", "Headline 9", "Headline 10", "Headline 11",
-            "Headline 12", "Headline 13", "Headline 14", "Headline 15",
-            "Description 1", "Description 2", "Description 3", "Description 4",
-            "Path 1", "Path 2",
-            "Asset Type", "Link Text", "Description Line 1", "Description Line 2",
-            "Phone Number", "Country Code",
-            "Callout Text", "Header", "Values",
-            "Location", "Location Target", "Target Type", "Bid Adjustment", "Is Exclusion"
-        ];
-        
+        // OLD CSV GENERATION CODE REMOVED - Using new googleAdsCSVExporter instead
+        // The code below is kept for reference but will never execute
+        if (false) {
+        const headers: string[] = [];
         const rows: string[] = [];
         
         // Process each ad group
@@ -6506,7 +6506,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             ) : (
                 <>
             {/* Progress Steps */}
-                    <div className={`sticky ${activeView === 'builder' ? 'top-[130px]' : 'top-[73px]'} z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm`}>
+                    <div className={`sticky ${activeView === 'builder' ? 'top-[153px]' : 'top-[73px]'} z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm`}>
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         {[

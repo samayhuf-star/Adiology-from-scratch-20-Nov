@@ -22,6 +22,7 @@ import {
     type CallOnlyAd
 } from '../utils/googleAdGenerator';
 import { generateAdsFallback } from '../utils/adGeneratorFallback';
+import { exportPresetToCSV } from '../utils/googleAdsCSVExporter';
 
 // Google Ads Generation System Prompt
 const GOOGLE_ADS_SYSTEM_PROMPT = `🟣 SYSTEM INSTRUCTION: GOOGLE ADS GENERATION RULES
