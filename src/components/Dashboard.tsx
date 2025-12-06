@@ -403,15 +403,15 @@ export function Dashboard({ user, onNavigate }: DashboardProps) {
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
     },
-    {
-      id: 'campaign-presets',
-      title: 'Use Preset',
-      description: 'Start from a template',
-      icon: Package,
-      color: 'from-blue-500 to-cyan-500',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-    },
+    // {
+    //   id: 'campaign-presets',
+    //   title: 'Use Preset',
+    //   description: 'Start from a template',
+    //   icon: Package,
+    //   color: 'from-blue-500 to-cyan-500',
+    //   bgColor: 'bg-blue-50',
+    //   iconColor: 'text-blue-600',
+    // }, // Hidden - Campaign Presets module disabled
     {
       id: 'keyword-planner',
       title: 'Plan Keywords',
