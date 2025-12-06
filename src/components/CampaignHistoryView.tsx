@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, Clock, Eye, Trash2, Search, AlertCircle,
   CheckCircle2, Download, FolderOpen, Plus, Sparkles,
-  LayoutGrid, List
+  LayoutGrid, List, RefreshCw
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -11,6 +11,10 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { historyService } from '../utils/historyService';
 import { notifications } from '../utils/notifications';
+import { campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
+import { validateAndFixAds, formatValidationReport } from '../utils/adValidationUtils';
+import Papa from 'papaparse';
+import Papa from 'papaparse';
 
 // Structure types mapping
 const STRUCTURE_TYPES = [
@@ -109,6 +113,177 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
     } catch (error) {
       console.error('Failed to delete campaign', error);
       notifications.error('Failed to delete campaign', { title: 'Error' });
+    }
+  };
+
+  const handleRegenerateCSV = async (campaign: SavedCampaign) => {
+    try {
+      const data = campaign.data || campaign;
+      
+      // Show loading notification
+      notifications.info('Regenerating CSV...', {
+        title: 'CSV Generation',
+        description: 'Please wait while we regenerate your CSV file.',
+        duration: 3000
+      });
+
+      // Convert campaign data to CampaignStructure format
+      // First, try to use existing CSV data if available
+      if (data.csvData) {
+        // If CSV data exists, just download it with new timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
+                          new Date().toTimeString().split(' ')[0].replace(/:/g, '-').substring(0, 8);
+        const campaignName = (campaign.name || data.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_');
+        const filename = `${campaignName}_google_ads_editor_${timestamp}.csv`;
+        
+        const blob = new Blob([data.csvData], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        notifications.success('CSV downloaded successfully', {
+          title: 'Download Complete',
+          description: `File: ${filename}`
+        });
+        return;
+      }
+
+      // If no CSV data, regenerate from campaign structure
+      // Build CampaignStructure from saved campaign data
+      const adGroups = data.adGroups || [];
+      if (adGroups.length === 0) {
+        notifications.error('No ad groups found in campaign', {
+          title: 'Cannot Generate CSV',
+          description: 'This campaign does not have ad groups. Please continue editing the campaign first.'
+        });
+        return;
+      }
+
+      // Validate and fix ads before conversion
+      const { ads: validatedAds, report: validationReport } = validateAndFixAds(data.ads || []);
+      
+      // Show validation report if ads were fixed
+      if (validationReport.fixed > 0) {
+        console.log('Ad validation report:', formatValidationReport(validationReport));
+      }
+      
+      // Convert ads to the format expected by CSV exporter
+      const convertedAds = validatedAds.map((ad: any) => {
+        const convertedAd: any = {
+          type: ad.type === 'rsa' ? 'rsa' : ad.type === 'dki' ? 'dki' : 'callonly',
+          final_url: ad.finalUrl || data.url || '',
+          path1: (ad.displayPath && Array.isArray(ad.displayPath) ? ad.displayPath[0] : '') || ad.path1 || '',
+          path2: (ad.displayPath && Array.isArray(ad.displayPath) ? ad.displayPath[1] : '') || ad.path2 || '',
+        };
+        
+        // Convert headlines
+        if (ad.headlines && Array.isArray(ad.headlines)) {
+          ad.headlines.forEach((headline: string, idx: number) => {
+            if (idx < 15 && headline && headline.trim()) {
+              convertedAd[`headline${idx + 1}`] = headline.trim().substring(0, 30);
+            }
+          });
+        } else {
+          if (ad.headline1) convertedAd.headline1 = ad.headline1.trim().substring(0, 30);
+          if (ad.headline2) convertedAd.headline2 = ad.headline2.trim().substring(0, 30);
+          if (ad.headline3) convertedAd.headline3 = ad.headline3.trim().substring(0, 30);
+          if (ad.headline4) convertedAd.headline4 = ad.headline4.trim().substring(0, 30);
+          if (ad.headline5) convertedAd.headline5 = ad.headline5.trim().substring(0, 30);
+        }
+        
+        // Ads are already validated and fixed by validateAndFixAds above
+        // Just ensure fields are properly mapped (validation already ensured minimums)
+        
+        if (ad.extensions) convertedAd.extensions = ad.extensions;
+        
+        return convertedAd;
+      });
+
+      // Build CampaignStructure
+      const structure = {
+        campaigns: [{
+          campaign_name: data.campaignName || campaign.name || 'Campaign',
+          adgroups: adGroups.map((group: any) => ({
+            adgroup_name: group.name || 'Default Ad Group',
+            keywords: (group.keywords || []).map((kw: any) => {
+              if (typeof kw === 'string') return kw;
+              return kw.text || kw.keyword || String(kw);
+            }).filter((kw: string) => kw && kw.trim().length > 0),
+            match_types: [],
+            ads: convertedAds.length > 0 ? convertedAds : [{
+              type: 'rsa' as const,
+              headline1: 'Professional Service',
+              headline2: 'Expert Solutions',
+              headline3: 'Quality Guaranteed',
+              description1: 'Get professional service you can trust.',
+              description2: 'Contact us today for expert assistance.',
+              final_url: data.url || 'https://example.com',
+              path1: '',
+              path2: ''
+            }],
+            negative_keywords: (group.negativeKeywords || data.negativeKeywords || []).map((neg: any) => {
+              if (typeof neg === 'string') {
+                return neg.startsWith('-') ? neg : `-${neg}`;
+              }
+              const negText = neg.text || neg.keyword || String(neg);
+              return negText.startsWith('-') ? negText : `-${negText}`;
+            }).filter((neg: string) => neg && neg.trim().length > 0),
+          })),
+          states: data.locations?.states || [],
+          cities: data.locations?.cities || [],
+          zip_codes: data.locations?.zipCodes || [],
+          targetCountry: data.targetCountry || 'United States',
+          budget: '100',
+          budget_type: 'Daily',
+          bidding_strategy: 'Manual CPC',
+          start_date: '',
+          end_date: '',
+          location_type: 'COUNTRY',
+          location_code: (data.targetCountry === 'United States' ? 'US' : (data.targetCountry || 'US').substring(0, 2).toUpperCase()),
+        }]
+      };
+
+      // Generate CSV rows
+      const rows = campaignStructureToCSVRows(structure);
+      
+      // Generate CSV with UTF-8 BOM and CRLF
+      const csv = Papa.unparse(rows, {
+        columns: GOOGLE_ADS_EDITOR_HEADERS,
+        header: true,
+        newline: '\r\n',
+      });
+      
+      const BOM = '\uFEFF';
+      const csvWithBOM = BOM + csv;
+      
+      // Generate timestamped filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
+                        new Date().toTimeString().split(' ')[0].replace(/:/g, '-').substring(0, 8);
+      const campaignName = (campaign.name || data.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_');
+      const filename = `${campaignName}_google_ads_editor_${timestamp}.csv`;
+      
+      // Download automatically
+      const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      notifications.success('CSV regenerated and downloaded', {
+        title: 'Download Complete',
+        description: `File: ${filename}`
+      });
+    } catch (error) {
+      console.error('CSV regeneration error:', error);
+      notifications.error('Failed to regenerate CSV', {
+        title: 'Generation Error',
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
     }
   };
 
@@ -323,6 +498,14 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                       </Button>
                       <Button 
                         variant="outline"
+                        onClick={() => handleRegenerateCSV(campaign)}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50 flex-shrink-0 px-3"
+                        title="Regenerate and download CSV"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="outline"
                         onClick={() => deleteCampaign(campaign.id)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0 px-3"
                         title="Delete campaign"
@@ -399,6 +582,15 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                               >
                                 <Eye className="w-4 h-4 mr-2" />
                                 Continue
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                onClick={() => handleRegenerateCSV(campaign)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="Regenerate and download CSV"
+                              >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                CSV
                               </Button>
                               <Button 
                                 variant="outline"

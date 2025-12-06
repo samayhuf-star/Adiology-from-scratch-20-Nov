@@ -15,6 +15,15 @@ export interface Campaign {
   zip_codes?: string[];
   cities?: string[];
   states?: string[];
+  targetCountry?: string;
+  budget?: string;
+  budget_type?: string;
+  bidding_strategy?: string;
+  start_date?: string;
+  end_date?: string;
+  location_type?: string;
+  location_code?: string;
+  regions?: string[];
 }
 
 export interface AdGroup {

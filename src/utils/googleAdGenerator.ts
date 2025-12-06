@@ -180,29 +180,48 @@ function generateServiceAdCopy(
   industry: string,
   filters: AdGenerationInput['filters']
 ): AdCopyTemplates {
+  // Use multiple keywords for variety
+  const keyword1 = input.keywords[0] || mainKeyword;
+  const keyword2 = input.keywords[1] || keyword1;
+  const keyword3 = input.keywords[2] || keyword1;
+  
+  // Format keywords for headlines (capitalize, truncate)
+  const formatKeyword = (kw: string, maxLen: number = 20) => {
+    const formatted = kw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return formatted.length > maxLen ? formatted.substring(0, maxLen) : formatted;
+  };
+  
+  const kw1 = formatKeyword(keyword1);
+  const kw2 = formatKeyword(keyword2);
+  
   const headlines: string[] = [
-    // Keyword-focused
-    `${mainKeyword} Services`,
-    `Professional ${mainKeyword}`,
-    `Expert ${industry} Services`,
+    // Keyword-focused (use actual keywords)
+    `${kw1} Services`,
+    `Professional ${kw1}`,
+    `Expert ${kw1} Help`,
+    `${kw1} Near You`,
+    `Top Rated ${kw1}`,
+    
+    // Use second keyword for variety
+    ...(keyword2 !== keyword1 ? [`${kw2} Services`, `Best ${kw2}`] : []),
     
     // Trust builders
     `Licensed & Insured ${industry}`,
-    `Trusted ${industry} Experts`,
-    `${businessName} - Since 2010`,
+    `Trusted ${businessName}`,
+    `${businessName} Experts`,
     
     // Value propositions
-    `Free ${industry} Estimates`,
-    `Affordable ${mainKeyword}`,
-    `Quality ${industry} Guaranteed`,
+    `Free ${kw1} Estimates`,
+    `Affordable ${kw1}`,
+    `Quality ${industry} Service`,
     
     // Location-based
-    ...(location ? [`${location} ${industry} Pros`, `Local ${industry} Experts`] : []),
+    ...(location ? [`${location} ${kw1}`, `Local ${kw1} Experts`] : []),
     
     // Action-oriented
-    `Get ${industry} Help Today`,
-    `Book ${mainKeyword} Now`,
-    `Call for ${industry} Service`,
+    `Get ${kw1} Help Today`,
+    `Book ${kw1} Now`,
+    `Call for ${kw1} Service`,
   ];
 
   // Add USP headlines
@@ -215,10 +234,10 @@ function generateServiceAdCopy(
   }
 
   const descriptions: string[] = [
-    `Professional ${industry} services you can trust. ${businessName} offers expert solutions for all your ${mainKeyword} needs. Licensed, insured & satisfaction guaranteed.`,
-    `Looking for reliable ${industry}? We provide fast, affordable ${mainKeyword} services${location ? ` in ${location}` : ''}. Free estimates. Call now or book online!`,
-    `${businessName}: Your local ${industry} experts. From repairs to installations, we handle it all. 5-star rated. Available 7 days a week.`,
-    `Expert ${mainKeyword} at fair prices. Our certified technicians deliver quality workmanship. Same-day service available. Get your free quote today!`
+    `Professional ${kw1} services you can trust. ${businessName} offers expert solutions for all your ${keyword1} needs. Licensed, insured & satisfaction guaranteed.`,
+    `Looking for reliable ${kw1}? We provide fast, affordable ${keyword1} services${location ? ` in ${location}` : ''}. Free estimates. Call now or book online!`,
+    `${businessName}: Your local ${kw1} experts. From ${keyword1} to ${keyword2 || keyword1}, we handle it all. 5-star rated. Available 7 days a week.`,
+    `Expert ${kw1} at fair prices. Our certified technicians deliver quality ${keyword1} workmanship. Same-day service available. Get your free quote today!`
   ];
 
   return {
@@ -287,37 +306,45 @@ function generateEmergencyAdCopy(
   industry: string,
   filters: AdGenerationInput['filters']
 ): AdCopyTemplates {
+  const keyword1 = input.keywords[0] || mainKeyword;
+  const keyword2 = input.keywords[1] || keyword1;
+  const formatKeyword = (kw: string, maxLen: number = 20) => {
+    const formatted = kw.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return formatted.length > maxLen ? formatted.substring(0, maxLen) : formatted;
+  };
+  const kw1 = formatKeyword(keyword1);
+  
   const headlines: string[] = [
-    // Urgency-focused
-    `24/7 Emergency ${industry}`,
-    `${industry} - Open Now`,
-    `Urgent ${mainKeyword} Help`,
+    // Urgency-focused (use actual keywords)
+    `24/7 Emergency ${kw1}`,
+    `${kw1} - Open Now`,
+    `Urgent ${kw1} Help`,
     
     // Speed-focused
-    `Fast ${industry} Response`,
-    `${industry} in 30 Minutes`,
-    `Same Hour ${industry} Service`,
+    `Fast ${kw1} Response`,
+    `${kw1} in 30 Minutes`,
+    `Same Hour ${kw1} Service`,
     
     // Availability
-    `${industry} Available 24/7`,
-    `Night & Weekend ${industry}`,
-    `Holiday ${industry} Service`,
+    `${kw1} Available 24/7`,
+    `Night & Weekend ${kw1}`,
+    `Holiday ${kw1} Service`,
     
     // Problem-solution
-    `Emergency ${mainKeyword} Fix`,
-    `${mainKeyword} Crisis? Call Now`,
-    `Immediate ${industry} Help`,
+    `Emergency ${kw1} Fix`,
+    `${kw1} Crisis? Call Now`,
+    `Immediate ${kw1} Help`,
     
     // Trust in emergency
-    `Licensed Emergency ${industry}`,
-    `Trusted 24/7 ${industry}`
+    `Licensed Emergency ${kw1}`,
+    `Trusted 24/7 ${kw1}`
   ];
 
   const descriptions: string[] = [
-    `${industry} emergency? We're here 24/7! ${businessName} offers rapid response for all urgent ${mainKeyword} issues. Call now - we're on our way!`,
-    `Don't panic! Our emergency ${industry} team is available around the clock. Fast arrival, expert repairs, fair pricing. Call us immediately!`,
-    `24/7 emergency ${mainKeyword} services${location ? ` in ${location}` : ''}. We understand urgency - that's why we respond in 30 minutes or less. Call now!`,
-    `${industry} emergency? ${businessName} has you covered day or night. Licensed professionals ready to solve your ${mainKeyword} crisis. No extra fees!`
+    `${kw1} emergency? We're here 24/7! ${businessName} offers rapid response for all urgent ${keyword1} issues. Call now - we're on our way!`,
+    `Don't panic! Our emergency ${kw1} team is available around the clock. Fast arrival, expert repairs, fair pricing. Call us immediately!`,
+    `24/7 emergency ${keyword1} services${location ? ` in ${location}` : ''}. We understand urgency - that's why we respond in 30 minutes or less. Call now!`,
+    `${kw1} emergency? ${businessName} has you covered day or night. Licensed professionals ready to solve your ${keyword1} crisis. No extra fees!`
   ];
 
   return {
@@ -544,9 +571,15 @@ function getIntentBasedCTA(intent: UserIntent): string {
  * Generate final URL from business name
  */
 function generateFinalUrl(businessName: string, baseUrl?: string): string {
+  // Always prefer baseUrl if provided
   if (baseUrl) {
-    return baseUrl;
+    // Ensure URL has protocol
+    if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+      return baseUrl;
+    }
+    return `https://${baseUrl}`;
   }
+  // Fallback: generate from business name only if no baseUrl
   const cleanName = businessName.toLowerCase().replace(/\s+/g, '');
   return `https://${cleanName}.com`;
 }

@@ -1,39 +1,54 @@
 /**
  * Google Ads Editor CSV Exporter
  * 
- * Exports campaigns in Google Ads Editor format with Row Type column
- * Format: Row Type, Campaign, AdGroup, Keyword, Match Type, Ad Type, etc.
+ * Exports campaigns in Google Ads Editor format with Type and Operation columns
+ * Format: Type, Operation, Campaign, AdGroup, Keyword, Match Type, Ad Type, etc.
  * 
  * This format is compatible with Google Ads Editor import functionality
+ * Follows Google Ads Editor MASTER CSV Header format
  */
 
 import Papa from 'papaparse';
 import { CampaignStructure, Campaign, AdGroup, Ad } from './campaignStructureGenerator';
+import { validateAndFixAd, validateAndFixAds, formatValidationReport, type ValidationReport } from './adValidationUtils';
 
-// Google Ads Editor CSV Headers (with Row Type)
+// Google Ads Editor CSV Headers (Master Format - Extended)
+// Based on Google Ads Master Sheet Extended format
+// Order: Type, Operation, then all other fields exactly as per master sheet
 export const GOOGLE_ADS_EDITOR_HEADERS = [
-  'Row Type',
+  'Type',
+  'Operation',
   'Campaign',
   'Campaign ID',
-  'Campaign Status',
-  'Campaign Type',
-  'Campaign Budget',
-  'Budget Type',
-  'Bidding Strategy Type',
-  'Start Date',
-  'End Date',
-  'Location Type',
-  'Location Code',
-  'AdGroup',
-  'AdGroup Status',
-  'Default Max CPC',
+  'Campaign status',
+  'Campaign type',
+  'Budget',
+  'Budget ID',
+  'Budget type',
+  'Bidding strategy',
+  'Start date',
+  'End date',
+  'Networks',
+  'Location targeting',
+  'Postal code targeting',
+  'City targeting',
+  'State targeting',
+  'Region targeting',
+  'Language targeting',
+  'Ad group',
+  'Ad group ID',
+  'Ad group status',
+  'Max CPC',
+  'Max CPM',
+  'Max CPV',
+  'Portfolio bid strategy ID',
   'Keyword',
-  'Match Type',
-  'Keyword Status',
-  'Keyword Max CPC',
-  'Keyword Final URL',
-  'Ad Type',
-  'Ad Status',
+  'Match type',
+  'Final URL',
+  'Final mobile URL',
+  'Tracking template',
+  'Custom parameter',
+  'Final URL suffix',
   'Headline 1',
   'Headline 2',
   'Headline 3',
@@ -53,17 +68,66 @@ export const GOOGLE_ADS_EDITOR_HEADERS = [
   'Description 2',
   'Description 3',
   'Description 4',
-  'Final URL',
-  'Final Mobile URL',
-  'Path1',
-  'Path2',
-  'Tracking Template',
-  'Custom Parameters',
-  'Asset Type',
-  'Asset Name',
-  'Asset URL',
-  'Negative Keyword',
-  'Operation',
+  'Business name',
+  'Path 1',
+  'Path 2',
+  'Display URL',
+  'Phone',
+  'Phone country code',
+  'Call tracked',
+  'Call conversion action',
+  'Image asset ID',
+  'Image URL',
+  'Image asset name',
+  'Video asset ID',
+  'Video URL',
+  'Video asset name',
+  'Callout 1',
+  'Callout 2',
+  'Callout 3',
+  'Callout 4',
+  'Structured snippet header',
+  'Structured snippet value 1',
+  'Structured snippet value 2',
+  'Structured snippet value 3',
+  'Structured snippet value 4',
+  'Structured snippet value 5',
+  'Structured snippet value 6',
+  'Price asset name',
+  'Price table header 1',
+  'Price table header 2',
+  'Price table header 3',
+  'Price table row1 col1',
+  'Price table row1 col2',
+  'Price table row1 col3',
+  'Promotion ID',
+  'Promotion final URL',
+  'Promotion percent off',
+  'Promotion money amount off',
+  'Promotion currency code',
+  'Promotion start date',
+  'Promotion end date',
+  'Lead form asset ID',
+  'Lead form name',
+  'Lead form final URL',
+  'Sitelink text 1',
+  'Sitelink final URL 1',
+  'Sitelink description 1',
+  'Sitelink description 2',
+  'Sitelink text 2',
+  'Sitelink final URL 2',
+  'Sitelink text 3',
+  'Sitelink final URL 3',
+  'Sitelink text 4',
+  'Sitelink final URL 4',
+  'Sitelink tracking template',
+  'Sitelink final mobile URL',
+  'Audience list',
+  'Audience list action',
+  'Label',
+  'Tracking ID',
+  'Customer ID',
+  'Device preference',
 ];
 
 export interface CSVRow {
@@ -122,7 +186,7 @@ function formatMatchTypeForCSV(matchType: string, isNegative: boolean = false): 
     // Default to Negative Broad if it's a negative keyword but format is unclear
     return 'Negative Broad';
   } else {
-    // Positive match types: "Broad", "Phrase", "Exact"
+    // Positive match types: "Broad", "Phrase", "Exact" (capitalized per master sheet)
     if (upper === 'BROAD') {
       return 'Broad';
     } else if (upper === 'PHRASE') {
@@ -137,16 +201,77 @@ function formatMatchTypeForCSV(matchType: string, isNegative: boolean = false): 
 
 /**
  * Clean keyword text (remove brackets/quotes)
+ * Also removes any leading/trailing whitespace and normalizes spaces
+ * Removes ALL quotes (single, double, triple) and brackets from the keyword text
+ * The keyword text should NEVER contain brackets or quotes - match type is separate
  */
 function cleanKeywordText(keyword: string): string {
   if (!keyword) return '';
-  return keyword
-    .replace(/^\[|\]$/g, '') // Remove exact match brackets
-    .replace(/^"|"$/g, '') // Remove phrase quotes
+  let cleaned = keyword
+    .replace(/^\[|\]$/g, '') // Remove exact match brackets from start/end
+    .replace(/\[|\]/g, '') // Remove ALL brackets anywhere in the string
+    .replace(/^"|"$/g, '') // Remove phrase quotes from start/end (first pass)
     .replace(/^-\[|-\]$/g, '') // Remove negative exact brackets
     .replace(/^-"|-"$/g, '') // Remove negative phrase quotes
     .replace(/^-/g, '') // Remove negative prefix
+    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
     .trim();
+  
+  // Remove any remaining quotes (single, double, or triple quotes) from anywhere in the string
+  // This handles cases where quotes weren't properly removed
+  cleaned = cleaned.replace(/^["']+|["']+$/g, ''); // Remove quotes from start/end
+  cleaned = cleaned.replace(/^["']+|["']+$/g, ''); // Second pass for triple quotes
+  cleaned = cleaned.replace(/^["']+|["']+$/g, ''); // Third pass to be thorough
+  cleaned = cleaned.replace(/["']/g, ''); // Remove any remaining quotes anywhere in the string
+  
+  return cleaned.trim();
+}
+
+/**
+ * Check if keyword is low quality and should be filtered out
+ */
+function isLowQualityKeyword(keyword: string): boolean {
+  if (!keyword || keyword.length < 3) return true; // Too short
+  
+  const lower = keyword.toLowerCase();
+  
+  // Check for repeated phrases (e.g., "near me near me", "services services")
+  const words = lower.split(/\s+/);
+  for (let i = 0; i < words.length - 1; i++) {
+    if (words[i] === words[i + 1]) {
+      return true; // Repeated word/phrase
+    }
+  }
+  
+  // Check for common low-quality patterns
+  const lowQualityPatterns = [
+    /\b(near me)\s+\1/i, // "near me near me"
+    /\b(services?)\s+\1/i, // "services services" or "service service"
+    /\b(price)\s+near\s+me/i, // "price near me"
+    /\b(me)\s+price/i, // "me price"
+    /\b(24\/7)\s+me\b/i, // "24/7 me"
+    /\b(near)\s+(repair|price|services?)\b/i, // "near repair", "near price"
+    /\b(services?)\s+(repair|price)\b/i, // "services repair"
+    /\b(top|best)\s+(services?|roofing|plumbing)\b$/i, // "top services", "best roofing" (too vague)
+    /\b(24\/7)\s+(services?|roofing|plumbing)\b$/i, // "24/7 services" (too vague)
+    /\b(emergency)\s+(near\s+me)?\s*$/i, // "emergency" or "emergency near me" (too vague)
+  ];
+  
+  for (const pattern of lowQualityPatterns) {
+    if (pattern.test(keyword)) {
+      return true;
+    }
+  }
+  
+  // Check for grammatically incorrect patterns (question words without proper structure)
+  const questionWords = ['what', 'where', 'when', 'why', 'how', 'does', 'can', 'is'];
+  const firstWord = words[0];
+  if (questionWords.includes(firstWord) && words.length < 4) {
+    // Question words with very few words are likely incomplete
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -183,83 +308,247 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
     return rows;
   }
 
+  // Track all keywords across all campaigns/ad groups for global deduplication
+  const globalSeenKeywords = new Map<string, Set<string>>(); // campaign -> Set of "adgroup::keyword::matchtype"
+
   structure.campaigns.forEach((campaign) => {
-    // Campaign row
+    // Campaign row - MUST appear before ad groups, keywords, or ads
+    // Format location targeting data according to master sheet
+    const targetCountry = (campaign as any).targetCountry || '';
+    const zipCodes = campaign.zip_codes || [];
+    const cities = campaign.cities || [];
+    const states = campaign.states || [];
+    const regions = (campaign as any).regions || [];
+    
+    // Format location data as per master sheet (comma-separated, quoted if multiple)
+    // Note: PapaParse will handle quoting automatically, so we pass arrays/strings directly
+    const postalCodeTargeting = zipCodes.length > 0 
+      ? (zipCodes.length === 1 ? zipCodes[0] : zipCodes.join(','))
+      : '';
+    const cityTargeting = cities.length > 0
+      ? (cities.length === 1 ? cities[0] : cities.join(', '))
+      : '';
+    const stateTargeting = states.length > 0 ? states[0] : ''; // Single value per master sheet
+    const regionTargeting = regions.length > 0 ? regions[0] : ''; // Single value per master sheet
+    
     const campaignRow: CSVRow = {
-      'Row Type': 'CAMPAIGN',
+      'Type': 'Campaign',
+      'Operation': 'ADD',
       'Campaign': campaign.campaign_name || '',
-      'Campaign Status': 'ENABLED',
-      'Campaign Type': 'SEARCH',
-      'Campaign Budget': (campaign as any).budget?.toString() || '',
-      'Budget Type': (campaign as any).budget_type || 'DAILY',
-      'Bidding Strategy Type': (campaign as any).bidding_strategy || 'MANUAL_CPC',
-      'Start Date': (campaign as any).start_date || '',
-      'End Date': (campaign as any).end_date || '',
-      'Location Type': (campaign as any).location_type || 'COUNTRY',
-      'Location Code': (campaign as any).location_code || 'US',
-      'Operation': 'NEW',
+      'Campaign ID': '',
+      'Campaign status': 'Enabled',
+      'Campaign type': 'Search',
+      'Budget': (campaign as any).budget?.toString() || '',
+      'Budget ID': '',
+      'Budget type': (campaign as any).budget_type || 'Daily',
+      'Bidding strategy': (campaign as any).bidding_strategy || 'Manual CPC',
+      'Start date': (campaign as any).start_date || '',
+      'End date': (campaign as any).end_date || '',
+      'Networks': '',
+      'Location targeting': targetCountry || (campaign as any).location_code || '',
+      'Postal code targeting': postalCodeTargeting,
+      'City targeting': cityTargeting,
+      'State targeting': stateTargeting,
+      'Region targeting': regionTargeting,
+      'Language targeting': '',
+      'Match type': '', // Explicitly empty for non-keyword rows
     };
     rows.push(campaignRow);
 
     // Process ad groups
     if (campaign.adgroups && campaign.adgroups.length > 0) {
       campaign.adgroups.forEach((adGroup) => {
+        // Clean ad group name - remove any quotes, brackets, or formatting
+        let cleanedAdGroupName = (adGroup.adgroup_name || '').trim();
+        // Remove all types of quotes (single, double, triple) and brackets from start and end
+        cleanedAdGroupName = cleanedAdGroupName
+          .replace(/^["']+|["']+$/g, '') // Remove quotes from start/end (first pass)
+          .replace(/^["']+|["']+$/g, '') // Second pass for triple quotes
+          .replace(/^["']+|["']+$/g, '') // Third pass to be thorough
+          .replace(/^\[|\]$/g, '') // Remove brackets from start/end
+          .replace(/\[|\]/g, '') // Remove ALL brackets anywhere in the string
+          .trim();
+        // Also remove any quotes that might be in the middle (but keep the text)
+        if (!cleanedAdGroupName) {
+          console.warn('Skipping ad group with empty name');
+          return;
+        }
+        
         // Ad Group row
         const adGroupRow: CSVRow = {
-          'Row Type': 'ADGROUP',
+          'Type': 'Ad group',
+          'Operation': 'ADD',
           'Campaign': campaign.campaign_name || '',
-              'AdGroup': adGroup.adgroup_name || '',
-              'AdGroup Status': 'ENABLED',
-              'Default Max CPC': (adGroup as any).default_max_cpc?.toString() || '',
-              'Operation': 'NEW',
+          'Ad group': cleanedAdGroupName,
+          'Ad group status': 'Enabled',
+          'Max CPC': (adGroup as any).default_max_cpc?.toString() || '',
         };
         rows.push(adGroupRow);
 
-        // Keywords
+        // Keywords - with validation and deduplication
         if (adGroup.keywords && adGroup.keywords.length > 0) {
+          const MAX_KEYWORD_LENGTH = 80; // Google Ads limit
+          const MIN_KEYWORD_LENGTH = 3; // Minimum meaningful keyword length
+          
+          // Initialize global tracking for this campaign if not exists
+          if (!globalSeenKeywords.has(campaign.campaign_name || '')) {
+            globalSeenKeywords.set(campaign.campaign_name || '', new Set());
+          }
+          const campaignSeenKeywords = globalSeenKeywords.get(campaign.campaign_name || '')!;
+          
           adGroup.keywords.forEach((keyword) => {
             const keywordText = typeof keyword === 'string' ? keyword : (keyword as any).keyword || keyword;
+            if (!keywordText || typeof keywordText !== 'string') return; // Skip invalid keywords
+            
+            // IMPORTANT: Get match type BEFORE cleaning, as cleaning removes brackets/quotes
             const matchType = typeof keyword === 'string' ? getMatchType(keywordText) : ((keyword as any).matchType || getMatchType(keywordText));
-            const cleanedKeyword = cleanKeywordText(keywordText);
-            // Format match type for CSV: "Broad", "Phrase", "Exact" (not uppercase)
-            const csvMatchType = formatMatchTypeForCSV(matchType, false);
+            
+            // Clean keyword text - remove ALL brackets and quotes (match type is in separate column)
+            let cleanedKeyword = cleanKeywordText(keywordText);
+            
+            // Double-check: remove any remaining brackets or quotes that might have been missed
+            cleanedKeyword = cleanedKeyword.replace(/[\[\]"]/g, '').trim();
+            
+            // Skip if keyword is empty after cleaning
+            if (!cleanedKeyword || cleanedKeyword.trim().length === 0) return;
+            
+            // Skip if too short
+            if (cleanedKeyword.length < MIN_KEYWORD_LENGTH) return;
+            
+            // Filter out low-quality keywords
+            if (isLowQualityKeyword(cleanedKeyword)) {
+              console.warn(`Skipping low-quality keyword: "${cleanedKeyword}"`);
+              return;
+            }
+            
+            // Enforce 80 character limit (Google Ads rule)
+            if (cleanedKeyword.length > MAX_KEYWORD_LENGTH) {
+              cleanedKeyword = cleanedKeyword.substring(0, MAX_KEYWORD_LENGTH).trim();
+            }
+            
+            // Skip if still empty after truncation
+            if (!cleanedKeyword || cleanedKeyword.trim().length === 0) return;
+            
+            // Validate match type is valid
+            let csvMatchType = formatMatchTypeForCSV(matchType, false);
+            if (!['Broad', 'Phrase', 'Exact'].includes(csvMatchType)) {
+              console.warn(`Invalid match type for keyword "${cleanedKeyword}": ${csvMatchType}, defaulting to Broad`);
+              csvMatchType = 'Broad';
+            }
+            
+            // Create unique key for duplicate detection (case-insensitive, across all ad groups in campaign)
+            const uniqueKey = `${cleanedKeyword.toLowerCase()}::${csvMatchType}`;
+            
+            // Skip duplicates across all ad groups in the campaign
+            if (campaignSeenKeywords.has(uniqueKey)) {
+              console.warn(`Skipping duplicate keyword: "${cleanedKeyword}" (${csvMatchType})`);
+              return;
+            }
+            campaignSeenKeywords.add(uniqueKey);
+            
+            // Ensure campaign and ad group names are not empty
+            if (!campaign.campaign_name || !cleanedAdGroupName) {
+              console.warn(`Skipping keyword "${cleanedKeyword}" - missing campaign or ad group name`);
+              return;
+            }
 
+            // Validate match type before creating row
+            if (!csvMatchType || !['Broad', 'Phrase', 'Exact'].includes(csvMatchType)) {
+              console.warn(`Invalid match type "${csvMatchType}" for keyword "${cleanedKeyword}", defaulting to Broad`);
+              csvMatchType = 'Broad';
+            }
+            
             const keywordRow: CSVRow = {
-              'Row Type': 'KEYWORD',
-              'Campaign': campaign.campaign_name || '',
-              'AdGroup': adGroup.adgroup_name || '',
+              'Type': 'Keyword',
+              'Operation': 'ADD',
+              'Campaign': campaign.campaign_name,
+              'Ad group': cleanedAdGroupName,
               'Keyword': cleanedKeyword,
-              'Match Type': csvMatchType,
-              'Keyword Status': 'ENABLED',
-              'Keyword Max CPC': typeof keyword === 'object' && (keyword as any).maxCPC ? (keyword as any).maxCPC.toString() : '',
-              'Keyword Final URL': typeof keyword === 'object' && (keyword as any).finalURL ? (keyword as any).finalURL : '',
-              'Operation': 'NEW',
+              'Match type': csvMatchType, // Must be 'Broad', 'Phrase', or 'Exact' - NOT 'Keyword'
+              'Max CPC': typeof keyword === 'object' && (keyword as any).maxCPC ? (keyword as any).maxCPC.toString() : '',
+              'Final URL': typeof keyword === 'object' && (keyword as any).finalURL ? (keyword as any).finalURL : '',
             };
             rows.push(keywordRow);
           });
         }
 
-        // Ads
+        // Ads - Google Ads allows max 3 RSA ads per ad group
         if (adGroup.ads && adGroup.ads.length > 0) {
-          adGroup.ads.forEach((ad) => {
-            // Determine ad type for CSV
-            let adTypeForCSV = 'RESPONSIVE_SEARCH_AD';
-            if (ad.type === 'callonly') {
-              adTypeForCSV = 'CALL_ONLY_AD';
-            } else if (ad.type === 'dki') {
-              // DKI ads are also exported as Responsive Search Ads in Google Ads Editor
-              adTypeForCSV = 'RESPONSIVE_SEARCH_AD';
+          const MAX_ADS_PER_ADGROUP = 3; // Google Ads limit for RSA
+          const seenAdContent = new Set<string>(); // Track duplicate ad content
+          
+          // Validate and fix all ads before processing
+          const { ads: validatedAds, report: validationReport } = validateAndFixAds(adGroup.ads);
+          
+          // Log validation report if there were fixes
+          if (validationReport.fixed > 0) {
+            console.log(`✅ Auto-fixed ${validationReport.fixed} ad(s) in ad group "${cleanedAdGroupName}":`);
+            validationReport.details.forEach((detail, idx) => {
+              if (detail.fixes.length > 0) {
+                console.log(`  Ad ${idx + 1}: ${detail.fixes.join(', ')}`);
+              }
+            });
+          }
+          
+          // Limit to max 3 ads per ad group, and filter duplicates
+          validatedAds.slice(0, MAX_ADS_PER_ADGROUP * 2).forEach((ad) => {
+            // Skip if not RSA type (for now, only process RSA)
+            if (ad.type !== 'rsa') {
+              return;
             }
             
+            // Headlines and descriptions are already validated and fixed by validateAndFixAds above
+            // Just ensure they're trimmed and within limits for duplicate detection
+            const headline1 = (ad.headline1 || 'Professional Service').trim().substring(0, 30);
+            const headline2 = (ad.headline2 || 'Expert Solutions').trim().substring(0, 30);
+            const headline3 = (ad.headline3 || 'Quality Guaranteed').trim().substring(0, 30);
+            const desc1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
+            const desc2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
+            const finalUrl = (ad.final_url || '').trim();
+            
+            // Create unique key for duplicate detection (using normalized values)
+            const adContentKey = `${headline1}::${headline2}::${headline3}::${desc1}::${desc2}::${finalUrl}`.toLowerCase();
+            
+            // Skip if we've already added this exact ad content
+            if (seenAdContent.has(adContentKey)) {
+              console.warn(`Skipping duplicate ad content in ad group "${cleanedAdGroupName}"`);
+              return;
+            }
+            
+            // Stop if we've reached the limit
+            if (seenAdContent.size >= MAX_ADS_PER_ADGROUP) {
+              return;
+            }
+            
+            seenAdContent.add(adContentKey);
+            
+            // Extract callouts and other assets from ad extensions
+            const callouts: string[] = [];
+            if (ad.extensions && Array.isArray(ad.extensions)) {
+              ad.extensions.forEach((ext: any) => {
+                if (ext.extensionType === 'callout' && ext.text) {
+                  callouts.push(ext.text);
+                }
+              });
+            }
+            
+            // Headlines and descriptions are already validated - use them directly
+            const description1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
+            const description2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
+            
             const adRow: CSVRow = {
-              'Row Type': 'AD',
+              'Type': 'Responsive search ad',
+              'Operation': 'ADD',
               'Campaign': campaign.campaign_name || '',
-              'AdGroup': adGroup.adgroup_name || '',
-              'Ad Type': adTypeForCSV,
-              'Ad Status': 'ENABLED',
-              'Headline 1': (ad.headline1 || '').trim().substring(0, 30),
-              'Headline 2': (ad.headline2 || '').trim().substring(0, 30),
-              'Headline 3': (ad.headline3 || '').trim().substring(0, 30),
+              'Ad group': cleanedAdGroupName,
+              'Match type': '', // Explicitly empty for ad rows
+              'Final URL': ad.final_url || '',
+              'Final mobile URL': (ad as any).final_mobile_url || '',
+              'Tracking template': (ad as any).tracking_template || '',
+              'Custom parameter': (ad as any).custom_parameters || '',
+              'Headline 1': headline1,
+              'Headline 2': headline2,
+              'Headline 3': headline3,
               'Headline 4': (ad.headline4 || '').trim().substring(0, 30),
               'Headline 5': (ad.headline5 || '').trim().substring(0, 30),
               'Headline 6': (ad.headline6 || '').trim().substring(0, 30),
@@ -272,38 +561,87 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               'Headline 13': (ad.headline13 || '').trim().substring(0, 30),
               'Headline 14': (ad.headline14 || '').trim().substring(0, 30),
               'Headline 15': (ad.headline15 || '').trim().substring(0, 30),
-              'Description 1': (ad.description1 || '').trim().substring(0, 90),
-              'Description 2': (ad.description2 || '').trim().substring(0, 90),
+              'Description 1': description1,
+              'Description 2': description2,
               'Description 3': (ad.description3 || '').trim().substring(0, 90),
               'Description 4': (ad.description4 || '').trim().substring(0, 90),
-              'Final URL': ad.final_url || '',
-              'Final Mobile URL': (ad as any).final_mobile_url || '',
-              'Path1': (ad.path1 || '').trim().substring(0, 15),
-              'Path2': (ad.path2 || '').trim().substring(0, 15),
-              'Tracking Template': (ad as any).tracking_template || '',
-              'Custom Parameters': (ad as any).custom_parameters || '',
-              'Operation': 'NEW',
+              'Business name': (ad as any).businessName || '',
+              'Path 1': (ad.path1 || '').trim().substring(0, 15),
+              'Path 2': (ad.path2 || '').trim().substring(0, 15),
+              'Phone': (ad as any).phoneNumber || '',
+              'Callout 1': callouts[0] || '',
+              'Callout 2': callouts[1] || '',
+              'Callout 3': callouts[2] || '',
+              'Callout 4': callouts[3] || '',
             };
             rows.push(adRow);
           });
         }
 
-        // Negative Keywords
+        // Negative Keywords - with validation and deduplication
         if (adGroup.negative_keywords && adGroup.negative_keywords.length > 0) {
+          const MAX_KEYWORD_LENGTH = 80; // Google Ads limit
+          const MIN_KEYWORD_LENGTH = 2; // Minimum for negative keywords (can be shorter)
+          
+          // Initialize global tracking for negative keywords in this campaign
+          if (!globalSeenKeywords.has(campaign.campaign_name || '')) {
+            globalSeenKeywords.set(campaign.campaign_name || '', new Set());
+          }
+          const campaignSeenKeywords = globalSeenKeywords.get(campaign.campaign_name || '')!;
+          
           adGroup.negative_keywords.forEach((negativeKeyword) => {
             const keywordText = typeof negativeKeyword === 'string' ? negativeKeyword : (negativeKeyword as any).keyword || negativeKeyword;
+            if (!keywordText || typeof keywordText !== 'string') return; // Skip invalid keywords
+            
             const matchType = typeof negativeKeyword === 'string' ? getMatchType(keywordText) : ((negativeKeyword as any).matchType || getMatchType(keywordText));
-            const cleanedKeyword = cleanKeywordText(keywordText);
+            let cleanedKeyword = cleanKeywordText(keywordText);
+            
+            // Skip if keyword is empty after cleaning
+            if (!cleanedKeyword || cleanedKeyword.trim().length === 0) return;
+            
+            // Skip if too short
+            if (cleanedKeyword.length < MIN_KEYWORD_LENGTH) return;
+            
+            // Enforce 80 character limit (Google Ads rule)
+            if (cleanedKeyword.length > MAX_KEYWORD_LENGTH) {
+              cleanedKeyword = cleanedKeyword.substring(0, MAX_KEYWORD_LENGTH).trim();
+            }
+            
+            // Skip if still empty after truncation
+            if (!cleanedKeyword || cleanedKeyword.trim().length === 0) return;
+            
             // Convert to Google Ads Editor format: "Negative Broad", "Negative Phrase", "Negative Exact"
-            const csvMatchType = formatMatchTypeForCSV(matchType, true);
+            let csvMatchType = formatMatchTypeForCSV(matchType, true);
+            
+            // Validate match type is valid for negative keywords
+            if (!['Negative Broad', 'Negative Phrase', 'Negative Exact'].includes(csvMatchType)) {
+              console.warn(`Invalid negative match type for keyword "${cleanedKeyword}": ${csvMatchType}, defaulting to Negative Broad`);
+              csvMatchType = 'Negative Broad';
+            }
+            
+            // Create unique key for duplicate detection (case-insensitive, across all ad groups)
+            const uniqueKey = `NEG::${cleanedKeyword.toLowerCase()}::${csvMatchType}`;
+            
+            // Skip duplicates across all ad groups in the campaign
+            if (campaignSeenKeywords.has(uniqueKey)) {
+              console.warn(`Skipping duplicate negative keyword: "${cleanedKeyword}" (${csvMatchType})`);
+              return;
+            }
+            campaignSeenKeywords.add(uniqueKey);
+            
+            // Ensure campaign and ad group names are not empty
+            if (!campaign.campaign_name || !cleanedAdGroupName) {
+              console.warn(`Skipping negative keyword "${cleanedKeyword}" - missing campaign or ad group name`);
+              return;
+            }
 
             const negativeRow: CSVRow = {
-              'Row Type': 'NEGATIVE_KEYWORD',
-              'Campaign': campaign.campaign_name || '',
-              'AdGroup': adGroup.adgroup_name || '',
-              'Negative Keyword': cleanedKeyword,
-              'Match Type': csvMatchType,
-              'Operation': 'NEW',
+              'Type': 'Negative keyword',
+              'Operation': 'ADD',
+              'Campaign': campaign.campaign_name,
+              'Ad group': cleanedAdGroupName,
+              'Keyword': cleanedKeyword, // Use cleanedKeyword variable
+              'Match type': csvMatchType, // Must be 'Negative Broad', 'Negative Phrase', or 'Negative Exact'
             };
             rows.push(negativeRow);
           });
@@ -311,140 +649,47 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
       });
     }
 
-    // Location Targeting Rows - Google Ads Editor format
-    // Map country names to ISO country codes
-    const countryCodeMap: { [key: string]: string } = {
-      'United States': 'US',
-      'Canada': 'CA',
-      'United Kingdom': 'GB',
-      'Australia': 'AU',
-      'Germany': 'DE',
-      'France': 'FR',
-      'Italy': 'IT',
-      'Spain': 'ES',
-      'Netherlands': 'NL',
-      'Belgium': 'BE',
-      'Switzerland': 'CH',
-      'Sweden': 'SE',
-      'Norway': 'NO',
-      'Denmark': 'DK',
-      'Finland': 'FI',
-      'Poland': 'PL',
-      'Austria': 'AT',
-      'Ireland': 'IE',
-      'Portugal': 'PT',
-      'Greece': 'GR',
-    };
+    // Note: Location targeting is now handled in the Campaign row itself
+    // using Postal code targeting, City targeting, State targeting, Region targeting columns
+    // No separate Location rows needed per master sheet format
     
-    // Add country location if no specific locations are set
-    const hasSpecificLocations = 
-      (campaign.states && campaign.states.length > 0) ||
-      (campaign.cities && campaign.cities.length > 0) ||
-      (campaign.zip_codes && campaign.zip_codes.length > 0);
-    
-    // If no specific locations, add country targeting
-    if (!hasSpecificLocations && (campaign as any).targetCountry) {
-      const countryName = (campaign as any).targetCountry;
-      const countryCode = countryCodeMap[countryName] || countryName.substring(0, 2).toUpperCase() || 'US';
-      const countryRow: CSVRow = {
-        'Row Type': 'LOCATION',
-        'Campaign': campaign.campaign_name || '',
-        'Location Type': 'COUNTRY',
-        'Location Code': countryCode,
-        'Operation': 'NEW',
-      };
-      rows.push(countryRow);
-    }
-    
-    // Add state locations
-    if (campaign.states && Array.isArray(campaign.states) && campaign.states.length > 0) {
-      campaign.states.forEach((state: string) => {
-        if (state && state.trim()) {
-          const locationRow: CSVRow = {
-            'Row Type': 'LOCATION',
-            'Campaign': campaign.campaign_name || '',
-            'Location Type': 'STATE',
-            'Location Code': state.trim(),
-            'Operation': 'NEW',
-          };
-          rows.push(locationRow);
-        }
-      });
-    }
-    // Add city locations
-    if (campaign.cities && Array.isArray(campaign.cities) && campaign.cities.length > 0) {
-      campaign.cities.forEach((city: string) => {
-        if (city && city.trim()) {
-          const locationRow: CSVRow = {
-            'Row Type': 'LOCATION',
-            'Campaign': campaign.campaign_name || '',
-            'Location Type': 'CITY',
-            'Location Code': city.trim(),
-            'Operation': 'NEW',
-          };
-          rows.push(locationRow);
-        }
-      });
-    }
-    // Add ZIP code locations
-    if (campaign.zip_codes && Array.isArray(campaign.zip_codes) && campaign.zip_codes.length > 0) {
-      campaign.zip_codes.forEach((zip: string) => {
-        if (zip && zip.trim()) {
-          const locationRow: CSVRow = {
-            'Row Type': 'LOCATION',
-            'Campaign': campaign.campaign_name || '',
-            'Location Type': 'ZIP',
-            'Location Code': zip.trim(),
-            'Operation': 'NEW',
-          };
-          rows.push(locationRow);
-        }
-      });
-    }
-    
-    // Add Extensions/Assets rows
+    // Add Sitelink rows - per master sheet, each sitelink gets its own row with Type='Sitelink'
     if (campaign.adgroups && campaign.adgroups.length > 0) {
       campaign.adgroups.forEach((adGroup) => {
+        // Clean ad group name for extensions
+        let cleanedAdGroupNameForExt = (adGroup.adgroup_name || '').trim();
+        cleanedAdGroupNameForExt = cleanedAdGroupNameForExt
+          .replace(/^["']+|["']+$/g, '')
+          .replace(/^["']+|["']+$/g, '')
+          .replace(/^["']+|["']+$/g, '')
+          .trim();
+        
         if (adGroup.ads && adGroup.ads.length > 0) {
           adGroup.ads.forEach((ad) => {
-            // Process extensions from ad
+            // Process sitelinks from ad extensions
             if (ad.extensions && Array.isArray(ad.extensions)) {
               ad.extensions.forEach((ext: any) => {
+                // Sitelinks - per master sheet, each sitelink gets its own row with Type='Sitelink'
                 if (ext.extensionType === 'sitelink' && ext.sitelinks && Array.isArray(ext.sitelinks)) {
-                  ext.sitelinks.forEach((sitelink: any) => {
+                  ext.sitelinks.forEach((sitelink: any, index: number) => {
                     if (sitelink.text) {
-                      const extensionRow: CSVRow = {
-                        'Row Type': 'ASSET',
+                      const sitelinkNum = Math.min(index + 1, 4); // Max 4 sitelinks per master sheet
+                      const sitelinkRow: CSVRow = {
+                        'Type': 'Sitelink',
+                        'Operation': 'ADD',
                         'Campaign': campaign.campaign_name || '',
-                        'AdGroup': adGroup.adgroup_name || '',
-                        'Asset Type': 'SITELINK',
-                        'Asset Name': sitelink.text || '',
-                        'Asset URL': sitelink.url || ad.final_url || '',
-                        'Operation': 'NEW',
+                        'Ad group': cleanedAdGroupNameForExt,
+                        [`Sitelink text ${sitelinkNum}`]: sitelink.text || '',
+                        [`Sitelink final URL ${sitelinkNum}`]: sitelink.url || ad.final_url || '',
                       };
-                      rows.push(extensionRow);
+                      // Add descriptions only for first sitelink
+                      if (sitelinkNum === 1) {
+                        sitelinkRow['Sitelink description 1'] = sitelink.description || '';
+                        sitelinkRow['Sitelink description 2'] = sitelink.description2 || '';
+                      }
+                      rows.push(sitelinkRow);
                     }
                   });
-                } else if (ext.extensionType === 'callout' && ext.text) {
-                  const extensionRow: CSVRow = {
-                    'Row Type': 'ASSET',
-                    'Campaign': campaign.campaign_name || '',
-                    'AdGroup': adGroup.adgroup_name || '',
-                    'Asset Type': 'CALLOUT',
-                    'Asset Name': ext.text || '',
-                    'Operation': 'NEW',
-                  };
-                  rows.push(extensionRow);
-                } else if (ext.extensionType === 'call' && ext.phoneNumber) {
-                  const extensionRow: CSVRow = {
-                    'Row Type': 'ASSET',
-                    'Campaign': campaign.campaign_name || '',
-                    'AdGroup': adGroup.adgroup_name || '',
-                    'Asset Type': 'CALL',
-                    'Asset Name': ext.phoneNumber || '',
-                    'Operation': 'NEW',
-                  };
-                  rows.push(extensionRow);
                 }
               });
             }
@@ -474,21 +719,26 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
 
   rows.forEach((row, index) => {
     const rowNum = index + 1;
-    const rowType = (row['Row Type'] || '').toString().toUpperCase();
+    // Use 'Type' column (not 'Row Type') - matches the header and row creation
+    const rowType = (row['Type'] || '').toString().trim();
 
-    // Validate Row Type
+    // Validate Type
     if (!rowType) {
       errors.push(`Row ${rowNum}: Missing Row Type`);
       return;
     }
 
-    const validRowTypes = ['CAMPAIGN', 'ADGROUP', 'KEYWORD', 'AD', 'NEGATIVE_KEYWORD', 'ASSET', 'LOCATION'];
-    if (!validRowTypes.includes(rowType)) {
+    // Valid types match what we create in campaignStructureToCSVRows
+    const validRowTypes = ['Campaign', 'Ad group', 'Keyword', 'Responsive search ad', 'Negative keyword', 'Sitelink'];
+    const rowTypeUpper = rowType.toUpperCase();
+    const validRowTypesUpper = validRowTypes.map(t => t.toUpperCase());
+    
+    if (!validRowTypesUpper.includes(rowTypeUpper)) {
       errors.push(`Row ${rowNum}: Invalid Row Type "${rowType}"`);
     }
 
     // Campaign validation
-    if (rowType === 'CAMPAIGN') {
+    if (rowTypeUpper === 'CAMPAIGN') {
       const campaignName = (row['Campaign'] || '').toString().trim();
       if (!campaignName) {
         errors.push(`Row ${rowNum}: Campaign name is required`);
@@ -496,26 +746,26 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
         campaignNames.add(campaignName);
       }
 
-      const startDate = (row['Start Date'] || '').toString();
+      const startDate = (row['Start date'] || '').toString();
       if (startDate && !isValidDate(startDate)) {
-        errors.push(`Row ${rowNum}: Start Date must be in YYYY-MM-DD format`);
+        errors.push(`Row ${rowNum}: Start date must be in YYYY-MM-DD format`);
       }
 
-      const endDate = (row['End Date'] || '').toString();
+      const endDate = (row['End date'] || '').toString();
       if (endDate && !isValidDate(endDate)) {
-        errors.push(`Row ${rowNum}: End Date must be in YYYY-MM-DD format`);
+        errors.push(`Row ${rowNum}: End date must be in YYYY-MM-DD format`);
       }
 
-      const budget = (row['Campaign Budget'] || '').toString();
+      const budget = (row['Budget'] || '').toString();
       if (budget && isNaN(parseFloat(budget))) {
-        errors.push(`Row ${rowNum}: Campaign Budget must be a number`);
+        errors.push(`Row ${rowNum}: Budget must be a number`);
       }
     }
 
     // Ad Group validation
-    if (rowType === 'ADGROUP') {
+    if (rowTypeUpper === 'AD GROUP' || rowTypeUpper === 'ADGROUP') {
       const campaignName = (row['Campaign'] || '').toString().trim();
-      const adGroupName = (row['AdGroup'] || '').toString().trim();
+      const adGroupName = (row['Ad group'] || '').toString().trim();
 
       if (!campaignName) {
         errors.push(`Row ${rowNum}: Campaign name is required for Ad Group`);
@@ -529,18 +779,18 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
         adGroupMap.get(campaignName)!.add(adGroupName);
       }
 
-      const maxCPC = (row['Default Max CPC'] || '').toString();
+      const maxCPC = (row['Max CPC'] || '').toString();
       if (maxCPC && isNaN(parseFloat(maxCPC))) {
-        errors.push(`Row ${rowNum}: Default Max CPC must be a number`);
+        errors.push(`Row ${rowNum}: Max CPC must be a number`);
       }
     }
 
     // Keyword validation
-    if (rowType === 'KEYWORD') {
+    if (rowTypeUpper === 'KEYWORD') {
       const campaignName = (row['Campaign'] || '').toString().trim();
-      const adGroupName = (row['AdGroup'] || '').toString().trim();
+      const adGroupName = (row['Ad group'] || '').toString().trim();
       const keyword = (row['Keyword'] || '').toString().trim();
-      const matchType = (row['Match Type'] || '').toString().toUpperCase();
+      const matchType = (row['Match type'] || '').toString();
 
       if (!campaignName) {
         errors.push(`Row ${rowNum}: Campaign name is required for Keyword`);
@@ -552,26 +802,27 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
         errors.push(`Row ${rowNum}: Keyword text is required`);
       }
 
-      const validMatchTypes = ['BROAD', 'PHRASE', 'EXACT'];
-      if (matchType && !validMatchTypes.includes(matchType)) {
-        errors.push(`Row ${rowNum}: Invalid Match Type "${matchType}"`);
+      const validMatchTypes = ['Broad', 'Phrase', 'Exact'];
+      const normalizedMatchType = matchType.charAt(0).toUpperCase() + matchType.slice(1).toLowerCase();
+      if (matchType && !validMatchTypes.includes(normalizedMatchType)) {
+        errors.push(`Row ${rowNum}: Invalid Match type "${matchType}". Expected: "Broad", "Phrase", or "Exact"`);
       }
 
-      const maxCPC = (row['Keyword Max CPC'] || '').toString();
+      const maxCPC = (row['Max CPC'] || '').toString();
       if (maxCPC && isNaN(parseFloat(maxCPC))) {
-        errors.push(`Row ${rowNum}: Keyword Max CPC must be a number`);
+        errors.push(`Row ${rowNum}: Max CPC must be a number`);
       }
 
-      const finalURL = (row['Keyword Final URL'] || '').toString();
+      const finalURL = (row['Final URL'] || '').toString();
       if (finalURL && !isValidURL(finalURL)) {
         errors.push(`Row ${rowNum}: Keyword Final URL must be a valid URL`);
       }
     }
 
-    // Ad validation
-    if (rowType === 'AD') {
+    // Ad validation - check for 'Responsive search ad' type
+    if (rowTypeUpper === 'RESPONSIVE SEARCH AD' || rowTypeUpper === 'AD') {
       const campaignName = (row['Campaign'] || '').toString().trim();
-      const adGroupName = (row['AdGroup'] || '').toString().trim();
+      const adGroupName = (row['Ad group'] || '').toString().trim();
       const adType = (row['Ad Type'] || '').toString().toUpperCase();
       const finalURL = (row['Final URL'] || '').toString();
 
@@ -582,26 +833,33 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
         errors.push(`Row ${rowNum}: Ad Group name is required for Ad`);
       }
 
-      const validAdTypes = ['RESPONSIVE_SEARCH_AD', 'EXPANDED_TEXT_AD', 'CALL_ONLY_AD'];
-      if (adType && !validAdTypes.includes(adType)) {
-        warnings.push(`Row ${rowNum}: Ad Type "${adType}" may not be recognized`);
-      }
-
       if (!finalURL) {
-        errors.push(`Row ${rowNum}: Final URL is required for Ad`);
+        errors.push(`Row ${rowNum}: Final URL is required for Responsive search ad`);
       } else if (!isValidURL(finalURL)) {
-        errors.push(`Row ${rowNum}: Final URL must be a valid URL (http:// or https://)`);
+        errors.push(`Row ${rowNum}: Final URL must be a valid URL (https://)`);
+      } else if (!finalURL.startsWith('https://')) {
+        errors.push(`Row ${rowNum}: Final URL must start with https://`);
       }
 
-      // Validate headlines for RSA
-      if (adType === 'RESPONSIVE_SEARCH_AD') {
+      // Validate headlines for RSA (Responsive search ad)
+      if (rowTypeUpper === 'RESPONSIVE SEARCH AD') {
+        // Check for non-empty headlines (at least 3 required)
         const headlines = [
           row['Headline 1'], row['Headline 2'], row['Headline 3'],
           row['Headline 4'], row['Headline 5'], row['Headline 6'],
-        ].filter(h => h && h.toString().trim());
+          row['Headline 7'], row['Headline 8'], row['Headline 9'],
+          row['Headline 10'], row['Headline 11'], row['Headline 12'],
+          row['Headline 13'], row['Headline 14'], row['Headline 15'],
+        ].filter(h => h && h.toString().trim().length > 0);
 
         if (headlines.length < 3) {
-          errors.push(`Row ${rowNum}: Responsive Search Ads require at least 3 headlines`);
+          // This should not happen if defaults are set, but log for debugging
+          console.warn(`Row ${rowNum}: RSA ad has only ${headlines.length} headlines. Headlines:`, {
+            h1: row['Headline 1'],
+            h2: row['Headline 2'],
+            h3: row['Headline 3']
+          });
+          errors.push(`Row ${rowNum}: Responsive Search Ads require at least 3 headlines (found ${headlines.length})`);
         }
 
         // Check headline length
@@ -632,10 +890,10 @@ export function validateCSVRows(rows: CSVRow[]): CSVValidationResult {
     }
 
     // Negative Keyword validation
-    if (rowType === 'NEGATIVE_KEYWORD') {
+    if (rowTypeUpper === 'NEGATIVE KEYWORD') {
       const campaignName = (row['Campaign'] || '').toString().trim();
-      const negativeKeyword = (row['Negative Keyword'] || '').toString().trim();
-      const matchType = (row['Match Type'] || '').toString().trim();
+      const negativeKeyword = (row['Keyword'] || '').toString().trim();
+      const matchType = (row['Match type'] || '').toString().trim();
 
       if (!campaignName) {
         errors.push(`Row ${rowNum}: Campaign name is required for Negative Keyword`);
@@ -686,10 +944,15 @@ export async function exportCampaignToGoogleAdsEditorCSV(
   const csv = Papa.unparse(rows, {
     columns: GOOGLE_ADS_EDITOR_HEADERS,
     header: true,
+    newline: '\r\n', // CRLF line endings for Google Ads Editor compatibility
   });
 
+  // Add UTF-8 BOM for Google Ads Editor compatibility
+  const BOM = '\uFEFF';
+  const csvWithBOM = BOM + csv;
+
   // Create blob and download
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -715,20 +978,20 @@ export function exportKeywordsToCSV(
 
   // Campaign row
   rows.push({
-    'Row Type': 'CAMPAIGN',
+    'Type': 'Campaign',
+    'Operation': 'ADD',
     'Campaign': campaignName,
-    'Campaign Status': 'ENABLED',
-    'Campaign Type': 'SEARCH',
-    'Operation': 'NEW',
+    'Campaign status': 'Enabled',
+    'Campaign type': 'Search',
   });
 
   // Ad Group row
   rows.push({
-    'Row Type': 'ADGROUP',
+    'Type': 'Ad group',
+    'Operation': 'ADD',
     'Campaign': campaignName,
-    'AdGroup': adGroupName,
-    'AdGroup Status': 'ENABLED',
-    'Operation': 'NEW',
+    'Ad group': adGroupName,
+    'Ad group status': 'Enabled',
   });
 
   // Keyword rows
@@ -736,16 +999,16 @@ export function exportKeywordsToCSV(
     const keywordText = typeof keyword === 'string' ? keyword : keyword.keyword || '';
     const matchType = typeof keyword === 'string' ? getMatchType(keywordText) : (keyword.matchType || getMatchType(keywordText));
     const cleanedKeyword = cleanKeywordText(keywordText);
+    const csvMatchType = formatMatchTypeForCSV(matchType, false);
 
     rows.push({
-      'Row Type': 'KEYWORD',
+      'Type': 'Keyword',
+      'Operation': 'ADD',
       'Campaign': campaignName,
-      'AdGroup': adGroupName,
+      'Ad group': adGroupName,
       'Keyword': cleanedKeyword,
-      'Match Type': matchType.toUpperCase(),
-      'Keyword Status': 'ENABLED',
-      'Keyword Max CPC': typeof keyword === 'object' && keyword.maxCPC ? keyword.maxCPC.toString() : '',
-      'Operation': 'NEW',
+      'Match type': csvMatchType,
+      'Max CPC': typeof keyword === 'object' && keyword.maxCPC ? keyword.maxCPC.toString() : '',
     });
   });
 
@@ -756,14 +1019,19 @@ export function exportKeywordsToCSV(
     throw new Error(`CSV validation failed:\n${validation.errors.join('\n')}`);
   }
 
-  // Generate CSV
+  // Generate CSV with UTF-8 BOM and CRLF line endings
   const csv = Papa.unparse(rows, {
     columns: GOOGLE_ADS_EDITOR_HEADERS,
     header: true,
+    newline: '\r\n', // CRLF line endings
   });
+  
+  // Add UTF-8 BOM for Google Ads Editor compatibility
+  const BOM = '\uFEFF';
+  const csvWithBOM = BOM + csv;
 
   // Download
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -789,20 +1057,20 @@ export function exportNegativeKeywordsToCSV(
 
   // Campaign row
   rows.push({
-    'Row Type': 'CAMPAIGN',
+    'Type': 'Campaign',
+    'Operation': 'ADD',
     'Campaign': campaignName,
-    'Campaign Status': 'ENABLED',
-    'Campaign Type': 'SEARCH',
-    'Operation': 'NEW',
+    'Campaign status': 'Enabled',
+    'Campaign type': 'Search',
   });
 
   // Ad Group row
   rows.push({
-    'Row Type': 'ADGROUP',
+    'Type': 'Ad group',
+    'Operation': 'ADD',
     'Campaign': campaignName,
-    'AdGroup': adGroupName,
-    'AdGroup Status': 'ENABLED',
-    'Operation': 'NEW',
+    'Ad group': adGroupName,
+    'Ad group status': 'Enabled',
   });
 
   // Negative Keyword rows
@@ -812,12 +1080,12 @@ export function exportNegativeKeywordsToCSV(
     const cleanedKeyword = cleanKeywordText(keywordText);
 
     rows.push({
-      'Row Type': 'NEGATIVE_KEYWORD',
+      'Type': 'Negative keyword',
+      'Operation': 'ADD',
       'Campaign': campaignName,
-      'AdGroup': adGroupName,
-      'Negative Keyword': cleanedKeyword,
-      'Match Type': matchType.toUpperCase(),
-      'Operation': 'NEW',
+      'Ad group': adGroupName,
+      'Keyword': cleanedKeyword,
+      'Match type': formatMatchTypeForCSV(matchType, true),
     });
   });
 
@@ -828,14 +1096,19 @@ export function exportNegativeKeywordsToCSV(
     throw new Error(`CSV validation failed:\n${validation.errors.join('\n')}`);
   }
 
-  // Generate CSV
+  // Generate CSV with UTF-8 BOM and CRLF line endings
   const csv = Papa.unparse(rows, {
     columns: GOOGLE_ADS_EDITOR_HEADERS,
     header: true,
+    newline: '\r\n', // CRLF line endings
   });
+  
+  // Add UTF-8 BOM for Google Ads Editor compatibility
+  const BOM = '\uFEFF';
+  const csvWithBOM = BOM + csv;
 
   // Download
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

@@ -6480,11 +6480,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
       );
     }
     
-    if (activeTab === 'saved') {
-      return renderSavedCampaigns();
-    }
-    
-    // Default to builder tab
+    // The saved tab is handled separately in TabsContent, so we only render builder content here
     return (
       <div className="py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {step === 1 && renderStep1()}
