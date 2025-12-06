@@ -267,11 +267,16 @@ interface CampaignData {
   csvErrors: any[];
 }
 
-export const CampaignBuilder3: React.FC = () => {
+interface CampaignBuilder3Props {
+  initialData?: any;
+}
+
+export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [campaignSaved, setCampaignSaved] = useState(false);
   const [locationSearchTerm, setLocationSearchTerm] = useState({ countries: '', states: '', cities: '', zipCodes: '' });
+  const [editingAdId, setEditingAdId] = useState<string | null>(null);
   const [campaignData, setCampaignData] = useState<CampaignData>({
     url: '',
     campaignName: '',
@@ -295,6 +300,60 @@ export const CampaignBuilder3: React.FC = () => {
     csvData: null,
     csvErrors: [],
   });
+
+  // Handle initial data from Keyword Planner
+  useEffect(() => {
+    if (initialData && initialData.selectedKeywords && initialData.selectedKeywords.length > 0) {
+      // Process keywords from Keyword Planner
+      const keywords = initialData.selectedKeywords.map((kw: string) => {
+        // Clean keyword text (remove match type formatting for storage)
+        let cleanKw = kw.trim();
+        if (cleanKw.startsWith('[') && cleanKw.endsWith(']')) {
+          cleanKw = cleanKw.slice(1, -1);
+        } else if (cleanKw.startsWith('"') && cleanKw.endsWith('"')) {
+          cleanKw = cleanKw.slice(1, -1);
+        }
+        return {
+          text: cleanKw,
+          formatted: kw, // Keep original format
+          matchType: kw.startsWith('[') ? 'exact' : kw.startsWith('"') ? 'phrase' : 'broad'
+        };
+      });
+
+      // Extract seed keywords from the first few keywords if not provided
+      const seedKws = initialData.seedKeywords 
+        ? (typeof initialData.seedKeywords === 'string' 
+            ? initialData.seedKeywords.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : initialData.seedKeywords)
+        : keywords.slice(0, 5).map((k: any) => k.text);
+
+      setCampaignData(prev => ({
+        ...prev,
+        selectedKeywords: keywords,
+        generatedKeywords: keywords,
+        seedKeywords: seedKws,
+        negativeKeywords: initialData.negativeKeywords 
+          ? (typeof initialData.negativeKeywords === 'string' 
+              ? initialData.negativeKeywords.split('\n').map((s: string) => s.trim()).filter(Boolean)
+              : initialData.negativeKeywords)
+          : prev.negativeKeywords,
+        // Set a default URL if not provided (required for campaign)
+        url: prev.url || 'https://example.com',
+        // Generate campaign name from seed keywords if not set
+        campaignName: prev.campaignName || (seedKws.length > 0 
+          ? `${seedKws[0].replace(/[^a-z0-9]/gi, ' ').trim()} Campaign`
+          : 'Campaign')
+      }));
+
+      // Skip to step 3 (Ads Generation) since keywords are already provided
+      setCurrentStep(3);
+      
+      notifications.success('Keywords loaded from Keyword Planner', {
+        title: 'Keywords Ready',
+        description: `${keywords.length} keywords loaded. Proceeding to ads generation.`
+      });
+    }
+  }, [initialData]);
 
   // Generate default campaign name: Search-date-time
   useEffect(() => {
@@ -1244,8 +1303,171 @@ export const CampaignBuilder3: React.FC = () => {
   };
 
   const handleEditAd = (adId: string) => {
-    // TODO: Implement ad editing dialog
-    notifications.info('Ad editing feature coming soon', { title: 'Edit Ad' });
+    // Toggle edit mode - if already editing this ad, cancel edit
+    if (editingAdId === adId) {
+      setEditingAdId(null);
+    } else {
+      setEditingAdId(adId);
+    }
+  };
+
+  const updateAdField = (adId: string, field: string, value: any) => {
+    // Apply Google Ads character limits
+    let processedValue = value;
+    if (field.startsWith('headline')) {
+      // Headlines: max 30 characters
+      if (typeof value === 'string' && value.length > 30) {
+        processedValue = value.substring(0, 30);
+        notifications.warning(`Headline truncated to 30 characters (Google Ads limit)`, {
+          title: 'Character Limit',
+          description: 'Headlines must be 30 characters or less.',
+          duration: 3000
+        });
+      }
+    } else if (field.startsWith('description')) {
+      // Descriptions: max 90 characters
+      if (typeof value === 'string' && value.length > 90) {
+        processedValue = value.substring(0, 90);
+        notifications.warning(`Description truncated to 90 characters (Google Ads limit)`, {
+          title: 'Character Limit',
+          description: 'Descriptions must be 90 characters or less.',
+          duration: 3000
+        });
+      }
+    } else if (field === 'path1' || field === 'path2' || (field === 'displayPath' && Array.isArray(value))) {
+      // Paths: max 15 characters
+      if (field === 'displayPath' && Array.isArray(value)) {
+        processedValue = value.map((path: string) => 
+          typeof path === 'string' && path.length > 15 ? path.substring(0, 15) : path
+        );
+      } else if (typeof value === 'string' && value.length > 15) {
+        processedValue = value.substring(0, 15);
+        notifications.warning(`Path truncated to 15 characters (Google Ads limit)`, {
+          title: 'Character Limit',
+          description: 'Display URL paths must be 15 characters or less.',
+          duration: 3000
+        });
+      }
+    } else if (field === 'headlines' && Array.isArray(value)) {
+      // RSA headlines array: each headline max 30 characters
+      processedValue = value.map((h: string) => 
+        typeof h === 'string' && h.length > 30 ? h.substring(0, 30) : h
+      );
+    } else if (field === 'descriptions' && Array.isArray(value)) {
+      // RSA descriptions array: each description max 90 characters
+      processedValue = value.map((d: string) => 
+        typeof d === 'string' && d.length > 90 ? d.substring(0, 90) : d
+      );
+    }
+    
+    setCampaignData(prev => ({
+      ...prev,
+      ads: prev.ads.map(ad => 
+        ad.id === adId ? { ...ad, [field]: processedValue } : ad
+      )
+    }));
+  };
+
+  const handleSaveAd = (adId: string) => {
+    const ad = campaignData.ads.find(a => a.id === adId);
+    if (!ad) {
+      notifications.error('Ad not found', {
+        title: 'Error',
+        description: 'The ad you are trying to save could not be found.',
+      });
+      return;
+    }
+
+    // Validate required fields and Google Ads character limits
+    const errors: string[] = [];
+    
+    if (ad.type === 'rsa' || ad.adType === 'RSA') {
+      // RSA validation
+      if (ad.headlines && Array.isArray(ad.headlines)) {
+        ad.headlines.forEach((headline, idx) => {
+          if (headline && headline.length > 30) {
+            errors.push(`Headline ${idx + 1} exceeds 30 characters (${headline.length}/30)`);
+          }
+        });
+      }
+      if (ad.descriptions && Array.isArray(ad.descriptions)) {
+        ad.descriptions.forEach((desc, idx) => {
+          if (desc && desc.length > 90) {
+            errors.push(`Description ${idx + 1} exceeds 90 characters (${desc.length}/90)`);
+          }
+        });
+      }
+    } else if (ad.type === 'dki' || ad.adType === 'DKI') {
+      // DKI validation
+      if (!ad.headline1 || ad.headline1.trim() === '') {
+        errors.push('Headline 1 is required');
+      } else if (ad.headline1.length > 30) {
+        errors.push(`Headline 1 exceeds 30 characters (${ad.headline1.length}/30)`);
+      }
+      if (!ad.headline2 || ad.headline2.trim() === '') {
+        errors.push('Headline 2 is required');
+      } else if (ad.headline2.length > 30) {
+        errors.push(`Headline 2 exceeds 30 characters (${ad.headline2.length}/30)`);
+      }
+      if (ad.headline3 && ad.headline3.length > 30) {
+        errors.push(`Headline 3 exceeds 30 characters (${ad.headline3.length}/30)`);
+      }
+      if (!ad.description1 || ad.description1.trim() === '') {
+        errors.push('Description 1 is required');
+      } else if (ad.description1.length > 90) {
+        errors.push(`Description 1 exceeds 90 characters (${ad.description1.length}/90)`);
+      }
+      if (ad.description2 && ad.description2.length > 90) {
+        errors.push(`Description 2 exceeds 90 characters (${ad.description2.length}/90)`);
+      }
+    } else if (ad.type === 'call' || ad.adType === 'CallOnly') {
+      // Call-Only validation
+      if (!ad.headline1 || ad.headline1.trim() === '') {
+        errors.push('Headline 1 is required');
+      } else if (ad.headline1.length > 30) {
+        errors.push(`Headline 1 exceeds 30 characters (${ad.headline1.length}/30)`);
+      }
+      if (!ad.headline2 || ad.headline2.trim() === '') {
+        errors.push('Headline 2 is required');
+      } else if (ad.headline2.length > 30) {
+        errors.push(`Headline 2 exceeds 30 characters (${ad.headline2.length}/30)`);
+      }
+      if (!ad.description1 || ad.description1.trim() === '') {
+        errors.push('Description 1 is required');
+      } else if (ad.description1.length > 90) {
+        errors.push(`Description 1 exceeds 90 characters (${ad.description1.length}/90)`);
+      }
+      if (!ad.description2 || ad.description2.trim() === '') {
+        errors.push('Description 2 is required');
+      } else if (ad.description2.length > 90) {
+        errors.push(`Description 2 exceeds 90 characters (${ad.description2.length}/90)`);
+      }
+      if (!ad.phoneNumber || ad.phoneNumber.trim() === '') {
+        errors.push('Phone number is required');
+      }
+      if (!ad.businessName || ad.businessName.trim() === '') {
+        errors.push('Business name is required');
+      }
+    }
+
+    if (errors.length > 0) {
+      notifications.error(`Please fix the following errors:\n\n${errors.join('\n')}`, {
+        title: 'Validation Error',
+        description: 'All fields must comply with Google Ads character limits.',
+        priority: 'high',
+      });
+      return;
+    }
+
+    setEditingAdId(null);
+    notifications.success('Changes saved successfully', {
+      title: 'Ad Updated',
+      description: 'Your ad changes have been saved.',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAdId(null);
   };
 
   const handleDuplicateAd = (adId: string) => {
@@ -2269,6 +2491,282 @@ export const CampaignBuilder3: React.FC = () => {
               </div>
                       </div>
                     )}
+
+                    {/* Edit Form - shown when editing */}
+                    {editingAdId === ad.id && (
+                      <div className="mt-6 pt-6 border-t border-slate-200 space-y-4">
+                        {/* RSA Edit Form */}
+                        {(ad.type === 'rsa' || ad.adType === 'RSA') && (
+                          <>
+                            <div className="space-y-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700 mb-2 block">Headlines (max 30 chars each)</Label>
+                                <div className="space-y-2">
+                                  {(ad.headlines || []).slice(0, 15).map((headline: string, idx: number) => (
+                                    <div key={idx}>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <Label className="text-xs text-slate-600">Headline {idx + 1}</Label>
+                                        <span className={`text-xs ${(headline?.length || 0) > 30 ? 'text-red-600 font-semibold' : (headline?.length || 0) > 25 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                          {(headline?.length || 0)}/30
+                                        </span>
+                                      </div>
+                                      <Input
+                                        value={headline || ''}
+                                        onChange={(e) => {
+                                          const newHeadlines = [...(ad.headlines || [])];
+                                          newHeadlines[idx] = e.target.value;
+                                          updateAdField(ad.id, 'headlines', newHeadlines);
+                                        }}
+                                        className={`${(headline?.length || 0) > 30 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                        maxLength={30}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700 mb-2 block">Descriptions (max 90 chars each)</Label>
+                                <div className="space-y-2">
+                                  {(ad.descriptions || []).slice(0, 4).map((desc: string, idx: number) => (
+                                    <div key={idx}>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <Label className="text-xs text-slate-600">Description {idx + 1}</Label>
+                                        <span className={`text-xs ${(desc?.length || 0) > 90 ? 'text-red-600 font-semibold' : (desc?.length || 0) > 80 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                          {(desc?.length || 0)}/90
+                                        </span>
+                                      </div>
+                                      <Textarea
+                                        value={desc || ''}
+                                        onChange={(e) => {
+                                          const newDescriptions = [...(ad.descriptions || [])];
+                                          newDescriptions[idx] = e.target.value;
+                                          updateAdField(ad.id, 'descriptions', newDescriptions);
+                                        }}
+                                        className={`${(desc?.length || 0) > 90 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                        rows={2}
+                                        maxLength={90}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700 mb-2 block">Final URL</Label>
+                                <Input
+                                  value={ad.finalUrl || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'finalUrl', e.target.value)}
+                                  placeholder="https://www.example.com"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        {/* DKI Edit Form */}
+                        {(ad.type === 'dki' || ad.adType === 'DKI') && (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                  <span className={`text-xs ${(ad.headline1?.length || 0) > 30 ? 'text-red-600 font-semibold' : (ad.headline1?.length || 0) > 25 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.headline1?.length || 0)}/30
+                                  </span>
+                                </div>
+                                <Input
+                                  value={ad.headline1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                  className={`${(ad.headline1?.length || 0) > 30 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter headline 1"
+                                  maxLength={30}
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Headline 2 *</Label>
+                                  <span className={`text-xs ${(ad.headline2?.length || 0) > 30 ? 'text-red-600 font-semibold' : (ad.headline2?.length || 0) > 25 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.headline2?.length || 0)}/30
+                                  </span>
+                                </div>
+                                <Input
+                                  value={ad.headline2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                  className={`${(ad.headline2?.length || 0) > 30 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter headline 2"
+                                  maxLength={30}
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Headline 3</Label>
+                                  <span className={`text-xs ${(ad.headline3?.length || 0) > 30 ? 'text-red-600 font-semibold' : (ad.headline3?.length || 0) > 25 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.headline3?.length || 0)}/30
+                                  </span>
+                                </div>
+                                <Input
+                                  value={ad.headline3 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline3', e.target.value)}
+                                  className={`${(ad.headline3?.length || 0) > 30 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter headline 3"
+                                  maxLength={30}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                  <span className={`text-xs ${(ad.description1?.length || 0) > 90 ? 'text-red-600 font-semibold' : (ad.description1?.length || 0) > 80 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.description1?.length || 0)}/90
+                                  </span>
+                                </div>
+                                <Textarea
+                                  value={ad.description1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                  className={`${(ad.description1?.length || 0) > 90 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter description 1"
+                                  rows={2}
+                                  maxLength={90}
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Description 2</Label>
+                                  <span className={`text-xs ${(ad.description2?.length || 0) > 90 ? 'text-red-600 font-semibold' : (ad.description2?.length || 0) > 80 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.description2?.length || 0)}/90
+                                  </span>
+                                </div>
+                                <Textarea
+                                  value={ad.description2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                  className={`${(ad.description2?.length || 0) > 90 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter description 2"
+                                  rows={2}
+                                  maxLength={90}
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs font-semibold text-slate-700">Final URL *</Label>
+                              <Input
+                                value={ad.finalUrl || ''}
+                                onChange={(e) => updateAdField(ad.id, 'finalUrl', e.target.value)}
+                                placeholder="https://www.example.com"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* Call-Only Edit Form */}
+                        {(ad.type === 'call' || ad.adType === 'CallOnly') && (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Headline 1 *</Label>
+                                  <span className={`text-xs ${(ad.headline1?.length || 0) > 30 ? 'text-red-600 font-semibold' : (ad.headline1?.length || 0) > 25 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.headline1?.length || 0)}/30
+                                  </span>
+                                </div>
+                                <Input
+                                  value={ad.headline1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline1', e.target.value)}
+                                  className={`${(ad.headline1?.length || 0) > 30 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter headline 1"
+                                  maxLength={30}
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Headline 2 *</Label>
+                                  <span className={`text-xs ${(ad.headline2?.length || 0) > 30 ? 'text-red-600 font-semibold' : (ad.headline2?.length || 0) > 25 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.headline2?.length || 0)}/30
+                                  </span>
+                                </div>
+                                <Input
+                                  value={ad.headline2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'headline2', e.target.value)}
+                                  className={`${(ad.headline2?.length || 0) > 30 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter headline 2"
+                                  maxLength={30}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Description 1 *</Label>
+                                  <span className={`text-xs ${(ad.description1?.length || 0) > 90 ? 'text-red-600 font-semibold' : (ad.description1?.length || 0) > 80 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.description1?.length || 0)}/90
+                                  </span>
+                                </div>
+                                <Textarea
+                                  value={ad.description1 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description1', e.target.value)}
+                                  className={`${(ad.description1?.length || 0) > 90 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter description 1"
+                                  rows={2}
+                                  maxLength={90}
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label className="text-xs font-semibold text-slate-700">Description 2 *</Label>
+                                  <span className={`text-xs ${(ad.description2?.length || 0) > 90 ? 'text-red-600 font-semibold' : (ad.description2?.length || 0) > 80 ? 'text-amber-600' : 'text-slate-500'}`}>
+                                    {(ad.description2?.length || 0)}/90
+                                  </span>
+                                </div>
+                                <Textarea
+                                  value={ad.description2 || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'description2', e.target.value)}
+                                  className={`${(ad.description2?.length || 0) > 90 ? 'border-red-500 focus:border-red-500' : ''}`}
+                                  placeholder="Enter description 2"
+                                  rows={2}
+                                  maxLength={90}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Phone Number *</Label>
+                                <Input
+                                  value={ad.phoneNumber || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'phoneNumber', e.target.value)}
+                                  placeholder="(555) 123-4567"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs font-semibold text-slate-700">Business Name *</Label>
+                                <Input
+                                  value={ad.businessName || ''}
+                                  onChange={(e) => updateAdField(ad.id, 'businessName', e.target.value)}
+                                  placeholder="Your Business"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        <div className="flex gap-2 pt-4 border-t border-slate-300">
+                          <Button
+                            onClick={() => handleSaveAd(ad.id)}
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                            size="sm"
+                          >
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
+                          </Button>
+                          <Button
+                            onClick={handleCancelEdit}
+                            variant="outline"
+                            className="flex-1"
+                            size="sm"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
           </CardContent>
         </Card>
               ))
@@ -2691,11 +3189,19 @@ export const CampaignBuilder3: React.FC = () => {
           </Button>
           <Button
             onClick={() => {
-              const blob = new Blob([campaignData.csvData], { type: 'text/csv' });
+              if (!campaignData.csvData) {
+                notifications.warning('CSV not generated yet', {
+                  title: 'No CSV Data',
+                  description: 'Please generate CSV first before downloading.'
+                });
+                return;
+              }
+              const filename = `${(campaignData.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+              const blob = new Blob([campaignData.csvData], { type: 'text/csv;charset=utf-8;' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = `${campaignData.campaignName || 'campaign'}.csv`;
+              a.download = filename;
               a.click();
               URL.revokeObjectURL(url);
               
@@ -2813,11 +3319,19 @@ export const CampaignBuilder3: React.FC = () => {
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  const blob = new Blob([campaignData.csvData], { type: 'text/csv' });
+                  if (!campaignData.csvData) {
+                    notifications.warning('CSV not generated yet', {
+                      title: 'No CSV Data',
+                      description: 'Please generate CSV first before downloading.'
+                    });
+                    return;
+                  }
+                  const filename = `${(campaignData.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+                  const blob = new Blob([campaignData.csvData], { type: 'text/csv;charset=utf-8;' });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
                   a.href = url;
-                  a.download = `${campaignData.campaignName || 'campaign'}.csv`;
+                  a.download = filename;
                   a.click();
                   URL.revokeObjectURL(url);
                 }}
