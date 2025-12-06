@@ -69,5 +69,8 @@
     server: {
       port: 3000,
       open: true,
+      allowedHosts: [
+        'a48c3f52-31ef-446b-b385-acb861a1f2dd-00-943icob60v7z.sisko.replit.dev'
+      ],
     },
   });
