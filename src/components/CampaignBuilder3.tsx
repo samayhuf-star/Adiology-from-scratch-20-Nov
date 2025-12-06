@@ -327,9 +327,6 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             : initialData.seedKeywords)
         : keywords.slice(0, 5).map((k: any) => k.text);
 
-      // Generate ad groups for SKAG structure
-      const adGroups = generateAdGroupsFromKeywords(keywords, 'skag');
-
       setCampaignData(prev => ({
         ...prev,
         selectedKeywords: keywords,
@@ -340,29 +337,20 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
               ? initialData.negativeKeywords.split('\n').map((s: string) => s.trim()).filter(Boolean)
               : initialData.negativeKeywords)
           : prev.negativeKeywords,
-        // Set SKAG structure as default when coming from Keyword Planner
-        selectedStructure: 'skag',
-        // Generate ad groups for SKAG structure
-        adGroups: adGroups,
         // Set a default URL if not provided (required for campaign)
         url: prev.url || 'https://example.com',
         // Generate campaign name from seed keywords if not set
         campaignName: prev.campaignName || (seedKws.length > 0 
           ? `${seedKws[0].replace(/[^a-z0-9]/gi, ' ').trim()} Campaign`
-          : 'Campaign'),
-        // Preserve existing ads - don't clear them
-        ads: prev.ads || []
+          : 'Campaign')
       }));
 
-      // Skip directly to step 4 (Ads Generation) since keywords are already provided
-      // Step 2 = Structure (SKAG set as default above)
-      // Step 3 = Keywords (skip since we have keywords from Keyword Planner)
-      // Step 4 = Ads Generation (go here directly)
-      setCurrentStep(4);
+      // Skip to step 3 (Ads Generation) since keywords are already provided
+      setCurrentStep(3);
       
       notifications.success('Keywords loaded from Keyword Planner', {
         title: 'Keywords Ready',
-        description: `${keywords.length} keywords loaded. SKAG structure set. Proceeding to ads generation.`
+        description: `${keywords.length} keywords loaded. Proceeding to ads generation.`
       });
     }
   }, [initialData]);
@@ -1891,23 +1879,17 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       }
       
       // Generate CSV content using PapaParse
-              // Generate CSV with UTF-8 BOM and CRLF line endings for Google Ads Editor compatibility
-              const csv = Papa.unparse(rows, {
-                columns: GOOGLE_ADS_EDITOR_HEADERS,
-                header: true,
-                newline: '\r\n', // CRLF line endings
-              });
-              
-              // Add UTF-8 BOM for Google Ads Editor compatibility
-              const BOM = '\uFEFF';
-              const csvWithBOM = BOM + csv;
+      const csv = Papa.unparse(rows, {
+        columns: GOOGLE_ADS_EDITOR_HEADERS,
+        header: true,
+      });
       
       // Store CSV data in state (don't download yet)
-              setCampaignData(prev => ({
-                ...prev,
-                csvData: csvWithBOM,
-                csvErrors: [],
-              }));
+      setCampaignData(prev => ({
+        ...prev,
+        csvData: csv,
+        csvErrors: [],
+      }));
       
       notifications.success('CSV generated successfully!', {
         title: 'CSV Ready',
@@ -2857,22 +2839,46 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                   ))}
                 </SelectContent>
               </Select>
+            </CardContent>
+          </Card>
 
-              {/* Info Card */}
-              <Card className="bg-green-50 border-green-200 mt-4">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Globe className="w-5 h-5 text-green-600 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-green-800 mb-1">Country Targeting</h4>
-                      <p className="text-sm text-green-700">
-                        Your campaign will target the entire <strong>{campaignData.targetCountry || 'selected country'}</strong>. 
-                        All cities, states, and regions within this country will be included.
-                      </p>
+          {/* Specific Locations */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-600" />
+                <CardTitle>Specific Locations</CardTitle>
+              </div>
+              <CardDescription>
+                {!hasSpecificLocations 
+                  ? 'Add specific cities, states, or ZIP codes to target, or leave empty to target the entire country.'
+                  : `Targeting ${campaignData.locations.cities.length} cities, ${campaignData.locations.states.length} states, and ${campaignData.locations.zipCodes.length} ZIP codes.`
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="text-sm text-slate-600 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="font-medium text-blue-800 mb-1">Country Targeting Only</p>
+                  <p className="text-blue-700">Your campaign will target the entire selected country. All users within that country will see your ads.</p>
+                </div>
+
+                {/* Info Card */}
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Globe className="w-5 h-5 text-green-600 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-green-800 mb-1">Country Targeting</h4>
+                        <p className="text-sm text-green-700">
+                          Your campaign will target the entire <strong>{campaignData.targetCountry || 'selected country'}</strong>. 
+                          All cities, states, and regions within this country will be included.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -3241,31 +3247,45 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             </div>
           </div>
 
-          {/* Secondary Actions */}
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep(6)}
-              className="border-slate-300 hover:bg-slate-50"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Review
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Reset and start new campaign
-                window.location.reload();
-              }}
-              className="border-slate-300 hover:bg-slate-50"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Another Campaign
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Dispatch custom event for App.tsx to handle
+        {/* Action Buttons */}
+        <div className="flex gap-4 justify-center">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentStep(6)}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Review
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              // Reset and start new campaign
+              window.location.reload();
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Another Campaign
+          </Button>
+          <Button
+            onClick={() => {
+              if (!campaignData.csvData) {
+                notifications.warning('CSV not generated yet', {
+                  title: 'No CSV Data',
+                  description: 'Please generate CSV first before downloading.'
+                });
+                return;
+              }
+              const filename = `${(campaignData.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+              const blob = new Blob([campaignData.csvData], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              a.click();
+              URL.revokeObjectURL(url);
+              
+              // Redirect to dashboard
+              setTimeout(() => {
                 const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
                 window.dispatchEvent(event);
                 
