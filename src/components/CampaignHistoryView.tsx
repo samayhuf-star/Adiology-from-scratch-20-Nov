@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, Clock, Eye, Trash2, Search, AlertCircle,
-  CheckCircle2, Download, FolderOpen, Plus, Sparkles
+  CheckCircle2, Download, FolderOpen, Plus, Sparkles,
+  LayoutGrid, List
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -43,6 +44,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     loadSavedCampaigns();
@@ -116,6 +118,8 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
         return <Badge className="bg-green-100 text-green-700 border-green-300">Completed</Badge>;
       case 'in_progress':
         return <Badge className="bg-blue-100 text-blue-700 border-blue-300">In Progress</Badge>;
+      case 'started':
+        return <Badge className="bg-slate-100 text-slate-700 border-slate-300">Started</Badge>;
       case 'draft':
         return <Badge className="bg-amber-100 text-amber-700 border-amber-300">Draft</Badge>;
       default:
@@ -140,12 +144,38 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
-            Campaign History
-          </h1>
-          <p className="text-slate-600">
-            View and manage your saved campaigns. Continue where you left off or start a new one.
-          </p>
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                Saved Campaigns
+              </h1>
+              <p className="text-slate-600">
+                All your campaigns are automatically saved. Continue where you left off or start a new one.
+              </p>
+            </div>
+            {!loading && filteredCampaigns.length > 0 && (
+              <div className="flex items-center gap-2 bg-white rounded-lg border border-slate-200 p-1 shadow-sm">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className={`h-8 px-3 ${viewMode === 'grid' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'text-slate-600 hover:text-slate-900'}`}
+                  title="Grid view"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className={`h-8 px-3 ${viewMode === 'list' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'text-slate-600 hover:text-slate-900'}`}
+                  title="List view"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -212,18 +242,17 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
               )}
             </CardContent>
           </Card>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCampaigns.map((campaign) => {
               const data = campaign.data || campaign;
-              const status = campaign.status || data.status || 'completed';
+              const status = campaign.status || data.status || 'started';
               const stepNum = data.step || 1;
               const timestamp = new Date(campaign.timestamp || data.timestamp);
               const campaignName = campaign.name || data.campaignName || 'Unnamed Campaign';
               
               // Extract base name and remove "(Draft - DATE)" or "(Completed - DATE)" from title
               const baseName = campaignName.replace(/\s*\(Draft\s*-\s*[^)]+\)/gi, '').replace(/\s*\(Completed\s*-\s*[^)]+\)/gi, '');
-              const isDraft = /\(Draft\s*-/i.test(campaignName);
               
               return (
                 <Card 
@@ -251,7 +280,8 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                         month: '2-digit', 
                         year: 'numeric',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        second: '2-digit'
                       })}</span>
                     </CardDescription>
                   </CardHeader>
@@ -286,7 +316,7 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                     <div className="flex gap-2 pt-1">
                       <Button 
                         onClick={() => onLoadCampaign(data)}
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white min-w-0"
+                        className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white min-w-0"
                       >
                         <Eye className="w-4 h-4 mr-2 flex-shrink-0" />
                         <span className="truncate">Continue</span>
@@ -305,6 +335,89 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
               );
             })}
           </div>
+        ) : (
+          <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
+            <CardContent className="p-0">
+              <div className="divide-y divide-slate-200">
+                {filteredCampaigns.map((campaign) => {
+                  const data = campaign.data || campaign;
+                  const status = campaign.status || data.status || 'started';
+                  const stepNum = data.step || 1;
+                  const timestamp = new Date(campaign.timestamp || data.timestamp);
+                  const campaignName = campaign.name || data.campaignName || 'Unnamed Campaign';
+                  
+                  // Extract base name and remove "(Draft - DATE)" or "(Completed - DATE)" from title
+                  const baseName = campaignName.replace(/\s*\(Draft\s*-\s*[^)]+\)/gi, '').replace(/\s*\(Completed\s*-\s*[^)]+\)/gi, '');
+                  
+                  return (
+                    <div 
+                      key={campaign.id} 
+                      className="p-4 hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-4 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-semibold text-slate-900 mb-1 truncate" title={campaignName}>
+                                {baseName}
+                              </h3>
+                              <div className="flex items-center gap-4 text-sm text-slate-600">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-4 h-4 text-slate-400" />
+                                  <span>{timestamp.toLocaleString('en-GB', { 
+                                    day: '2-digit', 
+                                    month: '2-digit', 
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                  })}</span>
+                                </div>
+                                <span className="text-slate-400">•</span>
+                                <span>Structure: <span className="font-medium text-slate-700">{STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}</span></span>
+                                <span className="text-slate-400">•</span>
+                                <span>Step: <span className="font-medium text-slate-700">{getStepLabel(stepNum)}</span></span>
+                                {data.selectedKeywords && data.selectedKeywords.length > 0 && (
+                                  <>
+                                    <span className="text-slate-400">•</span>
+                                    <span>Keywords: <span className="font-medium text-slate-700">{data.selectedKeywords.length}</span></span>
+                                  </>
+                                )}
+                                {data.generatedAds && data.generatedAds.length > 0 && (
+                                  <>
+                                    <span className="text-slate-400">•</span>
+                                    <span>Ads: <span className="font-medium text-slate-700">{data.generatedAds.length}</span></span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {getStatusBadge(status)}
+                              <Button 
+                                onClick={() => onLoadCampaign(data)}
+                                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                Continue
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                onClick={() => deleteCampaign(campaign.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Delete campaign"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

@@ -24,6 +24,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { KeywordPlannerSelectable } from './KeywordPlannerSelectable';
 import { LiveAdPreview } from './LiveAdPreview';
+import { CampaignHistoryView } from './CampaignHistoryView';
 import { notifications } from '../utils/notifications';
 import { generateCampaignStructure, type StructureSettings } from '../utils/campaignStructureGenerator';
 import { exportCampaignToCSV } from '../utils/csvExporter';
@@ -6458,136 +6459,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
     );
   };
 
-  // Render Saved Campaigns view
-  const renderSavedCampaigns = () => {
-    const getStatusBadge = (status: string) => {
-      switch (status) {
-        case 'completed':
-          return <Badge className="bg-green-100 text-green-700 border-green-300">Completed</Badge>;
-        case 'in_progress':
-          return <Badge className="bg-blue-100 text-blue-700 border-blue-300">In Progress</Badge>;
-        case 'started':
-          return <Badge className="bg-slate-100 text-slate-700 border-slate-300">Started</Badge>;
-        default:
-          return <Badge className="bg-slate-100 text-slate-700 border-slate-300">Unknown</Badge>;
-      }
-    };
-
-    const getStepLabel = (stepNum: number) => {
-      const steps = ['Setup', 'Keywords', 'Ads & Extensions', 'Geo Target', 'Review', 'Validate'];
-      return steps[stepNum - 1] || 'Unknown';
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Saved Campaigns
-            </h1>
-            <p className="text-slate-600">
-              All your campaigns are automatically saved. Continue where you left off or start a new one.
-            </p>
-          </div>
-
-          {savedCampaigns.length === 0 ? (
-            <Card className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl">
-              <CardContent className="p-12 text-center">
-                <FileText className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-                <h3 className="text-xl font-semibold text-slate-700 mb-2">No Saved Campaigns</h3>
-                <p className="text-slate-500 mb-6">
-                  Start creating a campaign and it will be automatically saved here.
-                </p>
-                <Button 
-                  onClick={() => setActiveTab('builder')}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Campaign
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {savedCampaigns.map((campaign: any) => {
-                const data = campaign.data || campaign;
-                const status = data.status || 'started';
-                const stepNum = data.step || 1;
-                const timestamp = new Date(campaign.timestamp || data.timestamp);
-                
-                return (
-                  <Card 
-                    key={campaign.id} 
-                    className="border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all cursor-pointer"
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg mb-2">{campaign.name || data.campaignName || 'Unnamed Campaign'}</CardTitle>
-                          <CardDescription className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            {timestamp.toLocaleString()}
-                          </CardDescription>
-                        </div>
-                        {getStatusBadge(status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Structure:</span>
-                          <span className="font-medium text-slate-700">
-                            {STRUCTURE_TYPES.find(s => s.id === data.structureType)?.name || 'Not Selected'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Current Step:</span>
-                          <span className="font-medium text-slate-700">{getStepLabel(stepNum)}</span>
-                        </div>
-                        {data.selectedKeywords && data.selectedKeywords.length > 0 && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500">Keywords:</span>
-                            <span className="font-medium text-slate-700">{data.selectedKeywords.length}</span>
-                          </div>
-                        )}
-                        {data.generatedAds && data.generatedAds.length > 0 && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500">Ads:</span>
-                            <span className="font-medium text-slate-700">{data.generatedAds.length}</span>
-                          </div>
-                        )}
-                      </div>
-                      <Separator />
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={() => loadCampaign(campaign)}
-                          className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600"
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Continue
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm('Are you sure you want to delete this campaign?')) {
-                              deleteCampaign(campaign.id);
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  // Handle loading campaign from CampaignHistoryView
+  const handleLoadCampaign = (data: any) => {
+    // CampaignHistoryView passes the data directly, but loadCampaign expects { data }
+    loadCampaign({ data });
+    // Switch to builder tab after loading
+    setActiveTab('builder');
   };
 
   // Render content based on active tab
@@ -6642,7 +6519,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         </TabsContent>
 
         <TabsContent value="saved" className="mt-0">
-          {renderSavedCampaigns()}
+          <CampaignHistoryView onLoadCampaign={handleLoadCampaign} />
         </TabsContent>
       </Tabs>
     </div>
