@@ -6512,7 +6512,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
         {/* Hidden tabs for functionality - user can still switch via code */}
         <div className="hidden">
           <TabsList className="w-full justify-start bg-transparent h-14 border-0 gap-2">
-            <TabsTrigger value="builder">Campaign Builder</TabsTrigger>
+            <TabsTrigger value="builder">Builder 1.0</TabsTrigger>
             <TabsTrigger value="saved">Saved Campaigns</TabsTrigger>
           </TabsList>
         </div>

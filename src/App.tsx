@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download
+  LayoutDashboard, TrendingUp, Settings, Bell, Search, Menu, X, FileCheck, Lightbulb, Shuffle, MinusCircle, Shield, HelpCircle, Megaphone, User, LogOut, Sparkles, Zap, Package, Clock, ChevronDown, ChevronRight, FolderOpen, TestTube, Code, Download, GitCompare
 } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { COLOR_CLASSES } from './utils/colorScheme';
@@ -28,6 +28,7 @@ import { HelpSupport } from './components/HelpSupport';
 import { SuperAdminLogin } from './components/SuperAdminLogin';
 import { SuperAdminLanding } from './components/SuperAdminLanding';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
+import { CSVCompare } from './components/CSVCompare';
 import { Auth } from './components/Auth';
 import { EmailVerification } from './components/EmailVerification';
 import { PaymentPage } from './components/PaymentPage';
@@ -35,7 +36,7 @@ import { PaymentSuccess } from './components/PaymentSuccess';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportHelpCombined } from './components/SupportHelpCombined';
 import { ResetPassword } from './components/ResetPassword';
-import { CampaignPresets } from './components/CampaignPresets';
+// import { CampaignPresets } from './components/CampaignPresets'; // Hidden - Campaign Presets module disabled
 import { Dashboard } from './components/Dashboard';
 import { HistoryPanel } from './components/HistoryPanel';
 import { CampaignHistoryView } from './components/CampaignHistoryView';
@@ -111,7 +112,7 @@ const App = () => {
   // Valid tab IDs - used for route validation
   const validTabIds = new Set([
     'dashboard',
-    'campaign-presets',
+    // 'campaign-presets', // Hidden - Campaign Presets module disabled
     'builder-2',
     'builder-3',
     'campaign-history',
@@ -121,6 +122,7 @@ const App = () => {
     'ads-builder',
     'negative-keywords',
     'google-ads-csv-export',
+    'compare',
     'settings',
     'billing',
     'support',
@@ -730,9 +732,9 @@ const App = () => {
       label: 'Campaigns', 
       icon: Sparkles,
       submenu: [
-        { id: 'builder-2', label: 'Campaign Builder', icon: Sparkles },
+        { id: 'builder-2', label: 'Builder 1.0', icon: Sparkles },
         { id: 'builder-3', label: 'Builder 3.0', icon: Zap },
-        { id: 'campaign-presets', label: 'Campaign Presets', icon: Package },
+        // { id: 'campaign-presets', label: 'Campaign Presets', icon: Package }, // Hidden - Campaign Presets module disabled
         { id: 'campaign-history', label: 'Campaign History', icon: Clock },
       ]
     },
@@ -750,6 +752,7 @@ const App = () => {
     },
     { id: 'ads-builder', label: 'Ads Builder', icon: Megaphone },
     { id: 'google-ads-csv-export', label: 'CSV Export', icon: Download },
+    { id: 'compare', label: 'Compare', icon: GitCompare },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'support-help', label: 'Support & Help', icon: HelpCircle },
   ];
@@ -802,7 +805,7 @@ const App = () => {
       'keywords', 'keyword research', 'keyword planning',
       'ads', 'advertising', 'ad builder',
       'negative keywords', 'exclude keywords',
-      'csv', 'export', 'import', 'validator', 'csv export', 'google ads csv',
+      'csv', 'export', 'import', 'validator', 'csv export', 'google ads csv', 'compare', 'comparison',
       'settings', 'billing', 'account',
       'help', 'support', 'documentation'
     ];
@@ -1132,11 +1135,11 @@ const App = () => {
     // This is a simplification; for robust app, manage state more carefully
     
     switch (activeTab) {
-      case 'campaign-presets':
-        return <CampaignPresets onLoadPreset={(presetData) => {
-          setHistoryData(presetData);
-          setActiveTabSafe('builder-2');
-        }} />;
+      // case 'campaign-presets': // Hidden - Campaign Presets module disabled
+      //   return <CampaignPresets onLoadPreset={(presetData) => {
+      //     setHistoryData(presetData);
+      //     setActiveTabSafe('builder-2');
+      //   }} />;
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
       case 'builder-3':
@@ -1154,6 +1157,8 @@ const App = () => {
         }} />;
       case 'google-ads-csv-export':
         return <GoogleAdsCSVExport />;
+      case 'compare':
+        return <CSVCompare />;
       case 'keyword-planner':
         return <KeywordPlanner initialData={activeTab === 'keyword-planner' ? historyData : null} />;
       case 'keyword-mixer':
