@@ -221,13 +221,15 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
             const keywordText = typeof keyword === 'string' ? keyword : (keyword as any).keyword || keyword;
             const matchType = typeof keyword === 'string' ? getMatchType(keywordText) : ((keyword as any).matchType || getMatchType(keywordText));
             const cleanedKeyword = cleanKeywordText(keywordText);
+            // Format match type for CSV: "Broad", "Phrase", "Exact" (not uppercase)
+            const csvMatchType = formatMatchTypeForCSV(matchType, false);
 
             const keywordRow: CSVRow = {
               'Row Type': 'KEYWORD',
               'Campaign': campaign.campaign_name || '',
               'AdGroup': adGroup.adgroup_name || '',
               'Keyword': cleanedKeyword,
-              'Match Type': matchType.toUpperCase(),
+              'Match Type': csvMatchType,
               'Keyword Status': 'ENABLED',
               'Keyword Max CPC': typeof keyword === 'object' && (keyword as any).maxCPC ? (keyword as any).maxCPC.toString() : '',
               'Keyword Final URL': typeof keyword === 'object' && (keyword as any).finalURL ? (keyword as any).finalURL : '',
@@ -240,37 +242,44 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
         // Ads
         if (adGroup.ads && adGroup.ads.length > 0) {
           adGroup.ads.forEach((ad) => {
+            // Determine ad type for CSV
+            let adTypeForCSV = 'RESPONSIVE_SEARCH_AD';
+            if (ad.type === 'callonly') {
+              adTypeForCSV = 'CALL_ONLY_AD';
+            } else if (ad.type === 'dki') {
+              // DKI ads are also exported as Responsive Search Ads in Google Ads Editor
+              adTypeForCSV = 'RESPONSIVE_SEARCH_AD';
+            }
+            
             const adRow: CSVRow = {
               'Row Type': 'AD',
               'Campaign': campaign.campaign_name || '',
               'AdGroup': adGroup.adgroup_name || '',
-              'Ad Type': ad.type === 'rsa' ? 'RESPONSIVE_SEARCH_AD' : 
-                        ad.type === 'dki' ? 'RESPONSIVE_SEARCH_AD' :
-                        ad.type === 'callonly' ? 'CALL_ONLY_AD' : 'RESPONSIVE_SEARCH_AD',
+              'Ad Type': adTypeForCSV,
               'Ad Status': 'ENABLED',
-              'Headline 1': ad.headline1 || '',
-              'Headline 2': ad.headline2 || '',
-              'Headline 3': ad.headline3 || '',
-              'Headline 4': ad.headline4 || '',
-              'Headline 5': ad.headline5 || '',
-              'Headline 6': ad.headline6 || '',
-              'Headline 7': ad.headline7 || '',
-              'Headline 8': ad.headline8 || '',
-              'Headline 9': ad.headline9 || '',
-              'Headline 10': ad.headline10 || '',
-              'Headline 11': ad.headline11 || '',
-              'Headline 12': ad.headline12 || '',
-              'Headline 13': ad.headline13 || '',
-              'Headline 14': ad.headline14 || '',
-              'Headline 15': ad.headline15 || '',
-              'Description 1': ad.description1 || '',
-              'Description 2': ad.description2 || '',
-              'Description 3': ad.description3 || '',
-              'Description 4': ad.description4 || '',
+              'Headline 1': (ad.headline1 || '').trim().substring(0, 30),
+              'Headline 2': (ad.headline2 || '').trim().substring(0, 30),
+              'Headline 3': (ad.headline3 || '').trim().substring(0, 30),
+              'Headline 4': (ad.headline4 || '').trim().substring(0, 30),
+              'Headline 5': (ad.headline5 || '').trim().substring(0, 30),
+              'Headline 6': (ad.headline6 || '').trim().substring(0, 30),
+              'Headline 7': (ad.headline7 || '').trim().substring(0, 30),
+              'Headline 8': (ad.headline8 || '').trim().substring(0, 30),
+              'Headline 9': (ad.headline9 || '').trim().substring(0, 30),
+              'Headline 10': (ad.headline10 || '').trim().substring(0, 30),
+              'Headline 11': (ad.headline11 || '').trim().substring(0, 30),
+              'Headline 12': (ad.headline12 || '').trim().substring(0, 30),
+              'Headline 13': (ad.headline13 || '').trim().substring(0, 30),
+              'Headline 14': (ad.headline14 || '').trim().substring(0, 30),
+              'Headline 15': (ad.headline15 || '').trim().substring(0, 30),
+              'Description 1': (ad.description1 || '').trim().substring(0, 90),
+              'Description 2': (ad.description2 || '').trim().substring(0, 90),
+              'Description 3': (ad.description3 || '').trim().substring(0, 90),
+              'Description 4': (ad.description4 || '').trim().substring(0, 90),
               'Final URL': ad.final_url || '',
               'Final Mobile URL': (ad as any).final_mobile_url || '',
-              'Path1': ad.path1 || '',
-              'Path2': ad.path2 || '',
+              'Path1': (ad.path1 || '').trim().substring(0, 15),
+              'Path2': (ad.path2 || '').trim().substring(0, 15),
               'Tracking Template': (ad as any).tracking_template || '',
               'Custom Parameters': (ad as any).custom_parameters || '',
               'Operation': 'NEW',
@@ -303,6 +312,51 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
     }
 
     // Location Targeting Rows - Google Ads Editor format
+    // Map country names to ISO country codes
+    const countryCodeMap: { [key: string]: string } = {
+      'United States': 'US',
+      'Canada': 'CA',
+      'United Kingdom': 'GB',
+      'Australia': 'AU',
+      'Germany': 'DE',
+      'France': 'FR',
+      'Italy': 'IT',
+      'Spain': 'ES',
+      'Netherlands': 'NL',
+      'Belgium': 'BE',
+      'Switzerland': 'CH',
+      'Sweden': 'SE',
+      'Norway': 'NO',
+      'Denmark': 'DK',
+      'Finland': 'FI',
+      'Poland': 'PL',
+      'Austria': 'AT',
+      'Ireland': 'IE',
+      'Portugal': 'PT',
+      'Greece': 'GR',
+    };
+    
+    // Add country location if no specific locations are set
+    const hasSpecificLocations = 
+      (campaign.states && campaign.states.length > 0) ||
+      (campaign.cities && campaign.cities.length > 0) ||
+      (campaign.zip_codes && campaign.zip_codes.length > 0);
+    
+    // If no specific locations, add country targeting
+    if (!hasSpecificLocations && (campaign as any).targetCountry) {
+      const countryName = (campaign as any).targetCountry;
+      const countryCode = countryCodeMap[countryName] || countryName.substring(0, 2).toUpperCase() || 'US';
+      const countryRow: CSVRow = {
+        'Row Type': 'LOCATION',
+        'Campaign': campaign.campaign_name || '',
+        'Location Type': 'COUNTRY',
+        'Location Code': countryCode,
+        'Operation': 'NEW',
+      };
+      rows.push(countryRow);
+    }
+    
+    // Add state locations
     if (campaign.states && Array.isArray(campaign.states) && campaign.states.length > 0) {
       campaign.states.forEach((state: string) => {
         if (state && state.trim()) {
@@ -317,6 +371,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
         }
       });
     }
+    // Add city locations
     if (campaign.cities && Array.isArray(campaign.cities) && campaign.cities.length > 0) {
       campaign.cities.forEach((city: string) => {
         if (city && city.trim()) {
@@ -331,6 +386,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
         }
       });
     }
+    // Add ZIP code locations
     if (campaign.zip_codes && Array.isArray(campaign.zip_codes) && campaign.zip_codes.length > 0) {
       campaign.zip_codes.forEach((zip: string) => {
         if (zip && zip.trim()) {
@@ -342,6 +398,57 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
             'Operation': 'NEW',
           };
           rows.push(locationRow);
+        }
+      });
+    }
+    
+    // Add Extensions/Assets rows
+    if (campaign.adgroups && campaign.adgroups.length > 0) {
+      campaign.adgroups.forEach((adGroup) => {
+        if (adGroup.ads && adGroup.ads.length > 0) {
+          adGroup.ads.forEach((ad) => {
+            // Process extensions from ad
+            if (ad.extensions && Array.isArray(ad.extensions)) {
+              ad.extensions.forEach((ext: any) => {
+                if (ext.extensionType === 'sitelink' && ext.sitelinks && Array.isArray(ext.sitelinks)) {
+                  ext.sitelinks.forEach((sitelink: any) => {
+                    if (sitelink.text) {
+                      const extensionRow: CSVRow = {
+                        'Row Type': 'ASSET',
+                        'Campaign': campaign.campaign_name || '',
+                        'AdGroup': adGroup.adgroup_name || '',
+                        'Asset Type': 'SITELINK',
+                        'Asset Name': sitelink.text || '',
+                        'Asset URL': sitelink.url || ad.final_url || '',
+                        'Operation': 'NEW',
+                      };
+                      rows.push(extensionRow);
+                    }
+                  });
+                } else if (ext.extensionType === 'callout' && ext.text) {
+                  const extensionRow: CSVRow = {
+                    'Row Type': 'ASSET',
+                    'Campaign': campaign.campaign_name || '',
+                    'AdGroup': adGroup.adgroup_name || '',
+                    'Asset Type': 'CALLOUT',
+                    'Asset Name': ext.text || '',
+                    'Operation': 'NEW',
+                  };
+                  rows.push(extensionRow);
+                } else if (ext.extensionType === 'call' && ext.phoneNumber) {
+                  const extensionRow: CSVRow = {
+                    'Row Type': 'ASSET',
+                    'Campaign': campaign.campaign_name || '',
+                    'AdGroup': adGroup.adgroup_name || '',
+                    'Asset Type': 'CALL',
+                    'Asset Name': ext.phoneNumber || '',
+                    'Operation': 'NEW',
+                  };
+                  rows.push(extensionRow);
+                }
+              });
+            }
+          });
         }
       });
     }

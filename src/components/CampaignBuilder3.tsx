@@ -33,8 +33,11 @@ import {
   type CallOnlyAd
 } from '../utils/googleAdGenerator';
 import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
+import { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
+import Papa from 'papaparse';
 import { historyService } from '../utils/historyService';
 import { generateCSVWithBackend } from '../utils/csvExportBackend';
+import type { CampaignStructure } from '../utils/campaignStructureGenerator';
 import { api } from '../utils/api';
 import { AutoFillButton } from './AutoFillButton';
 import { 
@@ -776,6 +779,47 @@ export const CampaignBuilder3: React.FC = () => {
     notifications.success('Step 3 auto-filled', { title: 'Auto Fill Complete' });
   };
 
+  // Fill Info button handler - adds 3-4 keywords each time
+  const handleFillInfoKeywords = () => {
+    // Pool of diverse keywords to choose from
+    const keywordPool = [
+      'plumber near me', 'emergency plumbing', 'drain cleaning', 'water heater repair',
+      'airline number', 'contact airline', 'delta phone', 'united customer service',
+      'electrician', 'hvac repair', 'roofing services', 'landscaping',
+      'locksmith', 'appliance repair', 'handyman', 'carpet cleaning',
+      'pest control', 'tree service', 'window cleaning', 'moving company',
+      'auto repair', 'dentist', 'lawyer', 'accountant',
+      'web design', 'seo services', 'marketing agency', 'it support'
+    ];
+    
+    // Randomly select 3-4 keywords
+    const count = Math.floor(Math.random() * 2) + 3; // 3 or 4
+    const shuffled = [...keywordPool].sort(() => 0.5 - Math.random());
+    const newKeywords = shuffled.slice(0, count);
+    
+    // Add to existing keywords (avoid duplicates)
+    setCampaignData(prev => {
+      const existing = prev.seedKeywords || [];
+      const combined = [...existing, ...newKeywords];
+      // Remove duplicates
+      const unique = Array.from(new Set(combined.map(k => k.toLowerCase().trim())))
+        .map(lower => {
+          // Find original case from combined array
+          return combined.find(k => k.toLowerCase().trim() === lower) || lower;
+        });
+      
+      return {
+        ...prev,
+        seedKeywords: unique
+      };
+    });
+    
+    notifications.success(`Added ${count} keywords`, {
+      title: 'Keywords Added',
+      description: `Added: ${newKeywords.join(', ')}`
+    });
+  };
+
   const handleAutoFillStep5 = () => {
     const randomCountry = LOCATION_PRESETS.countries[Math.floor(Math.random() * LOCATION_PRESETS.countries.length)];
     const randomCities = LOCATION_PRESETS.cities.slice(0, Math.floor(Math.random() * 20) + 5);
@@ -889,6 +933,45 @@ export const CampaignBuilder3: React.FC = () => {
       const keywordTexts = campaignData.selectedKeywords.map(k => k.text || k.keyword || k).slice(0, 10);
       const ads: any[] = [];
 
+      // Extract business name from campaign name or URL
+      let businessName = campaignData.campaignName || 'Your Business';
+      if (businessName.length > 25) {
+        businessName = businessName.split(' ')[0] || businessName.substring(0, 25);
+      }
+      
+      // Extract domain name from URL for better business name
+      if (campaignData.url) {
+        try {
+          const urlObj = new URL(campaignData.url.startsWith('http') ? campaignData.url : `https://${campaignData.url}`);
+          const hostname = urlObj.hostname.replace('www.', '');
+          const domainName = hostname.split('.')[0];
+          if (domainName && domainName.length > 2 && domainName.length <= 25) {
+            businessName = domainName.charAt(0).toUpperCase() + domainName.slice(1);
+          }
+        } catch (e) {
+          // If URL parsing fails, use campaign name
+        }
+      }
+      
+      // Determine industry from keywords if vertical is not set
+      let industry = campaignData.vertical || 'general';
+      if (industry === 'general' && keywordTexts.length > 0) {
+        const firstKeyword = keywordTexts[0].toLowerCase();
+        if (firstKeyword.includes('plumb') || firstKeyword.includes('plumber')) industry = 'plumbing';
+        else if (firstKeyword.includes('electric') || firstKeyword.includes('electrician')) industry = 'electrical';
+        else if (firstKeyword.includes('hvac') || firstKeyword.includes('heating') || firstKeyword.includes('cooling')) industry = 'hvac';
+        else if (firstKeyword.includes('roof') || firstKeyword.includes('roofing')) industry = 'roofing';
+        else if (firstKeyword.includes('airline') || firstKeyword.includes('flight')) industry = 'travel';
+        else if (firstKeyword.includes('lawyer') || firstKeyword.includes('legal')) industry = 'legal';
+        else if (firstKeyword.includes('dentist') || firstKeyword.includes('dental')) industry = 'dental';
+        else if (firstKeyword.includes('doctor') || firstKeyword.includes('medical')) industry = 'medical';
+        else if (firstKeyword.includes('restaurant') || firstKeyword.includes('food')) industry = 'food';
+        else if (firstKeyword.includes('hotel') || firstKeyword.includes('travel')) industry = 'travel';
+        else {
+          industry = firstKeyword.split(' ')[0] || 'general';
+        }
+      }
+
       // Always generate 3 ads: RSA, DKI, and Call
       const adTypesToGenerate = ['rsa', 'dki', 'call'];
       
@@ -896,10 +979,11 @@ export const CampaignBuilder3: React.FC = () => {
         try {
           const adInput: AdGenerationInput = {
             keywords: keywordTexts,
-            baseUrl: campaignData.url,
+            baseUrl: campaignData.url || undefined,
             adType: adType === 'rsa' ? 'RSA' : adType === 'dki' ? 'ETA' : 'CALL_ONLY',
-            industry: campaignData.vertical || 'general',
-            businessName: 'Your Business',
+            industry: industry,
+            businessName: businessName,
+            location: campaignData.locations?.cities?.[0] || campaignData.locations?.states?.[0] || undefined,
             filters: {
               matchType: campaignData.keywordTypes.phrase ? 'phrase' : campaignData.keywordTypes.exact ? 'exact' : 'broad',
               campaignStructure: (campaignData.selectedStructure?.toUpperCase() || 'STAG') as 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta',
@@ -920,7 +1004,7 @@ export const CampaignBuilder3: React.FC = () => {
               headlines: rsa.headlines || [],
               descriptions: rsa.descriptions || [],
               displayPath: rsa.displayPath || [],
-              finalUrl: rsa.finalUrl || campaignData.url,
+              finalUrl: rsa.finalUrl || campaignData.url || '',
               selected: false,
               extensions: [],
             });
@@ -936,7 +1020,7 @@ export const CampaignBuilder3: React.FC = () => {
               description1: dki.description1 || '',
               description2: dki.description2 || '',
               displayPath: dki.displayPath || [],
-              finalUrl: dki.finalUrl || campaignData.url,
+              finalUrl: dki.finalUrl || campaignData.url || '',
               selected: false,
               extensions: [],
             });
@@ -951,8 +1035,8 @@ export const CampaignBuilder3: React.FC = () => {
               description1: call.description1 || '',
               description2: call.description2 || '',
               phoneNumber: call.phoneNumber || '',
-              businessName: call.businessName || '',
-              finalUrl: call.verificationUrl || campaignData.url,
+              businessName: call.businessName || businessName,
+              finalUrl: call.verificationUrl || campaignData.url || '',
               selected: false,
               extensions: [],
             });
@@ -1022,12 +1106,56 @@ export const CampaignBuilder3: React.FC = () => {
     try {
       const keywordTexts = campaignData.selectedKeywords.map(k => k.text || k.keyword || k).slice(0, 10);
       
+      // Extract business name from campaign name or URL
+      let businessName = campaignData.campaignName || 'Your Business';
+      // If campaign name is too long, extract first meaningful part
+      if (businessName.length > 25) {
+        businessName = businessName.split(' ')[0] || businessName.substring(0, 25);
+      }
+      
+      // Extract domain name from URL for better business name
+      if (campaignData.url) {
+        try {
+          const urlObj = new URL(campaignData.url.startsWith('http') ? campaignData.url : `https://${campaignData.url}`);
+          const hostname = urlObj.hostname.replace('www.', '');
+          const domainName = hostname.split('.')[0];
+          if (domainName && domainName.length > 2 && domainName.length <= 25) {
+            // Capitalize first letter
+            businessName = domainName.charAt(0).toUpperCase() + domainName.slice(1);
+          }
+        } catch (e) {
+          // If URL parsing fails, use campaign name
+        }
+      }
+      
+      // Determine industry from keywords if vertical is not set
+      let industry = campaignData.vertical || 'general';
+      if (industry === 'general' && keywordTexts.length > 0) {
+        // Try to extract industry from keywords
+        const firstKeyword = keywordTexts[0].toLowerCase();
+        if (firstKeyword.includes('plumb') || firstKeyword.includes('plumber')) industry = 'plumbing';
+        else if (firstKeyword.includes('electric') || firstKeyword.includes('electrician')) industry = 'electrical';
+        else if (firstKeyword.includes('hvac') || firstKeyword.includes('heating') || firstKeyword.includes('cooling')) industry = 'hvac';
+        else if (firstKeyword.includes('roof') || firstKeyword.includes('roofing')) industry = 'roofing';
+        else if (firstKeyword.includes('airline') || firstKeyword.includes('flight')) industry = 'travel';
+        else if (firstKeyword.includes('lawyer') || firstKeyword.includes('legal')) industry = 'legal';
+        else if (firstKeyword.includes('dentist') || firstKeyword.includes('dental')) industry = 'dental';
+        else if (firstKeyword.includes('doctor') || firstKeyword.includes('medical')) industry = 'medical';
+        else if (firstKeyword.includes('restaurant') || firstKeyword.includes('food')) industry = 'food';
+        else if (firstKeyword.includes('hotel') || firstKeyword.includes('travel')) industry = 'travel';
+        else {
+          // Use first keyword as industry hint
+          industry = firstKeyword.split(' ')[0] || 'general';
+        }
+      }
+      
       const adInput: AdGenerationInput = {
         keywords: keywordTexts,
-        baseUrl: campaignData.url,
+        baseUrl: campaignData.url || undefined, // Always use campaign URL
         adType: adType === 'rsa' ? 'RSA' : adType === 'dki' ? 'ETA' : 'CALL_ONLY',
-        industry: campaignData.vertical || 'general',
-        businessName: 'Your Business',
+        industry: industry,
+        businessName: businessName,
+        location: campaignData.locations?.cities?.[0] || campaignData.locations?.states?.[0] || undefined,
         filters: {
           matchType: campaignData.keywordTypes.phrase ? 'phrase' : campaignData.keywordTypes.exact ? 'exact' : 'broad',
           campaignStructure: (campaignData.selectedStructure?.toUpperCase() || 'STAG') as 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta',
@@ -1050,7 +1178,7 @@ export const CampaignBuilder3: React.FC = () => {
           headlines: rsa.headlines || [],
           descriptions: rsa.descriptions || [],
           displayPath: rsa.displayPath || [],
-          finalUrl: rsa.finalUrl || campaignData.url,
+          finalUrl: rsa.finalUrl || campaignData.url || '',
           selected: false,
           extensions: [],
         };
@@ -1081,8 +1209,8 @@ export const CampaignBuilder3: React.FC = () => {
           description1: call.description1 || '',
           description2: call.description2 || '',
           phoneNumber: call.phoneNumber || '',
-          businessName: call.businessName || '',
-          finalUrl: call.verificationUrl || campaignData.url,
+          businessName: call.businessName || businessName,
+          finalUrl: call.verificationUrl || campaignData.url || '',
           selected: false,
           extensions: [],
         };
@@ -1393,75 +1521,136 @@ export const CampaignBuilder3: React.FC = () => {
           return; // Exit early - async export in progress
         }
         
-        // If backend export succeeds, also update local state for compatibility
-        const structure = generateCampaignStructure(
-          campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
-          {
-            structureType: campaignData.selectedStructure || 'stag',
-            campaignName: campaignData.campaignName,
-            keywords: campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
-            matchTypes: {
-              broad: campaignData.keywordTypes.broad,
-              phrase: campaignData.keywordTypes.phrase,
-              exact: campaignData.keywordTypes.exact,
-            },
-            url: campaignData.url,
-            ads: campaignData.ads,
-            negativeKeywords: campaignData.negativeKeywords,
-          } as StructureSettings
-        );
-        const csvData = await exportCampaignToCSVV3(structure);
-        setCampaignData(prev => ({
-          ...prev,
-          csvData,
-          csvErrors: [],
-        }));
+        // Backend export succeeded - no need to update local state
         return; // Exit early - backend export handled everything
       } catch (backendError) {
         console.warn('Backend CSV export failed, using local generation:', backendError);
         // Fall through to local generation below
       }
 
-      // Fallback to local generation
-      const structure = generateCampaignStructure(
-        campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
-        {
-          structureType: campaignData.selectedStructure || 'stag',
-          campaignName: campaignData.campaignName,
-          keywords: campaignData.selectedKeywords.map(k => k.text || k.keyword || k),
-          matchTypes: {
-            broad: campaignData.keywordTypes.broad,
-            phrase: campaignData.keywordTypes.phrase,
-            exact: campaignData.keywordTypes.exact,
-          },
-          url: campaignData.url,
-          ads: campaignData.ads,
-          negativeKeywords: campaignData.negativeKeywords, // Include negative keywords in structure
-        } as StructureSettings
-      );
+      // Fallback to local generation using Google Ads Editor format
+      // Build structure directly from campaignData (don't regenerate ad groups)
+      const convertedAds = campaignData.ads.map((ad: any) => {
+        const convertedAd: any = {
+          type: ad.type === 'rsa' ? 'rsa' : ad.type === 'dki' ? 'dki' : 'callonly',
+          final_url: ad.finalUrl || campaignData.url || '',
+          path1: (ad.displayPath && Array.isArray(ad.displayPath) ? ad.displayPath[0] : '') || '',
+          path2: (ad.displayPath && Array.isArray(ad.displayPath) ? ad.displayPath[1] : '') || '',
+        };
+        
+        // Convert headlines array to individual headline fields (RSA can have up to 15)
+        if (ad.headlines && Array.isArray(ad.headlines)) {
+          ad.headlines.forEach((headline: string, idx: number) => {
+            if (idx < 15 && headline && headline.trim()) {
+              convertedAd[`headline${idx + 1}`] = headline.trim().substring(0, 30);
+            }
+          });
+        } else {
+          // Fallback to individual headline fields
+          if (ad.headline1) convertedAd.headline1 = ad.headline1.trim().substring(0, 30);
+          if (ad.headline2) convertedAd.headline2 = ad.headline2.trim().substring(0, 30);
+          if (ad.headline3) convertedAd.headline3 = ad.headline3.trim().substring(0, 30);
+        }
+        
+        // Ensure at least 3 headlines for RSA
+        if (convertedAd.type === 'rsa') {
+          if (!convertedAd.headline1) convertedAd.headline1 = 'Professional Service';
+          if (!convertedAd.headline2) convertedAd.headline2 = 'Expert Solutions';
+          if (!convertedAd.headline3) convertedAd.headline3 = 'Quality Guaranteed';
+        }
+        
+        // Convert descriptions array to individual description fields (RSA can have up to 4)
+        if (ad.descriptions && Array.isArray(ad.descriptions)) {
+          ad.descriptions.forEach((desc: string, idx: number) => {
+            if (idx < 4 && desc && desc.trim()) {
+              convertedAd[`description${idx + 1}`] = desc.trim().substring(0, 90);
+            }
+          });
+        } else {
+          // Fallback to individual description fields
+          if (ad.description1) convertedAd.description1 = ad.description1.trim().substring(0, 90);
+          if (ad.description2) convertedAd.description2 = ad.description2.trim().substring(0, 90);
+        }
+        
+        // Ensure at least 2 descriptions for RSA
+        if (convertedAd.type === 'rsa') {
+          if (!convertedAd.description1) convertedAd.description1 = 'Get professional service you can trust.';
+          if (!convertedAd.description2) convertedAd.description2 = 'Contact us today for expert assistance.';
+        }
+        
+        // Add extensions if present
+        if (ad.extensions && Array.isArray(ad.extensions)) {
+          convertedAd.extensions = ad.extensions;
+        }
+        
+        return convertedAd;
+      });
 
-      const validation = validateCSVBeforeExport(structure);
+      // Build CampaignStructure directly from campaignData (use existing adGroups)
+      // Keywords should already have match type formatting (brackets for exact, quotes for phrase)
+      const structure: CampaignStructure = {
+        campaigns: [{
+          campaign_name: campaignData.campaignName || 'Campaign 1',
+          adgroups: campaignData.adGroups.map((group: any) => ({
+            adgroup_name: group.name,
+            keywords: (group.keywords || []).map((kw: any) => {
+              // Extract keyword text - preserve match type formatting
+              if (typeof kw === 'string') return kw;
+              // Return formatted keyword (already has brackets/quotes if match type was applied)
+              return kw.text || kw.keyword || String(kw);
+            }),
+            match_types: [], // Match types are encoded in keyword format
+            ads: convertedAds, // Use converted ads for all ad groups
+            negative_keywords: (group.negativeKeywords || campaignData.negativeKeywords || []).map((neg: any) => {
+              // Ensure negative keywords have proper format
+              if (typeof neg === 'string') {
+                return neg.startsWith('-') ? neg : `-${neg}`;
+              }
+              const negText = neg.text || neg.keyword || String(neg);
+              return negText.startsWith('-') ? negText : `-${negText}`;
+            }),
+          })),
+          states: campaignData.locations.states,
+          cities: campaignData.locations.cities,
+          zip_codes: campaignData.locations.zipCodes,
+          targetCountry: campaignData.targetCountry, // Add for CSV export
+        } as any]
+      };
+
+      // Generate CSV content without downloading
+      const rows = campaignStructureToCSVRows(structure);
+      const validation = validateCSVRows(rows);
       
-      if (validation.isValid) {
-        const csvData = await exportCampaignToCSVV3(structure);
+      if (!validation.isValid) {
         setCampaignData(prev => ({
           ...prev,
-          csvData,
-          csvErrors: [],
+          csvErrors: validation.errors,
         }));
-        notifications.success('CSV generated successfully', {
-          title: 'CSV Ready'
+        notifications.error('CSV validation failed', {
+          title: 'Export Error',
+          description: validation.errors.slice(0, 3).join('\n') + (validation.errors.length > 3 ? `\n... and ${validation.errors.length - 3} more errors` : ''),
+          duration: 15000
         });
-      } else {
-        setCampaignData(prev => ({
-          ...prev,
-          csvErrors: validation.errors || [],
-        }));
-        notifications.warning('CSV has validation errors', {
-          title: 'Validation Issues',
-          description: 'Please review and fix errors before exporting'
-        });
+        return;
       }
+      
+      // Generate CSV content using PapaParse
+      const csv = Papa.unparse(rows, {
+        columns: GOOGLE_ADS_EDITOR_HEADERS,
+        header: true,
+      });
+      
+      // Store CSV data in state (don't download yet)
+      setCampaignData(prev => ({
+        ...prev,
+        csvData: csv,
+        csvErrors: [],
+      }));
+      
+      notifications.success('CSV generated successfully!', {
+        title: 'CSV Ready',
+        description: `Your campaign "${campaignData.campaignName}" CSV is ready. Click "Download CSV" to export.`
+      });
     } catch (error) {
       console.error('CSV generation error:', error);
       notifications.error('Failed to generate CSV', {
@@ -1662,15 +1851,27 @@ export const CampaignBuilder3: React.FC = () => {
                   <Badge key={idx} variant="secondary">{kw}</Badge>
                 ))}
               </div>
-              <Textarea
-                placeholder="Enter additional seed keywords (one per line)"
-                value={campaignData.seedKeywords.join('\n')}
-                onChange={(e) => setCampaignData(prev => ({
-                  ...prev,
-                  seedKeywords: e.target.value.split('\n').filter(k => k.trim())
-                }))}
-                rows={4}
-              />
+              <div className="flex gap-2 mb-2">
+                <Textarea
+                  placeholder="Enter additional seed keywords (one per line)"
+                  value={campaignData.seedKeywords.join('\n')}
+                  onChange={(e) => setCampaignData(prev => ({
+                    ...prev,
+                    seedKeywords: e.target.value.split('\n').filter(k => k.trim())
+                  }))}
+                  rows={4}
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={handleFillInfoKeywords}
+                  variant="outline"
+                  className="h-auto px-4 bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-700"
+                  title="Add 3-4 sample keywords"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Fill Info
+                </Button>
+              </div>
           <Button onClick={handleGenerateKeywords} disabled={loading} className="mt-4">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
                 Generate Keywords
@@ -2174,172 +2375,27 @@ export const CampaignBuilder3: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {/* State Presets */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">States/Provinces</Label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(10)}>
-                      Top 10 States
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(20)}>
-                      Top 20 States
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleStatePreset(LOCATION_PRESETS.states.length)}>
-                      All States ({LOCATION_PRESETS.states.length})
-                    </Button>
-                  </div>
-                  <Textarea
-                    placeholder="Enter states manually (comma-separated, e.g., California, Texas, New York)..."
-                    value={campaignData.locations.states.join(', ')}
-                    onChange={(e) => {
-                      const states = e.target.value.split(',').map(s => s.trim()).filter(s => s);
-                      setCampaignData(prev => ({
-                        ...prev,
-                        locations: { ...prev.locations, states }
-                      }));
-                      autoSaveDraft();
-                    }}
-                    rows={2}
-                  />
-                  {campaignData.locations.states.length > 0 && (
-                    <div className="mt-2 text-xs text-slate-500">
-                      {campaignData.locations.states.length} state(s) selected
-                    </div>
-                  )}
+              <div className="space-y-4">
+                <div className="text-sm text-slate-600 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="font-medium text-blue-800 mb-1">Country Targeting Only</p>
+                  <p className="text-blue-700">Your campaign will target the entire selected country. All users within that country will see your ads.</p>
                 </div>
 
-                {/* City Presets */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Cities</Label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(20)}>
-                      Top 20 Cities
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(50)}>
-                      Top 50 Cities
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(100)}>
-                      Top 100 Cities
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(200)}>
-                      Top 200 Cities
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleCityPreset(LOCATION_PRESETS.cities.length)}>
-                      All Cities ({LOCATION_PRESETS.cities.length})
-                    </Button>
-                  </div>
-                  <Textarea
-                    placeholder="Enter cities manually (comma-separated, e.g., New York, NY, Los Angeles, CA, Chicago, IL)..."
-                    value={campaignData.locations.cities.join(', ')}
-                    onChange={(e) => {
-                      const cities = e.target.value.split(',').map(c => c.trim()).filter(c => c);
-                      setCampaignData(prev => ({
-                        ...prev,
-                        locations: { ...prev.locations, cities }
-                      }));
-                      autoSaveDraft();
-                    }}
-                    rows={3}
-                  />
-                  {campaignData.locations.cities.length > 0 && (
-                    <div className="mt-2 text-xs text-slate-500">
-                      {campaignData.locations.cities.length} city/cities selected
-                    </div>
-                  )}
-                </div>
-
-                {/* ZIP Code Presets */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">ZIP Codes</Label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(1000)}>
-                      1,000 ZIPs
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(5000)}>
-                      5,000 ZIPs
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(10000)}>
-                      10,000 ZIPs
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(15000)}>
-                      15,000 ZIPs
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(30000)}>
-                      30,000 ZIPs
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleZipPreset(LOCATION_PRESETS.zipCodes.length)}>
-                      All ZIPs ({LOCATION_PRESETS.zipCodes.length.toLocaleString()})
-                    </Button>
-                  </div>
-                  <Textarea
-                    placeholder="Enter ZIP codes manually (comma-separated, e.g., 10001, 10002, 90210)..."
-                    value={campaignData.locations.zipCodes.join(', ')}
-                    onChange={(e) => {
-                      const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z);
-                      setCampaignData(prev => ({
-                        ...prev,
-                        locations: { ...prev.locations, zipCodes: zips }
-                      }));
-                      autoSaveDraft();
-                    }}
-                    rows={3}
-                  />
-                  {campaignData.locations.zipCodes.length > 0 && (
-                    <div className="mt-2 text-xs text-slate-500">
-                      {campaignData.locations.zipCodes.length.toLocaleString()} ZIP code(s) selected
-                    </div>
-                      )}
-                    </div>
-
-                {/* Summary when locations are selected */}
-                {hasSpecificLocations && (
-                  <Card className="bg-blue-50 border-blue-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-blue-800 mb-1">Specific Location Targeting Active</h4>
-                          <p className="text-sm text-blue-700">
-                            Your campaign will target only the selected locations instead of the entire country.
-                          </p>
-                          <div className="mt-2 text-xs text-blue-600 space-y-1">
-                            {campaignData.locations.states.length > 0 && (
-                              <div>• {campaignData.locations.states.length} State(s)</div>
-                            )}
-                            {campaignData.locations.cities.length > 0 && (
-                              <div>• {campaignData.locations.cities.length} City/Cities</div>
-                            )}
-                            {campaignData.locations.zipCodes.length > 0 && (
-                              <div>• {campaignData.locations.zipCodes.length.toLocaleString()} ZIP Code(s)</div>
-                            )}
-                          </div>
-                </div>
+                {/* Info Card */}
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Globe className="w-5 h-5 text-green-600 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-green-800 mb-1">Country Targeting</h4>
+                        <p className="text-sm text-green-700">
+                          Your campaign will target the entire <strong>{campaignData.targetCountry || 'selected country'}</strong>. 
+                          All cities, states, and regions within this country will be included.
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Info when no locations selected */}
-                {!hasSpecificLocations && (
-                  <Card className="bg-green-50 border-green-200">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Globe className="w-5 h-5 text-green-600 mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-green-800 mb-1">Whole Country Targeting</h4>
-                          <p className="text-sm text-green-700">
-                            Your campaign will target the entire <strong>{campaignData.targetCountry}</strong>. 
-                            All cities, states, and regions within this country will be included.
-                          </p>
-                          <p className="text-xs text-green-600 mt-2">
-                            To target specific locations only, use the preset buttons above or enter locations manually.
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </CardContent>
           </Card>
