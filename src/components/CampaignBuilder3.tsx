@@ -34,11 +34,7 @@ import {
   type CallOnlyAd
 } from '../utils/googleAdGenerator';
 import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
-<<<<<<< HEAD
 import { exportCampaignToGoogleAdsEditorCSV, campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
-=======
-import { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
 import { validateAndFixAds, formatValidationReport } from '../utils/adValidationUtils';
 import Papa from 'papaparse';
 import { historyService } from '../utils/historyService';
