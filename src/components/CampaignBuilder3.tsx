@@ -34,7 +34,11 @@ import {
   type CallOnlyAd
 } from '../utils/googleAdGenerator';
 import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
+<<<<<<< HEAD
 import { exportCampaignToGoogleAdsEditorCSV, campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
+=======
+import { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
+>>>>>>> 56c307939e016e4c51427103518e536fbecce430
 import { validateAndFixAds, formatValidationReport } from '../utils/adValidationUtils';
 import Papa from 'papaparse';
 import { historyService } from '../utils/historyService';
@@ -1784,6 +1788,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           if (ad.headline1) convertedAd.headline1 = ad.headline1.trim().substring(0, 30);
           if (ad.headline2) convertedAd.headline2 = ad.headline2.trim().substring(0, 30);
           if (ad.headline3) convertedAd.headline3 = ad.headline3.trim().substring(0, 30);
+<<<<<<< HEAD
           if (ad.headline4) convertedAd.headline4 = ad.headline4.trim().substring(0, 30);
           if (ad.headline5) convertedAd.headline5 = ad.headline5.trim().substring(0, 30);
         }
@@ -1801,6 +1806,8 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           if (ad.description2) convertedAd.description2 = ad.description2.trim().substring(0, 90);
           if (ad.description3) convertedAd.description3 = ad.description3.trim().substring(0, 90);
           if (ad.description4) convertedAd.description4 = ad.description4.trim().substring(0, 90);
+=======
+>>>>>>> 56c307939e016e4c51427103518e536fbecce430
         }
         
         // Ads are already validated and fixed by validateAndFixAds above
@@ -1877,6 +1884,52 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       // Validate structure before generating CSV
       if (!structure || !structure.campaigns || structure.campaigns.length === 0) {
         notifications.error('Invalid campaign structure', {
+<<<<<<< HEAD
+=======
+          title: 'Export Error',
+          description: 'Campaign structure is invalid. Please ensure you have at least one ad group and campaign name.',
+          duration: 10000
+        });
+        return;
+      }
+      
+      const campaign = structure.campaigns[0];
+      if (!campaign.campaign_name || campaign.campaign_name.trim().length === 0) {
+        notifications.error('Campaign name is required', {
+          title: 'Export Error',
+          description: 'Please set a campaign name before generating CSV.',
+          duration: 10000
+        });
+        return;
+      }
+      
+      if (!campaign.adgroups || campaign.adgroups.length === 0) {
+        notifications.error('At least one ad group is required', {
+          title: 'Export Error',
+          description: 'Please create at least one ad group before generating CSV.',
+          duration: 10000
+        });
+        return;
+      }
+      
+      // Generate CSV content without downloading
+      const rows = campaignStructureToCSVRows(structure);
+      
+      // Debug: Log first few rows to check Type column
+      if (rows.length > 0) {
+        console.log('First 3 CSV rows:', rows.slice(0, 3).map(r => ({ Type: r['Type'], Campaign: r['Campaign'], 'Ad group': r['Ad group'] })));
+      }
+      
+      const validation = validateCSVRows(rows);
+      
+      if (!validation.isValid) {
+        console.error('CSV Validation Errors:', validation.errors);
+        setCampaignData(prev => ({
+          ...prev,
+          csvErrors: validation.errors,
+        }));
+        notifications.error('CSV validation failed', {
+>>>>>>> 56c307939e016e4c51427103518e536fbecce430
           title: 'Export Error',
           description: 'Campaign structure is invalid. Please ensure you have at least one ad group and campaign name.',
           duration: 10000
@@ -3108,6 +3161,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             </CardContent>
           </Card>
 
+<<<<<<< Updated upstream
           {/* Specific Locations */}
           <Card>
             <CardHeader>
@@ -3438,10 +3492,33 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                       </div>
                     </div>
                   </div>
+<<<<<<< HEAD
                 </div>
               );
             })()}
 
+=======
+                </div>
+              );
+            })()}
+
+              {/* Validation Status */}
+              <div className="pt-6 border-t border-slate-200">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200/60 rounded-xl p-5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-md">
+                      <CheckCircle2 className="w-6 h-6 text-white" />
+              </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-green-800 mb-2">Validation Complete</p>
+                      <p className="text-sm text-slate-700">
+                Your campaign is validated and ready to export. Click 'Download CSV' below to get your file.
+              </p>
+                    </div>
+                  </div>
+                </div>
+            </div>
+>>>>>>> 56c307939e016e4c51427103518e536fbecce430
           </CardContent>
         </Card>
 
@@ -3449,12 +3526,46 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row gap-3">
           <Button
+<<<<<<< HEAD
             onClick={handleDownloadCSV}
             className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-200/50 h-14 text-lg font-semibold"
           >
             <Download className="w-5 h-5 mr-2" />
             Download CSV for Google Ads Editor
           </Button>
+=======
+            onClick={() => {
+                  if (!campaignData.csvData) {
+                    notifications.warning('CSV not generated yet', {
+                      title: 'No CSV Data',
+                      description: 'Please generate CSV first before downloading.'
+                    });
+                    return;
+                  }
+                  const filename = `${(campaignData.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
+                  const blob = new Blob([campaignData.csvData], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+                  a.download = filename;
+              a.click();
+              URL.revokeObjectURL(url);
+              
+              // Redirect to dashboard
+              setTimeout(() => {
+                const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+                window.dispatchEvent(event);
+                if (window.location.hash) {
+                  window.location.hash = '#dashboard';
+                }
+              }, 1000);
+            }}
+                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-200/50 h-14 text-lg font-semibold"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download CSV for Google Ads Editor
+              </Button>
+>>>>>>> 56c307939e016e4c51427103518e536fbecce430
               <Button
                 variant="outline"
                 onClick={() => {
