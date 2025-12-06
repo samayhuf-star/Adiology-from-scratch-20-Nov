@@ -280,6 +280,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
   const [locationSearchTerm, setLocationSearchTerm] = useState({ countries: '', states: '', cities: '', zipCodes: '' });
   const [editingAdId, setEditingAdId] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [adGenerationKeyword, setAdGenerationKeyword] = useState('');
   const [campaignData, setCampaignData] = useState<CampaignData>({
     url: '',
     campaignName: '',
@@ -452,7 +453,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       setCampaignData(prev => ({
         ...prev,
         structureRankings: rankings,
-        selectedStructure: rankings[0]?.id || 'stag',
+        selectedStructure: rankings[0]?.id || 'skag',
       }));
 
       notifications.success('URL analyzed successfully', {
@@ -679,7 +680,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       }
 
       // Generate ad groups based on campaign structure
-      const adGroups = generateAdGroupsFromKeywords(shuffled, campaignData.selectedStructure || 'stag');
+      const adGroups = generateAdGroupsFromKeywords(shuffled, campaignData.selectedStructure || 'skag');
 
       setCampaignData(prev => ({
         ...prev,
@@ -898,7 +899,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
         await historyService.save('campaign', campaignData.campaignName || 'Draft Campaign', {
           name: campaignData.campaignName || 'Draft Campaign',
           url: campaignData.url,
-          structure: campaignData.selectedStructure || 'stag',
+          structure: campaignData.selectedStructure || 'skag',
           keywords: campaignData.selectedKeywords,
           ads: campaignData.ads,
           locations: campaignData.locations,
@@ -1040,7 +1041,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             location: campaignData.locations?.cities?.[0] || campaignData.locations?.states?.[0] || undefined,
             filters: {
               matchType: campaignData.keywordTypes.phrase ? 'phrase' : campaignData.keywordTypes.exact ? 'exact' : 'broad',
-              campaignStructure: (campaignData.selectedStructure?.toUpperCase() || 'STAG') as 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta',
+              campaignStructure: (campaignData.selectedStructure?.toUpperCase() || 'SKAG') as 'SKAG' | 'STAG' | 'IBAG' | 'Alpha-Beta',
               uniqueSellingPoints: [],
               callToAction: campaignData.cta || undefined,
             },
@@ -1714,7 +1715,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             await historyService.save('campaign', campaignData.campaignName || 'Campaign 1', {
               name: campaignData.campaignName,
               url: campaignData.url,
-              structure: campaignData.selectedStructure || 'stag',
+              structure: campaignData.selectedStructure || 'skag',
               keywords: campaignData.selectedKeywords,
               ads: campaignData.ads,
               locations: campaignData.locations,
@@ -1783,6 +1784,23 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           if (ad.headline1) convertedAd.headline1 = ad.headline1.trim().substring(0, 30);
           if (ad.headline2) convertedAd.headline2 = ad.headline2.trim().substring(0, 30);
           if (ad.headline3) convertedAd.headline3 = ad.headline3.trim().substring(0, 30);
+          if (ad.headline4) convertedAd.headline4 = ad.headline4.trim().substring(0, 30);
+          if (ad.headline5) convertedAd.headline5 = ad.headline5.trim().substring(0, 30);
+        }
+        
+        // Convert descriptions array to individual description fields (RSA can have up to 4)
+        if (ad.descriptions && Array.isArray(ad.descriptions)) {
+          ad.descriptions.forEach((description: string, idx: number) => {
+            if (idx < 4 && description && description.trim()) {
+              convertedAd[`description${idx + 1}`] = description.trim().substring(0, 90);
+            }
+          });
+        } else {
+          // Fallback to individual description fields
+          if (ad.description1) convertedAd.description1 = ad.description1.trim().substring(0, 90);
+          if (ad.description2) convertedAd.description2 = ad.description2.trim().substring(0, 90);
+          if (ad.description3) convertedAd.description3 = ad.description3.trim().substring(0, 90);
+          if (ad.description4) convertedAd.description4 = ad.description4.trim().substring(0, 90);
         }
         
         // Ads are already validated and fixed by validateAndFixAds above
@@ -1893,10 +1911,12 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
         console.log('First 3 CSV rows:', rows.slice(0, 3).map(r => ({ Type: r['Type'], Campaign: r['Campaign'], 'Ad group': r['Ad group'] })));
       }
       
-      // Generate CSV content using PapaParse
+      // Generate CSV content using PapaParse with exact master sheet format
+      // Use exact headers in order, CRLF line endings, and UTF-8 BOM
       const csv = Papa.unparse(rows, {
-        columns: GOOGLE_ADS_EDITOR_HEADERS,
+        columns: GOOGLE_ADS_EDITOR_HEADERS, // Exact header order from master sheet
         header: true,
+        newline: '\r\n', // CRLF line endings per master sheet
       });
       
       // Store CSV data in state (don't download yet)
@@ -1940,7 +1960,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
         adGroups: new Set(rows.map(r => r['Ad group']).filter(Boolean)).size,
         keywords: rows.filter(r => r['Type'] === 'Keyword').length,
         negativeKeywords: rows.filter(r => r['Type'] === 'Negative keyword').length,
-        ads: rows.filter(r => r['Type'] === 'Ad').length,
+        ads: rows.filter(r => r['Type'] === 'Responsive search ad' || r['Type'] === 'Ad').length,
         extensions: rows.filter(r => ['Sitelink', 'Callout', 'Snippet', 'Price'].includes(r['Type'] || '')).length,
         locations: campaignData.locations.cities.length + campaignData.locations.states.length + campaignData.locations.zipCodes.length + (campaignData.locations.countries.length > 0 ? 1 : 0),
         totalRows: rows.length,
@@ -2167,9 +2187,12 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
-                {campaignData.seedKeywords.map((kw, idx) => (
-                  <Badge key={idx} variant="secondary">{kw}</Badge>
-                ))}
+                {campaignData.seedKeywords.map((kw, idx) => {
+                  const keywordText = typeof kw === 'string' ? kw : (kw?.text || kw?.keyword || String(kw || ''));
+                  return (
+                    <Badge key={idx} variant="secondary">{keywordText}</Badge>
+                  );
+                })}
               </div>
               <div className="flex gap-2 mb-2">
               <Textarea
@@ -2290,7 +2313,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Generated Keywords ({filteredKeywords.length})</CardTitle>
-                <CardDescription>Keywords organized by campaign structure: {campaignData.selectedStructure?.toUpperCase() || 'STAG'}</CardDescription>
+                <CardDescription>Keywords organized by campaign structure: {campaignData.selectedStructure?.toUpperCase() || 'SKAG'}</CardDescription>
               </CardHeader>
             <CardContent>
               <ScrollArea className="h-96">
@@ -2301,14 +2324,17 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                         <p className="text-xs mt-2">Try adjusting keyword type filters or negative keywords.</p>
                       </div>
                     ) : (
-                      filteredKeywords.map((kw, idx) => (
-                      <div key={kw.id || idx} className="flex items-center justify-between p-2 border rounded">
-                      <span className="text-sm">{kw.text || kw.keyword || kw}</span>
-                          {kw.matchType && (
-                        <Badge variant="outline">{kw.matchType}</Badge>
-                          )}
-                        </div>
-                      ))
+                      filteredKeywords.map((kw, idx) => {
+                        const keywordText = typeof kw === 'string' ? kw : (kw?.text || kw?.keyword || String(kw || ''));
+                        return (
+                          <div key={kw?.id || idx} className="flex items-center justify-between p-2 border rounded">
+                            <span className="text-sm">{keywordText}</span>
+                            {kw?.matchType && (
+                              <Badge variant="outline">{kw.matchType}</Badge>
+                            )}
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </ScrollArea>
@@ -2345,7 +2371,165 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             }
             // Ads are now created manually by clicking ad type buttons
           }} />
+        </div>
+
+        {/* Step 1: Enter Keyword Box - At the Top */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Enter Keyword</CardTitle>
+            <CardDescription>Enter a keyword to generate ads for</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input
+              placeholder="Enter keyword (e.g., plumber near me)"
+              value={adGenerationKeyword}
+              onChange={(e) => setAdGenerationKeyword(e.target.value)}
+              className="w-full"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Step 2: URL Input */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Landing Page URL</CardTitle>
+            <CardDescription>Enter the URL where users will land when they click your ad</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input
+              type="url"
+              placeholder="https://www.example.com/landing-page"
+              value={campaignData.url}
+              onChange={(e) => setCampaignData(prev => ({ ...prev, url: e.target.value }))}
+              className="w-full"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Step 3: Ad Type and Mode Selection */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Ad Type & Mode</CardTitle>
+            <CardDescription>Choose your ad type and generation mode</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-semibold mb-2 block">Select Ad Type</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Button
+                    variant={campaignData.adTypes.includes('rsa') ? "default" : "outline"}
+                    className="w-full py-6"
+                    onClick={() => {
+                      const adTypes = campaignData.adTypes.includes('rsa')
+                        ? campaignData.adTypes.filter(t => t !== 'rsa')
+                        : [...campaignData.adTypes.filter(t => t !== 'rsa'), 'rsa'];
+                      setCampaignData(prev => ({ ...prev, adTypes }));
+                    }}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Responsive Search Ad (RSA)
+                  </Button>
+                  <Button
+                    variant={campaignData.adTypes.includes('dki') ? "default" : "outline"}
+                    className="w-full py-6"
+                    onClick={() => {
+                      const adTypes = campaignData.adTypes.includes('dki')
+                        ? campaignData.adTypes.filter(t => t !== 'dki')
+                        : [...campaignData.adTypes.filter(t => t !== 'dki'), 'dki'];
+                      setCampaignData(prev => ({ ...prev, adTypes }));
+                    }}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    DKI Text Ad
+                  </Button>
+                  <Button
+                    variant={campaignData.adTypes.includes('call') ? "default" : "outline"}
+                    className="w-full py-6"
+                    onClick={() => {
+                      const adTypes = campaignData.adTypes.includes('call')
+                        ? campaignData.adTypes.filter(t => t !== 'call')
+                        : [...campaignData.adTypes.filter(t => t !== 'call'), 'call'];
+                      setCampaignData(prev => ({ ...prev, adTypes }));
+                    }}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Call Only Ad
+                  </Button>
+                </div>
               </div>
+              <div>
+                <Label className="text-sm font-semibold mb-2 block">Generation Mode</Label>
+                <Select
+                  value="auto"
+                  onValueChange={(value) => {
+                    // Mode selection can be extended later
+                    console.log('Mode selected:', value);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select generation mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto Generate (Recommended)</SelectItem>
+                    <SelectItem value="manual">Manual Entry</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Step 4: Generate Ads Button */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <Button
+              onClick={() => {
+                if (!adGenerationKeyword.trim()) {
+                  notifications.error('Please enter a keyword', { title: 'Keyword Required' });
+                  return;
+                }
+                // Temporarily add keyword to selectedKeywords for ad generation
+                const tempKeyword = {
+                  id: `temp-${Date.now()}`,
+                  text: adGenerationKeyword.trim(),
+                  keyword: adGenerationKeyword.trim(),
+                };
+                setCampaignData(prev => ({
+                  ...prev,
+                  selectedKeywords: prev.selectedKeywords.length > 0 ? prev.selectedKeywords : [tempKeyword]
+                }));
+                // Generate ads after a short delay to ensure state is updated
+                setTimeout(() => {
+                  handleGenerateAds();
+                }, 100);
+              }}
+              disabled={loading || !campaignData.url || !adGenerationKeyword.trim() || campaignData.adTypes.length === 0}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Generating Ads...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Generate Ads
+                </>
+              )}
+            </Button>
+            {(!campaignData.url || !adGenerationKeyword.trim() || campaignData.adTypes.length === 0) && (
+              <p className="text-sm text-slate-500 mt-2 text-center">
+                {!campaignData.url && 'Please enter a URL. '}
+                {!adGenerationKeyword.trim() && 'Please enter a keyword. '}
+                {campaignData.adTypes.length === 0 && 'Please select at least one ad type.'}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Sidebar */}
           <div className="lg:col-span-1 space-y-4">
@@ -2983,7 +3167,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           <Card>
             <CardHeader>
             <CardTitle>Ad Groups ({campaignData.adGroups.length})</CardTitle>
-            <CardDescription>Ad groups organized by campaign structure: {campaignData.selectedStructure?.toUpperCase() || 'STAG'}</CardDescription>
+            <CardDescription>Ad groups organized by campaign structure: {campaignData.selectedStructure?.toUpperCase() || 'SKAG'}</CardDescription>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-64">
@@ -3050,11 +3234,14 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             <CardContent>
               <ScrollArea className="h-64">
               <div className="flex flex-wrap gap-2">
-                {campaignData.selectedKeywords.slice(0, 100).map((kw, idx) => (
-                  <Badge key={kw.id || idx} variant="outline" className="text-xs">
-                    {kw.text || kw.keyword || kw}
-                  </Badge>
-                ))}
+                {campaignData.selectedKeywords.slice(0, 100).map((kw, idx) => {
+                  const keywordText = typeof kw === 'string' ? kw : (kw?.text || kw?.keyword || String(kw || ''));
+                  return (
+                    <Badge key={kw?.id || idx} variant="outline" className="text-xs">
+                      {keywordText}
+                    </Badge>
+                  );
+                })}
                 {campaignData.selectedKeywords.length > 100 && (
                   <Badge variant="secondary" className="text-xs">
                     +{campaignData.selectedKeywords.length - 100} more
@@ -3109,7 +3296,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
 
   const renderStep8 = () => {
     const locationInfo = getLocationCountAndType();
-    const structureName = CAMPAIGN_STRUCTURES.find(s => s.id === campaignData.selectedStructure)?.name || 'STAG';
+    const structureName = CAMPAIGN_STRUCTURES.find(s => s.id === campaignData.selectedStructure)?.name || 'SKAG';
     const targetLocationText = locationInfo.count === 1 && locationInfo.type === 'Country'
       ? `${campaignData.targetCountry} (Nationwide)`
       : `${campaignData.targetCountry} (${locationInfo.type})`;
@@ -3426,7 +3613,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       intent: null,
       vertical: null,
       cta: null,
-      selectedStructure: null,
+      selectedStructure: 'skag',
       structureRankings: [],
       seedKeywords: ['plumber number', 'contact plumber', 'plumbing near me', '24/7 plumber'],
       negativeKeywords: [...DEFAULT_NEGATIVE_KEYWORDS],

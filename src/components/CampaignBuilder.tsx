@@ -1759,7 +1759,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 ),
                 locationTargeting.locations.length > 0 ? locationTargeting : undefined,
                 undefined, // budget
-                'MANUAL_CPC', // bidding strategy
+                'Manual CPC', // bidding strategy
                 negativeKeywords,
                 ALL_AD_GROUPS_VALUE
             );

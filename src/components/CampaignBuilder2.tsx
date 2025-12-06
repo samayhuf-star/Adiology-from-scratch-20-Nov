@@ -733,7 +733,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   useEffect(() => {
     setIsInitialized(true);
   }, []);
-  const [structureType, setStructureType] = useState<StructureType | null>(null);
+  const [structureType, setStructureType] = useState<StructureType | null>('skag');
   
   // Generate default campaign name with date and time
   const generateDefaultCampaignName = () => {
@@ -1013,7 +1013,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
   useEffect(() => {
     if (initialData) {
       setCampaignName(initialData.campaignName || initialData.name || generateDefaultCampaignName());
-      setStructureType(initialData.structureType || (initialData.structure ? initialData.structure.toLowerCase() : null));
+      setStructureType(initialData.structureType || (initialData.structure ? initialData.structure.toLowerCase() : 'skag'));
       setUrl(initialData.url || 'https://example.com');
       setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
       setAdTypes(initialData.adTypes || { rsa: true, dki: true, call: true });
@@ -3450,10 +3450,12 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
 
   // Helper functions for ad management (matching Campaign Builder)
   const handleEditAd = (ad: any) => {
-    if (editingAdId === ad.id) {
+    // Ensure we're comparing numbers correctly
+    const adId = typeof ad.id === 'number' ? ad.id : Number(ad.id);
+    if (editingAdId === adId) {
       setEditingAdId(null);
     } else {
-      setEditingAdId(ad.id);
+      setEditingAdId(adId);
     }
   };
 
@@ -4331,12 +4333,17 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     {/* Action Buttons */}
                     <div className="flex gap-2 mt-4">
                       <Button
-                        onClick={() => handleEditAd(ad)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEditAd(ad);
+                        }}
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg"
                         size="sm"
+                        type="button"
                       >
                         <Edit3 className="w-4 h-4 mr-1" />
-                        EDIT
+                        {(editingAdId === ad.id || editingAdId === Number(ad.id)) ? 'CANCEL' : 'EDIT'}
                       </Button>
                       <Button
                         onClick={() => handleDuplicateAd(ad)}
@@ -4357,7 +4364,7 @@ export const CampaignBuilder2 = ({ initialData }: { initialData?: any }) => {
                     </div>
 
                     {/* Edit Form - shown when editing */}
-                    {editingAdId === ad.id && (
+                    {(editingAdId === ad.id || editingAdId === Number(ad.id)) && (
                       <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
                         {(ad.type === 'rsa' || ad.type === 'dki') && (
                           <>

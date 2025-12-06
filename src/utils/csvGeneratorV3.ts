@@ -268,10 +268,10 @@ export function generateCSVV3(structure: CampaignStructure): string {
       escapeCSVField('Search'), // Campaign Type
       escapeCSVField('Search Network'), // Networks
       escapeCSVField(''), // Daily Budget
-      escapeCSVField(''), // Budget Type
+      escapeCSVField('Daily'), // Budget Type
       escapeCSVField(''), // Start Date
       escapeCSVField(''), // End Date
-      escapeCSVField(''), // Bid Strategy Type
+      escapeCSVField('Manual CPC'), // Bid Strategy Type
       escapeCSVField(''), // Tracking Template
       escapeCSVField(''), // Final URL Suffix
       escapeCSVField('en') // Campaign Language

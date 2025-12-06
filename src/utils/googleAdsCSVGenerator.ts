@@ -63,8 +63,8 @@ export function flattenCampaignsToRows(campaigns: any[]): RowObject[] {
     rows.push({
       'Row Type': 'CAMPAIGN',
       'Campaign': c.name || c.campaign || '',
-      'Campaign Status': c.status || 'ENABLED',
-      'Campaign Type': c.type || 'SEARCH',
+      'Campaign Status': c.status === 'ENABLED' || c.status === 'Enabled' || !c.status ? 'Enabled' : c.status,
+      'Campaign Type': c.type === 'SEARCH' || c.type === 'Search' || !c.type ? 'Search' : c.type,
       'Budget': c.budget ?? '',
       'Start Date': c.startDate ?? '',
       'End Date': c.endDate ?? '',
@@ -88,7 +88,7 @@ export function flattenCampaignsToRows(campaigns: any[]): RowObject[] {
         'Row Type': 'ADGROUP',
         'Campaign': c.name || c.campaign || '',
         'Ad Group': ag.name || ag.adGroup || '',
-        'Ad Group Status': ag.status || 'ENABLED',
+        'Ad Group Status': ag.status === 'ENABLED' || ag.status === 'Enabled' || !ag.status ? 'Enabled' : ag.status,
         'Default Max CPC': ag.defaultBid ?? '',
         'Operation': ag.operation || 'NEW'
       });
@@ -100,7 +100,7 @@ export function flattenCampaignsToRows(campaigns: any[]): RowObject[] {
           'Row Type': 'AD',
           'Campaign': c.name || c.campaign || '',
           'Ad Group': ag.name || ag.adGroup || '',
-          'Ad Type': ad.type || 'RESPONSIVE_SEARCH_AD',
+          'Ad Type': ad.type === 'RESPONSIVE_SEARCH_AD' || ad.type === 'rsa' || !ad.type ? 'Responsive search ad' : ad.type,
           'Final URL': Array.isArray(ad.finalUrls) ? (ad.finalUrls[0] || '') : (ad.finalUrl || ''),
           'Operation': ad.operation || 'NEW'
         };
@@ -265,7 +265,7 @@ function validateRowObject(r: RowObject, idx: number): ValidationResult {
   if (rowType === 'AD') {
     const type = (r['Ad Type'] || '').toString().toUpperCase();
     if (!r['Final URL'] || String(r['Final URL']).trim() === '') errors.push('Ad must have a Final URL');
-    if (type === 'RESPONSIVE_SEARCH_AD') {
+    if (type === 'RESPONSIVE_SEARCH_AD' || type === 'RESPONSIVE SEARCH AD' || type.includes('RESPONSIVE') && type.includes('SEARCH')) {
       const hCount = Object.keys(r).filter(k => /^Headline\s+\d+/i.test(k)).length;
       const dCount = Object.keys(r).filter(k => /^Description\s+\d+/i.test(k)).length;
       if (hCount < 3) warnings.push('RSA should have at least 3 headlines (warning)');

@@ -54,7 +54,12 @@ export const KeywordPlannerSelectable = ({
             setNegativeKeywords(initialData.negativeKeywords || '');
             // Only set generated keywords if they exist in initialData
             if (initialData.generatedKeywords && initialData.generatedKeywords.length > 0) {
-                setGeneratedKeywords(initialData.generatedKeywords);
+                // Convert keyword objects to strings if needed
+                const keywordStrings = initialData.generatedKeywords.map((kw: any) => {
+                    if (typeof kw === 'string') return kw;
+                    return kw?.text || kw?.keyword || String(kw || '');
+                });
+                setGeneratedKeywords(keywordStrings);
             }
             setMatchTypes(initialData.matchTypes || { broad: true, phrase: true, exact: true });
         }
@@ -727,13 +732,19 @@ export const KeywordPlannerSelectable = ({
                                     <div className="bg-white/80 rounded-lg p-3 border border-indigo-100">
                                         <div className="text-xs text-slate-500 mb-1">Broad Match</div>
                                         <div className="text-xl font-bold text-blue-600">
-                                            {generatedKeywords.filter(k => !k.startsWith('"') && !k.startsWith('[')).length}
+                                            {generatedKeywords.filter(k => {
+                                                const kw = typeof k === 'string' ? k : (k?.text || k?.keyword || String(k || ''));
+                                                return !kw.startsWith('"') && !kw.startsWith('[');
+                                            }).length}
                                         </div>
                                     </div>
                                     <div className="bg-white/80 rounded-lg p-3 border border-indigo-100">
                                         <div className="text-xs text-slate-500 mb-1">Phrase/Exact</div>
                                         <div className="text-xl font-bold text-green-600">
-                                            {generatedKeywords.filter(k => k.startsWith('"') || k.startsWith('[')).length}
+                                            {generatedKeywords.filter(k => {
+                                                const kw = typeof k === 'string' ? k : (k?.text || k?.keyword || String(k || ''));
+                                                return kw.startsWith('"') || kw.startsWith('[');
+                                            }).length}
                                         </div>
                                     </div>
                                 </div>
@@ -761,11 +772,14 @@ export const KeywordPlannerSelectable = ({
                                     <div className="mt-3 text-xs text-slate-600">
                                         <div className="font-medium mb-1">Sample Keywords:</div>
                                         <div className="flex flex-wrap gap-1">
-                                            {generatedKeywords.slice(0, 8).map((kw, idx) => (
-                                                <span key={idx} className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-mono">
-                                                    {kw.length > 25 ? kw.substring(0, 25) + '...' : kw}
-                                                </span>
-                                            ))}
+                                            {generatedKeywords.slice(0, 8).map((kw, idx) => {
+                                                const keywordText = typeof kw === 'string' ? kw : (kw?.text || kw?.keyword || String(kw || ''));
+                                                return (
+                                                    <span key={idx} className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs font-mono">
+                                                        {keywordText.length > 25 ? keywordText.substring(0, 25) + '...' : keywordText}
+                                                    </span>
+                                                );
+                                            })}
                                             {generatedKeywords.length > 8 && (
                                                 <span className="px-2 py-0.5 text-slate-500 text-xs">
                                                     +{generatedKeywords.length - 8} more
@@ -854,7 +868,7 @@ export const KeywordPlannerSelectable = ({
                                                 htmlFor={`keyword-checkbox-${idx}`}
                                                 className={`flex-1 cursor-pointer select-none ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-700'}`}
                                             >
-                                                {keyword}
+                                                {typeof keyword === 'string' ? keyword : (keyword?.text || keyword?.keyword || String(keyword || ''))}
                                             </label>
                                         </div>
                                     );

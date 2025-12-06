@@ -299,7 +299,20 @@ function isValidURL(url: string | null | undefined): boolean {
 }
 
 /**
+ * Create an empty CSV row with all master sheet headers initialized to empty strings
+ * This ensures every row has all 112 columns in the exact order from the master sheet
+ */
+function createEmptyCSVRow(): CSVRow {
+  const row: CSVRow = {};
+  GOOGLE_ADS_EDITOR_HEADERS.forEach(header => {
+    row[header] = '';
+  });
+  return row;
+}
+
+/**
  * Convert campaign structure to Google Ads Editor CSV rows
+ * Uses exact master sheet headers and only populates data - never modifies headers
  */
 export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow[] {
   const rows: CSVRow[] = [];
@@ -331,28 +344,23 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
     const stateTargeting = states.length > 0 ? states[0] : ''; // Single value per master sheet
     const regionTargeting = regions.length > 0 ? regions[0] : ''; // Single value per master sheet
     
-    const campaignRow: CSVRow = {
-      'Type': 'Campaign',
-      'Operation': 'ADD',
-      'Campaign': campaign.campaign_name || '',
-      'Campaign ID': '',
-      'Campaign status': 'Enabled',
-      'Campaign type': 'Search',
-      'Budget': (campaign as any).budget?.toString() || '',
-      'Budget ID': '',
-      'Budget type': (campaign as any).budget_type || 'Daily',
-      'Bidding strategy': (campaign as any).bidding_strategy || 'Manual CPC',
-      'Start date': (campaign as any).start_date || '',
-      'End date': (campaign as any).end_date || '',
-      'Networks': '',
-      'Location targeting': targetCountry || (campaign as any).location_code || '',
-      'Postal code targeting': postalCodeTargeting,
-      'City targeting': cityTargeting,
-      'State targeting': stateTargeting,
-      'Region targeting': regionTargeting,
-      'Language targeting': '',
-      'Match type': '', // Explicitly empty for non-keyword rows
-    };
+    // Create campaign row with all master sheet columns, populate only relevant fields
+    const campaignRow: CSVRow = createEmptyCSVRow();
+    campaignRow['Type'] = 'Campaign';
+    campaignRow['Operation'] = 'ADD';
+    campaignRow['Campaign'] = campaign.campaign_name || '';
+    campaignRow['Campaign status'] = 'Enabled';
+    campaignRow['Campaign type'] = 'Search';
+    campaignRow['Budget'] = (campaign as any).budget?.toString() || '';
+    campaignRow['Budget type'] = (campaign as any).budget_type || 'Daily';
+    campaignRow['Bidding strategy'] = (campaign as any).bidding_strategy || 'Manual CPC';
+    campaignRow['Start date'] = (campaign as any).start_date || '';
+    campaignRow['End date'] = (campaign as any).end_date || '';
+    campaignRow['Location targeting'] = targetCountry || (campaign as any).location_code || '';
+    campaignRow['Postal code targeting'] = postalCodeTargeting;
+    campaignRow['City targeting'] = cityTargeting;
+    campaignRow['State targeting'] = stateTargeting;
+    campaignRow['Region targeting'] = regionTargeting;
     rows.push(campaignRow);
 
     // Process ad groups
@@ -374,15 +382,14 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
           return;
         }
         
-        // Ad Group row
-        const adGroupRow: CSVRow = {
-          'Type': 'Ad group',
-          'Operation': 'ADD',
-          'Campaign': campaign.campaign_name || '',
-          'Ad group': cleanedAdGroupName,
-          'Ad group status': 'Enabled',
-          'Max CPC': (adGroup as any).default_max_cpc?.toString() || '',
-        };
+        // Ad Group row - create with all master sheet columns, populate only relevant fields
+        const adGroupRow: CSVRow = createEmptyCSVRow();
+        adGroupRow['Type'] = 'Ad group';
+        adGroupRow['Operation'] = 'ADD';
+        adGroupRow['Campaign'] = campaign.campaign_name || '';
+        adGroupRow['Ad group'] = cleanedAdGroupName;
+        adGroupRow['Ad group status'] = 'Enabled';
+        adGroupRow['Max CPC'] = (adGroup as any).default_max_cpc?.toString() || '';
         rows.push(adGroupRow);
 
         // Keywords - with validation and deduplication
@@ -458,16 +465,16 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               csvMatchType = 'Broad';
             }
             
-            const keywordRow: CSVRow = {
-              'Type': 'Keyword',
-              'Operation': 'ADD',
-              'Campaign': campaign.campaign_name,
-              'Ad group': cleanedAdGroupName,
-              'Keyword': cleanedKeyword,
-              'Match type': csvMatchType, // Must be 'Broad', 'Phrase', or 'Exact' - NOT 'Keyword'
-              'Max CPC': typeof keyword === 'object' && (keyword as any).maxCPC ? (keyword as any).maxCPC.toString() : '',
-              'Final URL': typeof keyword === 'object' && (keyword as any).finalURL ? (keyword as any).finalURL : '',
-            };
+            // Keyword row - create with all master sheet columns, populate only relevant fields
+            const keywordRow: CSVRow = createEmptyCSVRow();
+            keywordRow['Type'] = 'Keyword';
+            keywordRow['Operation'] = 'ADD';
+            keywordRow['Campaign'] = campaign.campaign_name;
+            keywordRow['Ad group'] = cleanedAdGroupName;
+            keywordRow['Keyword'] = cleanedKeyword;
+            keywordRow['Match type'] = csvMatchType; // Must be 'Broad', 'Phrase', or 'Exact'
+            keywordRow['Max CPC'] = typeof keyword === 'object' && (keyword as any).maxCPC ? (keyword as any).maxCPC.toString() : '';
+            keywordRow['Final URL'] = typeof keyword === 'object' && (keyword as any).finalURL ? (keyword as any).finalURL : '';
             rows.push(keywordRow);
           });
         }
@@ -492,18 +499,35 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
           
           // Limit to max 3 ads per ad group, and filter duplicates
           validatedAds.slice(0, MAX_ADS_PER_ADGROUP * 2).forEach((ad) => {
-            // Skip if not RSA type (for now, only process RSA)
-            if (ad.type !== 'rsa') {
-              return;
-            }
-            
+            // Process all ad types (RSA, DKI, Call) - they should all be converted to RSA format for CSV
             // Headlines and descriptions are already validated and fixed by validateAndFixAds above
             // Just ensure they're trimmed and within limits for duplicate detection
-            const headline1 = (ad.headline1 || 'Professional Service').trim().substring(0, 30);
-            const headline2 = (ad.headline2 || 'Expert Solutions').trim().substring(0, 30);
-            const headline3 = (ad.headline3 || 'Quality Guaranteed').trim().substring(0, 30);
-            const desc1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
-            const desc2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
+            // Support both array format (headlines/descriptions) and individual fields (headline1, headline2, etc.)
+            let headline1 = '';
+            let headline2 = '';
+            let headline3 = '';
+            
+            if (ad.headlines && Array.isArray(ad.headlines) && ad.headlines.length > 0) {
+              headline1 = (ad.headlines[0] || 'Professional Service').trim().substring(0, 30);
+              headline2 = (ad.headlines[1] || 'Expert Solutions').trim().substring(0, 30);
+              headline3 = (ad.headlines[2] || 'Quality Guaranteed').trim().substring(0, 30);
+            } else {
+              headline1 = (ad.headline1 || 'Professional Service').trim().substring(0, 30);
+              headline2 = (ad.headline2 || 'Expert Solutions').trim().substring(0, 30);
+              headline3 = (ad.headline3 || 'Quality Guaranteed').trim().substring(0, 30);
+            }
+            
+            let desc1 = '';
+            let desc2 = '';
+            
+            if (ad.descriptions && Array.isArray(ad.descriptions) && ad.descriptions.length > 0) {
+              desc1 = (ad.descriptions[0] || 'Get professional service you can trust.').trim().substring(0, 90);
+              desc2 = (ad.descriptions[1] || 'Contact us today for expert assistance.').trim().substring(0, 90);
+            } else {
+              desc1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
+              desc2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
+            }
+            
             const finalUrl = (ad.final_url || '').trim();
             
             // Create unique key for duplicate detection (using normalized values)
@@ -532,48 +556,65 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               });
             }
             
-            // Headlines and descriptions are already validated - use them directly
-            const description1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
-            const description2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
+            // Ad row - create with all master sheet columns, populate only relevant fields
+            const adRow: CSVRow = createEmptyCSVRow();
+            adRow['Type'] = 'Responsive search ad'; // Per master sheet format
+            adRow['Operation'] = 'ADD';
+            adRow['Campaign'] = campaign.campaign_name || '';
+            adRow['Ad group'] = cleanedAdGroupName;
+            adRow['Final URL'] = ad.final_url || '';
+            adRow['Final mobile URL'] = (ad as any).final_mobile_url || '';
+            adRow['Tracking template'] = (ad as any).tracking_template || '';
+            adRow['Custom parameter'] = (ad as any).custom_parameters || '';
             
-            const adRow: CSVRow = {
-              'Type': 'Responsive search ad',
-              'Operation': 'ADD',
-              'Campaign': campaign.campaign_name || '',
-              'Ad group': cleanedAdGroupName,
-              'Match type': '', // Explicitly empty for ad rows
-              'Final URL': ad.final_url || '',
-              'Final mobile URL': (ad as any).final_mobile_url || '',
-              'Tracking template': (ad as any).tracking_template || '',
-              'Custom parameter': (ad as any).custom_parameters || '',
-              'Headline 1': headline1,
-              'Headline 2': headline2,
-              'Headline 3': headline3,
-              'Headline 4': (ad.headline4 || '').trim().substring(0, 30),
-              'Headline 5': (ad.headline5 || '').trim().substring(0, 30),
-              'Headline 6': (ad.headline6 || '').trim().substring(0, 30),
-              'Headline 7': (ad.headline7 || '').trim().substring(0, 30),
-              'Headline 8': (ad.headline8 || '').trim().substring(0, 30),
-              'Headline 9': (ad.headline9 || '').trim().substring(0, 30),
-              'Headline 10': (ad.headline10 || '').trim().substring(0, 30),
-              'Headline 11': (ad.headline11 || '').trim().substring(0, 30),
-              'Headline 12': (ad.headline12 || '').trim().substring(0, 30),
-              'Headline 13': (ad.headline13 || '').trim().substring(0, 30),
-              'Headline 14': (ad.headline14 || '').trim().substring(0, 30),
-              'Headline 15': (ad.headline15 || '').trim().substring(0, 30),
-              'Description 1': description1,
-              'Description 2': description2,
-              'Description 3': (ad.description3 || '').trim().substring(0, 90),
-              'Description 4': (ad.description4 || '').trim().substring(0, 90),
-              'Business name': (ad as any).businessName || '',
-              'Path 1': (ad.path1 || '').trim().substring(0, 15),
-              'Path 2': (ad.path2 || '').trim().substring(0, 15),
-              'Phone': (ad as any).phoneNumber || '',
-              'Callout 1': callouts[0] || '',
-              'Callout 2': callouts[1] || '',
-              'Callout 3': callouts[2] || '',
-              'Callout 4': callouts[3] || '',
-            };
+            // Handle headlines - support both array format and individual fields
+            if (ad.headlines && Array.isArray(ad.headlines)) {
+              ad.headlines.forEach((headline: string, idx: number) => {
+                if (idx < 15 && headline && headline.trim()) {
+                  adRow[`Headline ${idx + 1}`] = headline.trim().substring(0, 30);
+                }
+              });
+            } else {
+              // Use individual headline fields
+              adRow['Headline 1'] = headline1;
+              adRow['Headline 2'] = headline2;
+              adRow['Headline 3'] = headline3;
+              if (ad.headline4) adRow['Headline 4'] = (ad.headline4 || '').trim().substring(0, 30);
+              if (ad.headline5) adRow['Headline 5'] = (ad.headline5 || '').trim().substring(0, 30);
+              if (ad.headline6) adRow['Headline 6'] = (ad.headline6 || '').trim().substring(0, 30);
+              if (ad.headline7) adRow['Headline 7'] = (ad.headline7 || '').trim().substring(0, 30);
+              if (ad.headline8) adRow['Headline 8'] = (ad.headline8 || '').trim().substring(0, 30);
+              if (ad.headline9) adRow['Headline 9'] = (ad.headline9 || '').trim().substring(0, 30);
+              if (ad.headline10) adRow['Headline 10'] = (ad.headline10 || '').trim().substring(0, 30);
+              if (ad.headline11) adRow['Headline 11'] = (ad.headline11 || '').trim().substring(0, 30);
+              if (ad.headline12) adRow['Headline 12'] = (ad.headline12 || '').trim().substring(0, 30);
+              if (ad.headline13) adRow['Headline 13'] = (ad.headline13 || '').trim().substring(0, 30);
+              if (ad.headline14) adRow['Headline 14'] = (ad.headline14 || '').trim().substring(0, 30);
+              if (ad.headline15) adRow['Headline 15'] = (ad.headline15 || '').trim().substring(0, 30);
+            }
+            
+            // Handle descriptions - support both array format and individual fields
+            if (ad.descriptions && Array.isArray(ad.descriptions)) {
+              ad.descriptions.forEach((description: string, idx: number) => {
+                if (idx < 4 && description && description.trim()) {
+                  adRow[`Description ${idx + 1}`] = description.trim().substring(0, 90);
+                }
+              });
+            } else {
+              // Use individual description fields
+              adRow['Description 1'] = desc1;
+              adRow['Description 2'] = desc2;
+              if (ad.description3) adRow['Description 3'] = (ad.description3 || '').trim().substring(0, 90);
+              if (ad.description4) adRow['Description 4'] = (ad.description4 || '').trim().substring(0, 90);
+            }
+            adRow['Business name'] = (ad as any).businessName || '';
+            adRow['Path 1'] = (ad.path1 || '').trim().substring(0, 15);
+            adRow['Path 2'] = (ad.path2 || '').trim().substring(0, 15);
+            adRow['Phone'] = (ad as any).phoneNumber || '';
+            adRow['Callout 1'] = callouts[0] || '';
+            adRow['Callout 2'] = callouts[1] || '';
+            adRow['Callout 3'] = callouts[2] || '';
+            adRow['Callout 4'] = callouts[3] || '';
             rows.push(adRow);
           });
         }
@@ -635,14 +676,14 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               return;
             }
 
-            const negativeRow: CSVRow = {
-              'Type': 'Negative keyword',
-              'Operation': 'ADD',
-              'Campaign': campaign.campaign_name,
-              'Ad group': cleanedAdGroupName,
-              'Keyword': cleanedKeyword, // Use cleanedKeyword variable
-              'Match type': csvMatchType, // Must be 'Negative Broad', 'Negative Phrase', or 'Negative Exact'
-            };
+            // Negative keyword row - create with all master sheet columns, populate only relevant fields
+            const negativeRow: CSVRow = createEmptyCSVRow();
+            negativeRow['Type'] = 'Negative keyword';
+            negativeRow['Operation'] = 'ADD';
+            negativeRow['Campaign'] = campaign.campaign_name;
+            negativeRow['Ad group'] = cleanedAdGroupName;
+            negativeRow['Keyword'] = cleanedKeyword;
+            negativeRow['Match type'] = csvMatchType; // Must be 'Negative Broad', 'Negative Phrase', or 'Negative Exact'
             rows.push(negativeRow);
           });
         }
@@ -674,14 +715,14 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
                   ext.sitelinks.forEach((sitelink: any, index: number) => {
                     if (sitelink.text) {
                       const sitelinkNum = Math.min(index + 1, 4); // Max 4 sitelinks per master sheet
-                      const sitelinkRow: CSVRow = {
-                        'Type': 'Sitelink',
-                        'Operation': 'ADD',
-                        'Campaign': campaign.campaign_name || '',
-                        'Ad group': cleanedAdGroupNameForExt,
-                        [`Sitelink text ${sitelinkNum}`]: sitelink.text || '',
-                        [`Sitelink final URL ${sitelinkNum}`]: sitelink.url || ad.final_url || '',
-                      };
+                      // Sitelink row - create with all master sheet columns, populate only relevant fields
+                      const sitelinkRow: CSVRow = createEmptyCSVRow();
+                      sitelinkRow['Type'] = 'Sitelink';
+                      sitelinkRow['Operation'] = 'ADD';
+                      sitelinkRow['Campaign'] = campaign.campaign_name || '';
+                      sitelinkRow['Ad group'] = cleanedAdGroupNameForExt;
+                      sitelinkRow[`Sitelink text ${sitelinkNum}`] = sitelink.text || '';
+                      sitelinkRow[`Sitelink final URL ${sitelinkNum}`] = sitelink.url || ad.final_url || '';
                       // Add descriptions only for first sitelink
                       if (sitelinkNum === 1) {
                         sitelinkRow['Sitelink description 1'] = sitelink.description || '';
