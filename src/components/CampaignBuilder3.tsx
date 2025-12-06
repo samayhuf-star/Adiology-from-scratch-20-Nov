@@ -3109,3 +3109,888 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             </CardContent>
           </Card>
 
+          {/* Specific Locations */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-600" />
+                <CardTitle>Specific Locations</CardTitle>
+              </div>
+              <CardDescription>
+                {!hasSpecificLocations 
+                  ? 'Add specific cities, states, or ZIP codes to target, or leave empty to target the entire country.'
+                  : `Targeting ${campaignData.locations.cities.length} cities, ${campaignData.locations.states.length} states, and ${campaignData.locations.zipCodes.length} ZIP codes.`
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="text-sm text-slate-600 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="font-medium text-blue-800 mb-1">Country Targeting Only</p>
+                  <p className="text-blue-700">Your campaign will target the entire selected country. All users within that country will see your ads.</p>
+                </div>
+
+                {/* Info Card */}
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Globe className="w-5 h-5 text-green-600 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-green-800 mb-1">Country Targeting</h4>
+                        <p className="text-sm text-green-700">
+                          Your campaign will target the entire <strong>{campaignData.targetCountry || 'selected country'}</strong>. 
+                          All cities, states, and regions within this country will be included.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  };
+  const renderStep6 = () => (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="mb-8 flex items-center justify-end">
+        <div className="text-sm text-slate-500 mr-4">Review step - no inputs to fill</div>
+      </div>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Review Campaign</h2>
+        <p className="text-slate-600">Review all ad groups, ads, keywords, and negative keywords before generating CSV</p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Ad Groups */}
+          <Card>
+            <CardHeader>
+            <CardTitle>Ad Groups ({campaignData.adGroups.length})</CardTitle>
+            <CardDescription>Ad groups organized by campaign structure: {campaignData.selectedStructure?.toUpperCase() || 'SKAG'}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64">
+                <div className="space-y-2">
+                {campaignData.adGroups.map((group, idx) => (
+                  <div key={group.id} className="p-3 border rounded">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{group.name}</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {group.keywords.length} keywords
+                        </p>
+                      </div>
+                      <Badge variant="outline">{idx + 1}</Badge>
+                    </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+        {/* Ads */}
+          <Card>
+            <CardHeader>
+            <CardTitle>Ads ({campaignData.ads.length})</CardTitle>
+            <CardDescription>All ads that will be used across ad groups</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64">
+              <div className="space-y-3">
+                {campaignData.ads.map((ad) => (
+                  <div key={ad.id} className="p-3 border rounded">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge>{ad.type?.toUpperCase() || ad.adType || 'RSA'}</Badge>
+                      <span className="text-xs text-slate-500">
+                        {ad.extensions?.length || 0} extensions
+                      </span>
+                    </div>
+                    {ad.type === 'rsa' && ad.headlines && (
+                      <p className="text-sm text-slate-700 mt-2">
+                        {ad.headlines.slice(0, 3).join(' | ')}
+                      </p>
+                    )}
+                    {(ad.type === 'dki' || ad.adType === 'DKI') && ad.headline1 && (
+                      <p className="text-sm text-slate-700 mt-2">{ad.headline1}</p>
+                    )}
+                    {(ad.type === 'call' || ad.adType === 'CallOnly') && ad.headline1 && (
+                      <p className="text-sm text-slate-700 mt-2">{ad.headline1}</p>
+                    )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+        {/* Keywords */}
+          <Card>
+            <CardHeader>
+            <CardTitle>Keywords ({campaignData.selectedKeywords.length})</CardTitle>
+            <CardDescription>All keywords selected for the campaign</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64">
+              <div className="flex flex-wrap gap-2">
+                {campaignData.selectedKeywords.slice(0, 100).map((kw, idx) => {
+                  const keywordText = typeof kw === 'string' ? kw : (kw?.text || kw?.keyword || String(kw || ''));
+                  return (
+                    <Badge key={kw?.id || idx} variant="outline" className="text-xs">
+                      {keywordText}
+                    </Badge>
+                  );
+                })}
+                {campaignData.selectedKeywords.length > 100 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{campaignData.selectedKeywords.length - 100} more
+                  </Badge>
+                  )}
+                </div>
+              </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Negative Keywords */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Negative Keywords ({campaignData.negativeKeywords.length})</CardTitle>
+            <CardDescription>Keywords that will be excluded from the campaign</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {campaignData.negativeKeywords.map((neg, idx) => (
+                <Badge 
+                  key={idx} 
+                  variant={DEFAULT_NEGATIVE_KEYWORDS.includes(neg) ? "destructive" : "secondary"}
+                  className="text-xs"
+                >
+                  {neg}
+                </Badge>
+              ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+
+  // Helper function to get location count and type
+  const getLocationCountAndType = () => {
+    const { cities, zipCodes, states, countries } = campaignData.locations;
+    
+    if (cities.length > 0) {
+      return { count: cities.length, type: 'Cities' };
+    } else if (zipCodes.length > 0) {
+      return { count: zipCodes.length, type: 'ZIP Codes' };
+    } else if (states.length > 0) {
+      return { count: states.length, type: 'States' };
+    } else if (countries.length > 0) {
+      return { count: countries.length, type: 'Countries' };
+    } else {
+      // Whole country targeting
+      return { count: 1, type: 'Country' };
+    }
+  };
+
+  const renderStep8 = () => {
+    const locationInfo = getLocationCountAndType();
+    const structureName = CAMPAIGN_STRUCTURES.find(s => s.id === campaignData.selectedStructure)?.name || 'SKAG';
+    const targetLocationText = locationInfo.count === 1 && locationInfo.type === 'Country'
+      ? `${campaignData.targetCountry} (Nationwide)`
+      : `${campaignData.targetCountry} (${locationInfo.type})`;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          {/* Hero Section */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-200/50 mb-6 animate-in fade-in zoom-in duration-500">
+              <CheckCircle2 className="w-14 h-14 text-white" />
+          </div>
+            <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              Campaign Created Successfully!
+            </h1>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-900">
+              Your campaign is ready to export and implement in Google Ads Editor
+            </p>
+        </div>
+
+          {/* Metrics Cards - Redesigned */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <Card className="text-center border-2 border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <Megaphone className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">1</div>
+                <div className="text-sm font-medium text-slate-700">Campaign</div>
+            </CardContent>
+          </Card>
+            <Card className="text-center border-2 border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <Layers className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-1">{campaignData.adGroups.length}</div>
+                <div className="text-sm font-medium text-slate-700">Ad Groups</div>
+            </CardContent>
+          </Card>
+            <Card className="text-center border-2 border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <Hash className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-1">{campaignData.selectedKeywords.length}</div>
+                <div className="text-sm font-medium text-slate-700">Keywords</div>
+            </CardContent>
+          </Card>
+            <Card className="text-center border-2 border-green-100 bg-gradient-to-br from-white to-green-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <MapPin className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-1">{locationInfo.count}</div>
+                <div className="text-sm font-medium text-slate-700">Locations</div>
+                <div className="text-xs text-slate-500 mt-1">{locationInfo.type}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+          {/* Campaign Summary - Redesigned */}
+          <Card className="mb-8 border-2 border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-2xl">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-md">
+                  <CheckCircle2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                  <CardTitle className="text-2xl text-slate-900">Campaign Summary</CardTitle>
+                  <CardDescription className="text-slate-600 mt-1">All checks passed - ready for export</CardDescription>
+              </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Campaign Name</Label>
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <p className="text-base font-semibold text-slate-900">{campaignData.campaignName}</p>
+            </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Structure</Label>
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <p className="text-base font-semibold text-slate-900">{structureName}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Target Location</Label>
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <p className="text-base font-semibold text-slate-900">{targetLocationText}</p>
+                  </div>
+                </div>
+              </div>
+              
+            {/* Cities Summary - Show if cities are selected */}
+            {campaignData.locations.cities.length > 0 && (() => {
+              const cityCount = campaignData.locations.cities.length;
+              const presetCounts = [20, 50, 100, 200, LOCATION_PRESETS.cities.length];
+              const isPreset = presetCounts.includes(cityCount);
+              const presetLabel = cityCount === 20 ? 'Top 20 Cities' :
+                                cityCount === 50 ? 'Top 50 Cities' :
+                                cityCount === 100 ? 'Top 100 Cities' :
+                                cityCount === 200 ? 'Top 200 Cities' :
+                                cityCount === LOCATION_PRESETS.cities.length ? 'All Cities' : null;
+              
+              return (
+                  <div className="pt-6 border-t border-slate-200">
+                    <div className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 border-2 border-blue-200/60 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-md">
+                          <Building2 className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <p className="text-base font-bold text-slate-900">
+                            {presetLabel || 'Custom Cities'}
+                          </p>
+                            <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-300 font-semibold px-2.5 py-1">
+                            {cityCount} selected
+                          </Badge>
+                        </div>
+                          <div>
+                            <p className="text-xs font-medium text-slate-600 mb-2">Selected cities:</p>
+                            <div className="flex flex-wrap gap-2">
+                            {campaignData.locations.cities.slice(0, 10).map((city, idx) => (
+                                <Badge key={idx} className="text-xs bg-white text-slate-700 border-slate-300 shadow-sm font-medium">
+                                {city}
+                              </Badge>
+                            ))}
+                            {cityCount > 10 && (
+                                <Badge className="text-xs bg-slate-100 text-slate-600 border-slate-300 shadow-sm font-medium">
+                                +{cityCount - 10} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+          </CardContent>
+        </Card>
+
+          {/* Primary Action Section */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={handleDownloadCSV}
+            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-200/50 h-14 text-lg font-semibold"
+          >
+            <Download className="w-5 h-5 mr-2" />
+            Download CSV for Google Ads Editor
+          </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // Dispatch custom event for App.tsx to handle
+                  const event = new CustomEvent('navigate', { detail: { tab: 'campaign-history' } });
+                  window.dispatchEvent(event);
+                  
+                  // Fallback: Update URL hash
+                  if (window.location.hash !== '#campaign-history') {
+                    window.location.hash = '#campaign-history';
+                  }
+                }}
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-indigo-200/50 h-14 text-lg font-semibold"
+          >
+                <FolderOpen className="w-5 h-5 mr-2" />
+                View Saved Campaigns
+              </Button>
+            </div>
+          </div>
+
+          {/* Secondary Actions */}
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep(6)}
+              className="border-slate-300 hover:bg-slate-50"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Review
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Reset and start new campaign
+                window.location.reload();
+              }}
+              className="border-slate-300 hover:bg-slate-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Another Campaign
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Dispatch custom event for App.tsx to handle
+                const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+                window.dispatchEvent(event);
+                
+                // Fallback: Update URL hash
+                if (window.location.hash !== '#dashboard') {
+                  window.location.hash = '#dashboard';
+                }
+                
+                // Additional fallback: Try direct navigation after a short delay
+                setTimeout(() => {
+                  const event2 = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+                  window.dispatchEvent(event2);
+                }, 100);
+              }}
+              className="border-slate-300 hover:bg-slate-50"
+            >
+              Go to Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep7 = () => (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="mb-8 flex items-center justify-end">
+        <div className="text-sm text-slate-500 mr-4">CSV generation step - no inputs to fill</div>
+      </div>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">CSV Generation</h2>
+        <p className="text-slate-600">Generate your campaign CSV for Google Ads Editor</p>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>CSV Headers</CardTitle>
+          <CardDescription>Brief overview of CSV structure</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {['Campaign', 'Ad Group', 'Row Type', 'Final URL', 'Headline 1', 'Description 1', 'Status'].map(header => (
+              <Badge key={header} variant="outline">{header}</Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Generate CSV</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleGenerateCSV} disabled={loading}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+            Generate CSV
+          </Button>
+        </CardContent>
+      </Card>
+
+      {campaignData.csvData && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
+            <CardTitle className="text-green-600">CSV Ready</CardTitle>
+            </div>
+            <CardDescription>Your CSV is ready for export</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Button onClick={handleSaveCampaign} className="w-full" size="lg">
+                <Star className="w-5 h-5 mr-2" />
+              Save Campaign & Go to Dashboard
+            </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleDownloadCSV}
+                className="w-full"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download CSV
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+
+  // Progress bar
+  const steps = [
+    { id: 1, label: 'URL Input' },
+    { id: 2, label: 'Structure' },
+    { id: 3, label: 'Keywords' },
+    { id: 4, label: 'Ads & Extensions' },
+    { id: 5, label: 'Geo Target' },
+    { id: 6, label: 'Review' },
+    { id: 7, label: 'CSV' },
+  ];
+
+  // Reset campaign function
+  const handleResetCampaign = () => {
+    if (!confirm('Are you sure you want to reset the campaign? All progress will be lost.')) {
+      return;
+    }
+    
+    setCampaignData({
+      url: '',
+      campaignName: '',
+      intent: null,
+      vertical: null,
+      cta: null,
+      selectedStructure: 'skag',
+      structureRankings: [],
+      seedKeywords: ['plumber number', 'contact plumber', 'plumbing near me', '24/7 plumber'],
+      negativeKeywords: [...DEFAULT_NEGATIVE_KEYWORDS],
+      generatedKeywords: [],
+      selectedKeywords: [],
+      keywordTypes: { broad: true, phrase: true, exact: true, negative: true },
+      ads: [],
+      adTypes: ['rsa', 'dki'],
+      extensions: [],
+      adGroups: [],
+      selectedAdGroup: 'ALL_AD_GROUPS',
+      targetCountry: 'United States',
+      locations: { countries: [], states: [], cities: [], zipCodes: [] },
+      csvData: null,
+      csvErrors: [],
+    });
+    setCurrentStep(1);
+    setCampaignSaved(false);
+    
+    notifications.success('Campaign reset successfully', {
+      title: 'Reset Complete',
+      description: 'You can now start creating a new campaign from scratch.'
+    });
+  };
+
+  // Navigation handler for Next button
+  const handleNextStep = () => {
+    if (currentStep === 1) handleUrlSubmit();
+    else if (currentStep === 2) handleNextFromStructure();
+    else if (currentStep === 3) {
+      if (campaignData.generatedKeywords.length === 0 && campaignData.seedKeywords.length > 0) {
+        const seedKeywordsAsKeywords = createKeywordsFromSeeds(campaignData.seedKeywords);
+        setCampaignData(prev => ({
+          ...prev,
+          generatedKeywords: seedKeywordsAsKeywords,
+          selectedKeywords: seedKeywordsAsKeywords,
+        }));
+      }
+      setCurrentStep(4);
+    }
+    else if (currentStep === 4) {
+      if (campaignData.ads.length === 0) {
+        notifications.warning('Please generate ads first', { title: 'Ads Required' });
+        return;
+      }
+      setCurrentStep(5);
+    }
+    else if (currentStep === 5) {
+      setCurrentStep(6);
+      autoSaveDraft();
+    }
+    else if (currentStep === 6) {
+      setCurrentStep(7);
+      autoSaveDraft();
+    }
+    else if (currentStep === 7) {
+      handleSaveCampaign();
+    }
+    else if (currentStep === 8) {
+      // Success screen - no action needed
+    }
+  };
+
+  // Navigation handler for Back button
+  const handleBackStep = () => {
+    setCurrentStep(prev => Math.max(1, prev - 1));
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-cyan-50">
+      {/* Navigation Above Wizard */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              onClick={handleBackStep}
+              disabled={currentStep === 1}
+              size="sm"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleResetCampaign}
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Reset Campaign
+              </Button>
+              <Button
+                onClick={handleNextStep}
+                disabled={loading || currentStep === 8}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {currentStep === 7 ? 'Save & Finish' : currentStep === 8 ? 'Download CSV' : 'Next Step'}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="bg-white border-b border-slate-200 sticky top-[57px] z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {steps.map((step, idx) => (
+              <React.Fragment key={step.id}>
+                <div className="flex items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      currentStep > step.id
+                        ? 'bg-green-500 text-white'
+                        : currentStep === step.id
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {currentStep > step.id ? (
+                      <Check className="w-5 h-5" />
+                    ) : (
+                      <span>{step.id}</span>
+                    )}
+                  </div>
+                  <span className={`ml-2 text-sm font-medium ${
+                    currentStep === step.id ? 'text-indigo-600' : 'text-slate-600'
+                  }`}>
+                    {step.label}
+                  </span>
+                </div>
+                {idx < steps.length - 1 && (
+                  <div className={`flex-1 h-1 mx-4 ${
+                    currentStep > step.id ? 'bg-green-500' : 'bg-slate-200'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Top Navigation (Legacy - keeping for compatibility) */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+            <Button
+              variant="outline"
+              onClick={handleBackStep}
+              disabled={currentStep === 1}
+            size="sm"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+          <span className="text-sm text-slate-600">
+            Step {currentStep} of {steps.length}
+          </span>
+            <Button
+              onClick={handleNextStep}
+              disabled={loading || currentStep === 8}
+            size="sm"
+            >
+            {currentStep === 7 ? 'Save & Finish' : currentStep === 8 ? 'Download CSV' : 'Next Step'}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+
+      {/* Content */}
+      <div className="py-8">
+        {currentStep === 1 && renderStep1()}
+        {currentStep === 2 && renderStep2()}
+        {currentStep === 3 && renderStep3()}
+        {currentStep === 4 && renderStep4()}
+        {currentStep === 5 && renderStep5()}
+        {currentStep === 6 && renderStep6()}
+        {currentStep === 7 && renderStep7()}
+        {currentStep === 8 && renderStep8()}
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4">
+        <div className="max-w-7xl mx-auto flex justify-between">
+            <Button
+              variant="outline"
+            onClick={handleBackStep}
+            disabled={currentStep === 1}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <Button
+              onClick={handleNextStep}
+            disabled={loading || currentStep === 8}
+          >
+            {currentStep === 7 ? 'Save & Finish' : currentStep === 8 ? 'Download CSV' : 'Next Step'}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+        
+        {/* Export Dialog */}
+        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Export Campaign CSV</DialogTitle>
+              <DialogDescription>
+                Review your campaign export details before downloading
+              </DialogDescription>
+            </DialogHeader>
+            
+            {getExportStatistics() && (
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600">{getExportStatistics()!.campaigns}</div>
+                    <div className="text-sm text-slate-600">Campaigns</div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600">{getExportStatistics()!.adGroups}</div>
+                    <div className="text-sm text-slate-600">Ad Groups</div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600">{getExportStatistics()!.keywords}</div>
+                    <div className="text-sm text-slate-600">Keywords</div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600">{getExportStatistics()!.ads}</div>
+                    <div className="text-sm text-slate-600">Ads</div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600">{getExportStatistics()!.negativeKeywords}</div>
+                    <div className="text-sm text-slate-600">Negative Keywords</div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-indigo-600">{getExportStatistics()!.extensions}</div>
+                    <div className="text-sm text-slate-600">Extensions</div>
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-lg">
+                  <div className="text-sm text-slate-600">Total CSV Rows</div>
+                  <div className="text-xl font-semibold text-slate-800">{getExportStatistics()!.totalRows}</div>
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={confirmDownloadCSV} className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700">
+                <Download className="w-4 h-4 mr-2" />
+                Download CSV
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+    </div>
+  );
+};
+
+// Helper functions
+function detectVertical(landingData: LandingPageExtractionResult): string {
+  const text = (landingData.title || '') + ' ' + (landingData.h1 || '') + ' ' + landingData.page_text_tokens.join(' ');
+  const lowerText = text.toLowerCase();
+
+  if (lowerText.includes('product') || lowerText.includes('shop') || lowerText.includes('buy') || lowerText.includes('cart')) {
+    return 'E-commerce';
+  }
+  if (lowerText.includes('service') || lowerText.includes('consulting') || lowerText.includes('agency')) {
+    return 'Services';
+  }
+  if (lowerText.includes('health') || lowerText.includes('medical') || lowerText.includes('doctor')) {
+    return 'Healthcare';
+  }
+  if (lowerText.includes('law') || lowerText.includes('legal') || lowerText.includes('attorney')) {
+    return 'Legal';
+  }
+  if (lowerText.includes('real estate') || lowerText.includes('property') || lowerText.includes('home')) {
+    return 'Real Estate';
+  }
+  return 'General';
+}
+
+function detectCTA(landingData: LandingPageExtractionResult): string {
+  const text = (landingData.title || '') + ' ' + (landingData.h1 || '') + ' ' + landingData.page_text_tokens.join(' ');
+  const lowerText = text.toLowerCase();
+
+  if (lowerText.includes('call') || lowerText.includes('phone') || landingData.phones?.length > 0) {
+    return 'Call';
+  }
+  if (lowerText.includes('contact') || lowerText.includes('form') || lowerText.includes('quote')) {
+    return 'Contact/Lead';
+  }
+  if (lowerText.includes('buy') || lowerText.includes('purchase') || lowerText.includes('order')) {
+    return 'Purchase';
+  }
+  return 'Visit';
+}
+
+async function generateSeedKeywords(
+  landingData: LandingPageExtractionResult,
+  intent: IntentResult
+): Promise<string[]> {
+  // Use AI to generate 3-4 seed keywords
+  const keywords: string[] = [];
+  
+  const mainTerms = [
+    landingData.title,
+    landingData.h1,
+    ...landingData.services.slice(0, 2),
+  ].filter(Boolean);
+
+  mainTerms.forEach(term => {
+    if (term && keywords.length < 4) {
+      keywords.push(term.toLowerCase());
+    }
+  });
+
+  // Add intent-based keywords
+  if (intent.intentId === IntentId.CALL) {
+    keywords.push(`${mainTerms[0]} near me`);
+  } else if (intent.intentId === IntentId.LEAD) {
+    keywords.push(`${mainTerms[0]} quote`);
+  }
+
+  return keywords.slice(0, 4);
+}
+
+function rankCampaignStructures(intent: IntentResult, vertical: string): { id: string; score: number }[] {
+  // AI-based ranking logic
+  const scores: { [key: string]: number } = {};
+
+  // Base scores
+  CAMPAIGN_STRUCTURES.forEach(struct => {
+    scores[struct.id] = 0;
+  });
+
+  // Intent-based scoring
+  if (intent.intentId === IntentId.CALL) {
+    scores['skag'] += 3;
+    scores['geo'] += 2;
+    scores['intent'] += 2;
+  } else if (intent.intentId === IntentId.LEAD) {
+    scores['stag'] += 3;
+    scores['funnel'] += 2;
+    scores['intent'] += 2;
+  } else {
+    scores['stag'] += 3;
+    scores['mix'] += 2;
+    scores['stag_plus'] += 2;
+  }
+
+  // Vertical-based scoring
+  if (vertical === 'E-commerce') {
+    scores['brand_split'] += 2;
+    scores['funnel'] += 2;
+  } else if (vertical === 'Services') {
+    scores['geo'] += 2;
+    scores['intent'] += 2;
+  }
+
+  // Convert to ranked array
+  return Object.entries(scores)
+    .map(([id, score]) => ({ id, score }))
+    .sort((a, b) => b.score - a.score);
+}
+
+function detectIsProduct(url: string, intent: IntentResult | null): boolean {
+  // Simple detection - can be enhanced
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.includes('shop') || lowerUrl.includes('product') || lowerUrl.includes('buy') || 
+         (intent?.intentId === IntentId.PURCHASE);
+}
+
+
