@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  ArrowRight, Check, ChevronRight, ChevronDown, ChevronUp, Download, FileText, Globe, 
+  ArrowRight, ArrowLeft, Check, ChevronRight, ChevronDown, ChevronUp, Download, FileText, Globe, 
   Layout, Layers, MapPin, Mail, Hash, TrendingUp, Zap, 
   Phone, Repeat, Search, Sparkles, Edit3, Trash2, Save, RefreshCw, Clock,
   CheckCircle2, AlertCircle, ShieldCheck, AlertTriangle, Plus, Link2, Eye, 
@@ -1316,8 +1316,15 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
         }
     };
 
+    const handleBackStep = () => {
+        if (step <= 1) return; // Don't go before step 1
+        setStep(step - 1);
+        // Scroll to top when navigating back
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const handleNextStep = () => {
-        if (step >= 6) return; // Don't go beyond step 6
+        if (step >= 7) return; // Don't go beyond step 7
         
         // Bug_18: Validate URL before proceeding from step 1
         if (step === 1) {
@@ -6450,7 +6457,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             <AutoFillButton onAutoFill={handleAutoFill} />
             
             {/* Tabs at Top Right */}
-            <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
+            <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-6 py-3">
                     <div className="flex items-center justify-end mb-2">
                         <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'builder' | 'saved')} className="w-auto">
@@ -6463,12 +6470,42 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 </div>
             </div>
 
+            {/* Navigation Above Wizard - Only show in builder view */}
+            {activeView === 'builder' && (
+                <div className="bg-white border-b border-slate-200 sticky top-[73px] z-20">
+                    <div className="max-w-7xl mx-auto px-6 py-3">
+                        <div className="flex items-center justify-between">
+                            <Button
+                                variant="outline"
+                                onClick={handleBackStep}
+                                disabled={step === 1}
+                                size="sm"
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Back
+                            </Button>
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    onClick={handleNextStep}
+                                    disabled={step >= 7}
+                                    size="sm"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                >
+                                    {step === 6 ? 'Save & Finish' : step === 7 ? 'Download CSV' : 'Next Step'}
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {activeView === 'saved' ? (
                 renderSavedCampaigns()
             ) : (
                 <>
             {/* Progress Steps */}
-                    <div className="sticky top-[73px] z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm">
+                    <div className={`sticky ${activeView === 'builder' ? 'top-[130px]' : 'top-[73px]'} z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200 shadow-sm`}>
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         {[

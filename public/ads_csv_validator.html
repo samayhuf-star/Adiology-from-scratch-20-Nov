@@ -41,11 +41,12 @@
 
     <script>
       // --- CONFIG: full schema expectations (subset used for validation) ---
-      const REQUIRED_HEADERS = ['Row Type']; // minimal
-      const VALID_ROW_TYPES = ['CAMPAIGN','ADGROUP','AD','KEYWORD','NEGATIVE_KEYWORD','ASSET','LOCATION','AD_EXTENSION','AUDIENCE','SHARED_BUDGET'];
-      const VALID_CAMPAIGN_TYPES = ['SEARCH','DISPLAY','SHOPPING','VIDEO','PERFORMANCE_MAX','SMART','DISCOVERY'];
-      const VALID_AD_TYPES = ['EXPANDED_TEXT_AD','RESPONSIVE_SEARCH_AD','RESPONSIVE_DISPLAY_AD','IMAGE_AD','VIDEO_AD','APP_AD','DYNAMIC_SEARCH_AD','SHOPPING_AD'];
-      const VALID_MATCH_TYPES = ['BROAD','PHRASE','EXACT','NEGATIVE_BROAD','NEGATIVE_PHRASE','NEGATIVE_EXACT'];
+      const REQUIRED_HEADERS = ['Type']; // minimal - matches Google Ads Editor format
+      const VALID_ROW_TYPES = ['Campaign','Ad group','Keyword','Negative keyword','Responsive search ad','Expanded text ad','Call-only ad','Sitelink','Callout','Snippet','Price','App','Location','Asset'];
+      const VALID_CAMPAIGN_TYPES = ['Search','Display','Shopping','Video','Performance Max','Smart','Discovery'];
+      const VALID_AD_TYPES = ['Responsive search ad','Expanded text ad','Call-only ad','Responsive display ad','Image ad','Video ad','App ad','Dynamic search ad','Shopping ad'];
+      const VALID_MATCH_TYPES = ['Broad','Phrase','Exact','Negative Broad','Negative Phrase','Negative Exact'];
+      const VALID_BIDDING_STRATEGIES = ['Manual CPC','Target CPA','Target ROAS','Maximize Clicks','Maximize Conversions','Target CPM','CPV'];
       const ISO2_COUNTRIES = ['US','CA','GB','AU','IN','DE','FR','ES','IT','NL','BR','MX','JP','CN','NZ','ZA','AR','CL','CO','PE','VE','PH','TH','VN','ID','MY','SG','KR','AE','SA','EG','NG','KE','GH','MA','DZ','TN','PL','CZ','HU','RO','GR','PT','FI','SE','NO','DK','IE','CH','AT','BE','LU','IS','EE','LV','LT','SK','SI','HR','BG','RS','UA','BY','RU','TR','IL','JO','LB','IQ','KW','QA','OM','BH','YE','PK','BD','LK','MM','KH','LA','BN','MO','HK','TW','MN','KZ','UZ','TJ','TM','KG','AF','IR','AZ','GE','AM','CY','MT','AD','MC','LI','SM','VA','MT','AL','BA','ME','MK','XK','MD','UA','BY','RU','TR','IL','JO','LB','IQ','KW','QA','OM','BH','YE','PK','BD','LK','MM','KH','LA','BN','MO','HK','TW','MN','KZ','UZ','TJ','TM','KG','AF','IR','AZ','GE','AM','CY','MT','AD','MC','LI','SM','VA','MT','AL','BA','ME','MK','XK','MD']; // expanded list
 
       // helper validators
@@ -131,44 +132,86 @@
         rows.forEach((r, idx) => {
           const rowErrors = [];
           const rowWarns = [];
-          const rowType = (r['Row Type']||'').toUpperCase().trim();
-          if(!rowType) { rowErrors.push('Missing Row Type'); }
-          else if(!VALID_ROW_TYPES.includes(rowType)) { rowWarns.push('Unknown Row Type: '+rowType); }
+          // Check both 'Type' (Google Ads Editor format) and 'Row Type' (legacy format)
+          const rowType = (r['Type'] || r['Row Type'] || '').trim();
+          if(!rowType) { rowErrors.push('Missing Type'); }
+          else if(!VALID_ROW_TYPES.some(v => v.toLowerCase() === rowType.toLowerCase())) { 
+            rowWarns.push('Unknown Row Type: '+rowType); 
+          }
 
           // Campaign validation
-          if(rowType === 'CAMPAIGN'){
+          if(rowType.toLowerCase() === 'campaign'){
             if(!r['Campaign'] || !r['Campaign'].trim()) rowErrors.push('Campaign name required');
-            if(r['Campaign Type'] && !VALID_CAMPAIGN_TYPES.includes(r['Campaign Type'].toUpperCase().trim())) rowWarns.push('Campaign Type not recognized: '+r['Campaign Type']);
-            if(r['Start Date'] && !isDateYMD(r['Start Date'])) rowWarns.push('Start Date not YYYY-MM-DD');
-            if(r['End Date'] && !isDateYMD(r['End Date'])) rowWarns.push('End Date not YYYY-MM-DD');
-            if(r['Budget'] && !isNumber(r['Budget'])) rowWarns.push('Budget not numeric');
-            if(r['Location Code'] && !isISOCountry(r['Location Code'])) rowWarns.push('Location Code not a known ISO2 country: '+r['Location Code']);
+            const campaignType = (r['Campaign type'] || r['Campaign Type'] || '').trim();
+            if(campaignType && !VALID_CAMPAIGN_TYPES.some(v => v.toLowerCase() === campaignType.toLowerCase())) {
+              rowWarns.push('Campaign Type not recognized: '+campaignType);
+            }
+            const startDate = r['Start date'] || r['Start Date'] || '';
+            if(startDate && !isDateYMD(startDate)) rowWarns.push('Start Date not YYYY-MM-DD: '+startDate);
+            const endDate = r['End date'] || r['End Date'] || '';
+            if(endDate && !isDateYMD(endDate)) rowWarns.push('End Date not YYYY-MM-DD: '+endDate);
+            if(r['Budget'] && !isNumber(r['Budget'])) rowWarns.push('Budget not numeric: '+r['Budget']);
+            const biddingStrategy = (r['Bidding strategy'] || r['Bidding Strategy'] || r['Bid Strategy Type'] || '').trim();
+            if(biddingStrategy && !VALID_BIDDING_STRATEGIES.some(v => v.toLowerCase() === biddingStrategy.toLowerCase())) {
+              rowWarns.push('Bidding Strategy not recognized: '+biddingStrategy);
+            }
+            const locationCode = r['Location Code'] || r['Location code'] || '';
+            if(locationCode && !isISOCountry(locationCode)) rowWarns.push('Location Code not a known ISO2 country: '+locationCode);
           }
 
           // Adgroup validation
-          if(rowType === 'ADGROUP'){
-            if(!r['AdGroup'] && !r['AdGroup Name'] && !r['AdGroupName']) rowErrors.push('AdGroup name required');
-            if(r['Default Max CPC'] && !isNumber(r['Default Max CPC'])) rowWarns.push('Default Max CPC not numeric');
+          if(rowType.toLowerCase() === 'ad group' || rowType.toLowerCase() === 'adgroup'){
+            const adGroupName = r['Ad group'] || r['AdGroup'] || r['AdGroup Name'] || r['AdGroupName'] || '';
+            if(!adGroupName || !adGroupName.trim()) rowErrors.push('Ad group name required');
+            const maxCPC = r['Max CPC'] || r['Default Max CPC'] || '';
+            if(maxCPC && !isNumber(maxCPC)) rowWarns.push('Max CPC not numeric: '+maxCPC);
           }
 
           // Keyword validation
-          if(rowType === 'KEYWORD'){
+          if(rowType.toLowerCase() === 'keyword'){
             if(!r['Keyword'] || !r['Keyword'].trim()) rowErrors.push('Keyword text required');
-            if(r['Match Type'] && !VALID_MATCH_TYPES.includes((r['Match Type']||'').toUpperCase().trim())) rowWarns.push('Unknown match type: '+r['Match Type']);
-            if(r['Keyword Max CPC'] && !isNumber(r['Keyword Max CPC'])) rowWarns.push('Keyword Max CPC not numeric');
+            const matchType = (r['Match type'] || r['Match Type'] || '').trim();
+            if(matchType && !VALID_MATCH_TYPES.some(v => v.toLowerCase() === matchType.toLowerCase())) {
+              rowWarns.push('Unknown match type: '+matchType);
+            }
+            const keywordMaxCPC = r['Keyword Max CPC'] || r['Max CPC'] || '';
+            if(keywordMaxCPC && !isNumber(keywordMaxCPC)) rowWarns.push('Keyword Max CPC not numeric: '+keywordMaxCPC);
           }
 
           // Ad validation
-          if(rowType === 'AD'){
-            if(!r['Ad Type'] || !VALID_AD_TYPES.includes((r['Ad Type']||'').toUpperCase().trim())) rowWarns.push('Ad Type missing or unknown: '+(r['Ad Type']||''));
-            if(r['Final URL'] && !isURL(r['Final URL'])) rowWarns.push('Final URL invalid: '+r['Final URL']);
+          if(rowType.toLowerCase().includes('ad') && rowType.toLowerCase() !== 'ad group'){
+            const adType = (r['Ad Type'] || r['Ad type'] || rowType || '').trim();
+            if(adType && !VALID_AD_TYPES.some(v => v.toLowerCase() === adType.toLowerCase())) {
+              rowWarns.push('Ad Type missing or unknown: '+adType);
+            }
+            const finalUrl = r['Final URL'] || r['Final URL'] || '';
+            if(finalUrl && !isURL(finalUrl)) rowWarns.push('Final URL invalid: '+finalUrl);
+            // Check for headlines (RSA requires at least 3)
+            const headlineCount = Object.keys(r).filter(k => /^Headline\s+\d+$/i.test(k.trim())).length;
+            if(rowType.toLowerCase().includes('responsive') && headlineCount < 3) {
+              rowWarns.push('Responsive Search Ad should have at least 3 headlines (found '+headlineCount+')');
+            }
+            // Check for descriptions (RSA requires at least 2)
+            const descCount = Object.keys(r).filter(k => /^Description\s+\d+$/i.test(k.trim())).length;
+            if(rowType.toLowerCase().includes('responsive') && descCount < 2) {
+              rowWarns.push('Responsive Search Ad should have at least 2 descriptions (found '+descCount+')');
+            }
             if(r['Asset URL'] && r['Asset URL'].split(',').some(u=>u && !isURL(u) && !u.startsWith('/'))) rowWarns.push('One or more Asset URLs appear invalid (absolute http(s) expected or local path starting with /).');
           }
 
           // Asset validation
-          if(rowType === 'ASSET'){
-            if(!r['Asset Type']) rowErrors.push('Asset Type required');
-            if(!r['Asset URL'] && !r['Asset Name']) rowWarns.push('Asset missing URL and name');
+          if(rowType.toLowerCase() === 'asset'){
+            if(!r['Asset Type'] && !r['Asset type']) rowErrors.push('Asset Type required');
+            if(!r['Asset URL'] && !r['Asset URL'] && !r['Asset Name'] && !r['Asset name']) rowWarns.push('Asset missing URL and name');
+          }
+          
+          // Negative keyword validation
+          if(rowType.toLowerCase() === 'negative keyword'){
+            if(!r['Keyword'] && !r['Negative Keyword']) rowErrors.push('Negative keyword text required');
+            const matchType = (r['Match type'] || r['Match Type'] || '').trim();
+            if(matchType && !VALID_MATCH_TYPES.some(v => v.toLowerCase().includes('negative') && v.toLowerCase().includes(matchType.toLowerCase()))) {
+              rowWarns.push('Negative keyword match type should be Negative Broad, Negative Phrase, or Negative Exact: '+matchType);
+            }
           }
 
           // Generic checks
@@ -178,8 +221,9 @@
           if(rowWarns.length) warnCount += rowWarns.length;
 
           // prepare row report snippet
+          const adGroupName = r['Ad group'] || r['AdGroup'] || r['AdGroup Name'] || '';
           const snippet = `<div style="margin-bottom:8px;padding:8px;border:1px solid #f0f2f6;border-radius:8px">
-            <div style="font-weight:600">Row ${idx+1} — Type: ${escapeHtml(rowType||'N/A')} — Campaign: ${escapeHtml(r['Campaign']||'')} — AdGroup: ${escapeHtml(r['AdGroup']||'')}</div>
+            <div style="font-weight:600">Row ${idx+1} — Type: ${escapeHtml(rowType||'N/A')} — Campaign: ${escapeHtml(r['Campaign']||'')} — Ad Group: ${escapeHtml(adGroupName||'')}</div>
             ${rowErrors.length ? '<div class="error">Errors: <ul>'+rowErrors.map(e=>'<li>'+escapeHtml(e)+'</li>').join('')+'</ul></div>' : ''}
             ${rowWarns.length ? '<div class="warn">Warnings: <ul>'+rowWarns.map(w=>'<li>'+escapeHtml(w)+'</li>').join('')+'</ul></div>' : ''}
             ${(!rowErrors.length && !rowWarns.length) ? '<div class="ok">OK — no issues detected</div>' : ''}
@@ -195,7 +239,7 @@
 
       function isLikelyKnownHeader(h){
         const s = h.toLowerCase();
-        const known = ['row type','campaign','adgroup','keyword','match type','ad type','headline','description','final url','asset','asset url','budget','start date','end date','location','location code'];
+        const known = ['type','operation','campaign','ad group','adgroup','keyword','match type','ad type','headline','description','final url','asset','asset url','budget','start date','end date','location','location code','bidding strategy','budget type','campaign status','campaign type'];
         return known.some(k=>s.includes(k));
       }
 

@@ -12,9 +12,9 @@ import Papa from 'papaparse';
 import { CampaignStructure, Campaign, AdGroup, Ad } from './campaignStructureGenerator';
 import { validateAndFixAd, validateAndFixAds, formatValidationReport, type ValidationReport } from './adValidationUtils';
 
-// Google Ads Editor CSV Headers (Master Format - Extended)
-// Based on Google Ads Master Sheet Extended format
-// Order: Type, Operation, then all other fields exactly as per master sheet
+// Google Ads Editor CSV Headers - EXACT MASTER SHEET FORMAT
+// From: https://docs.google.com/spreadsheets/d/1wy1PFV1CKT1FQYcowH-iQytq9UrMFufdJeZVv7ekbPg/edit?gid=95358763#gid=95358763
+// DO NOT MODIFY HEADERS - Only populate data into these exact columns
 export const GOOGLE_ADS_EDITOR_HEADERS = [
   'Type',
   'Operation',
@@ -312,7 +312,14 @@ function createEmptyCSVRow(): CSVRow {
 
 /**
  * Convert campaign structure to Google Ads Editor CSV rows
- * Uses exact master sheet headers and only populates data - never modifies headers
+ * 
+ * CRITICAL: Uses EXACT master sheet headers from Google Sheets:
+ * https://docs.google.com/spreadsheets/d/1wy1PFV1CKT1FQYcowH-iQytq9UrMFufdJeZVv7ekbPg/edit?gid=95358763#gid=95358763
+ * 
+ * - Every row has ALL 112 columns from master sheet (via createEmptyCSVRow())
+ * - Headers are NEVER modified - only data is populated
+ * - Headers are in EXACT order from master sheet
+ * - This ensures CSV matches master sheet format exactly
  */
 export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow[] {
   const rows: CSVRow[] = [];
@@ -344,7 +351,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
     const stateTargeting = states.length > 0 ? states[0] : ''; // Single value per master sheet
     const regionTargeting = regions.length > 0 ? regions[0] : ''; // Single value per master sheet
     
-<<<<<<< HEAD
     // Create campaign row with all master sheet columns, populate only relevant fields
     const campaignRow: CSVRow = createEmptyCSVRow();
     campaignRow['Type'] = 'Campaign';
@@ -362,30 +368,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
     campaignRow['City targeting'] = cityTargeting;
     campaignRow['State targeting'] = stateTargeting;
     campaignRow['Region targeting'] = regionTargeting;
-=======
-    const campaignRow: CSVRow = {
-      'Type': 'Campaign',
-      'Operation': 'ADD',
-      'Campaign': campaign.campaign_name || '',
-      'Campaign ID': '',
-      'Campaign status': 'Enabled',
-      'Campaign type': 'Search',
-      'Budget': (campaign as any).budget?.toString() || '',
-      'Budget ID': '',
-      'Budget type': (campaign as any).budget_type || 'Daily',
-      'Bidding strategy': (campaign as any).bidding_strategy || 'Manual CPC',
-      'Start date': (campaign as any).start_date || '',
-      'End date': (campaign as any).end_date || '',
-      'Networks': '',
-      'Location targeting': targetCountry || (campaign as any).location_code || '',
-      'Postal code targeting': postalCodeTargeting,
-      'City targeting': cityTargeting,
-      'State targeting': stateTargeting,
-      'Region targeting': regionTargeting,
-      'Language targeting': '',
-      'Match type': '', // Explicitly empty for non-keyword rows
-    };
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
     rows.push(campaignRow);
 
     // Process ad groups
@@ -407,7 +389,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
           return;
         }
         
-<<<<<<< HEAD
         // Ad Group row - create with all master sheet columns, populate only relevant fields
         const adGroupRow: CSVRow = createEmptyCSVRow();
         adGroupRow['Type'] = 'Ad group';
@@ -416,17 +397,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
         adGroupRow['Ad group'] = cleanedAdGroupName;
         adGroupRow['Ad group status'] = 'Enabled';
         adGroupRow['Max CPC'] = (adGroup as any).default_max_cpc?.toString() || '';
-=======
-        // Ad Group row
-        const adGroupRow: CSVRow = {
-          'Type': 'Ad group',
-          'Operation': 'ADD',
-          'Campaign': campaign.campaign_name || '',
-          'Ad group': cleanedAdGroupName,
-          'Ad group status': 'Enabled',
-          'Max CPC': (adGroup as any).default_max_cpc?.toString() || '',
-        };
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
         rows.push(adGroupRow);
 
         // Keywords - with validation and deduplication
@@ -502,8 +472,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               csvMatchType = 'Broad';
             }
             
-<<<<<<< HEAD
-            // Keyword row - create with all master sheet columns, populate only relevant fields
+// Keyword row - create with all master sheet columns, populate only relevant fields
             const keywordRow: CSVRow = createEmptyCSVRow();
             keywordRow['Type'] = 'Keyword';
             keywordRow['Operation'] = 'ADD';
@@ -513,18 +482,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
             keywordRow['Match type'] = csvMatchType; // Must be 'Broad', 'Phrase', or 'Exact'
             keywordRow['Max CPC'] = typeof keyword === 'object' && (keyword as any).maxCPC ? (keyword as any).maxCPC.toString() : '';
             keywordRow['Final URL'] = typeof keyword === 'object' && (keyword as any).finalURL ? (keyword as any).finalURL : '';
-=======
-            const keywordRow: CSVRow = {
-              'Type': 'Keyword',
-              'Operation': 'ADD',
-              'Campaign': campaign.campaign_name,
-              'Ad group': cleanedAdGroupName,
-              'Keyword': cleanedKeyword,
-              'Match type': csvMatchType, // Must be 'Broad', 'Phrase', or 'Exact' - NOT 'Keyword'
-              'Max CPC': typeof keyword === 'object' && (keyword as any).maxCPC ? (keyword as any).maxCPC.toString() : '',
-              'Final URL': typeof keyword === 'object' && (keyword as any).finalURL ? (keyword as any).finalURL : '',
-            };
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
             rows.push(keywordRow);
           });
         }
@@ -549,7 +506,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
           
           // Limit to max 3 ads per ad group, and filter duplicates
           validatedAds.slice(0, MAX_ADS_PER_ADGROUP * 2).forEach((ad) => {
-<<<<<<< HEAD
             // Process all ad types (RSA, DKI, Call) - they should all be converted to RSA format for CSV
             // Headlines and descriptions are already validated and fixed by validateAndFixAds above
             // Just ensure they're trimmed and within limits for duplicate detection
@@ -578,21 +534,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               desc1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
               desc2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
             }
-            
-=======
-            // Skip if not RSA type (for now, only process RSA)
-            if (ad.type !== 'rsa') {
-              return;
-            }
-            
-            // Headlines and descriptions are already validated and fixed by validateAndFixAds above
-            // Just ensure they're trimmed and within limits for duplicate detection
-            const headline1 = (ad.headline1 || 'Professional Service').trim().substring(0, 30);
-            const headline2 = (ad.headline2 || 'Expert Solutions').trim().substring(0, 30);
-            const headline3 = (ad.headline3 || 'Quality Guaranteed').trim().substring(0, 30);
-            const desc1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
-            const desc2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
             const finalUrl = (ad.final_url || '').trim();
             
             // Create unique key for duplicate detection (using normalized values)
@@ -621,7 +562,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               });
             }
             
-<<<<<<< HEAD
             // Ad row - create with all master sheet columns, populate only relevant fields
             const adRow: CSVRow = createEmptyCSVRow();
             adRow['Type'] = 'Responsive search ad'; // Per master sheet format
@@ -681,50 +621,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
             adRow['Callout 2'] = callouts[1] || '';
             adRow['Callout 3'] = callouts[2] || '';
             adRow['Callout 4'] = callouts[3] || '';
-=======
-            // Headlines and descriptions are already validated - use them directly
-            const description1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
-            const description2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
-            
-            const adRow: CSVRow = {
-              'Type': 'Responsive search ad',
-              'Operation': 'ADD',
-              'Campaign': campaign.campaign_name || '',
-              'Ad group': cleanedAdGroupName,
-              'Match type': '', // Explicitly empty for ad rows
-              'Final URL': ad.final_url || '',
-              'Final mobile URL': (ad as any).final_mobile_url || '',
-              'Tracking template': (ad as any).tracking_template || '',
-              'Custom parameter': (ad as any).custom_parameters || '',
-              'Headline 1': headline1,
-              'Headline 2': headline2,
-              'Headline 3': headline3,
-              'Headline 4': (ad.headline4 || '').trim().substring(0, 30),
-              'Headline 5': (ad.headline5 || '').trim().substring(0, 30),
-              'Headline 6': (ad.headline6 || '').trim().substring(0, 30),
-              'Headline 7': (ad.headline7 || '').trim().substring(0, 30),
-              'Headline 8': (ad.headline8 || '').trim().substring(0, 30),
-              'Headline 9': (ad.headline9 || '').trim().substring(0, 30),
-              'Headline 10': (ad.headline10 || '').trim().substring(0, 30),
-              'Headline 11': (ad.headline11 || '').trim().substring(0, 30),
-              'Headline 12': (ad.headline12 || '').trim().substring(0, 30),
-              'Headline 13': (ad.headline13 || '').trim().substring(0, 30),
-              'Headline 14': (ad.headline14 || '').trim().substring(0, 30),
-              'Headline 15': (ad.headline15 || '').trim().substring(0, 30),
-              'Description 1': description1,
-              'Description 2': description2,
-              'Description 3': (ad.description3 || '').trim().substring(0, 90),
-              'Description 4': (ad.description4 || '').trim().substring(0, 90),
-              'Business name': (ad as any).businessName || '',
-              'Path 1': (ad.path1 || '').trim().substring(0, 15),
-              'Path 2': (ad.path2 || '').trim().substring(0, 15),
-              'Phone': (ad as any).phoneNumber || '',
-              'Callout 1': callouts[0] || '',
-              'Callout 2': callouts[1] || '',
-              'Callout 3': callouts[2] || '',
-              'Callout 4': callouts[3] || '',
-            };
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
             rows.push(adRow);
           });
         }
@@ -786,8 +682,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               return;
             }
 
-<<<<<<< HEAD
-            // Negative keyword row - create with all master sheet columns, populate only relevant fields
+// Negative keyword row - create with all master sheet columns, populate only relevant fields
             const negativeRow: CSVRow = createEmptyCSVRow();
             negativeRow['Type'] = 'Negative keyword';
             negativeRow['Operation'] = 'ADD';
@@ -795,16 +690,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
             negativeRow['Ad group'] = cleanedAdGroupName;
             negativeRow['Keyword'] = cleanedKeyword;
             negativeRow['Match type'] = csvMatchType; // Must be 'Negative Broad', 'Negative Phrase', or 'Negative Exact'
-=======
-            const negativeRow: CSVRow = {
-              'Type': 'Negative keyword',
-              'Operation': 'ADD',
-              'Campaign': campaign.campaign_name,
-              'Ad group': cleanedAdGroupName,
-              'Keyword': cleanedKeyword, // Use cleanedKeyword variable
-              'Match type': csvMatchType, // Must be 'Negative Broad', 'Negative Phrase', or 'Negative Exact'
-            };
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
             rows.push(negativeRow);
           });
         }
@@ -836,8 +721,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
                   ext.sitelinks.forEach((sitelink: any, index: number) => {
                     if (sitelink.text) {
                       const sitelinkNum = Math.min(index + 1, 4); // Max 4 sitelinks per master sheet
-<<<<<<< HEAD
-                      // Sitelink row - create with all master sheet columns, populate only relevant fields
+// Sitelink row - create with all master sheet columns, populate only relevant fields
                       const sitelinkRow: CSVRow = createEmptyCSVRow();
                       sitelinkRow['Type'] = 'Sitelink';
                       sitelinkRow['Operation'] = 'ADD';
@@ -845,16 +729,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
                       sitelinkRow['Ad group'] = cleanedAdGroupNameForExt;
                       sitelinkRow[`Sitelink text ${sitelinkNum}`] = sitelink.text || '';
                       sitelinkRow[`Sitelink final URL ${sitelinkNum}`] = sitelink.url || ad.final_url || '';
-=======
-                      const sitelinkRow: CSVRow = {
-                        'Type': 'Sitelink',
-                        'Operation': 'ADD',
-                        'Campaign': campaign.campaign_name || '',
-                        'Ad group': cleanedAdGroupNameForExt,
-                        [`Sitelink text ${sitelinkNum}`]: sitelink.text || '',
-                        [`Sitelink final URL ${sitelinkNum}`]: sitelink.url || ad.final_url || '',
-                      };
->>>>>>> 56c307939e016e4c51427103518e536fbecce430
                       // Add descriptions only for first sitelink
                       if (sitelinkNum === 1) {
                         sitelinkRow['Sitelink description 1'] = sitelink.description || '';
