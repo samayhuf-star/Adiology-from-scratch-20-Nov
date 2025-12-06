@@ -886,7 +886,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     : []
             }];
         }
-    }, [selectedKeywords, structure]);
+    }, [selectedKeywords, structure, generatedKeywords]);
 
     // Helper function to get current ad state (deep copy to maintain CSV structure)
     const getCurrentAdState = (): AdHistoryState => ({
@@ -1036,7 +1036,27 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
             setSeedKeywords(initialData.seedKeywords || '');
             setNegativeKeywords(initialData.negativeKeywords || '');
             setGeneratedKeywords(initialData.generatedKeywords || []);
-            setSelectedKeywords(initialData.selectedKeywords || []);
+            
+            // Fix: If coming from keyword planner, generatedKeywords exist but selectedKeywords is empty
+            // Auto-select all generated keywords to enable ad group generation
+            const loadedGeneratedKeywords = initialData.generatedKeywords || [];
+            const loadedSelectedKeywords = initialData.selectedKeywords || [];
+            
+            if (loadedGeneratedKeywords.length > 0 && loadedSelectedKeywords.length === 0) {
+                // Extract keyword strings from generatedKeywords (handle both string and object formats)
+                const keywordStrings = loadedGeneratedKeywords.map((kw: any) => {
+                    if (typeof kw === 'string') return kw;
+                    if (kw?.text) return kw.text;
+                    if (kw?.keyword) return kw.keyword;
+                    return String(kw || '');
+                }).filter((kw: string) => kw && kw.trim().length > 0);
+                
+                setSelectedKeywords(keywordStrings);
+                console.log(`✅ Auto-selected ${keywordStrings.length} keywords from keyword planner for ad group generation`);
+            } else {
+                setSelectedKeywords(loadedSelectedKeywords);
+            }
+            
             setAds(initialData.ads || ads);
             setEnabledAdTypes(initialData.enabledAdTypes || ['rsa', 'dki', 'call']);
             setTargetCountry(initialData.targetCountry || 'United States');
