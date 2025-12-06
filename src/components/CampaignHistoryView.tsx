@@ -14,7 +14,6 @@ import { notifications } from '../utils/notifications';
 import { campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
 import { validateAndFixAds, formatValidationReport } from '../utils/adValidationUtils';
 import Papa from 'papaparse';
-import Papa from 'papaparse';
 
 // Structure types mapping
 const STRUCTURE_TYPES = [

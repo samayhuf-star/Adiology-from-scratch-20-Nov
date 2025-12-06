@@ -2876,6 +2876,12 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
   };
 
   const renderStep5 = () => {
+    // Check if any specific locations are selected
+    const hasSpecificLocations = 
+      campaignData.locations.cities.length > 0 ||
+      campaignData.locations.states.length > 0 ||
+      campaignData.locations.zipCodes.length > 0;
+
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-8 flex items-center justify-between">
