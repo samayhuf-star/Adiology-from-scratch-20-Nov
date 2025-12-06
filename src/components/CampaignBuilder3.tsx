@@ -280,7 +280,6 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
   const [locationSearchTerm, setLocationSearchTerm] = useState({ countries: '', states: '', cities: '', zipCodes: '' });
   const [editingAdId, setEditingAdId] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [adGenerationKeyword, setAdGenerationKeyword] = useState('');
   const [campaignData, setCampaignData] = useState<CampaignData>({
     url: '',
     campaignName: '',
@@ -1877,6 +1876,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       // Validate structure before generating CSV
       if (!structure || !structure.campaigns || structure.campaigns.length === 0) {
         notifications.error('Invalid campaign structure', {
+
           title: 'Export Error',
           description: 'Campaign structure is invalid. Please ensure you have at least one ad group and campaign name.',
           duration: 10000
@@ -2373,36 +2373,45 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           }} />
         </div>
 
-        {/* Step 1: Enter Keyword Box - At the Top */}
-        <Card className="mb-6">
+        {/* Display existing URL and Keywords info */}
+        <Card className="mb-6 bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle>Enter Keyword</CardTitle>
-            <CardDescription>Enter a keyword to generate ads for</CardDescription>
+            <CardTitle className="text-blue-900">Campaign Information</CardTitle>
+            <CardDescription className="text-blue-700">Using information from earlier steps</CardDescription>
           </CardHeader>
           <CardContent>
-            <Input
-              placeholder="Enter keyword (e.g., plumber near me)"
-              value={adGenerationKeyword}
-              onChange={(e) => setAdGenerationKeyword(e.target.value)}
-              className="w-full"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Step 2: URL Input */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Landing Page URL</CardTitle>
-            <CardDescription>Enter the URL where users will land when they click your ad</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Input
-              type="url"
-              placeholder="https://www.example.com/landing-page"
-              value={campaignData.url}
-              onChange={(e) => setCampaignData(prev => ({ ...prev, url: e.target.value }))}
-              className="w-full"
-            />
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-semibold text-blue-800">Landing Page URL</Label>
+                <div className="mt-1 p-2 bg-white rounded border border-blue-200">
+                  <p className="text-sm text-slate-700">{campaignData.url || 'Not set'}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-semibold text-blue-800">Keywords</Label>
+                <div className="mt-1 p-2 bg-white rounded border border-blue-200">
+                  <div className="flex flex-wrap gap-2">
+                    {campaignData.selectedKeywords.length > 0 ? (
+                      campaignData.selectedKeywords.slice(0, 5).map((kw, idx) => {
+                        const keywordText = typeof kw === 'string' ? kw : (kw?.text || kw?.keyword || String(kw || ''));
+                        return (
+                          <Badge key={kw?.id || idx} variant="outline" className="text-xs">
+                            {keywordText}
+                          </Badge>
+                        );
+                      })
+                    ) : (
+                      <span className="text-sm text-slate-500">No keywords selected</span>
+                    )}
+                    {campaignData.selectedKeywords.length > 5 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{campaignData.selectedKeywords.length - 5} more
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -2485,26 +2494,28 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           <CardContent className="p-6">
             <Button
               onClick={() => {
-                if (!adGenerationKeyword.trim()) {
-                  notifications.error('Please enter a keyword', { title: 'Keyword Required' });
+                if (!campaignData.url || campaignData.url.trim() === '') {
+                  notifications.error('URL is required', { 
+                    title: 'Missing URL', 
+                    description: 'Please go back to Step 1 and enter a landing page URL.' 
+                  });
                   return;
                 }
-                // Temporarily add keyword to selectedKeywords for ad generation
-                const tempKeyword = {
-                  id: `temp-${Date.now()}`,
-                  text: adGenerationKeyword.trim(),
-                  keyword: adGenerationKeyword.trim(),
-                };
-                setCampaignData(prev => ({
-                  ...prev,
-                  selectedKeywords: prev.selectedKeywords.length > 0 ? prev.selectedKeywords : [tempKeyword]
-                }));
-                // Generate ads after a short delay to ensure state is updated
-                setTimeout(() => {
-                  handleGenerateAds();
-                }, 100);
+                if (!campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0) {
+                  notifications.error('Keywords are required', { 
+                    title: 'Missing Keywords', 
+                    description: 'Please go back to Step 3 and select keywords.' 
+                  });
+                  return;
+                }
+                if (campaignData.adTypes.length === 0) {
+                  notifications.error('Please select at least one ad type', { title: 'Ad Type Required' });
+                  return;
+                }
+                // Generate ads using existing URL and keywords
+                handleGenerateAds();
               }}
-              disabled={loading || !campaignData.url || !adGenerationKeyword.trim() || campaignData.adTypes.length === 0}
+              disabled={loading || !campaignData.url || !campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0 || campaignData.adTypes.length === 0}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
               size="lg"
             >
@@ -2520,10 +2531,10 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                 </>
               )}
             </Button>
-            {(!campaignData.url || !adGenerationKeyword.trim() || campaignData.adTypes.length === 0) && (
+            {(!campaignData.url || !campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0 || campaignData.adTypes.length === 0) && (
               <p className="text-sm text-slate-500 mt-2 text-center">
-                {!campaignData.url && 'Please enter a URL. '}
-                {!adGenerationKeyword.trim() && 'Please enter a keyword. '}
+                {!campaignData.url && 'Please go back to Step 1 and enter a URL. '}
+                {(!campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0) && 'Please go back to Step 3 and select keywords. '}
                 {campaignData.adTypes.length === 0 && 'Please select at least one ad type.'}
               </p>
             )}
@@ -3151,7 +3162,6 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       </div>
     );
   };
-
   const renderStep6 = () => (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-8 flex items-center justify-end">

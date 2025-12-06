@@ -12,9 +12,9 @@ import Papa from 'papaparse';
 import { CampaignStructure, Campaign, AdGroup, Ad } from './campaignStructureGenerator';
 import { validateAndFixAd, validateAndFixAds, formatValidationReport, type ValidationReport } from './adValidationUtils';
 
-// Google Ads Editor CSV Headers (Master Format - Extended)
-// Based on Google Ads Master Sheet Extended format
-// Order: Type, Operation, then all other fields exactly as per master sheet
+// Google Ads Editor CSV Headers - EXACT MASTER SHEET FORMAT
+// From: https://docs.google.com/spreadsheets/d/1wy1PFV1CKT1FQYcowH-iQytq9UrMFufdJeZVv7ekbPg/edit?gid=95358763#gid=95358763
+// DO NOT MODIFY HEADERS - Only populate data into these exact columns
 export const GOOGLE_ADS_EDITOR_HEADERS = [
   'Type',
   'Operation',
@@ -312,7 +312,14 @@ function createEmptyCSVRow(): CSVRow {
 
 /**
  * Convert campaign structure to Google Ads Editor CSV rows
- * Uses exact master sheet headers and only populates data - never modifies headers
+ * 
+ * CRITICAL: Uses EXACT master sheet headers from Google Sheets:
+ * https://docs.google.com/spreadsheets/d/1wy1PFV1CKT1FQYcowH-iQytq9UrMFufdJeZVv7ekbPg/edit?gid=95358763#gid=95358763
+ * 
+ * - Every row has ALL 112 columns from master sheet (via createEmptyCSVRow())
+ * - Headers are NEVER modified - only data is populated
+ * - Headers are in EXACT order from master sheet
+ * - This ensures CSV matches master sheet format exactly
  */
 export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow[] {
   const rows: CSVRow[] = [];
@@ -465,7 +472,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               csvMatchType = 'Broad';
             }
             
-            // Keyword row - create with all master sheet columns, populate only relevant fields
+// Keyword row - create with all master sheet columns, populate only relevant fields
             const keywordRow: CSVRow = createEmptyCSVRow();
             keywordRow['Type'] = 'Keyword';
             keywordRow['Operation'] = 'ADD';
@@ -527,7 +534,6 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               desc1 = (ad.description1 || 'Get professional service you can trust.').trim().substring(0, 90);
               desc2 = (ad.description2 || 'Contact us today for expert assistance.').trim().substring(0, 90);
             }
-            
             const finalUrl = (ad.final_url || '').trim();
             
             // Create unique key for duplicate detection (using normalized values)
@@ -676,7 +682,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
               return;
             }
 
-            // Negative keyword row - create with all master sheet columns, populate only relevant fields
+// Negative keyword row - create with all master sheet columns, populate only relevant fields
             const negativeRow: CSVRow = createEmptyCSVRow();
             negativeRow['Type'] = 'Negative keyword';
             negativeRow['Operation'] = 'ADD';
@@ -715,7 +721,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
                   ext.sitelinks.forEach((sitelink: any, index: number) => {
                     if (sitelink.text) {
                       const sitelinkNum = Math.min(index + 1, 4); // Max 4 sitelinks per master sheet
-                      // Sitelink row - create with all master sheet columns, populate only relevant fields
+// Sitelink row - create with all master sheet columns, populate only relevant fields
                       const sitelinkRow: CSVRow = createEmptyCSVRow();
                       sitelinkRow['Type'] = 'Sitelink';
                       sitelinkRow['Operation'] = 'ADD';
