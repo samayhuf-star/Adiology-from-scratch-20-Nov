@@ -959,47 +959,6 @@ export const NegativeKeywordsBuilder = ({ initialData }: { initialData?: any }) 
                                     ))}
                                 </div>
                             )}
-                            <div className="flex items-center gap-4 flex-wrap">
-                            <div className="flex items-center gap-2">
-                                    <Filter className="h-4 w-4 text-slate-400" />
-                                    <span className="text-xs font-medium text-slate-600">Filter by Category:</span>
-                                </div>
-                                {Object.entries(NEGATIVE_KEYWORD_CATEGORIES)
-                                    .filter(([key]) => ['Intent-Mismatch', 'Low-Value', 'Irrelevant-Product', 'Competitor', 'Job/DIY'].includes(key))
-                                    .map(([key, cat]) => {
-                                    const isSelected = selectedCategories.has(key as NegativeKeywordCategory);
-                                    return (
-                                        <div key={key} className="flex items-center space-x-1">
-                                            <Checkbox
-                                                id={`cat-${key}`}
-                                                checked={isSelected}
-                                                onCheckedChange={(checked) => {
-                                                    const newSet = new Set(selectedCategories);
-                                                    if (checked) {
-                                                        newSet.add(key as NegativeKeywordCategory);
-                                                    } else {
-                                                        newSet.delete(key as NegativeKeywordCategory);
-                                                    }
-                                                    setSelectedCategories(newSet);
-                                                }}
-                                            />
-                                            <Label htmlFor={`cat-${key}`} className="text-xs cursor-pointer">
-                                                {cat.label}
-                                            </Label>
-                                        </div>
-                                    );
-                                })}
-                                {selectedCategories.size > 0 && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setSelectedCategories(new Set())}
-                                        className="text-xs h-6"
-                                    >
-                                        Clear Filters
-                                    </Button>
-                                )}
-                            </div>
                         </div>
                     )}
 
