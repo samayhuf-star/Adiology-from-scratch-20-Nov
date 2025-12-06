@@ -1147,8 +1147,13 @@ const App = () => {
       case 'campaign-history':
         // Campaign History - Show only saved campaigns, not all activity history
         return <CampaignHistoryView onLoadCampaign={(data) => {
-          setHistoryData(data);
-          setActiveTabSafe('builder-2');
+          try {
+            setHistoryData(data);
+            // Route to builder-3 (new campaign builder) instead of builder-2
+            setActiveTabSafe('builder-3');
+          } catch (error) {
+            console.error('Error loading campaign from history:', error);
+          }
         }} />;
       case 'google-ads-csv-export':
         return <GoogleAdsCSVExport />;
