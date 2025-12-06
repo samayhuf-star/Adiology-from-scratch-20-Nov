@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Copy, Save, AlertCircle, Download, FolderOpen, Trash2, FileDown } from 'lucide-react';
+import { Sparkles, Copy, Save, AlertCircle, Download, FolderOpen, Trash2, FileDown, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
@@ -661,6 +661,35 @@ export const KeywordPlanner = ({ initialData }: { initialData?: any }) => {
                                             >
                                                 <Download className="w-3.5 h-3.5" />
                                                 Download
+                                            </Button>
+                                            <Button
+                                                onClick={() => {
+                                                    // Navigate to campaign builder with generated keywords
+                                                    const event = new CustomEvent('navigate', { 
+                                                        detail: { 
+                                                            tab: 'builder-3',
+                                                            data: {
+                                                                selectedKeywords: generatedKeywords,
+                                                                seedKeywords: seedKeywords,
+                                                                negativeKeywords: negativeKeywords,
+                                                                matchTypes: matchTypes
+                                                            }
+                                                        } 
+                                                    });
+                                                    window.dispatchEvent(event);
+                                                    
+                                                    // Fallback: Update URL hash
+                                                    if (window.location.hash !== '#builder-3') {
+                                                        window.location.hash = '#builder-3';
+                                                    }
+                                                }}
+                                                disabled={generatedKeywords.length === 0}
+                                                variant="default"
+                                                size="sm"
+                                                className="text-xs gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                                            >
+                                                <ArrowRight className="w-3.5 h-3.5" />
+                                                Create Campaign
                                             </Button>
                                         </div>
 

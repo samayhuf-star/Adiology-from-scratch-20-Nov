@@ -296,9 +296,12 @@ const App = () => {
 
     window.addEventListener('loadHistoryItem', handleLoadHistoryItem as EventListener);
     
-    // Listen for navigate events from child components (e.g., CampaignBuilder3)
+    // Listen for navigate events from child components (e.g., CampaignBuilder3, KeywordPlanner)
     const handleNavigate = (event: CustomEvent) => {
-      const { tab } = event.detail;
+      const { tab, data } = event.detail;
+      if (data) {
+        setHistoryData(data);
+      }
       if (tab && typeof tab === 'string') {
         setActiveTabSafe(tab);
       }
@@ -1137,7 +1140,7 @@ const App = () => {
       case 'builder-2':
         return <CampaignBuilder2 initialData={activeTab === 'builder-2' ? historyData : null} />;
       case 'builder-3':
-        return <CampaignBuilder3 />;
+        return <CampaignBuilder3 initialData={activeTab === 'builder-3' ? historyData : null} />;
       case 'campaign-history':
         // Campaign History - Show only saved campaigns, not all activity history
         return <CampaignHistoryView onLoadCampaign={(data) => {
