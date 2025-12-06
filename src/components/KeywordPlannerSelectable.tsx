@@ -34,6 +34,7 @@ export const KeywordPlannerSelectable = ({
     const [apiStatus, setApiStatus] = useState<'unknown' | 'ok' | 'error'>('unknown');
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [showAllKeywords, setShowAllKeywords] = useState(false);
+    const [keywordsToShow, setKeywordsToShow] = useState(20); // Show first 20 keywords initially
     
     // Match types - all selected by default
     const [matchTypes, setMatchTypes] = useState({
@@ -182,6 +183,9 @@ export const KeywordPlannerSelectable = ({
                     // Auto-select all keywords when generated
                     setSelectedKeywords(variedKeywords);
                 }
+                // Reset keywords display to show summary
+                setKeywordsToShow(20);
+                setShowAllKeywords(false);
                 setApiStatus('ok');
             } else {
                 console.error('Invalid response format:', response);
@@ -391,6 +395,9 @@ export const KeywordPlannerSelectable = ({
                 setSelectedKeywords(variedKeywords);
             }
             
+            // Reset keywords display to show summary
+            setKeywordsToShow(20);
+            setShowAllKeywords(false);
             setApiStatus('error');
             console.log('Generated mock keywords:', formattedKeywords.length);
         } finally {
@@ -710,12 +717,20 @@ export const KeywordPlannerSelectable = ({
                                         </p>
                                     </div>
                                     <Button
-                                        onClick={() => setShowAllKeywords(!showAllKeywords)}
+                                        onClick={() => {
+                                            if (!showAllKeywords) {
+                                                setShowAllKeywords(true);
+                                                setKeywordsToShow(generatedKeywords.length);
+                                            } else {
+                                                setShowAllKeywords(false);
+                                                setKeywordsToShow(20);
+                                            }
+                                        }}
                                         variant="outline"
                                         size="sm"
                                         className="text-xs"
                                     >
-                                        {showAllKeywords ? 'Hide' : 'Show'} All Keywords
+                                        {showAllKeywords ? 'Show Summary' : `See All (${generatedKeywords.length})`}
                                     </Button>
                                 </div>
                                 
@@ -839,10 +854,10 @@ export const KeywordPlannerSelectable = ({
                         </>
                     )}
 
-                    {showAllKeywords && generatedKeywords.length > 0 ? (
-                        <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[600px]">
-                            <div className="space-y-1">
-                                {generatedKeywords.map((keyword, idx) => {
+                    {generatedKeywords.length > 0 ? (
+                        <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 overflow-y-auto max-h-[600px] flex flex-col">
+                            <div className="space-y-1 flex-1">
+                                {generatedKeywords.slice(0, keywordsToShow).map((keyword, idx) => {
                                     const isSelected = selectedKeywords.includes(keyword);
                                     return (
                                         <div
@@ -874,24 +889,33 @@ export const KeywordPlannerSelectable = ({
                                     );
                                 })}
                             </div>
+                            
+                            {/* Load More / See More Button */}
+                            {keywordsToShow < generatedKeywords.length && (
+                                <div className="mt-4 pt-4 border-t border-slate-200 flex justify-center">
+                                    <Button
+                                        onClick={() => {
+                                            const newCount = Math.min(keywordsToShow + 20, generatedKeywords.length);
+                                            setKeywordsToShow(newCount);
+                                            if (newCount >= generatedKeywords.length) {
+                                                setShowAllKeywords(true);
+                                            }
+                                        }}
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs"
+                                    >
+                                        Load More ({generatedKeywords.length - keywordsToShow} remaining)
+                                    </Button>
+                                </div>
+                            )}
                         </div>
-                    ) : generatedKeywords.length === 0 ? (
+                    ) : (
                         <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 flex items-center justify-center">
                             <div className="text-center">
                                 <Sparkles className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                                 <p className="text-slate-500">
                                     Enter seed keywords and click "Generate" to create your keyword list
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-4 flex items-center justify-center">
-                            <div className="text-center">
-                                <p className="text-slate-500 mb-2">
-                                    Click "Show All Keywords" above to view and select individual keywords
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                    {generatedKeywords.length} keywords available • {selectedKeywords.length} selected
                                 </p>
                             </div>
                         </div>
