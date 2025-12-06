@@ -3338,11 +3338,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     
     
     const createNewAd = async (type: 'rsa' | 'dki' | 'callonly' | 'snippet' | 'callout' | 'call' | 'sitelink' | 'price' | 'app' | 'location' | 'message' | 'leadform' | 'promotion' | 'image') => {
-        // Bug_77a: Optimize performance - show loading state immediately
-        const loadingNotification = notifications.info('Creating ad...', {
-            title: 'Processing',
-            description: 'Please wait while we create your ad.',
-        });
+        // Removed auto-generation notification - ads only created on user click
         
         // Check if this is an extension type
         const isExtension = ['snippet', 'callout', 'call', 'sitelink', 'price', 'app', 'location', 'message', 'leadform', 'promotion', 'image'].includes(type);
@@ -3774,10 +3770,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                 
                 // Success notification
                 const adTypeName = type === 'rsa' ? 'Responsive Search Ad' : type === 'dki' ? 'DKI Text Ad' : type === 'callonly' ? 'Call Only Ad' : type;
-                notifications.success(`Created ${adTypeName} for all ad groups`, {
-                    title: 'Ad Created Successfully',
-                    description: `This ad will be added to all ${allGroups.length} ad groups automatically.`,
-                });
+                // Removed notification about ad groups - ads only created on user click
             }
             return;
         }
@@ -4136,11 +4129,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                                 ))}
                             </SelectContent>
                         </Select>
-                            {selectedAdGroup !== ALL_AD_GROUPS_VALUE && dynamicAdGroups.length > 0 && (
-                            <div className="mt-2 text-xs text-slate-600">
-                                {dynamicAdGroups.find(g => g.name === selectedAdGroup)?.keywords.length || 0} keywords in this group
-                            </div>
-                        )}
+                            {/* Removed ad group keyword count message */}
                     </div>
                     
                         {/* Info Card */}
@@ -4612,13 +4601,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                         );
                     })}
                     
-                        {filteredAds.length === 0 && (
-                        <div className="bg-white border border-dashed border-slate-300 rounded-lg p-12 text-center">
-                            <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                            <p className="text-slate-500 font-medium mb-2">No ads created for "{selectedAdGroup}"</p>
-                            <p className="text-sm text-slate-400">Click a button on the left to create your first ad for this ad group.</p>
-                        </div>
-                    )}
+                        {/* Removed "No ads created" message - ads only appear when user clicks buttons */}
                 </div>
             </div>
             
@@ -6462,7 +6445,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                     <div className="flex items-center justify-end mb-2">
                         <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'builder' | 'saved')} className="w-auto">
                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="builder">Campaign Builder</TabsTrigger>
+                                <TabsTrigger value="builder">Builder 1.0</TabsTrigger>
                                 <TabsTrigger value="saved">Saved Campaigns</TabsTrigger>
                             </TabsList>
                         </Tabs>
