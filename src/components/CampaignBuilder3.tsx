@@ -34,6 +34,7 @@ import {
 } from '../utils/googleAdGenerator';
 import { exportCampaignToCSVV3, validateCSVBeforeExport } from '../utils/csvGeneratorV3';
 import { exportCampaignToGoogleAdsEditorCSV, validateCSVRows, campaignStructureToCSVRows, GOOGLE_ADS_EDITOR_HEADERS } from '../utils/googleAdsEditorCSVExporter';
+import { validateAndFixAds, formatValidationReport } from '../utils/adValidationUtils';
 import Papa from 'papaparse';
 import { historyService } from '../utils/historyService';
 import { generateCSVWithBackend } from '../utils/csvExportBackend';
@@ -1297,7 +1298,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
 
       if (newAd) {
         setCampaignData(prev => ({
-          ...prev,
+            ...prev,
           ads: [...prev.ads, newAd],
         }));
         // Mark that ads have been manually added, preventing auto-generation from overwriting
@@ -1773,8 +1774,22 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       }
 
       // Fallback to local generation using Google Ads Editor format
+      // Validate and fix ads before conversion
+      const { ads: validatedAds, report: validationReport } = validateAndFixAds(campaignData.ads);
+      
+      // Show validation report if ads were fixed
+      if (validationReport.fixed > 0) {
+        const reportText = formatValidationReport(validationReport);
+        console.log('Ad validation report:', reportText);
+        notifications.info(`Auto-fixed ${validationReport.fixed} ad(s)`, {
+          title: 'Ads Validated',
+          description: `Ensured all ads meet Google Ads requirements. Check console for details.`,
+          duration: 5000
+        });
+      }
+      
       // Build structure directly from campaignData (don't regenerate ad groups)
-      const convertedAds = campaignData.ads.map((ad: any) => {
+      const convertedAds = validatedAds.map((ad: any) => {
         const convertedAd: any = {
           type: ad.type === 'rsa' ? 'rsa' : ad.type === 'dki' ? 'dki' : 'callonly',
           final_url: ad.finalUrl || campaignData.url || '',
@@ -1796,31 +1811,8 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           if (ad.headline3) convertedAd.headline3 = ad.headline3.trim().substring(0, 30);
         }
         
-        // Ensure at least 3 headlines for RSA
-        if (convertedAd.type === 'rsa') {
-          if (!convertedAd.headline1) convertedAd.headline1 = 'Professional Service';
-          if (!convertedAd.headline2) convertedAd.headline2 = 'Expert Solutions';
-          if (!convertedAd.headline3) convertedAd.headline3 = 'Quality Guaranteed';
-        }
-        
-        // Convert descriptions array to individual description fields (RSA can have up to 4)
-        if (ad.descriptions && Array.isArray(ad.descriptions)) {
-          ad.descriptions.forEach((desc: string, idx: number) => {
-            if (idx < 4 && desc && desc.trim()) {
-              convertedAd[`description${idx + 1}`] = desc.trim().substring(0, 90);
-            }
-          });
-        } else {
-          // Fallback to individual description fields
-          if (ad.description1) convertedAd.description1 = ad.description1.trim().substring(0, 90);
-          if (ad.description2) convertedAd.description2 = ad.description2.trim().substring(0, 90);
-        }
-        
-        // Ensure at least 2 descriptions for RSA
-        if (convertedAd.type === 'rsa') {
-          if (!convertedAd.description1) convertedAd.description1 = 'Get professional service you can trust.';
-          if (!convertedAd.description2) convertedAd.description2 = 'Contact us today for expert assistance.';
-        }
+        // Ads are already validated and fixed by validateAndFixAds above
+        // Just ensure fields are properly mapped (validation already ensured minimums)
         
         // Add extensions if present
         if (ad.extensions && Array.isArray(ad.extensions)) {
@@ -1832,19 +1824,41 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
 
       // Build CampaignStructure directly from campaignData (use existing adGroups)
       // Keywords should already have match type formatting (brackets for exact, quotes for phrase)
+      
+      // Ensure we have at least one ad group
+      let adGroupsToUse = campaignData.adGroups || [];
+      if (adGroupsToUse.length === 0) {
+        // Create a default ad group if none exist
+        adGroupsToUse = [{
+          name: 'Default Ad Group',
+          keywords: campaignData.selectedKeywords || [],
+          negativeKeywords: campaignData.negativeKeywords || []
+        }];
+      }
+      
       const structure: CampaignStructure = {
         campaigns: [{
           campaign_name: campaignData.campaignName || 'Campaign 1',
-          adgroups: campaignData.adGroups.map((group: any) => ({
-            adgroup_name: group.name,
+          adgroups: adGroupsToUse.map((group: any) => ({
+            adgroup_name: group.name || 'Default Ad Group',
             keywords: (group.keywords || []).map((kw: any) => {
               // Extract keyword text - preserve match type formatting
               if (typeof kw === 'string') return kw;
               // Return formatted keyword (already has brackets/quotes if match type was applied)
               return kw.text || kw.keyword || String(kw);
-            }),
+            }).filter((kw: string) => kw && kw.trim().length > 0), // Filter out empty keywords
             match_types: [], // Match types are encoded in keyword format
-            ads: convertedAds, // Use converted ads for all ad groups
+            ads: convertedAds.length > 0 ? convertedAds : [{
+              type: 'rsa' as const,
+              headline1: 'Professional Service',
+              headline2: 'Expert Solutions',
+              headline3: 'Quality Guaranteed',
+              description1: 'Get professional service you can trust.',
+              description2: 'Contact us today for expert assistance.',
+              final_url: campaignData.url || 'https://example.com',
+              path1: '',
+              path2: ''
+            }], // Ensure at least one ad exists
             negative_keywords: (group.negativeKeywords || campaignData.negativeKeywords || []).map((neg: any) => {
               // Ensure negative keywords have proper format
               if (typeof neg === 'string') {
@@ -1852,20 +1866,63 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
               }
               const negText = neg.text || neg.keyword || String(neg);
               return negText.startsWith('-') ? negText : `-${negText}`;
-            }),
+            }).filter((neg: string) => neg && neg.trim().length > 0), // Filter out empty negative keywords
           })),
-          states: campaignData.locations.states,
-          cities: campaignData.locations.cities,
-          zip_codes: campaignData.locations.zipCodes,
-          targetCountry: campaignData.targetCountry, // Add for CSV export
+          states: campaignData.locations.states || [],
+          cities: campaignData.locations.cities || [],
+          zip_codes: campaignData.locations.zipCodes || [],
+          targetCountry: campaignData.targetCountry || 'United States', // Default to United States
+          budget: '100', // Default budget
+          budget_type: 'Daily',
+          bidding_strategy: 'Manual CPC',
+          start_date: '',
+          end_date: '',
+          location_type: 'COUNTRY',
+          location_code: campaignData.targetCountry === 'United States' ? 'US' : (campaignData.targetCountry || 'US').substring(0, 2).toUpperCase(),
         } as any]
       };
 
+      // Validate structure before generating CSV
+      if (!structure || !structure.campaigns || structure.campaigns.length === 0) {
+        notifications.error('Invalid campaign structure', {
+          title: 'Export Error',
+          description: 'Campaign structure is invalid. Please ensure you have at least one ad group and campaign name.',
+          duration: 10000
+        });
+        return;
+      }
+      
+      const campaign = structure.campaigns[0];
+      if (!campaign.campaign_name || campaign.campaign_name.trim().length === 0) {
+        notifications.error('Campaign name is required', {
+          title: 'Export Error',
+          description: 'Please set a campaign name before generating CSV.',
+          duration: 10000
+        });
+        return;
+      }
+      
+      if (!campaign.adgroups || campaign.adgroups.length === 0) {
+        notifications.error('At least one ad group is required', {
+          title: 'Export Error',
+          description: 'Please create at least one ad group before generating CSV.',
+          duration: 10000
+        });
+        return;
+      }
+      
       // Generate CSV content without downloading
       const rows = campaignStructureToCSVRows(structure);
+      
+      // Debug: Log first few rows to check Type column
+      if (rows.length > 0) {
+        console.log('First 3 CSV rows:', rows.slice(0, 3).map(r => ({ Type: r['Type'], Campaign: r['Campaign'], 'Ad group': r['Ad group'] })));
+      }
+      
       const validation = validateCSVRows(rows);
       
       if (!validation.isValid) {
+        console.error('CSV Validation Errors:', validation.errors);
         setCampaignData(prev => ({
           ...prev,
           csvErrors: validation.errors,
@@ -1885,16 +1942,18 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       });
       
       // Store CSV data in state (don't download yet)
+      // Add BOM for Excel compatibility
+      const csvWithBOM = '\uFEFF' + csv;
       setCampaignData(prev => ({
         ...prev,
-        csvData: csv,
+        csvData: csvWithBOM,
         csvErrors: [],
       }));
       
       notifications.success('CSV generated successfully!', {
         title: 'CSV Ready',
         description: `Your campaign "${campaignData.campaignName}" CSV is ready. Click "Download CSV" to export.`
-      });
+        });
     } catch (error) {
       console.error('CSV generation error:', error);
       notifications.error('Failed to generate CSV', {
@@ -2096,14 +2155,14 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                 ))}
               </div>
               <div className="flex gap-2 mb-2">
-                <Textarea
-                  placeholder="Enter additional seed keywords (one per line)"
-                  value={campaignData.seedKeywords.join('\n')}
-                  onChange={(e) => setCampaignData(prev => ({
-                    ...prev,
-                    seedKeywords: e.target.value.split('\n').filter(k => k.trim())
-                  }))}
-                  rows={4}
+              <Textarea
+                placeholder="Enter additional seed keywords (one per line)"
+                value={campaignData.seedKeywords.join('\n')}
+                onChange={(e) => setCampaignData(prev => ({
+                  ...prev,
+                  seedKeywords: e.target.value.split('\n').filter(k => k.trim())
+                }))}
+                rows={4}
                   className="flex-1"
                 />
                 <Button 
@@ -2786,7 +2845,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                           >
                             Cancel
                           </Button>
-                        </div>
+              </div>
                       </div>
                     )}
           </CardContent>
@@ -2842,6 +2901,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             </CardContent>
           </Card>
 
+<<<<<<< Updated upstream
           {/* Specific Locations */}
           <Card>
             <CardHeader>
@@ -3039,55 +3099,55 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-200/50 mb-6 animate-in fade-in zoom-in duration-500">
               <CheckCircle2 className="w-14 h-14 text-white" />
-            </div>
+          </div>
             <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
               Campaign Created Successfully!
             </h1>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-900">
               Your campaign is ready to export and implement in Google Ads Editor
             </p>
-          </div>
+        </div>
 
           {/* Metrics Cards - Redesigned */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             <Card className="text-center border-2 border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardContent className="p-6">
+            <CardContent className="p-6">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
                   <Megaphone className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">1</div>
                 <div className="text-sm font-medium text-slate-700">Campaign</div>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
             <Card className="text-center border-2 border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardContent className="p-6">
+            <CardContent className="p-6">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
                   <Layers className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-1">{campaignData.adGroups.length}</div>
                 <div className="text-sm font-medium text-slate-700">Ad Groups</div>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
             <Card className="text-center border-2 border-indigo-100 bg-gradient-to-br from-white to-indigo-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardContent className="p-6">
+            <CardContent className="p-6">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
                   <Hash className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-1">{campaignData.selectedKeywords.length}</div>
                 <div className="text-sm font-medium text-slate-700">Keywords</div>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
             <Card className="text-center border-2 border-green-100 bg-gradient-to-br from-white to-green-50/50 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardContent className="p-6">
+            <CardContent className="p-6">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
                   <MapPin className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-1">{locationInfo.count}</div>
                 <div className="text-sm font-medium text-slate-700">Locations</div>
                 <div className="text-xs text-slate-500 mt-1">{locationInfo.type}</div>
-              </CardContent>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
+        </div>
 
           {/* Campaign Summary - Redesigned */}
           <Card className="mb-8 border-2 border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-2xl">
@@ -3095,11 +3155,11 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-md">
                   <CheckCircle2 className="w-6 h-6 text-white" />
-                </div>
-                <div>
+              </div>
+              <div>
                   <CardTitle className="text-2xl text-slate-900">Campaign Summary</CardTitle>
                   <CardDescription className="text-slate-600 mt-1">All checks passed - ready for export</CardDescription>
-                </div>
+              </div>
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
@@ -3108,7 +3168,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                   <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Campaign Name</Label>
                   <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                     <p className="text-base font-semibold text-slate-900">{campaignData.campaignName}</p>
-                  </div>
+            </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Structure</Label>
@@ -3124,54 +3184,54 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                 </div>
               </div>
               
-              {/* Cities Summary - Show if cities are selected */}
-              {campaignData.locations.cities.length > 0 && (() => {
-                const cityCount = campaignData.locations.cities.length;
-                const presetCounts = [20, 50, 100, 200, LOCATION_PRESETS.cities.length];
-                const isPreset = presetCounts.includes(cityCount);
-                const presetLabel = cityCount === 20 ? 'Top 20 Cities' :
-                                  cityCount === 50 ? 'Top 50 Cities' :
-                                  cityCount === 100 ? 'Top 100 Cities' :
-                                  cityCount === 200 ? 'Top 200 Cities' :
-                                  cityCount === LOCATION_PRESETS.cities.length ? 'All Cities' : null;
-                
-                return (
+            {/* Cities Summary - Show if cities are selected */}
+            {campaignData.locations.cities.length > 0 && (() => {
+              const cityCount = campaignData.locations.cities.length;
+              const presetCounts = [20, 50, 100, 200, LOCATION_PRESETS.cities.length];
+              const isPreset = presetCounts.includes(cityCount);
+              const presetLabel = cityCount === 20 ? 'Top 20 Cities' :
+                                cityCount === 50 ? 'Top 50 Cities' :
+                                cityCount === 100 ? 'Top 100 Cities' :
+                                cityCount === 200 ? 'Top 200 Cities' :
+                                cityCount === LOCATION_PRESETS.cities.length ? 'All Cities' : null;
+              
+              return (
                   <div className="pt-6 border-t border-slate-200">
                     <div className="bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 border-2 border-blue-200/60 rounded-xl p-5 shadow-sm">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-md">
                           <Building2 className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1">
+                      </div>
+                      <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
                             <p className="text-base font-bold text-slate-900">
-                              {presetLabel || 'Custom Cities'}
-                            </p>
+                            {presetLabel || 'Custom Cities'}
+                          </p>
                             <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-300 font-semibold px-2.5 py-1">
-                              {cityCount} selected
-                            </Badge>
-                          </div>
+                            {cityCount} selected
+                          </Badge>
+                        </div>
                           <div>
                             <p className="text-xs font-medium text-slate-600 mb-2">Selected cities:</p>
                             <div className="flex flex-wrap gap-2">
-                              {campaignData.locations.cities.slice(0, 10).map((city, idx) => (
+                            {campaignData.locations.cities.slice(0, 10).map((city, idx) => (
                                 <Badge key={idx} className="text-xs bg-white text-slate-700 border-slate-300 shadow-sm font-medium">
-                                  {city}
-                                </Badge>
-                              ))}
-                              {cityCount > 10 && (
+                                {city}
+                              </Badge>
+                            ))}
+                            {cityCount > 10 && (
                                 <Badge className="text-xs bg-slate-100 text-slate-600 border-slate-300 shadow-sm font-medium">
-                                  +{cityCount - 10} more
-                                </Badge>
-                              )}
-                            </div>
+                                +{cityCount - 10} more
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+              );
+            })()}
 
               {/* Validation Status */}
               <div className="pt-6 border-t border-slate-200">
@@ -3179,24 +3239,24 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-md">
                       <CheckCircle2 className="w-6 h-6 text-white" />
-                    </div>
+              </div>
                     <div className="flex-1">
                       <p className="font-bold text-green-800 mb-2">Validation Complete</p>
                       <p className="text-sm text-slate-700">
-                        Your campaign is validated and ready to export. Click 'Download CSV' below to get your file.
-                      </p>
+                Your campaign is validated and ready to export. Click 'Download CSV' below to get your file.
+              </p>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
           {/* Primary Action Section */}
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => {
+          <Button
+            onClick={() => {
                   if (!campaignData.csvData) {
                     notifications.warning('CSV not generated yet', {
                       title: 'No CSV Data',
@@ -3206,22 +3266,22 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                   }
                   const filename = `${(campaignData.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
                   const blob = new Blob([campaignData.csvData], { type: 'text/csv;charset=utf-8;' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
                   a.download = filename;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                  
-                  // Redirect to dashboard
-                  setTimeout(() => {
-                    const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
-                    window.dispatchEvent(event);
-                    if (window.location.hash) {
-                      window.location.hash = '#dashboard';
-                    }
-                  }, 1000);
-                }}
+              a.click();
+              URL.revokeObjectURL(url);
+              
+              // Redirect to dashboard
+              setTimeout(() => {
+                const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+                window.dispatchEvent(event);
+                if (window.location.hash) {
+                  window.location.hash = '#dashboard';
+                }
+              }, 1000);
+            }}
                 className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-200/50 h-14 text-lg font-semibold"
               >
                 <Download className="w-5 h-5 mr-2" />
@@ -3240,52 +3300,38 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                   }
                 }}
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-indigo-200/50 h-14 text-lg font-semibold"
-              >
+          >
                 <FolderOpen className="w-5 h-5 mr-2" />
                 View Saved Campaigns
               </Button>
             </div>
           </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4 justify-center">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep(6)}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Review
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              // Reset and start new campaign
-              window.location.reload();
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Another Campaign
-          </Button>
-          <Button
-            onClick={() => {
-              if (!campaignData.csvData) {
-                notifications.warning('CSV not generated yet', {
-                  title: 'No CSV Data',
-                  description: 'Please generate CSV first before downloading.'
-                });
-                return;
-              }
-              const filename = `${(campaignData.campaignName || 'campaign').replace(/[^a-z0-9]/gi, '_')}_google_ads_editor_${new Date().toISOString().split('T')[0]}.csv`;
-              const blob = new Blob([campaignData.csvData], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = filename;
-              a.click();
-              URL.revokeObjectURL(url);
-              
-              // Redirect to dashboard
-              setTimeout(() => {
+          {/* Secondary Actions */}
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep(6)}
+              className="border-slate-300 hover:bg-slate-50"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Review
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Reset and start new campaign
+                window.location.reload();
+              }}
+              className="border-slate-300 hover:bg-slate-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Another Campaign
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Dispatch custom event for App.tsx to handle
                 const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
                 window.dispatchEvent(event);
                 
@@ -3633,8 +3679,8 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             </Button>
             <Button
               onClick={handleNextStep}
-              disabled={loading || currentStep === 8}
-            >
+            disabled={loading || currentStep === 8}
+          >
             {currentStep === 7 ? 'Save & Finish' : currentStep === 8 ? 'Download CSV' : 'Next Step'}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>

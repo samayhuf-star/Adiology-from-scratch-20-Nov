@@ -781,42 +781,69 @@ export function presetToCampaignStructure(preset: any): CampaignStructure {
       });
     }
     
-    // Convert ads - ensure all required fields are present
+    // Convert ads - ensure all required fields are present and match master sheet format
     const ads: Ad[] = (preset.ads || []).map((ad: any) => {
       // Ensure headline1 and description1 are present (required for RSA)
       const headline1 = (ad.headline1 || preset.ads?.[0]?.headline1 || 'Your Service Here').trim();
       const description1 = (ad.description1 || preset.ads?.[0]?.description1 || 'Get the best service today.').trim();
       
-      // Validate headline and description lengths
+      // Validate headline and description lengths (Google Ads limits)
       const validatedHeadline1 = headline1.length > 30 ? headline1.substring(0, 30) : headline1;
       const validatedDescription1 = description1.length > 90 ? description1.substring(0, 90) : description1;
       
       return {
         type: 'rsa' as const,
         headline1: validatedHeadline1 || 'Your Service Here',
-        headline2: (ad.headline2 || preset.ads?.[0]?.headline2 || '').trim(),
-        headline3: (ad.headline3 || preset.ads?.[0]?.headline3 || '').trim(),
-        headline4: (ad.headline4 || preset.ads?.[0]?.headline4 || '').trim(),
-        headline5: (ad.headline5 || preset.ads?.[0]?.headline5 || '').trim(),
+        headline2: (ad.headline2 || preset.ads?.[0]?.headline2 || '').trim().substring(0, 30),
+        headline3: (ad.headline3 || preset.ads?.[0]?.headline3 || '').trim().substring(0, 30),
+        headline4: (ad.headline4 || preset.ads?.[0]?.headline4 || '').trim().substring(0, 30),
+        headline5: (ad.headline5 || preset.ads?.[0]?.headline5 || '').trim().substring(0, 30),
+        headline6: '',
+        headline7: '',
+        headline8: '',
+        headline9: '',
+        headline10: '',
+        headline11: '',
+        headline12: '',
+        headline13: '',
+        headline14: '',
+        headline15: '',
         description1: validatedDescription1 || 'Get the best service today.',
-        description2: (ad.description2 || preset.ads?.[0]?.description2 || '').trim(),
+        description2: (ad.description2 || preset.ads?.[0]?.description2 || '').trim().substring(0, 90),
+        description3: '',
+        description4: '',
         final_url: finalUrl,
-        path1: (ad.path1 || '').trim(),
-        path2: (ad.path2 || '').trim()
+        path1: (ad.path1 || '').trim().substring(0, 15),
+        path2: (ad.path2 || '').trim().substring(0, 15)
       };
     });
     
+    // Limit to max 3 ads per ad group (Google Ads limit for RSA)
+    let limitedAds = ads.slice(0, 3);
+    
     // Ensure at least one ad exists
-    if (ads.length === 0) {
-      ads.push({
+    if (limitedAds.length === 0) {
+      limitedAds.push({
         type: 'rsa' as const,
         headline1: 'Your Service Here',
         headline2: '',
         headline3: '',
         headline4: '',
         headline5: '',
+        headline6: '',
+        headline7: '',
+        headline8: '',
+        headline9: '',
+        headline10: '',
+        headline11: '',
+        headline12: '',
+        headline13: '',
+        headline14: '',
+        headline15: '',
         description1: 'Get the best service today.',
         description2: '',
+        description3: '',
+        description4: '',
         final_url: finalUrl,
         path1: '',
         path2: ''
@@ -837,7 +864,7 @@ export function presetToCampaignStructure(preset: any): CampaignStructure {
       adgroup_name: adGroup.name || `Ad Group ${adGroupIdx + 1}`,
       keywords: groupKeywords,
       match_types: [],
-      ads,
+      ads: limitedAds, // Use limited ads (max 3)
       negative_keywords
     };
   });
@@ -845,10 +872,28 @@ export function presetToCampaignStructure(preset: any): CampaignStructure {
   // Ensure campaign name is present
   const campaignName = (preset.campaign_name || preset.title || 'Campaign').trim();
   
+  // Include location targeting data for master sheet format
+  // Default to United States if not specified
+  const targetCountry = preset.targetCountry || 'United States';
+  const states = preset.states || [];
+  const cities = preset.cities || [];
+  const zipCodes = preset.zip_codes || [];
+  
   return {
     campaigns: [{
       campaign_name: campaignName,
-      adgroups: adGroups
+      adgroups: adGroups,
+      targetCountry: targetCountry,
+      states: states,
+      cities: cities,
+      zip_codes: zipCodes,
+      budget: preset.daily_budget?.toString() || '100',
+      budget_type: 'Daily',
+      bidding_strategy: 'Manual CPC',
+      start_date: '',
+      end_date: '',
+      location_type: 'COUNTRY',
+      location_code: targetCountry === 'United States' ? 'US' : targetCountry.substring(0, 2).toUpperCase(),
     }]
   };
 }

@@ -6,6 +6,7 @@
 import { api } from './api';
 import { notifications } from './notifications';
 import { projectId, publicAnonKey } from './supabase/info';
+import { validateAndFixAds, formatValidationReport } from './adValidationUtils';
 
 // API Base URL
 // For local development, uncomment the line below and comment out the production URL
@@ -35,9 +36,20 @@ function convertToExportRequest(
         : (typeof group.keywords === 'string' ? group.keywords.split('\n').filter((k: string) => k.trim()) : []),
       negativeKeywords: group.negativeKeywords || []
     })),
-    generated_ads: generatedAds.filter(ad => 
-      ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
-    ),
+    // Validate and fix ads before sending to backend
+    generated_ads: (() => {
+      const filteredAds = generatedAds.filter(ad => 
+        ad.type === 'rsa' || ad.type === 'dki' || ad.type === 'callonly'
+      );
+      const { ads: validatedAds, report } = validateAndFixAds(filteredAds);
+      
+      // Log validation report if ads were fixed
+      if (report.fixed > 0) {
+        console.log('✅ Frontend ad validation:', formatValidationReport(report));
+      }
+      
+      return validatedAds;
+    })(),
     location_targeting: locationTargeting,
     budget: budget,
     bidding_strategy: biddingStrategy || 'MANUAL_CPC',
@@ -100,12 +112,68 @@ export async function generateCSVWithBackend(
       // notifications.dismiss(loadingNotification.id);
     }
 
+    // Check response status first
+    if (!response.ok) {
+      // Try to get error message from response
+      let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+      try {
+        const contentType = response.headers.get('content-type') || '';
+        const responseText = await response.text();
+        
+        if (contentType.includes('application/json')) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch (jsonError) {
+            // Not valid JSON, use text if it's short
+            if (responseText && responseText.length < 500) {
+              errorMessage = responseText;
+            }
+          }
+        } else {
+          // Try to read as text for non-JSON error responses
+          if (responseText && responseText.length < 500) {
+            errorMessage = responseText;
+          }
+        }
+      } catch (parseError) {
+        // If we can't parse the error, use the status text
+        console.error('Error parsing error response:', parseError);
+      }
+      
+      notifications.error('CSV export failed', {
+        title: 'Export Error',
+        description: errorMessage,
+        priority: 'high',
+        duration: 10000
+      });
+      throw new Error(errorMessage);
+    }
+
     // Check if response is CSV file (success) or JSON (validation errors or async)
     const contentType = response.headers.get('content-type') || '';
     
     // Check for async export response
     if (contentType.includes('application/json')) {
-      const jsonData = await response.json();
+      let jsonData;
+      let responseText = '';
+      try {
+        responseText = await response.text();
+        // Try to parse JSON, but handle cases where response might not be valid JSON
+        jsonData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        console.error('Response status:', response.status, response.statusText);
+        console.error('Response text (first 500 chars):', responseText.substring(0, 500));
+        console.error('Content-Type:', contentType);
+        notifications.error('Invalid response from server', {
+          title: 'Export Error',
+          description: `The server returned an invalid response (${response.status}). Please try again or contact support.`,
+          priority: 'high',
+          duration: 10000
+        });
+        throw new Error(`Invalid JSON response from server: ${response.status} ${response.statusText}`);
+      }
       
       // Check if this is an async export response
       if (jsonData.async === true && jsonData.job_id) {
@@ -194,15 +262,40 @@ export async function generateCSVWithBackend(
         successMessage += ` (${warningsCount} warning(s) - check console for details)`;
       }
 
+      // Check for backend auto-fix report in response headers
+      const autoFixCount = response.headers.get('x-auto-fixed-count');
+      const autoFixReport = response.headers.get('x-auto-fix-report');
+      
+      if (autoFixCount && parseInt(autoFixCount) > 0) {
+        successMessage += `\n\n✅ Backend auto-fixed ${autoFixCount} issue(s)`;
+        if (autoFixReport) {
+          console.log('Backend auto-fix report:', autoFixReport);
+        }
+      }
+
       notifications.success(successMessage, {
         title: 'Export Complete',
-        description: `Exported ${rowCount || 'unknown'} rows successfully.`
+        description: `Exported ${rowCount || 'unknown'} rows successfully.${autoFixCount && parseInt(autoFixCount) > 0 ? ` Backend auto-fixed ${autoFixCount} issue(s).` : ''}`
       });
 
       console.log(`✅ CSV exported: ${filename}, ${rowCount} rows`);
     } else {
       // Validation errors - parse JSON response
-      const errorData = await response.json();
+      let errorData;
+      try {
+        const text = await response.text();
+        errorData = JSON.parse(text);
+      } catch (parseError) {
+        console.error('Failed to parse error response as JSON:', parseError);
+        // If it's not JSON, show a generic error
+        notifications.error('CSV export failed', {
+          title: 'Export Error',
+          description: `Server returned an invalid response. Status: ${response.status}`,
+          priority: 'high',
+          duration: 10000
+        });
+        throw new Error('Invalid response format from server');
+      }
       
       console.error('CSV Export Validation Errors:', errorData);
 
