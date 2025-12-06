@@ -304,56 +304,140 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
     csvErrors: [],
   });
 
-  // Handle initial data from Keyword Planner
+  // Handle initial data from Keyword Planner or saved campaigns
   useEffect(() => {
-    if (initialData && initialData.selectedKeywords && initialData.selectedKeywords.length > 0) {
-      // Process keywords from Keyword Planner
-      const keywords = initialData.selectedKeywords.map((kw: string) => {
-        // Clean keyword text (remove match type formatting for storage)
-        let cleanKw = kw.trim();
-        if (cleanKw.startsWith('[') && cleanKw.endsWith(']')) {
-          cleanKw = cleanKw.slice(1, -1);
-        } else if (cleanKw.startsWith('"') && cleanKw.endsWith('"')) {
-          cleanKw = cleanKw.slice(1, -1);
-        }
-        return {
-          text: cleanKw,
-          formatted: kw, // Keep original format
-          matchType: kw.startsWith('[') ? 'exact' : kw.startsWith('"') ? 'phrase' : 'broad'
+    if (!initialData) return;
+
+    try {
+      // Handle saved campaign data (from CampaignHistoryView)
+      if (initialData.campaignName || initialData.url || initialData.ads || initialData.adGroups) {
+        console.log('Loading saved campaign data:', initialData);
+        
+        // Safely extract and validate data
+        const safeData = {
+          url: initialData.url || '',
+          campaignName: initialData.campaignName || '',
+          intent: initialData.intent || null,
+          vertical: initialData.vertical || null,
+          cta: initialData.cta || null,
+          selectedStructure: initialData.selectedStructure || initialData.structureType || null,
+          structureRankings: initialData.structureRankings || [],
+          seedKeywords: Array.isArray(initialData.seedKeywords) 
+            ? initialData.seedKeywords 
+            : (typeof initialData.seedKeywords === 'string' 
+                ? initialData.seedKeywords.split(',').map((s: string) => s.trim()).filter(Boolean)
+                : []),
+          negativeKeywords: Array.isArray(initialData.negativeKeywords)
+            ? initialData.negativeKeywords
+            : (typeof initialData.negativeKeywords === 'string'
+                ? initialData.negativeKeywords.split('\n').map((s: string) => s.trim()).filter(Boolean)
+                : [...DEFAULT_NEGATIVE_KEYWORDS]),
+          generatedKeywords: Array.isArray(initialData.generatedKeywords) ? initialData.generatedKeywords : [],
+          selectedKeywords: Array.isArray(initialData.selectedKeywords) ? initialData.selectedKeywords : [],
+          ads: Array.isArray(initialData.ads) ? initialData.ads : [],
+          adGroups: Array.isArray(initialData.adGroups) ? initialData.adGroups : [],
+          locations: initialData.locations && typeof initialData.locations === 'object'
+            ? {
+                countries: Array.isArray(initialData.locations.countries) ? initialData.locations.countries : [],
+                states: Array.isArray(initialData.locations.states) ? initialData.locations.states : [],
+                cities: Array.isArray(initialData.locations.cities) ? initialData.locations.cities : [],
+                zipCodes: Array.isArray(initialData.locations.zipCodes) ? initialData.locations.zipCodes : [],
+              }
+            : { countries: [], states: [], cities: [], zipCodes: [] },
+          csvData: initialData.csvData || null,
         };
-      });
 
-      // Extract seed keywords from the first few keywords if not provided
-      const seedKws = initialData.seedKeywords 
-        ? (typeof initialData.seedKeywords === 'string' 
-            ? initialData.seedKeywords.split(',').map((s: string) => s.trim()).filter(Boolean)
-            : initialData.seedKeywords)
-        : keywords.slice(0, 5).map((k: any) => k.text);
+        // Determine which step to show based on data availability
+        let targetStep = 1;
+        if (safeData.url && safeData.selectedStructure) {
+          targetStep = 2;
+        }
+        if (safeData.selectedKeywords && safeData.selectedKeywords.length > 0) {
+          targetStep = 3;
+        }
+        if (safeData.ads && safeData.ads.length > 0) {
+          targetStep = 4;
+        }
 
-      setCampaignData(prev => ({
-        ...prev,
-        selectedKeywords: keywords,
-        generatedKeywords: keywords,
-        seedKeywords: seedKws,
-        negativeKeywords: initialData.negativeKeywords 
-          ? (typeof initialData.negativeKeywords === 'string' 
-              ? initialData.negativeKeywords.split('\n').map((s: string) => s.trim()).filter(Boolean)
-              : initialData.negativeKeywords)
-          : prev.negativeKeywords,
-        // Set a default URL if not provided (required for campaign)
-        url: prev.url || 'https://example.com',
-        // Generate campaign name from seed keywords if not set
-        campaignName: prev.campaignName || (seedKws.length > 0 
-          ? `${seedKws[0].replace(/[^a-z0-9]/gi, ' ').trim()} Campaign`
-          : 'Campaign')
-      }));
+        setCampaignData(prev => ({
+          ...prev,
+          ...safeData,
+          // Ensure negative keywords always include defaults
+          negativeKeywords: [...new Set([...DEFAULT_NEGATIVE_KEYWORDS, ...safeData.negativeKeywords])],
+        }));
 
-      // Skip to step 3 (Ads Generation) since keywords are already provided
-      setCurrentStep(3);
-      
-      notifications.success('Keywords loaded from Keyword Planner', {
-        title: 'Keywords Ready',
-        description: `${keywords.length} keywords loaded. Proceeding to ads generation.`
+        setCurrentStep(targetStep);
+
+        notifications.success('Campaign loaded successfully', {
+          title: 'Campaign Restored',
+          description: `Loaded campaign: ${safeData.campaignName || 'Unnamed Campaign'}`
+        });
+        return;
+      }
+
+      // Handle Keyword Planner data (legacy support)
+      if (initialData.selectedKeywords && Array.isArray(initialData.selectedKeywords) && initialData.selectedKeywords.length > 0) {
+        // Process keywords from Keyword Planner
+        const keywords = initialData.selectedKeywords.map((kw: any) => {
+          try {
+            // Handle both string and object formats
+            const kwText = typeof kw === 'string' ? kw : (kw?.text || kw?.keyword || String(kw || ''));
+            // Clean keyword text (remove match type formatting for storage)
+            let cleanKw = kwText.trim();
+            if (cleanKw.startsWith('[') && cleanKw.endsWith(']')) {
+              cleanKw = cleanKw.slice(1, -1);
+            } else if (cleanKw.startsWith('"') && cleanKw.endsWith('"')) {
+              cleanKw = cleanKw.slice(1, -1);
+            }
+            return {
+              text: cleanKw,
+              formatted: kwText, // Keep original format
+              matchType: kwText.startsWith('[') ? 'exact' : kwText.startsWith('"') ? 'phrase' : 'broad'
+            };
+          } catch (err) {
+            console.warn('Error processing keyword:', kw, err);
+            return null;
+          }
+        }).filter(Boolean);
+
+        // Extract seed keywords from the first few keywords if not provided
+        const seedKws = initialData.seedKeywords 
+          ? (typeof initialData.seedKeywords === 'string' 
+              ? initialData.seedKeywords.split(',').map((s: string) => s.trim()).filter(Boolean)
+              : Array.isArray(initialData.seedKeywords) ? initialData.seedKeywords : [])
+          : keywords.slice(0, 5).map((k: any) => k.text);
+
+        setCampaignData(prev => ({
+          ...prev,
+          selectedKeywords: keywords,
+          generatedKeywords: keywords,
+          seedKeywords: seedKws,
+          negativeKeywords: initialData.negativeKeywords 
+            ? (typeof initialData.negativeKeywords === 'string' 
+                ? initialData.negativeKeywords.split('\n').map((s: string) => s.trim()).filter(Boolean)
+                : Array.isArray(initialData.negativeKeywords) ? initialData.negativeKeywords : [])
+            : prev.negativeKeywords,
+          // Set a default URL if not provided (required for campaign)
+          url: prev.url || 'https://example.com',
+          // Generate campaign name from seed keywords if not set
+          campaignName: prev.campaignName || (seedKws.length > 0 
+            ? `${seedKws[0].replace(/[^a-z0-9]/gi, ' ').trim()} Campaign`
+            : 'Campaign')
+        }));
+
+        // Skip to step 3 (Ads Generation) since keywords are already provided
+        setCurrentStep(3);
+        
+        notifications.success('Keywords loaded from Keyword Planner', {
+          title: 'Keywords Ready',
+          description: `${keywords.length} keywords loaded. Proceeding to ads generation.`
+        });
+      }
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      notifications.error('Failed to load campaign data', {
+        title: 'Load Error',
+        description: error instanceof Error ? error.message : 'Unknown error occurred. Please try again.'
       });
     }
   }, [initialData]);
