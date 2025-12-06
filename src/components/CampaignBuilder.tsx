@@ -6472,27 +6472,28 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
 
             {/* Navigation Above Wizard - Only show in builder view */}
             {activeView === 'builder' && (
-                <div className="bg-white border-b border-slate-200 sticky top-[73px] z-20">
-                    <div className="max-w-7xl mx-auto px-6 py-3">
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-indigo-200 sticky top-[73px] z-20 shadow-md">
+                    <div className="max-w-7xl mx-auto px-6 py-4">
                         <div className="flex items-center justify-between">
                             <Button
                                 variant="outline"
                                 onClick={handleBackStep}
                                 disabled={step === 1}
-                                size="sm"
+                                size="default"
+                                className="bg-white hover:bg-slate-50 border-2 border-slate-300 px-6 py-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                <ArrowLeft className="w-5 h-5 mr-2" />
                                 Back
                             </Button>
                             <div className="flex items-center gap-3">
                                 <Button
                                     onClick={handleNextStep}
                                     disabled={step >= 7}
-                                    size="sm"
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                    size="default"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {step === 6 ? 'Save & Finish' : step === 7 ? 'Download CSV' : 'Next Step'}
-                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                    <ArrowRight className="w-5 h-5 ml-2" />
                                 </Button>
                             </div>
                         </div>

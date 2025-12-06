@@ -102,7 +102,17 @@ export const historyService = {
     try {
       // Try server first
       const response = await api.get('/history/list');
-      return response.items || [];
+      const items = response.items || [];
+      // Validate and sanitize items
+      return items.map((item: any) => ({
+        id: item.id || crypto.randomUUID(),
+        type: item.type || 'unknown',
+        name: item.name || 'Unnamed',
+        data: item.data || {},
+        timestamp: item.timestamp || item.created_at || new Date().toISOString(),
+        status: item.status || 'completed',
+        lastModified: item.lastModified || item.updated_at,
+      }));
     } catch (error: any) {
       // Check if it's an expected error
       const isExpectedError = 
@@ -118,14 +128,14 @@ export const historyService = {
         try {
           const dbItems = await campaignDatabaseService.getAll();
           if (dbItems && dbItems.length > 0) {
-            // Convert database format to HistoryItem format
-            return dbItems.map(item => ({
+            // Convert database format to HistoryItem format with validation
+            return dbItems.map((item: any) => ({
               id: item.id || crypto.randomUUID(),
-              type: item.type,
-              name: item.name,
-              data: item.data,
+              type: item.type || 'unknown',
+              name: item.name || 'Unnamed',
+              data: item.data || {},
               timestamp: item.created_at || new Date().toISOString(),
-              status: item.status,
+              status: item.status || 'completed',
               lastModified: item.updated_at,
             }));
           }
@@ -134,8 +144,23 @@ export const historyService = {
         }
       }
       
-      // Final fallback to localStorage
-      return localStorageHistory.getAll();
+      // Final fallback to localStorage with error handling
+      try {
+        const localItems = localStorageHistory.getAll();
+        // Validate and sanitize localStorage items
+        return localItems.map((item: any) => ({
+          id: item.id || crypto.randomUUID(),
+          type: item.type || 'unknown',
+          name: item.name || 'Unnamed',
+          data: item.data || {},
+          timestamp: item.timestamp || new Date().toISOString(),
+          status: item.status || 'completed',
+          lastModified: item.lastModified,
+        }));
+      } catch (localError) {
+        console.error('Failed to load from localStorage:', localError);
+        return [];
+      }
     }
   },
 
