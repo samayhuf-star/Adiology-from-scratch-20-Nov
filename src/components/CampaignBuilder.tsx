@@ -804,12 +804,25 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
     // MUST be defined early to avoid "Cannot access before initialization" errors
     const getDynamicAdGroups = useCallback(() => {
         try {
-            if (!selectedKeywords || selectedKeywords.length === 0) return [];
-            if (!structure) return [];
-            
             // Ensure selectedKeywords is an array
-            const keywords = Array.isArray(selectedKeywords) ? selectedKeywords : [];
+            let keywords = Array.isArray(selectedKeywords) ? selectedKeywords : [];
+            
+            // Fix: If selectedKeywords is empty but generatedKeywords exist, use generatedKeywords
+            // This handles the case when coming from keyword planner where keywords are generated but not selected
+            if (keywords.length === 0 && generatedKeywords && generatedKeywords.length > 0) {
+                // Extract keyword strings from generatedKeywords (handle both string and object formats)
+                keywords = generatedKeywords.map((kw: any) => {
+                    if (typeof kw === 'string') return kw;
+                    if (kw?.text) return kw.text;
+                    if (kw?.keyword) return kw.keyword;
+                    return String(kw || '');
+                }).filter((kw: string) => kw && kw.trim().length > 0);
+                
+                console.log(`✅ Using ${keywords.length} generated keywords for ad group generation (selectedKeywords was empty)`);
+            }
+            
             if (keywords.length === 0) return [];
+            if (!structure) return [];
             
             type AdGroup = { name: string; keywords: string[] };
             
