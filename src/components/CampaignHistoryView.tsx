@@ -489,7 +489,34 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                     <Separator className="my-3" />
                     <div className="flex gap-2 pt-1">
                       <Button 
-                        onClick={() => onLoadCampaign(data)}
+                        onClick={() => {
+                          try {
+                            // Ensure data structure is correct before loading
+                            const campaignData = {
+                              ...data,
+                              // Ensure arrays are properly initialized
+                              ads: Array.isArray(data.ads) ? data.ads : [],
+                              adGroups: Array.isArray(data.adGroups) ? data.adGroups : [],
+                              selectedKeywords: Array.isArray(data.selectedKeywords) ? data.selectedKeywords : [],
+                              generatedKeywords: Array.isArray(data.generatedKeywords) ? data.generatedKeywords : [],
+                              seedKeywords: Array.isArray(data.seedKeywords) ? data.seedKeywords : [],
+                              negativeKeywords: Array.isArray(data.negativeKeywords) ? data.negativeKeywords : [],
+                              locations: data.locations && typeof data.locations === 'object' ? data.locations : {
+                                countries: [],
+                                states: [],
+                                cities: [],
+                                zipCodes: []
+                              }
+                            };
+                            onLoadCampaign(campaignData);
+                          } catch (error) {
+                            console.error('Error loading campaign:', error);
+                            notifications.error('Failed to load campaign', {
+                              title: 'Load Error',
+                              description: error instanceof Error ? error.message : 'Unknown error occurred'
+                            });
+                          }
+                        }}
                         className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white min-w-0"
                       >
                         <Eye className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -576,7 +603,34 @@ export const CampaignHistoryView: React.FC<CampaignHistoryViewProps> = ({ onLoad
                             <div className="flex items-center gap-2 flex-shrink-0">
                               {getStatusBadge(status)}
                               <Button 
-                                onClick={() => onLoadCampaign(data)}
+                                onClick={() => {
+                                  try {
+                                    // Ensure data structure is correct before loading
+                                    const campaignData = {
+                                      ...data,
+                                      // Ensure arrays are properly initialized
+                                      ads: Array.isArray(data.ads) ? data.ads : [],
+                                      adGroups: Array.isArray(data.adGroups) ? data.adGroups : [],
+                                      selectedKeywords: Array.isArray(data.selectedKeywords) ? data.selectedKeywords : [],
+                                      generatedKeywords: Array.isArray(data.generatedKeywords) ? data.generatedKeywords : [],
+                                      seedKeywords: Array.isArray(data.seedKeywords) ? data.seedKeywords : [],
+                                      negativeKeywords: Array.isArray(data.negativeKeywords) ? data.negativeKeywords : [],
+                                      locations: data.locations && typeof data.locations === 'object' ? data.locations : {
+                                        countries: [],
+                                        states: [],
+                                        cities: [],
+                                        zipCodes: []
+                                      }
+                                    };
+                                    onLoadCampaign(campaignData);
+                                  } catch (error) {
+                                    console.error('Error loading campaign:', error);
+                                    notifications.error('Failed to load campaign', {
+                                      title: 'Load Error',
+                                      description: error instanceof Error ? error.message : 'Unknown error occurred'
+                                    });
+                                  }
+                                }}
                                 className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                               >
                                 <Eye className="w-4 h-4 mr-2" />

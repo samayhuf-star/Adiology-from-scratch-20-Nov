@@ -4,13 +4,18 @@ import { cva, type VariantProps } from "class-variance-authority@0.7.1";
 import { cn } from "./utils";
 
 const alertVariants = cva(
-  "relative w-full rounded-lg border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+  "relative w-full rounded-lg border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current shadow-md",
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
+        // Unified green/white style for default alerts (matching Sonner success style)
+        default: "bg-green-50 border-green-200 text-green-800",
         destructive:
-          "text-destructive bg-card [&>svg]:text-current *:data-[slot=alert-description]:text-destructive/90",
+          "text-red-800 bg-red-50 border-red-200 [&>svg]:text-current *:data-[slot=alert-description]:text-red-700",
+        // Additional variants to match Sonner notification types
+        success: "bg-green-50 border-green-200 text-green-800",
+        warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
+        info: "bg-blue-50 border-blue-200 text-blue-800",
       },
     },
     defaultVariants: {
