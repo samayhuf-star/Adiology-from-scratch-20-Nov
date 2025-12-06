@@ -1777,8 +1777,8 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             if (idx < 15 && headline && headline.trim()) {
               convertedAd[`headline${idx + 1}`] = headline.trim().substring(0, 30);
             }
-          });
-        } else {
+        });
+      } else {
           // Fallback to individual headline fields
           if (ad.headline1) convertedAd.headline1 = ad.headline1.trim().substring(0, 30);
           if (ad.headline2) convertedAd.headline2 = ad.headline2.trim().substring(0, 30);
@@ -1922,11 +1922,11 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
       // Store CSV data in state (don't download yet)
       // Add BOM for Excel compatibility
       const csvWithBOM = '\uFEFF' + csv;
-      setCampaignData(prev => ({
-        ...prev,
+        setCampaignData(prev => ({
+          ...prev,
         csvData: csvWithBOM,
         csvErrors: [],
-      }));
+        }));
       
       notifications.success('CSV generated successfully!', {
         title: 'CSV Ready',
@@ -1979,8 +1979,8 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
         title: 'No CSV Data',
         description: 'Please generate CSV first before downloading.'
       });
-      return;
-    }
+        return;
+      }
     
     // Show export brief dialog
     setShowExportDialog(true);
@@ -2330,9 +2330,9 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                           <div key={kw?.id || idx} className="flex items-center justify-between p-2 border rounded">
                             <span className="text-sm">{keywordText}</span>
                             {kw?.matchType && (
-                              <Badge variant="outline">{kw.matchType}</Badge>
-                            )}
-                          </div>
+                        <Badge variant="outline">{kw.matchType}</Badge>
+                          )}
+                        </div>
                         );
                       })
                     )}
@@ -2371,7 +2371,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
             }
             // Ads are now created manually by clicking ad type buttons
           }} />
-        </div>
+              </div>
 
         {/* Display existing URL and Keywords info */}
         <Card className="mb-6 bg-blue-50 border-blue-200">
@@ -2412,132 +2412,6 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Step 3: Ad Type and Mode Selection */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Ad Type & Mode</CardTitle>
-            <CardDescription>Choose your ad type and generation mode</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-semibold mb-2 block">Select Ad Type</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Button
-                    variant={campaignData.adTypes.includes('rsa') ? "default" : "outline"}
-                    className="w-full py-6"
-                    onClick={() => {
-                      const adTypes = campaignData.adTypes.includes('rsa')
-                        ? campaignData.adTypes.filter(t => t !== 'rsa')
-                        : [...campaignData.adTypes.filter(t => t !== 'rsa'), 'rsa'];
-                      setCampaignData(prev => ({ ...prev, adTypes }));
-                    }}
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Responsive Search Ad (RSA)
-                  </Button>
-                  <Button
-                    variant={campaignData.adTypes.includes('dki') ? "default" : "outline"}
-                    className="w-full py-6"
-                    onClick={() => {
-                      const adTypes = campaignData.adTypes.includes('dki')
-                        ? campaignData.adTypes.filter(t => t !== 'dki')
-                        : [...campaignData.adTypes.filter(t => t !== 'dki'), 'dki'];
-                      setCampaignData(prev => ({ ...prev, adTypes }));
-                    }}
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    DKI Text Ad
-                  </Button>
-                  <Button
-                    variant={campaignData.adTypes.includes('call') ? "default" : "outline"}
-                    className="w-full py-6"
-                    onClick={() => {
-                      const adTypes = campaignData.adTypes.includes('call')
-                        ? campaignData.adTypes.filter(t => t !== 'call')
-                        : [...campaignData.adTypes.filter(t => t !== 'call'), 'call'];
-                      setCampaignData(prev => ({ ...prev, adTypes }));
-                    }}
-                  >
-                    <Phone className="w-4 h-4 mr-2" />
-                    Call Only Ad
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm font-semibold mb-2 block">Generation Mode</Label>
-                <Select
-                  value="auto"
-                  onValueChange={(value) => {
-                    // Mode selection can be extended later
-                    console.log('Mode selected:', value);
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select generation mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">Auto Generate (Recommended)</SelectItem>
-                    <SelectItem value="manual">Manual Entry</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Step 4: Generate Ads Button */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <Button
-              onClick={() => {
-                if (!campaignData.url || campaignData.url.trim() === '') {
-                  notifications.error('URL is required', { 
-                    title: 'Missing URL', 
-                    description: 'Please go back to Step 1 and enter a landing page URL.' 
-                  });
-                  return;
-                }
-                if (!campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0) {
-                  notifications.error('Keywords are required', { 
-                    title: 'Missing Keywords', 
-                    description: 'Please go back to Step 3 and select keywords.' 
-                  });
-                  return;
-                }
-                if (campaignData.adTypes.length === 0) {
-                  notifications.error('Please select at least one ad type', { title: 'Ad Type Required' });
-                  return;
-                }
-                // Generate ads using existing URL and keywords
-                handleGenerateAds();
-              }}
-              disabled={loading || !campaignData.url || !campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0 || campaignData.adTypes.length === 0}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
-              size="lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Generating Ads...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Generate Ads
-                </>
-              )}
-            </Button>
-            {(!campaignData.url || !campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0 || campaignData.adTypes.length === 0) && (
-              <p className="text-sm text-slate-500 mt-2 text-center">
-                {!campaignData.url && 'Please go back to Step 1 and enter a URL. '}
-                {(!campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0) && 'Please go back to Step 3 and select keywords. '}
-                {campaignData.adTypes.length === 0 && 'Please select at least one ad type.'}
-              </p>
-            )}
           </CardContent>
         </Card>
 
@@ -2607,6 +2481,50 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                     <Plus className="mr-2 w-5 h-5" /> CALL ONLY AD
               </Button>
             </div>
+
+            {/* Generate Ads Button */}
+            <Button
+              onClick={() => {
+                if (!campaignData.url || campaignData.url.trim() === '') {
+                  notifications.error('URL is required', { 
+                    title: 'Missing URL', 
+                    description: 'Please go back to Step 1 and enter a landing page URL.' 
+                  });
+                  return;
+                }
+                if (!campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0) {
+                  notifications.error('Keywords are required', { 
+                    title: 'Missing Keywords', 
+                    description: 'Please go back to Step 3 and select keywords.' 
+                  });
+                  return;
+                }
+                if (campaignData.ads.length === 0) {
+                  notifications.error('Please add at least one ad first', { 
+                    title: 'No Ads Added', 
+                    description: 'Click on one of the ad type buttons above to add an ad.' 
+                  });
+                  return;
+                }
+                // Generate ads using existing URL and keywords
+                handleGenerateAds();
+              }}
+              disabled={loading || !campaignData.url || !campaignData.selectedKeywords || campaignData.selectedKeywords.length === 0 || campaignData.ads.length === 0}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-6 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Generate Ads
+                </>
+              )}
+            </Button>
 
             {/* Extensions Section */}
         <Card>
@@ -3073,7 +2991,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
   const renderStep5 = () => {
     // Check if any specific locations are selected
     const hasSpecificLocations = 
-      campaignData.locations.cities.length > 0 ||
+      campaignData.locations.cities.length > 0 || 
       campaignData.locations.states.length > 0 ||
       campaignData.locations.zipCodes.length > 0;
 
@@ -3141,20 +3059,20 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                 </div>
 
                 {/* Info Card */}
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Globe className="w-5 h-5 text-green-600 mt-0.5" />
-                      <div className="flex-1">
+                  <Card className="bg-green-50 border-green-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Globe className="w-5 h-5 text-green-600 mt-0.5" />
+                        <div className="flex-1">
                         <h4 className="font-semibold text-green-800 mb-1">Country Targeting</h4>
-                        <p className="text-sm text-green-700">
+                          <p className="text-sm text-green-700">
                           Your campaign will target the entire <strong>{campaignData.targetCountry || 'selected country'}</strong>. 
-                          All cities, states, and regions within this country will be included.
-                        </p>
+                            All cities, states, and regions within this country will be included.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
               </div>
             </CardContent>
           </Card>
@@ -3249,7 +3167,7 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
                   return (
                     <Badge key={kw?.id || idx} variant="outline" className="text-xs">
                       {keywordText}
-                    </Badge>
+                  </Badge>
                   );
                 })}
                 {campaignData.selectedKeywords.length > 100 && (
@@ -3487,47 +3405,47 @@ export const CampaignBuilder3: React.FC<CampaignBuilder3Props> = ({ initialData 
 
           {/* Secondary Actions */}
           <div className="flex flex-wrap gap-3 justify-center">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep(6)}
+          <Button
+            variant="outline"
+            onClick={() => setCurrentStep(6)}
               className="border-slate-300 hover:bg-slate-50"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Review
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Reset and start new campaign
-                window.location.reload();
-              }}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Review
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              // Reset and start new campaign
+              window.location.reload();
+            }}
               className="border-slate-300 hover:bg-slate-50"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Another Campaign
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                // Dispatch custom event for App.tsx to handle
-                const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
-                window.dispatchEvent(event);
-                
-                // Fallback: Update URL hash
-                if (window.location.hash !== '#dashboard') {
-                  window.location.hash = '#dashboard';
-                }
-                
-                // Additional fallback: Try direct navigation after a short delay
-                setTimeout(() => {
-                  const event2 = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
-                  window.dispatchEvent(event2);
-                }, 100);
-              }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Another Campaign
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              // Dispatch custom event for App.tsx to handle
+              const event = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+              window.dispatchEvent(event);
+              
+              // Fallback: Update URL hash
+              if (window.location.hash !== '#dashboard') {
+                window.location.hash = '#dashboard';
+              }
+              
+              // Additional fallback: Try direct navigation after a short delay
+              setTimeout(() => {
+                const event2 = new CustomEvent('navigate', { detail: { tab: 'dashboard' } });
+                window.dispatchEvent(event2);
+              }, 100);
+            }}
               className="border-slate-300 hover:bg-slate-50"
-            >
-              Go to Dashboard
-            </Button>
+          >
+            Go to Dashboard
+          </Button>
           </div>
         </div>
       </div>
