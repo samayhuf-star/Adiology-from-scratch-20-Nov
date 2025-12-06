@@ -569,6 +569,7 @@ export function campaignStructureToCSVRows(structure: CampaignStructure): CSVRow
             adRow['Operation'] = 'ADD';
             adRow['Campaign'] = campaign.campaign_name || '';
             adRow['Ad group'] = cleanedAdGroupName;
+            adRow['Ad Type'] = 'Responsive search ad'; // Required by validator
             adRow['Final URL'] = ad.final_url || '';
             adRow['Final mobile URL'] = (ad as any).final_mobile_url || '';
             adRow['Tracking template'] = (ad as any).tracking_template || '';
