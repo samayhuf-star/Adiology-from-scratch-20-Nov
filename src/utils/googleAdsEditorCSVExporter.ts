@@ -38,6 +38,7 @@ export const GOOGLE_ADS_EDITOR_HEADERS = [
   'Ad group',
   'Ad group ID',
   'Ad group status',
+  'Ad Type',
   'Max CPC',
   'Max CPM',
   'Max CPV',
