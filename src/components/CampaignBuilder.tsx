@@ -6488,7 +6488,7 @@ export const CampaignBuilder = ({ initialData }: { initialData?: any }) => {
                             <div className="flex items-center gap-3">
                                 <Button
                                     onClick={handleNextStep}
-                                    disabled={step > 7}
+                                    disabled={step >= 7}
                                     size="default"
                                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
